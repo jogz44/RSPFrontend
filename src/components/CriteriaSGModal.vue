@@ -65,7 +65,7 @@
           <div class="col-12">
             <!-- Action buttons based on mode and permission -->
             <div class="float-right">
-              <!-- VIEW MODE: Show Edit button only if user has modify permission -->
+              <!-- VIEW MODE:  Show Edit button only if user has modify permission -->
               <template v-if="mode === 'view'">
                 <q-btn
                   v-if="hasPermission"
@@ -391,7 +391,7 @@
     };
 
     console.log('[AUDIT LOG]', auditLog);
-    // TODO: Send to server via API: await auditApi.log(auditLog);
+    // TODO: Send to server via API:  await auditApi.log(auditLog);
   }
 
   // Props
@@ -577,7 +577,7 @@
         editableCriteria.value = JSON.parse(JSON.stringify(baseCriteria));
         showCriteriaForm.value = true;
       } else if (props.mode === 'view' || props.mode === 'edit') {
-        // View/Edit mode: Fetch existing criteria
+        // View/Edit mode:  Fetch existing criteria
         if (!props.criteriaId) {
           throw new Error('Criteria ID is required for view/edit mode');
         }
@@ -685,6 +685,7 @@
 
   /**
    * Convert modal format to API format for saving
+   * FIXED: Sends proper flat structure with weight and description at section level
    */
   function convertModalFormatToApiPayload(modalCriteria) {
     const payload = {
@@ -697,30 +698,28 @@
       payload.id = props.criteriaId;
     }
 
-    // Helper to convert section to array of objects
+    // Helper to convert section to proper API format
     const convertSection = (sectionKey) => {
       const section = modalCriteria[sectionKey];
       const sectionWeight = String(section.weight);
 
+      // Combine all breakdown descriptions for the main description field
+      let combinedDescription = '';
       if (section.breakdownFields && section.breakdownFields.length > 0) {
-        return section.breakdownFields.map((field) => ({
-          weight: sectionWeight,
-          description: field.description || '',
-          percentage: String(field.weight),
-        }));
-      } else {
-        // If no breakdown fields, return array with one item
-        return [
-          {
-            weight: sectionWeight,
-            description: '',
-            percentage: sectionWeight,
-          },
-        ];
+        combinedDescription = section.breakdownFields
+          .map((field) => field.description || '')
+          .filter((desc) => desc.trim())
+          .join(' | ');
       }
+
+      // Return flat object structure (NOT an array)
+      return {
+        weight: sectionWeight,
+        description: combinedDescription || '',
+      };
     };
 
-    // Convert all sections to arrays of objects
+    // Convert all sections to flat objects (NOT arrays)
     payload.education = convertSection('education');
     payload.experience = convertSection('experience');
     payload.training = convertSection('training');
@@ -821,7 +820,7 @@
       // Convert modal format to API format
       const payload = convertModalFormatToApiPayload(editableCriteria.value);
 
-      console.log('Modal: Payload before sending:', JSON.stringify(payload, null, 2));
+      console.log('Modal:  Payload before sending:', JSON.stringify(payload, null, 2));
 
       let response;
       if (props.mode === 'edit') {
@@ -841,7 +840,7 @@
 
       $q.notify({
         type: 'positive',
-        message: 'Salary Grade Criteria saved successfully!',
+        message: 'Salary Grade Criteria saved successfully! ',
         position: 'top',
       });
 
