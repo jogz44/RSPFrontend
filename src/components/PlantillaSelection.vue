@@ -1,7 +1,18 @@
 <template>
   <q-card class="q-pa-sm">
     <q-scroll-area class="q-pa-sm" style="height: 80vh">
-      <div class="text-h5 text-bold q-mb-md">Plantilla</div>
+      <div class="row items-center q-gutter-md q-mb-md">
+        <div class="col-auto">
+          <div class="text-h5 text-bold">Plantilla</div>
+        </div>
+        <div class="col-auto">
+          <q-btn round dense color="primary" icon="print" size="sm" @click="handlePrint"></q-btn>
+        </div>
+      </div>
+
+      <q-dialog v-model="showPrintDialog" persistent>
+        <PlantillaReport />
+      </q-dialog>
 
       <q-select
         class="q-mb-lg q-mx-auto"
@@ -19,7 +30,7 @@
         @filter="filterOptions"
         @update:model-value="handleSelection"
         :loading="usePlantilla.loading"
-        style="max-width: 230px"
+        style="max-width: 500px"
       >
         <template v-slot:no-option>
           <q-item dense>
@@ -88,6 +99,7 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { uid } from 'quasar';
+  import PlantillaReport from 'src/components/Reports/PlantillaReport.vue';
 
   const props = defineProps({
     positions: {
@@ -95,6 +107,12 @@
       required: true,
     },
   });
+
+  const showPrintDialog = ref(false);
+
+  const handlePrint = () => {
+    showPrintDialog.value = true;
+  };
 
   function countPositionsForNode(nodeType, nodeData, positionsList) {
     return positionsList.filter((row) => {

@@ -52,7 +52,7 @@ const routes = [
       {
         path: '/reports',
         name: 'Admin Report Raters',
-        component: () => import('src/components/Reports/CertificationReport.vue'),
+        component: () => import('src/pages/admin/ReportsPage.vue'),
         meta: { auth: true, role: 'admin' },
       },
       {
