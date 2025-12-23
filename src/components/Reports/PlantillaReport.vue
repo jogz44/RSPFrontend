@@ -46,9 +46,24 @@
   const pdfUrl = ref(null);
   const plantillaReportStore = usePlantillaReportStore();
   const isLoading = ref(false);
-  const COLS_COUNT = 13;
+  const COLS_COUNT = 16;
 
-  // Format birthdate as mm/dd/yyyy
+  function officeAbbreviation(officeName) {
+    if (!officeName) return '';
+
+    // Remove "OFFICE OF THE" (case-insensitive)
+    let cleaned = officeName.replace(/office of the/i, '').trim();
+
+    // Split words and take first letter of each
+    const abbr = cleaned
+      .split(/\s+/)
+      .map((word) => word[0]?.toUpperCase())
+      .join('');
+
+    // Append "O"
+    return `${abbr}O`;
+  }
+
   function formatDate(dateStr) {
     if (!dateStr) return '';
     const [datePart] = dateStr.split(' ');
@@ -56,27 +71,30 @@
     if (!year || !month || !day) return '';
     return `${month.padStart(2, '0')}/${day.padStart(2, '0')}/${year}`;
   }
-
-  // Helper: create a data row for one employee
+  function n(val) {
+    if (typeof val === 'string') val = val.replace(/,/g, '');
+    return Number(val) || 0;
+  }
   function employeeRow(employee) {
     return [
       { text: employee.itemNo ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.position ?? '', alignment: 'left', valign: 'middle' },
-      { text: employee.sg ?? '', alignment: 'center', valign: 'middle' },
+      { text: employee.salarygrade ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.authorized ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.actual ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.step, alignment: 'center', valign: 'middle' },
+      { text: employee.step ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.code ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.type ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.level, alignment: 'center', valign: 'middle' },
+      { text: employee.level ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.lastname ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.firstname ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.middlename ?? '', alignment: 'center', valign: 'middle' },
       { text: formatDate(employee.birthdate) || 'VACANT', alignment: 'center', valign: 'middle' },
+      { text: formatDate(employee.dateOriginalAppointed), alignment: 'center', valign: 'middle' },
+      { text: formatDate(employee.dateLastPromotion), alignment: 'center', valign: 'middle' },
+      { text: employee.status ?? '', alignment: 'center', valign: 'middle' },
     ];
   }
-
-  // Recursively adds label and employee rows for all sublevels
   function addOrgRows(node, rows) {
     const subLevels = [
       { array: 'office2', label: 'office2' },
@@ -89,7 +107,6 @@
       const subs = node[sub.array];
       if (Array.isArray(subs)) {
         for (const entry of subs) {
-          // Only show row for level label if it has employees
           if (entry[sub.label] && Array.isArray(entry.employees) && entry.employees.length > 0) {
             rows.push([
               {
@@ -101,26 +118,39 @@
               ...Array(COLS_COUNT - 1).fill({}),
             ]);
           }
-          if (Array.isArray(entry.employees)) {
+          if (Array.isArray(entry.employees))
             entry.employees.forEach((emp) => rows.push(employeeRow(emp)));
-          }
           addOrgRows(entry, rows);
         }
       }
     }
   }
-
-  // Generates rows for one office (no office label row)
   function generateOfficeRows(office) {
     const rows = [];
-    if (Array.isArray(office.employees)) {
+    if (Array.isArray(office.employees))
       office.employees.forEach((emp) => rows.push(employeeRow(emp)));
-    }
     addOrgRows(office, rows);
     return rows;
   }
+  function collectAllEmployees(office, arr = []) {
+    if (Array.isArray(office.employees)) arr.push(...office.employees);
+    ['office2', 'groups', 'divisions', 'sections', 'units'].forEach((key) => {
+      if (Array.isArray(office[key])) office[key].forEach((sub) => collectAllEmployees(sub, arr));
+    });
+    return arr;
+  }
+  function getMaxItemNo(office) {
+    const emps = collectAllEmployees(office);
+    let maxItem = null;
+    for (const emp of emps)
+      if (emp.itemNo && (!maxItem || Number(emp.itemNo) > Number(maxItem))) maxItem = emp.itemNo;
+    return maxItem;
+  }
+  function reportDateString() {
+    const now = new Date();
+    return `as of ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`;
+  }
 
-  // Main PDF generator
   async function generatePdfContent(reportData) {
     try {
       const pdfMakeModule = await import('pdfmake/build/pdfmake');
@@ -135,7 +165,11 @@
         const office = reportData[i];
         if (i > 0) content.push({ text: '', pageBreak: 'before' });
 
-        // Titles
+        const allEmployees = collectAllEmployees(office);
+        const totalAuthorized = allEmployees.reduce((sum, e) => sum + n(e.authorized), 0);
+        const totalActual = allEmployees.reduce((sum, e) => sum + n(e.actual), 0);
+        const numItems = getMaxItemNo(office) ?? '';
+
         content.push(
           {
             text: 'Republic of the Philippines',
@@ -146,20 +180,22 @@
           { text: 'CITY GOVERNMENT OF TAGUM', style: 'title', alignment: 'center' },
           { text: 'Plantilla of Personnel', style: 'title', alignment: 'center' },
           {
-            text: 'as of January 2025',
+            text: reportDateString(),
             style: 'title',
             alignment: 'center',
             margin: [0, 0, 0, 10],
           },
         );
 
-        // Table: headerRows: 0 (no automatic repeat of headers in multi-page tables)
         content.push({
           table: {
             headerRows: 0,
             widths: [
               'auto',
-              '*',
+              'auto',
+              'auto',
+              'auto',
+              'auto',
               'auto',
               'auto',
               'auto',
@@ -173,6 +209,7 @@
               'auto',
             ],
             body: [
+              // HEADER ROW 1 (16 cols)
               [
                 {
                   text: `(1) OFFICE: ${office.office || ''}`,
@@ -190,7 +227,7 @@
                 {},
                 {
                   text: '(2) Agency:  CITY GOVERNMENT OF TAGUM',
-                  colSpan: 5,
+                  colSpan: 8,
                   style: 'tableHeader',
                   alignment: 'left',
                   valign: 'middle',
@@ -199,7 +236,11 @@
                 {},
                 {},
                 {},
+                {},
+                {},
+                {},
               ],
+              // HEADER ROW 2 (16)
               [
                 {
                   text: '(3) Item No.',
@@ -268,7 +309,29 @@
                   alignment: 'center',
                   valign: 'middle',
                 },
+                {
+                  text: '(16) Date of Original Appointment',
+                  rowSpan: 2,
+                  style: 'tableHeader',
+                  alignment: 'center',
+                  valign: 'middle',
+                },
+                {
+                  text: '(17) Date of Last Promotion',
+                  rowSpan: 2,
+                  style: 'tableHeader',
+                  alignment: 'center',
+                  valign: 'middle',
+                },
+                {
+                  text: '(18) Status',
+                  rowSpan: 2,
+                  style: 'tableHeader',
+                  alignment: 'center',
+                  valign: 'middle',
+                },
               ],
+              // HEADER ROW 3 (16)
               [
                 {},
                 {},
@@ -302,9 +365,204 @@
                   alignment: 'center',
                   valign: 'middle',
                 },
-                {},
+                {}, // Birthday
+                {}, // Original Appt.
+                {}, // Last Promotion
+                {}, // Status
               ],
               ...generateOfficeRows(office),
+
+              // Separator row (16 cols)
+              [
+                {
+                  text: '',
+                  colSpan: COLS_COUNT,
+                  border: [false, false, false, false],
+                  margin: [0, 2, 0, 2],
+                },
+                ...Array(COLS_COUNT - 1).fill({}),
+              ],
+
+              // GRAND TOTAL (16)
+              [
+                {
+                  text: `${officeAbbreviation(office.office)}-GRAND TOTAL`,
+                  colSpan: 3,
+                  alignment: 'left',
+                  style: 'grandTotalLabel',
+                  border: [false, true, false, true],
+                },
+                { text: '', border: [false, true, false, true] },
+                { text: '', border: [false, true, false, true] },
+                {
+                  text: totalAuthorized.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+                  alignment: 'right',
+                  style: 'grandTotalValue',
+                  border: [false, true, false, true],
+                },
+                {
+                  text: totalActual.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+                  alignment: 'right',
+                  style: 'grandTotalValue',
+                  border: [false, true, false, true],
+                },
+                ...Array(COLS_COUNT - 5).fill({ text: '', border: [false, true, false, true] }),
+              ],
+              // Total Number of Positions (16)
+              [
+                {
+                  text: `(19) Total Number of Position Items:   ${numItems ?? ''}`,
+                  colSpan: COLS_COUNT,
+                  alignment: 'left',
+                  margin: [0, 6, 0, 0],
+                  style: 'footerBold',
+                  border: [false, false, false, false],
+                },
+              ],
+              // Certification & Signature Block (16)
+              [
+                {
+                  colSpan: COLS_COUNT,
+                  columns: [
+                    // LEFT SIDE — Certification + Janylene
+                    {
+                      width: '50%',
+                      stack: [
+                        {
+                          text:
+                            'I certify to the correctness of the entries and that above Position Items are duly approved and authorized\n' +
+                            'by the agency and in compliance to existing rules and regulations. I further certify that employees whose\n' +
+                            'names appear above are the incumbents of the position.',
+                          fontSize: 8,
+                          margin: [0, 5, 0, 12],
+                        },
+                        {
+                          alignment: 'center',
+                          margin: [80, 30, 0, 0], // adjust if needed
+                          stack: [
+                            {
+                              columns: [
+                                {
+                                  width: 140,
+                                  stack: [
+                                    {
+                                      text: 'JANYLENE A. PALERMO, MM',
+                                      style: 'footerBold',
+                                      alignment: 'center',
+                                      margin: [0, 6, 0, 0],
+                                    },
+                                    {
+                                      text: '____________________________________',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0], // line
+                                    },
+                                    {
+                                      text: 'Signature',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0], // label
+                                    },
+                                  ],
+                                },
+                                {
+                                  width: 80,
+                                  stack: [
+                                    {
+                                      text: '_______________',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 21, 0, 0],
+                                    },
+                                    {
+                                      text: 'Date',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0],
+                                    },
+                                  ],
+                                },
+                              ],
+                              columnGap: 16,
+                              alignment: 'center',
+                            },
+                          ],
+                        },
+                        { width: '*', text: '' },
+                      ],
+                    },
+
+                    // RIGHT SIDE — Approved by (Mayor)
+                    {
+                      width: '50%',
+                      stack: [
+                        {
+                          text: 'APPROVED BY:',
+                          style: 'footerBold',
+                          alignment: 'left',
+                          margin: [0, 5, 0, 34],
+                        },
+                        {
+                          alignment: 'center',
+                          margin: [60, 30, 0, 0], // adjust if needed
+                          stack: [
+                            {
+                              columns: [
+                                {
+                                  width: 140,
+                                  stack: [
+                                    {
+                                      text: 'REY T. UY',
+                                      style: 'footerBold',
+                                      alignment: 'center',
+                                      margin: [0, 6, 0, 0],
+                                    },
+                                    {
+                                      text: '_______________',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0],
+                                    },
+                                    {
+                                      text: 'City Mayor',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0],
+                                    },
+                                  ],
+                                },
+                                {
+                                  width: 80,
+                                  stack: [
+                                    {
+                                      text: '_______________',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 21, 0, 0],
+                                    },
+                                    {
+                                      text: 'Date',
+                                      fontSize: 8,
+                                      alignment: 'center',
+                                      margin: [0, 2, 0, 0],
+                                    },
+                                  ],
+                                },
+                              ],
+                              columnGap: 10,
+                              alignment: 'center',
+                            },
+                          ],
+                        },
+                        { width: '*', text: '' },
+                      ],
+                    },
+                  ],
+                  columnGap: 40,
+                  border: [false, false, false, false],
+                },
+                ...Array(COLS_COUNT - 1).fill({}),
+              ],
             ],
           },
           layout: {
@@ -319,13 +577,6 @@
             cellVerticalAlignment: () => 'middle',
           },
         });
-
-        //Footer
-        content.push({
-          text: `${office.office || ''}-GRAND TOTAL`,
-          style: 'font-size: 10pt;',
-          alignment: 'left',
-        });
       }
 
       const docDefinition = {
@@ -334,10 +585,13 @@
         pageMargins: [20, 20, 20, 20],
         content,
         styles: {
-          title: { fontSize: 12, bold: true, margin: [0, 0, 0, 5] },
-          tableHeader: { bold: true, fontSize: 10 },
+          title: { fontSize: 11, bold: true, margin: [0, 0, 0, 5] },
+          tableHeader: { bold: true, fontSize: 8 },
+          grandTotalLabel: { bold: true, fontSize: 8, color: '#222', margin: [0, 3, 0, 0] },
+          grandTotalValue: { bold: true, fontSize: 8, color: '#222', alignment: 'right' },
+          footerBold: { bold: true, fontSize: 8 },
         },
-        defaultStyle: { fontSize: 10 },
+        defaultStyle: { fontSize: 7 },
       };
 
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);

@@ -129,12 +129,6 @@
                         </template>
                       </q-table>
                     </q-card>
-
-                    <!-- show the actual selected ids (visible value) -->
-                    <div class="q-mt-sm text-caption">
-                      Selected education IDs:
-                      <code>{{ JSON.stringify(selectedEducationIds) }}</code>
-                    </div>
                   </q-scroll-area>
                 </div>
 
@@ -1296,12 +1290,12 @@
       // Fetch PDS data using submission_id
       let pdsData = null;
       if (props.applicantData?.submission_id) {
-        pdsData = await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+        pdsData = await jobPostStore.fetchApplicantPDSRater(props.applicantData.submission_id);
       }
 
       // Load QS data
       if (props.applicantData?.PositionID) {
-        await usePlantilla.fetchQsData(props.applicantData.PositionID);
+        await usePlantilla.fetchQsDataRater(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
 
@@ -1410,7 +1404,7 @@
   const onViewPDS = async () => {
     try {
       if (props.applicantData?.submission_id) {
-        await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+        await jobPostStore.fetchApplicantPDSRater(props.applicantData.submission_id);
       }
       showPDSModal.value = true;
       emit('view-pds');

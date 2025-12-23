@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'src/boot/axios_admin';
+import { raterApi } from 'boot/axios_rater';
 import { toast } from 'src/boot/toast'; // Import toast instance
 
 export const usePlantillaStore = defineStore('plantilla', {
@@ -151,6 +152,31 @@ export const usePlantillaStore = defineStore('plantilla', {
       this.error = null;
       try {
         const response = await adminApi.post('/plantillaData/qs', {
+          PositionID: PoitionID,
+        });
+        // console.log(response.data) // Debugging
+
+        if (Array.isArray(response.data)) {
+          this.qsData = response.data;
+        } else {
+          console.error('Unexpected response format', response.data);
+          this.qsData = [];
+        }
+      } catch (error) {
+        console.error('Fetch error:', error); // Debugging
+        toast.error('Failed to Load Qs Data');
+        this.error = error;
+        this.qsLoad = false;
+      } finally {
+        this.qsLoad = false;
+      }
+    },
+
+    async fetchQsDataRater(PoitionID) {
+      this.qsLoad = true;
+      this.error = null;
+      try {
+        const response = await raterApi.post('/plantillaData/qs', {
           PositionID: PoitionID,
         });
         // console.log(response.data) // Debugging

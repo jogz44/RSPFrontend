@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
+import { raterApi } from 'boot/axios_rater';
 import { toast } from 'src/boot/toast';
 
 export const useJobPostStore = defineStore('jobPost', {
@@ -345,6 +346,22 @@ export const useJobPostStore = defineStore('jobPost', {
       this.loading = true;
       try {
         const { data } = await adminApi.get(`/applicant/${id}`);
+        this.applicantPDS = data; // Store in separate property
+        this.error = null;
+        return data;
+      } catch (err) {
+        this.error = err;
+        console.error('Error fetching applicant PDS:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchApplicantPDSRater(id) {
+      this.loading = true;
+      try {
+        const { data } = await raterApi.get(`/applicant/${id}`);
         this.applicantPDS = data; // Store in separate property
         this.error = null;
         return data;
