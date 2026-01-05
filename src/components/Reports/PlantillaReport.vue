@@ -80,16 +80,16 @@
       { text: employee.itemNo ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.position ?? '', alignment: 'left', valign: 'middle' },
       { text: employee.salarygrade ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.authorized ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.actual ?? '', alignment: 'center', valign: 'middle' },
+      { text: employee.authorized ?? '', alignment: 'right', valign: 'middle' },
+      { text: employee.actual ?? '', alignment: 'right', valign: 'middle' },
       { text: employee.step ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.code ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.type ?? '', alignment: 'center', valign: 'middle' },
       { text: employee.level ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.lastname ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.firstname ?? '', alignment: 'center', valign: 'middle' },
-      { text: employee.middlename ?? '', alignment: 'center', valign: 'middle' },
-      { text: formatDate(employee.birthdate) || 'VACANT', alignment: 'center', valign: 'middle' },
+      { text: employee.lastname ?? '', alignment: 'left', valign: 'middle' },
+      { text: employee.firstname ?? '', alignment: 'left', valign: 'middle' },
+      { text: employee.middlename ?? '', alignment: 'left', valign: 'middle' },
+      { text: formatDate(employee.birthdate), alignment: 'center', valign: 'middle' },
       { text: formatDate(employee.dateOriginalAppointed), alignment: 'center', valign: 'middle' },
       { text: formatDate(employee.dateLastPromotion), alignment: 'center', valign: 'middle' },
       { text: employee.status ?? '', alignment: 'center', valign: 'middle' },
@@ -378,7 +378,7 @@
                   text: '',
                   colSpan: COLS_COUNT,
                   border: [false, false, false, false],
-                  margin: [0, 2, 0, 2],
+                  margin: [0, 0, 0, 0],
                 },
                 ...Array(COLS_COUNT - 1).fill({}),
               ],
@@ -392,6 +392,7 @@
                   style: 'grandTotalLabel',
                   border: [false, true, false, true],
                 },
+
                 { text: '', border: [false, true, false, true] },
                 { text: '', border: [false, true, false, true] },
                 {
@@ -414,7 +415,7 @@
                   text: `(19) Total Number of Position Items:   ${numItems ?? ''}`,
                   colSpan: COLS_COUNT,
                   alignment: 'left',
-                  margin: [0, 6, 0, 0],
+                  margin: [0, 2, 0, 0],
                   style: 'footerBold',
                   border: [false, false, false, false],
                 },
@@ -434,7 +435,7 @@
                             'by the agency and in compliance to existing rules and regulations. I further certify that employees whose\n' +
                             'names appear above are the incumbents of the position.',
                           fontSize: 8,
-                          margin: [0, 5, 0, 12],
+                          margin: [0, 0, 0, 0],
                         },
                         {
                           alignment: 'center',
@@ -472,7 +473,7 @@
                                       text: '_______________',
                                       fontSize: 8,
                                       alignment: 'center',
-                                      margin: [0, 21, 0, 0],
+                                      margin: [0, 18, 0, 0],
                                     },
                                     {
                                       text: 'Date',
@@ -500,7 +501,7 @@
                           text: 'APPROVED BY:',
                           style: 'footerBold',
                           alignment: 'left',
-                          margin: [0, 5, 0, 34],
+                          margin: [0, 0, 0, 21],
                         },
                         {
                           alignment: 'center',
@@ -538,7 +539,7 @@
                                       text: '_______________',
                                       fontSize: 8,
                                       alignment: 'center',
-                                      margin: [0, 21, 0, 0],
+                                      margin: [0, 18, 0, 0],
                                     },
                                     {
                                       text: 'Date',
@@ -565,6 +566,7 @@
               ],
             ],
           },
+
           layout: {
             hLineWidth: () => 1,
             vLineWidth: () => 1,
@@ -577,6 +579,222 @@
             cellVerticalAlignment: () => 'middle',
           },
         });
+
+        const footerRows = [
+          [
+            {
+              text: '',
+              colSpan: COLS_COUNT,
+              border: [false, false, false, false],
+              margin: [0, 0, 0, 0],
+            },
+            ...Array(COLS_COUNT - 1).fill({}),
+          ],
+
+          // GRAND TOTAL (16)
+          [
+            {
+              text: `${officeAbbreviation(office.office)}-GRAND TOTAL`,
+              colSpan: 3,
+              alignment: 'left',
+              style: 'grandTotalLabel',
+              border: [false, true, false, true],
+            },
+            { text: '', border: [false, true, false, true] },
+            { text: '', border: [false, true, false, true] },
+            {
+              text: totalAuthorized.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+              alignment: 'right',
+              style: 'grandTotalValue',
+              border: [false, true, false, true],
+            },
+            {
+              text: totalActual.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+              alignment: 'right',
+              style: 'grandTotalValue',
+              border: [false, true, false, true],
+            },
+            ...Array(COLS_COUNT - 5).fill({ text: '', border: [false, false, false, false] }),
+          ],
+          // Total Number of Positions (16)
+          [
+            {
+              text: `(19) Total Number of Position Items:   ${numItems ?? ''}`,
+              colSpan: COLS_COUNT,
+              alignment: 'left',
+              margin: [0, 2, 0, 0],
+              style: 'footerBold',
+              border: [false, false, false, false],
+            },
+          ],
+          // Certification & Signature Block (16)
+          [
+            {
+              colSpan: COLS_COUNT,
+              columns: [
+                // LEFT SIDE — Certification + Janylene
+                {
+                  width: '50%',
+                  stack: [
+                    {
+                      text:
+                        'I certify to the correctness of the entries and that above Position Items are duly approved and authorized\n' +
+                        'by the agency and in compliance to existing rules and regulations. I further certify that employees whose\n' +
+                        'names appear above are the incumbents of the position.',
+                      fontSize: 8,
+                      margin: [0, 0, 0, 0],
+                    },
+                    {
+                      alignment: 'center',
+                      margin: [80, 30, 0, 0], // adjust if needed
+                      stack: [
+                        {
+                          columns: [
+                            {
+                              width: 140,
+                              stack: [
+                                {
+                                  text: 'JANYLENE A. PALERMO, MM',
+                                  style: 'footerBold',
+                                  alignment: 'center',
+                                  margin: [0, 6, 0, 0],
+                                },
+                                {
+                                  text: '____________________________________',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0], // line
+                                },
+                                {
+                                  text: 'Signature',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0], // label
+                                },
+                              ],
+                            },
+                            {
+                              width: 80,
+                              stack: [
+                                {
+                                  text: '_______________',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 18, 0, 0],
+                                },
+                                {
+                                  text: 'Date',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0],
+                                },
+                              ],
+                            },
+                          ],
+                          columnGap: 16,
+                          alignment: 'center',
+                        },
+                      ],
+                    },
+                    { width: '*', text: '' },
+                  ],
+                },
+
+                // RIGHT SIDE — Approved by (Mayor)
+                {
+                  width: '50%',
+                  stack: [
+                    {
+                      text: 'APPROVED BY:',
+                      style: 'footerBold',
+                      alignment: 'left',
+                      margin: [0, 0, 0, 21],
+                    },
+                    {
+                      alignment: 'center',
+                      margin: [60, 30, 0, 0], // adjust if needed
+                      stack: [
+                        {
+                          columns: [
+                            {
+                              width: 140,
+                              stack: [
+                                {
+                                  text: 'REY T. UY',
+                                  style: 'footerBold',
+                                  alignment: 'center',
+                                  margin: [0, 6, 0, 0],
+                                },
+                                {
+                                  text: '_______________',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0],
+                                },
+                                {
+                                  text: 'City Mayor',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0],
+                                },
+                              ],
+                            },
+                            {
+                              width: 80,
+                              stack: [
+                                {
+                                  text: '_______________',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 18, 0, 0],
+                                },
+                                {
+                                  text: 'Date',
+                                  fontSize: 8,
+                                  alignment: 'center',
+                                  margin: [0, 2, 0, 0],
+                                },
+                              ],
+                            },
+                          ],
+                          columnGap: 10,
+                          alignment: 'center',
+                        },
+                      ],
+                    },
+                    { width: '*', text: '' },
+                  ],
+                },
+              ],
+              columnGap: 40,
+              border: [false, false, false, false],
+            },
+            ...Array(COLS_COUNT - 1).fill({}),
+          ],
+        ];
+
+        content.push({
+          table: {
+            headerRows: 0,
+            widths: Array(COLS_COUNT).fill('*'),
+            body: footerRows,
+          },
+          layout: {
+            hLineWidth: () => 1,
+            vLineWidth: () => 1,
+            hLineColor: () => '#333',
+            vLineColor: () => '#333',
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 8,
+            paddingBottom: () => 8,
+            cellVerticalAlignment: () => 'middle',
+          },
+          // keep the whole footer table together on one page
+          keepTogether: true,
+          // also prevent single rows from being split
+          dontBreakRows: true,
+        });
       }
 
       const docDefinition = {
@@ -586,10 +804,18 @@
         content,
         styles: {
           title: { fontSize: 11, bold: true, margin: [0, 0, 0, 5] },
-          tableHeader: { bold: true, fontSize: 8 },
-          grandTotalLabel: { bold: true, fontSize: 8, color: '#222', margin: [0, 3, 0, 0] },
-          grandTotalValue: { bold: true, fontSize: 8, color: '#222', alignment: 'right' },
-          footerBold: { bold: true, fontSize: 8 },
+          tableHeader: { bold: true, fontSize: 7 },
+          grandTotalLabel: { bold: true, fontSize: 7, color: '#222', margin: [0, 3, 0, 0] },
+          grandTotalValue: { bold: true, fontSize: 7, color: '#222', alignment: 'right' },
+          footerBold: { bold: true, fontSize: 7 },
+        },
+        footer: function (currentPage, pageCount) {
+          return {
+            text: `Page ${currentPage} of ${pageCount}`,
+            alignment: 'right',
+            margin: [0, 0, 20, 0],
+            fontSize: 8,
+          };
         },
         defaultStyle: { fontSize: 7 },
       };

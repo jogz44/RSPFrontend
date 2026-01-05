@@ -21,6 +21,7 @@
       </template>
     </q-table>
 
+    <!-- Filter Modal for Schedule Report -->
     <q-dialog v-model="showModal" persistent>
       <q-card style="min-width: 400px; max-width: 90vw">
         <q-card-section>
@@ -105,7 +106,8 @@
                 <q-item
                   v-if="scope.opt.value === 'select_all'"
                   clickable
-                  @click.stop="toggleSelectAll"
+                  @click.
+                  stop="toggleSelectAll"
                 >
                   <q-item-section>
                     <q-checkbox
@@ -113,7 +115,9 @@
                       label="Select All"
                       :checked="allSelected"
                       :indeterminate="false"
-                      @click.stop.prevent="toggleSelectAll"
+                      @click.
+                      stop.
+                      prevent="toggleSelectAll"
                     />
                   </q-item-section>
                 </q-item>
@@ -128,7 +132,8 @@
                     <q-checkbox
                       :label="scope.opt.label"
                       :value="isPositionSelected(scope.opt.value)"
-                      @click.stop.prevent="togglePosition(scope.opt.value)"
+                      @click.stop.
+                      prevent="togglePosition(scope.opt.value)"
                       :model-value="isPositionSelected(scope.opt.value)"
                       :checked="isPositionSelected(scope.opt.value)"
                     />
@@ -144,12 +149,101 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Final Summary Rating Modal -->
+    <q-dialog v-model="showFinalSummaryModal" persistent>
+      <q-card style="min-width: 400px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Select Positions for Final Summary Report</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingPositions" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading positions...</div>
+          </div>
+
+          <div v-else>
+            <q-select
+              v-model="selectedFinalSummaryPositions"
+              :options="finalSummaryPositionOptions"
+              label="Select Positions"
+              outlined
+              multiple
+              use-chips
+              option-value="value"
+              option-label="label"
+              emit-value
+              map-options
+              :dropdown-icon="'arrow_drop_down'"
+              :display-value="displayFinalSummaryPositions"
+            >
+              <template v-slot:option="scope">
+                <!-- Select All Entry at the top -->
+                <q-item
+                  v-if="scope.opt.value === 'select_all'"
+                  clickable
+                  @click.stop="toggleFinalSummarySelectAll"
+                >
+                  <q-item-section>
+                    <q-checkbox
+                      v-model="allFinalSummarySelected"
+                      label="Select All"
+                      :checked="allFinalSummarySelected"
+                      @click.stop.prevent="toggleFinalSummarySelectAll"
+                    />
+                  </q-item-section>
+                </q-item>
+                <!-- Regular Position Options -->
+                <q-item
+                  v-else
+                  :key="scope.opt.value"
+                  clickable
+                  @click.stop="toggleFinalSummaryPosition(scope.opt.value)"
+                >
+                  <q-item-section>
+                    <q-checkbox
+                      :label="scope.opt.label"
+                      :value="isFinalSummaryPositionSelected(scope.opt.value)"
+                      @click.stop.prevent="toggleFinalSummaryPosition(scope.opt.value)"
+                      :model-value="isFinalSummaryPositionSelected(scope.opt.value)"
+                      :checked="isFinalSummaryPositionSelected(scope.opt.value)"
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeFinalSummaryModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="selectedFinalSummaryPositions.length === 0"
+            @click="openFinalSummaryReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Final Summary Report Component Dialog -->
+    <q-dialog v-model="showReportViewer" maximized>
+      <FinalSummaryReport :positions="selectedFinalSummaryPositions" />
+    </q-dialog>
   </q-page>
 </template>
 
 <script>
+  import { useSummaryReportStore } from 'stores/summaryReportStore';
+  import FinalSummaryReport from 'components/reports/FinalSummaryReport.vue';
+
   export default {
     name: 'ReportManagementPage',
+    components: {
+      FinalSummaryReport,
+    },
     data() {
       return {
         columns: [
@@ -186,12 +280,12 @@
         reports: [
           {
             id: 1,
-            name: 'Applicant',
+            name: 'Final Summary of Rating',
             description: 'Reports for all the applicant',
           },
           {
             id: 2,
-            name: 'Schedule ',
+            name: 'Schedule',
             description: 'Reports for scheduled interview',
           },
         ],
@@ -203,13 +297,12 @@
         showModal: false,
         selectedReport: null,
 
-        // Position multi-select
+        // Position multi-select for schedule report
         positionOptions: [
-          { value: 'select_all', label: 'Select All' }, // For slot logic
+          { value: 'select_all', label: 'Select All' },
           { value: 'developer', label: 'Developer' },
           { value: 'designer', label: 'Designer' },
           { value: 'manager', label: 'Manager' },
-          // Add more positions as needed
         ],
         selectedPositions: [],
 
@@ -224,12 +317,19 @@
         showSingleDatePicker: false,
         showFromDatePicker: false,
         showToDatePicker: false,
+
+        // Final Summary Report
+        showFinalSummaryModal: false,
+        showReportViewer: false,
+        loadingPositions: false,
+        finalSummaryPositionOptions: [],
+        selectedFinalSummaryPositions: [],
       };
     },
 
     computed: {
+      // Schedule report computed properties
       allPositions() {
-        // Exclude 'select_all'
         return this.positionOptions.filter((p) => p.value !== 'select_all').map((p) => p.value);
       },
       allSelected() {
@@ -242,16 +342,77 @@
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
       },
+
+      // Final Summary Report computed properties
+      allFinalSummaryPositions() {
+        return this.finalSummaryPositionOptions
+          .filter((p) => p.value !== 'select_all')
+          .map((p) => p.value);
+      },
+      allFinalSummarySelected() {
+        return (
+          this.selectedFinalSummaryPositions.length === this.allFinalSummaryPositions.length &&
+          this.allFinalSummaryPositions.length > 0
+        );
+      },
+      displayFinalSummaryPositions() {
+        if (this.allFinalSummarySelected) return 'All positions selected';
+        const selectedLabels = this.finalSummaryPositionOptions
+          .filter(
+            (opt) =>
+              this.selectedFinalSummaryPositions.includes(opt.value) && opt.value !== 'select_all',
+          )
+          .map((opt) => opt.label);
+        return selectedLabels.join(', ');
+      },
+    },
+
+    async mounted() {
+      await this.loadPositions();
     },
 
     methods: {
-      handleAction(row) {
-        this.selectedReport = row;
-        this.showModal = true;
+      async loadPositions() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingPositions = true;
+        try {
+          const positions = await summaryReportStore.fetchPositionWithRating();
+
+          // Transform positions to options format
+          this.finalSummaryPositionOptions = [
+            { value: 'select_all', label: 'Select All' },
+            ...positions.map((pos) => ({
+              value: pos.jobpostId, // Changed from job_batches_rsp_id
+              label: pos.Position, // Direct property name
+            })),
+          ];
+        } catch (error) {
+          console.error('Error loading positions:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to load positions',
+            position: 'top',
+          });
+        } finally {
+          this.loadingPositions = false;
+        }
       },
 
+      handleAction(row) {
+        this.selectedReport = row;
+
+        if (row.id === 1) {
+          // Final Summary Report
+          this.showFinalSummaryModal = true;
+          this.selectedFinalSummaryPositions = [];
+        } else {
+          // Schedule Report
+          this.showModal = true;
+        }
+      },
+
+      // Schedule report methods
       onPositionInput(val) {
-        // If user interact directly with select, handle select all!
         if (val.includes('select_all')) {
           this.toggleSelectAll();
         }
@@ -275,15 +436,45 @@
       },
 
       generateReport() {
-        // Implement logic to generate report using this.selectedReport, this.selectedPositions, and date filters
         this.showModal = false;
         alert(
-          `Report: ${this.selectedReport?.name}\nPositions: ${this.selectedPositions.join(', ')}\nDate: ${
+          `Report: ${this.selectedReport?.name}\nPositions: ${this.selectedPositions.join(', ')}\nDate:  ${
             this.dateFilterType === 'single'
               ? this.singleDate
               : `From ${this.dateRange.from} To ${this.dateRange.to}`
           }`,
         );
+      },
+
+      // Final Summary Report methods
+      toggleFinalSummarySelectAll() {
+        if (this.allFinalSummarySelected) {
+          this.selectedFinalSummaryPositions = [];
+        } else {
+          this.selectedFinalSummaryPositions = [...this.allFinalSummaryPositions];
+        }
+      },
+      toggleFinalSummaryPosition(pos) {
+        if (this.selectedFinalSummaryPositions.includes(pos)) {
+          this.selectedFinalSummaryPositions = this.selectedFinalSummaryPositions.filter(
+            (p) => p !== pos,
+          );
+        } else {
+          this.selectedFinalSummaryPositions = [...this.selectedFinalSummaryPositions, pos];
+        }
+      },
+      isFinalSummaryPositionSelected(pos) {
+        return this.selectedFinalSummaryPositions.includes(pos);
+      },
+
+      closeFinalSummaryModal() {
+        this.showFinalSummaryModal = false;
+        this.selectedFinalSummaryPositions = [];
+      },
+
+      openFinalSummaryReport() {
+        this.showFinalSummaryModal = false;
+        this.showReportViewer = true;
       },
     },
   };
