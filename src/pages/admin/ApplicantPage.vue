@@ -1,3 +1,4 @@
+//Applicant Page 
 <template>
   <q-page class="q-pa-md">
     <div>
@@ -18,9 +19,32 @@
         <q-btn
           color="orange"
           icon="article"
+          label="Qualified Report"
+          class="text-white q-ml-sm"
+          @click="openQualifiedReportDialog"
+          size="md"
+        >
+          <q-tooltip>List of Qualified Applicants</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          color="orange"
+          icon="article"
+          label="Unqualified Report"
+          class="text-white q-ml-sm"
+          @click="openUnqualifiedReportDialog"
+          size="md"
+        >
+          <q-tooltip>List of Unqualified Applicants</q-tooltip>
+        </q-btn>
+
+        <q-btn
+          color="orange"
+          icon="article"
           label="Report"
           class="text-white q-ml-sm"
           @click="openReportDialog"
+          size="md"
         >
           <q-tooltip>List of Applicant Report</q-tooltip>
         </q-btn>
@@ -61,7 +85,137 @@
       </q-table>
     </div>
 
-    <!-- Report Modal -->
+    <!-- Qualified Report Modal -->
+    <q-dialog v-model="showQualifiedModal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Qualified Applicants Report</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingPublicationDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedQualifiedPublicationDate"
+              :options="filteredQualifiedPublicationDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              @filter="filterQualifiedPublicationDates"
+              :dropdown-icon="'arrow_drop_down'"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedQualifiedPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedQualifiedPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeQualifiedModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="!selectedQualifiedPublicationDate"
+            @click="generateQualifiedReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Unqualified Report Modal -->
+    <q-dialog v-model="showUnqualifiedModal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Unqualified Applicants Report</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingPublicationDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedUnqualifiedPublicationDate"
+              :options="filteredUnqualifiedPublicationDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              @filter="filterUnqualifiedPublicationDates"
+              :dropdown-icon="'arrow_drop_down'"
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedUnqualifiedPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedUnqualifiedPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeUnqualifiedModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="!selectedUnqualifiedPublicationDate"
+            @click="generateUnqualifiedReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- General Report Modal -->
     <q-dialog v-model="showReportModal" persistent>
       <q-card style="min-width: 800px; max-width: 1000px; width: 100%">
         <q-card-section>
@@ -181,117 +335,233 @@
   </q-page>
 </template>
 
-<script>
-  import ApplicantReport from 'src/components/Reports/ApplicantReport.vue';
+<script setup>
+  import { ref, computed, onMounted } from 'vue';
+  import ApplicantReport from 'src/components/Reports/QualifiedReport.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useReportStore } from 'stores/reportStore';
+  import { useSummaryReportStore } from 'stores/summaryReportStore';
   import { useQuasar } from 'quasar';
 
-  export default {
-    name: 'ApplicantsFixed',
-    components: {
-      ApplicantReport,
+  const applicantStore = useApplicantStore();
+  const reportStore = useReportStore();
+  const summaryReportStore = useSummaryReportStore();
+  const $q = useQuasar();
+
+  // Reactive variables
+  const globalSearch = ref('');
+  const showReportModal = ref(false);
+  const showDetailDialog = ref(false);
+  const selectedApplicant = ref(null);
+  const pagination = ref({ sortBy: 'name', descending: false, page: 1, rowsPerPage: 10 });
+  const dateFilterType = ref('single');
+  const singleDate = ref('');
+  const dateRange = ref({ from: '', to: '' });
+  const showDatePicker = ref(false);
+  const showFromPicker = ref(false);
+  const showToPicker = ref(false);
+  const selectedPositions = ref([]);
+  const showPrintDialog = ref(false);
+
+  // Qualified Report Modal
+  const showQualifiedModal = ref(false);
+  const selectedQualifiedPublicationDate = ref(null);
+  const filteredQualifiedPublicationDateOptions = ref([]);
+
+  // Unqualified Report Modal
+  const showUnqualifiedModal = ref(false);
+  const selectedUnqualifiedPublicationDate = ref(null);
+  const filteredUnqualifiedPublicationDateOptions = ref([]);
+
+  // Shared
+  const loadingPublicationDates = ref(false);
+  const publicationDateOptions = ref([]);
+
+  // Computed properties
+  const columns = computed(() => [
+    { name: 'name', label: 'Name', align: 'left', field: 'name', sortable: true },
+    {
+      name: 'jobpost',
+      label: 'No.  of Applied Position',
+      align: 'center',
+      field: 'jobpost',
+      sortable: true,
     },
-    data() {
-      return {
-        applicantStore: useApplicantStore(),
-        reportStore: useReportStore(),
-        $q: null,
-        globalSearch: '',
-        showReportModal: false,
-        showDetailDialog: false,
-        selectedApplicant: null,
-        pagination: { sortBy: 'name', descending: false, page: 1, rowsPerPage: 10 },
-        dateFilterType: 'single',
-        singleDate: '',
-        dateRange: { from: '', to: '' },
-        showDatePicker: false,
-        showFromPicker: false,
-        showToPicker: false,
-        selectedPositions: [],
-        showPrintDialog: false, // FIX: ensure reactivity
-      };
-    },
-    computed: {
-      columns() {
-        return [
-          { name: 'name', label: 'Name', align: 'left', field: 'name', sortable: true },
-          {
-            name: 'jobpost',
-            label: 'No. of Applied Position',
-            align: 'center',
-            field: 'jobpost',
-            sortable: true,
-          },
-          { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
-        ];
-      },
-      filteredApplicants() {
-        if (!this.globalSearch) return this.applicantStore.applicants;
-        const searchTerm = this.globalSearch.toLowerCase();
-        return this.applicantStore.applicants.filter((applicant) => {
-          const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
-          return fullName.includes(searchTerm);
-        });
-      },
-      filteredPositions() {
-        let positions = this.reportStore.report || [];
-        if (this.dateFilterType === 'single' && this.singleDate) {
-          positions = positions.filter((pos) => {
-            const p = pos.post_date?.slice(0, 10),
-              e = pos.end_date?.slice(0, 10);
-            return this.singleDate >= p && this.singleDate <= e;
-          });
-        } else if (this.dateFilterType === 'range' && this.dateRange.from && this.dateRange.to) {
-          positions = positions.filter((pos) => {
-            const p = pos.post_date?.slice(0, 10),
-              e = pos.end_date?.slice(0, 10);
-            return !(this.dateRange.to < p || this.dateRange.from > e);
-          });
-        }
-        return positions.map((pos) => ({ value: pos.id, label: pos.Position }));
-      },
-      positionOptions() {
-        return this.filteredPositions.length
-          ? [{ value: 'select_all', label: 'Select All' }, ...this.filteredPositions]
-          : [];
-      },
-      allSelected() {
-        const ids = this.filteredPositions.map((o) => o.value);
-        return ids.length > 0 && ids.every((id) => this.selectedPositions.includes(id));
-      },
-    },
-    methods: {
-      async openReportDialog() {
-        await this.reportStore.fetchPositionList();
-        this.showReportModal = true;
-        this.selectedPositions = [];
-      },
-      viewApplicant(applicant) {
-        this.selectedApplicant = applicant;
-        this.showDetailDialog = true;
-      },
-      toggleSelectAll() {
-        const ids = this.filteredPositions.map((o) => o.value);
-        this.selectedPositions = this.allSelected ? [] : ids.slice();
-      },
-      togglePosition(val) {
-        if (val === 'select_all') return;
-        if (this.selectedPositions.includes(val)) {
-          this.selectedPositions = this.selectedPositions.filter((x) => x !== val);
-        } else {
-          this.selectedPositions = [...this.selectedPositions, val];
-        }
-      },
-      generateReport() {
-        this.showReportModal = false;
-        // Open the print dialog and pass current filter values to ApplicantReport
-        this.showPrintDialog = true;
-      },
-    },
-    async mounted() {
-      this.$q = useQuasar();
-      await this.applicantStore.fetchApplicants();
-    },
+    { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
+  ]);
+
+  const filteredApplicants = computed(() => {
+    if (!globalSearch.value) return applicantStore.applicants;
+    const searchTerm = globalSearch.value.toLowerCase();
+    return applicantStore.applicants.filter((applicant) => {
+      const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
+      return fullName.includes(searchTerm);
+    });
+  });
+
+  const filteredPositions = computed(() => {
+    let positions = reportStore.report || [];
+    if (dateFilterType.value === 'single' && singleDate.value) {
+      positions = positions.filter((pos) => {
+        const p = pos.post_date?.slice(0, 10);
+        const e = pos.end_date?.slice(0, 10);
+        return singleDate.value >= p && singleDate.value <= e;
+      });
+    } else if (dateFilterType.value === 'range' && dateRange.value.from && dateRange.value.to) {
+      positions = positions.filter((pos) => {
+        const p = pos.post_date?.slice(0, 10);
+        const e = pos.end_date?.slice(0, 10);
+        return !(dateRange.value.to < p || dateRange.value.from > e);
+      });
+    }
+    return positions.map((pos) => ({ value: pos.id, label: pos.Position }));
+  });
+
+  const positionOptions = computed(() =>
+    filteredPositions.value.length
+      ? [{ value: 'select_all', label: 'Select All' }, ...filteredPositions.value]
+      : [],
+  );
+
+  const allSelected = computed(() => {
+    const ids = filteredPositions.value.map((o) => o.value);
+    return ids.length > 0 && ids.every((id) => selectedPositions.value.includes(id));
+  });
+
+  // Methods
+  const openReportDialog = async () => {
+    await reportStore.fetchPositionList();
+    showReportModal.value = true;
+    selectedPositions.value = [];
   };
+
+  const openQualifiedReportDialog = async () => {
+    showQualifiedModal.value = true;
+    selectedQualifiedPublicationDate.value = null;
+    await fetchPublicationDates();
+  };
+
+  const openUnqualifiedReportDialog = async () => {
+    showUnqualifiedModal.value = true;
+    selectedUnqualifiedPublicationDate.value = null;
+    await fetchPublicationDates();
+  };
+
+  const fetchPublicationDates = async () => {
+    loadingPublicationDates.value = true;
+    try {
+      console.log('Fetching publication dates...');
+      const response = await summaryReportStore.fetchPublicationDateList();
+      console.log('Publication dates response:', response);
+
+      // Extract date values from the response array
+      // Response format: [{"date":"Nov 07, 2025"},{"date":"Nov 04, 2025"}]
+      if (Array.isArray(response)) {
+        publicationDateOptions.value = response.map((item) => item.date);
+      } else {
+        publicationDateOptions.value = [];
+      }
+
+      filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+
+      console.log('Publication date options:', publicationDateOptions.value);
+    } catch (error) {
+      console.error('Error fetching publication dates:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load publication dates',
+      });
+      publicationDateOptions.value = [];
+      filteredQualifiedPublicationDateOptions.value = [];
+      filteredUnqualifiedPublicationDateOptions.value = [];
+    } finally {
+      loadingPublicationDates.value = false;
+    }
+  };
+
+  const filterQualifiedPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredQualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
+        (v) => v.toLowerCase().indexOf(needle) > -1,
+      );
+    });
+  };
+
+  const filterUnqualifiedPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredUnqualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
+        (v) => v.toLowerCase().indexOf(needle) > -1,
+      );
+    });
+  };
+
+  const closeQualifiedModal = () => {
+    showQualifiedModal.value = false;
+    selectedQualifiedPublicationDate.value = null;
+  };
+
+  const closeUnqualifiedModal = () => {
+    showUnqualifiedModal.value = false;
+    selectedUnqualifiedPublicationDate.value = null;
+  };
+
+  const generateQualifiedReport = () => {
+    console.log('Generating qualified report for:', selectedQualifiedPublicationDate.value);
+
+    // TODO: Implement your qualified report generation logic
+    // You can call your API or store method here
+
+    closeQualifiedModal();
+
+    $q.notify({
+      type: 'positive',
+      message: `Generating qualified applicants report for ${selectedQualifiedPublicationDate.value}`,
+    });
+  };
+
+  const generateUnqualifiedReport = () => {
+    console.log('Generating unqualified report for:', selectedUnqualifiedPublicationDate.value);
+
+    // TODO: Implement your unqualified report generation logic
+    // You can call your API or store method here
+
+    closeUnqualifiedModal();
+
+    $q.notify({
+      type: 'positive',
+      message: `Generating unqualified applicants report for ${selectedUnqualifiedPublicationDate.value}`,
+    });
+  };
+
+  const viewApplicant = (applicant) => {
+    selectedApplicant.value = applicant;
+    showDetailDialog.value = true;
+  };
+
+  const toggleSelectAll = () => {
+    const ids = filteredPositions.value.map((o) => o.value);
+    selectedPositions.value = allSelected.value ? [] : ids.slice();
+  };
+
+  const togglePosition = (val) => {
+    if (val === 'select_all') return;
+    if (selectedPositions.value.includes(val)) {
+      selectedPositions.value = selectedPositions.value.filter((x) => x !== val);
+    } else {
+      selectedPositions.value = [...selectedPositions.value, val];
+    }
+  };
+
+  const generateReport = () => {
+    showReportModal.value = false;
+    showPrintDialog.value = true;
+  };
+
+  // Lifecycle
+  onMounted(async () => {
+    await applicantStore.fetchApplicants();
+  });
 </script>

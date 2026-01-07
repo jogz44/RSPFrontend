@@ -1,3 +1,4 @@
+
 <template>
   <q-page class="q-pa-md">
     <div class="q-mb-md">
@@ -55,7 +56,7 @@
               </q-dialog>
             </div>
             <div v-if="dateFilterType === 'range'" class="q-mt-sm">
-              <q-input v-model="dateRange.from" label="From Date" outlined>
+              <q-input v-model="dateRange. from" label="From Date" outlined>
                 <template v-slot:append>
                   <q-icon name="event" @click="showFromDatePicker = true" />
                 </template>
@@ -104,10 +105,9 @@
               <template v-slot:option="scope">
                 <!-- Select All Entry at the top -->
                 <q-item
-                  v-if="scope.opt.value === 'select_all'"
+                  v-if="scope. opt.value === 'select_all'"
                   clickable
-                  @click.
-                  stop="toggleSelectAll"
+                  @click. stop="toggleSelectAll"
                 >
                   <q-item-section>
                     <q-checkbox
@@ -115,9 +115,7 @@
                       label="Select All"
                       :checked="allSelected"
                       :indeterminate="false"
-                      @click.
-                      stop.
-                      prevent="toggleSelectAll"
+                      @click. stop. prevent="toggleSelectAll"
                     />
                   </q-item-section>
                 </q-item>
@@ -131,10 +129,9 @@
                   <q-item-section>
                     <q-checkbox
                       :label="scope.opt.label"
-                      :value="isPositionSelected(scope.opt.value)"
-                      @click.stop.
-                      prevent="togglePosition(scope.opt.value)"
-                      :model-value="isPositionSelected(scope.opt.value)"
+                      :value="isPositionSelected(scope.opt. value)"
+                      @click. stop.prevent="togglePosition(scope.opt.value)"
+                      :model-value="isPositionSelected(scope.opt. value)"
                       :checked="isPositionSelected(scope.opt.value)"
                     />
                   </q-item-section>
@@ -150,11 +147,79 @@
       </q-card>
     </q-dialog>
 
+    <!-- Top 5 Ranking Applicants Modal -->
+    <q-dialog v-model="showTop5Modal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Top 5 Ranking Applicants Report</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingPublicationDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedPublicationDate"
+              :options="filteredPublicationDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              @filter="filterPublicationDates"
+              :dropdown-icon="'arrow_drop_down'"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:option="scope">
+                <q-item v-bind="scope. itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope. opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeTop5Modal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="!selectedPublicationDate"
+            @click="generateTop5Report"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Final Summary Rating Modal -->
     <q-dialog v-model="showFinalSummaryModal" persistent>
-      <q-card style="min-width: 400px; max-width: 90vw">
+      <q-card style="min-width: 500px; max-width: 90vw">
         <q-card-section>
-          <div class="text-h6">Select Positions for Final Summary Report</div>
+          <div class="text-h6">Final Summary Report Filters</div>
         </q-card-section>
 
         <q-card-section>
@@ -164,9 +229,76 @@
           </div>
 
           <div v-else>
+            <!-- Publication Date Filter -->
+            <div class="q-mb-md">
+              <div class="text-subtitle2 q-mb-sm">Publication Date Filter</div>
+              <q-option-group
+                v-model="finalSummaryDateFilterType"
+                :options="[
+                  { label: 'Single Date', value: 'single' },
+                  { label: 'Date Range', value: 'range' },
+                  { label: 'All Dates', value: 'all' },
+                ]"
+                type="radio"
+                inline
+              />
+
+              <div v-if="finalSummaryDateFilterType === 'single'" class="q-mt-sm">
+                <q-input v-model="finalSummarySingleDate" label="Select Publication Date" outlined>
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummarySingleDatePicker = true" />
+                  </template>
+                </q-input>
+                <q-dialog v-model="showFinalSummarySingleDatePicker">
+                  <q-date
+                    v-model="finalSummarySingleDate"
+                    mask="YYYY-MM-DD"
+                    @update:model-value="onFinalSummarySingleDateChange"
+                  />
+                </q-dialog>
+              </div>
+
+              <div v-if="finalSummaryDateFilterType === 'range'" class="q-mt-sm">
+                <q-input v-model="finalSummaryDateRange.from" label="From Date" outlined>
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummaryFromDatePicker = true" />
+                  </template>
+                </q-input>
+                <q-dialog v-model="showFinalSummaryFromDatePicker">
+                  <q-date
+                    v-model="finalSummaryDateRange.from"
+                    mask="YYYY-MM-DD"
+                    @update:model-value="onFinalSummaryFromDateChange"
+                  />
+                </q-dialog>
+
+                <q-input
+                  v-model="finalSummaryDateRange.to"
+                  label="To Date"
+                  class="q-mt-sm"
+                  outlined
+                >
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummaryToDatePicker = true" />
+                  </template>
+                </q-input>
+                <q-dialog v-model="showFinalSummaryToDatePicker">
+                  <q-date
+                    v-model="finalSummaryDateRange.to"
+                    mask="YYYY-MM-DD"
+                    @update:model-value="onFinalSummaryToDateChange"
+                  />
+                </q-dialog>
+              </div>
+            </div>
+
+            <q-separator class="q-mb-md" />
+
+            <!-- Position Filter -->
+            <div class="text-subtitle2 q-mb-sm">Select Positions</div>
             <q-select
               v-model="selectedFinalSummaryPositions"
-              :options="finalSummaryPositionOptions"
+              :options="filteredFinalSummaryPositionOptions"
               label="Select Positions"
               outlined
               multiple
@@ -181,38 +313,53 @@
               <template v-slot:option="scope">
                 <!-- Select All Entry at the top -->
                 <q-item
-                  v-if="scope.opt.value === 'select_all'"
+                  v-if="scope.opt. value === 'select_all'"
                   clickable
                   @click.stop="toggleFinalSummarySelectAll"
                 >
                   <q-item-section>
                     <q-checkbox
-                      v-model="allFinalSummarySelected"
+                      :model-value="allFinalSummarySelected"
                       label="Select All"
-                      :checked="allFinalSummarySelected"
-                      @click.stop.prevent="toggleFinalSummarySelectAll"
+                      @update:model-value="toggleFinalSummarySelectAll"
                     />
                   </q-item-section>
                 </q-item>
                 <!-- Regular Position Options -->
                 <q-item
                   v-else
-                  :key="scope.opt.value"
+                  :key="scope.opt. value"
                   clickable
                   @click.stop="toggleFinalSummaryPosition(scope.opt.value)"
                 >
                   <q-item-section>
                     <q-checkbox
                       :label="scope.opt.label"
-                      :value="isFinalSummaryPositionSelected(scope.opt.value)"
-                      @click.stop.prevent="toggleFinalSummaryPosition(scope.opt.value)"
                       :model-value="isFinalSummaryPositionSelected(scope.opt.value)"
-                      :checked="isFinalSummaryPositionSelected(scope.opt.value)"
+                      @update:model-value="toggleFinalSummaryPosition(scope.opt.value)"
                     />
                   </q-item-section>
                 </q-item>
               </template>
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">
+                    No positions found for the selected date(s)
+                  </q-item-section>
+                </q-item>
+              </template>
             </q-select>
+
+            <div
+              v-if="filteredFinalSummaryPositionOptions.length <= 1"
+              class="q-mt-sm text-caption text-grey"
+            >
+              {{
+                finalSummaryDateFilterType === 'all'
+                  ? 'No positions available'
+                  : 'No positions found for the selected date filter.  Try selecting a different date or date range.'
+              }}
+            </div>
           </div>
         </q-card-section>
 
@@ -221,7 +368,7 @@
           <q-btn
             color="primary"
             label="Generate Report"
-            :disable="selectedFinalSummaryPositions.length === 0"
+            :disable="selectedFinalSummaryPositions. length === 0"
             @click="openFinalSummaryReport"
           />
         </q-card-actions>
@@ -232,17 +379,24 @@
     <q-dialog v-model="showReportViewer" maximized>
       <FinalSummaryReport :positions="selectedFinalSummaryPositions" />
     </q-dialog>
+
+    <!-- Top 5 Ranking Report Component Dialog -->
+    <q-dialog v-model="showTop5ReportViewer" maximized>
+      <TopApplicantReport :publicationDate="selectedPublicationDate" />
+    </q-dialog>
   </q-page>
 </template>
 
 <script>
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import FinalSummaryReport from 'components/reports/FinalSummaryReport.vue';
+  import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
 
   export default {
-    name: 'ReportManagementPage',
+    name:  'ReportManagementPage',
     components: {
       FinalSummaryReport,
+      TopApplicantReport,
     },
     data() {
       return {
@@ -281,12 +435,12 @@
           {
             id: 1,
             name: 'Final Summary of Rating',
-            description: 'Reports for all the applicant',
+            description: 'By Publication Date and Position',
           },
           {
-            id: 2,
-            name: 'Schedule',
-            description: 'Reports for scheduled interview',
+            id:  2,
+            name: 'Top 5 Ranking Applicants',
+            description: 'By Publication Date',
           },
         ],
 
@@ -295,6 +449,7 @@
         },
 
         showModal: false,
+        showTop5ReportViewer: false,
         selectedReport: null,
 
         // Position multi-select for schedule report
@@ -315,15 +470,34 @@
           to: '',
         },
         showSingleDatePicker: false,
-        showFromDatePicker: false,
+        showFromDatePicker:  false,
         showToDatePicker: false,
+
+        // Top 5 Ranking Applicants Modal
+        showTop5Modal: false,
+        loadingPublicationDates: false,
+        publicationDateOptions: [],
+        filteredPublicationDateOptions: [],
+        selectedPublicationDate: null,
 
         // Final Summary Report
         showFinalSummaryModal: false,
         showReportViewer: false,
         loadingPositions: false,
+        allPositionsData: [],
         finalSummaryPositionOptions: [],
         selectedFinalSummaryPositions: [],
+
+        // Final Summary Date Filters
+        finalSummaryDateFilterType: 'all',
+        finalSummarySingleDate: '',
+        finalSummaryDateRange: {
+          from: '',
+          to: '',
+        },
+        showFinalSummarySingleDatePicker: false,
+        showFinalSummaryFromDatePicker: false,
+        showFinalSummaryToDatePicker: false,
       };
     },
 
@@ -338,32 +512,81 @@
       displayPositions() {
         if (this.allSelected) return 'All positions selected';
         const selectedLabels = this.positionOptions
-          .filter((opt) => this.selectedPositions.includes(opt.value) && opt.value !== 'select_all')
+          .filter((opt) => this.selectedPositions. includes(opt.value) && opt.value !== 'select_all')
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
       },
 
+      // Filtered positions based on date selection
+      filteredFinalSummaryPositionOptions() {
+        if (this.finalSummaryDateFilterType === 'all') {
+          return this.finalSummaryPositionOptions;
+        }
+
+        let filteredPositions = [... this.allPositionsData];
+
+        if (this. finalSummaryDateFilterType === 'single' && this.finalSummarySingleDate) {
+          filteredPositions = filteredPositions.filter((pos) => {
+            const postDate = this.normalizeDate(pos.post_date);
+            return postDate === this.finalSummarySingleDate;
+          });
+        } else if (
+          this.finalSummaryDateFilterType === 'range' &&
+          this.finalSummaryDateRange.from &&
+          this.finalSummaryDateRange.to
+        ) {
+          filteredPositions = filteredPositions.filter((pos) => {
+            const postDate = this.normalizeDate(pos. post_date);
+            return (
+              postDate >= this.finalSummaryDateRange.from &&
+              postDate <= this.finalSummaryDateRange.to
+            );
+          });
+        }
+
+        return [
+          { value: 'select_all', label: 'Select All' },
+          ...filteredPositions. map((pos) => ({
+            value: pos.jobpostId,
+            label: `${pos.Position} (${this.formatDate(pos.post_date)})`,
+            postDate: pos.post_date,
+          })),
+        ];
+      },
+
       // Final Summary Report computed properties
       allFinalSummaryPositions() {
-        return this.finalSummaryPositionOptions
+        return this. filteredFinalSummaryPositionOptions
           .filter((p) => p.value !== 'select_all')
           .map((p) => p.value);
       },
       allFinalSummarySelected() {
         return (
-          this.selectedFinalSummaryPositions.length === this.allFinalSummaryPositions.length &&
-          this.allFinalSummaryPositions.length > 0
+          this.selectedFinalSummaryPositions. length === this.allFinalSummaryPositions.length &&
+          this.allFinalSummaryPositions. length > 0
         );
       },
       displayFinalSummaryPositions() {
         if (this.allFinalSummarySelected) return 'All positions selected';
-        const selectedLabels = this.finalSummaryPositionOptions
+        const selectedLabels = this.filteredFinalSummaryPositionOptions
           .filter(
             (opt) =>
               this.selectedFinalSummaryPositions.includes(opt.value) && opt.value !== 'select_all',
           )
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
+      },
+    },
+
+    watch: {
+      finalSummaryDateFilterType(newVal) {
+        this.selectedFinalSummaryPositions = [];
+
+        if (newVal === 'all') {
+          this.finalSummarySingleDate = '';
+          this.finalSummaryDateRange.from = '';
+          this. finalSummaryDateRange.to = '';
+        }
       },
     },
 
@@ -376,14 +599,16 @@
         const summaryReportStore = useSummaryReportStore();
         this.loadingPositions = true;
         try {
-          const positions = await summaryReportStore.fetchPositionWithRating();
+          const positions = await summaryReportStore. fetchPositionWithRating();
 
-          // Transform positions to options format
+          this.allPositionsData = positions;
+
           this.finalSummaryPositionOptions = [
             { value: 'select_all', label: 'Select All' },
-            ...positions.map((pos) => ({
-              value: pos.jobpostId, // Changed from job_batches_rsp_id
-              label: pos.Position, // Direct property name
+            ... positions.map((pos) => ({
+              value: pos.jobpostId,
+              label: `${pos.Position} (${this. formatDate(pos.post_date)})`,
+              postDate: pos.post_date,
             })),
           ];
         } catch (error) {
@@ -398,13 +623,95 @@
         }
       },
 
-      handleAction(row) {
+      async loadPublicationDates() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingPublicationDates = true;
+        try {
+          const response = await summaryReportStore. fetchPublicationDateList();
+
+          // Extract formatted dates from response
+          this.publicationDateOptions = response.map((item) => item.date);
+          this.filteredPublicationDateOptions = [... this.publicationDateOptions];
+        } catch (error) {
+          console.error('Error loading publication dates:', error);
+          this.$q.notify({
+            type: 'negative',
+            message:  'Failed to load publication dates',
+            position: 'top',
+          });
+        } finally {
+          this.loadingPublicationDates = false;
+        }
+      },
+
+      filterPublicationDates(val, update) {
+        update(() => {
+          if (val === '') {
+            this.filteredPublicationDateOptions = [... this.publicationDateOptions];
+          } else {
+            const needle = val.toLowerCase();
+            this.filteredPublicationDateOptions = this.publicationDateOptions. filter(
+              (date) => date.toLowerCase().indexOf(needle) > -1,
+            );
+          }
+        });
+      },
+
+      normalizeDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date. getMonth() + 1).padStart(2, '0');
+        const day = String(date. getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      },
+
+      formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      },
+
+      filterPositionsByDate() {
+        this.selectedFinalSummaryPositions = [];
+      },
+
+      // Date change handlers for Final Summary
+      onFinalSummarySingleDateChange() {
+        this.showFinalSummarySingleDatePicker = false;
+        this.filterPositionsByDate();
+      },
+
+      onFinalSummaryFromDateChange() {
+        this.showFinalSummaryFromDatePicker = false;
+        this.filterPositionsByDate();
+      },
+
+      onFinalSummaryToDateChange() {
+        this.showFinalSummaryToDatePicker = false;
+        this.filterPositionsByDate();
+      },
+
+      async handleAction(row) {
         this.selectedReport = row;
 
         if (row.id === 1) {
           // Final Summary Report
           this.showFinalSummaryModal = true;
           this.selectedFinalSummaryPositions = [];
+          this.finalSummaryDateFilterType = 'all';
+          this.finalSummarySingleDate = '';
+          this.finalSummaryDateRange. from = '';
+          this.finalSummaryDateRange.to = '';
+        } else if (row.id === 2) {
+          // Top 5 Ranking Applicants
+          this.showTop5Modal = true;
+          this.selectedPublicationDate = null;
+          await this.loadPublicationDates();
         } else {
           // Schedule Report
           this.showModal = true;
@@ -413,7 +720,7 @@
 
       // Schedule report methods
       onPositionInput(val) {
-        if (val.includes('select_all')) {
+        if (val. includes('select_all')) {
           this.toggleSelectAll();
         }
       },
@@ -421,14 +728,14 @@
         if (this.allSelected) {
           this.selectedPositions = [];
         } else {
-          this.selectedPositions = [...this.allPositions];
+          this.selectedPositions = [... this.allPositions];
         }
       },
       togglePosition(pos) {
-        if (this.selectedPositions.includes(pos)) {
+        if (this. selectedPositions.includes(pos)) {
           this.selectedPositions = this.selectedPositions.filter((p) => p !== pos);
         } else {
-          this.selectedPositions = [...this.selectedPositions, pos];
+          this. selectedPositions = [...this.selectedPositions, pos];
         }
       },
       isPositionSelected(pos) {
@@ -438,12 +745,27 @@
       generateReport() {
         this.showModal = false;
         alert(
-          `Report: ${this.selectedReport?.name}\nPositions: ${this.selectedPositions.join(', ')}\nDate:  ${
+          `Report:   ${this.selectedReport?. name}\nPositions: ${this.selectedPositions.join(', ')}\nDate:   ${
             this.dateFilterType === 'single'
               ? this.singleDate
               : `From ${this.dateRange.from} To ${this.dateRange.to}`
           }`,
         );
+      },
+
+      // Top 5 Report methods
+      closeTop5Modal() {
+        this.showTop5Modal = false;
+        this.selectedPublicationDate = null;
+        this.publicationDateOptions = [];
+        this.filteredPublicationDateOptions = [];
+      },
+
+      generateTop5Report() {
+        console.log('Generating Top 5 Report for:', this.selectedPublicationDate);
+
+        this.showTop5Modal = false;
+        this.showTop5ReportViewer = true;
       },
 
       // Final Summary Report methods
@@ -454,8 +776,10 @@
           this.selectedFinalSummaryPositions = [...this.allFinalSummaryPositions];
         }
       },
+      
       toggleFinalSummaryPosition(pos) {
-        if (this.selectedFinalSummaryPositions.includes(pos)) {
+        const index = this.selectedFinalSummaryPositions.indexOf(pos);
+        if (index > -1) {
           this.selectedFinalSummaryPositions = this.selectedFinalSummaryPositions.filter(
             (p) => p !== pos,
           );
@@ -463,6 +787,7 @@
           this.selectedFinalSummaryPositions = [...this.selectedFinalSummaryPositions, pos];
         }
       },
+      
       isFinalSummaryPositionSelected(pos) {
         return this.selectedFinalSummaryPositions.includes(pos);
       },
@@ -470,6 +795,10 @@
       closeFinalSummaryModal() {
         this.showFinalSummaryModal = false;
         this.selectedFinalSummaryPositions = [];
+        this. finalSummaryDateFilterType = 'all';
+        this. finalSummarySingleDate = '';
+        this.finalSummaryDateRange.from = '';
+        this.finalSummaryDateRange.to = '';
       },
 
       openFinalSummaryReport() {
