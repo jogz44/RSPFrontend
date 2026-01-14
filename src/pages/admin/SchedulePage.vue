@@ -97,28 +97,6 @@
               >
                 <q-tooltip>View Details</q-tooltip>
               </q-btn>
-              <q-btn
-                round
-                flat
-                color="orange"
-                size="sm"
-                class="bg-orange-1"
-                icon="edit"
-                @click="editInterview(props.row)"
-              >
-                <q-tooltip>Edit Schedule</q-tooltip>
-              </q-btn>
-              <q-btn
-                round
-                flat
-                color="red"
-                size="sm"
-                class="bg-red-1"
-                icon="delete"
-                @click="confirmDeleteInterview(props.row)"
-              >
-                <q-tooltip>Cancel Interview</q-tooltip>
-              </q-btn>
             </div>
           </q-td>
         </template>
@@ -277,11 +255,6 @@
               </div>
             </template>
           </q-table>
-
-          <!-- Selected Count -->
-          <!-- <div class="text-caption text-primary q-mt-sm">
-            {{ scheduleForm.selected_applicants.length }} applicant(s) selected
-          </div> -->
         </q-card-section>
 
         <q-separator />
@@ -291,7 +264,7 @@
           <q-btn
             label="Schedule"
             color="primary"
-            @click="confirmSchedule"
+            @click="submitSchedule"
             :disable="!isFormValid"
             :loading="interviewStore.loading"
           />
@@ -301,7 +274,7 @@
 
     <!-- View Interview Details Dialog -->
     <q-dialog v-model="showViewDialog" persistent>
-      <q-card style="min-width: 700px; max-width: 90vw">
+      <q-card style="min-width: 1000px; max-width: 90vw">
         <q-card-section class="q-pa-md bg-primary text-white">
           <div class="row justify-between items-center">
             <div class="text-h6 text-weight-bold">Interview Details</div>
@@ -429,13 +402,13 @@
 
         <q-card-actions align="right" class="q-pa-md">
           <q-btn label="Close" color="primary" flat @click="closeViewDialog" />
-          <q-btn
+          <!-- <q-btn
             label="Edit Schedule"
             color="primary"
             icon="edit"
             @click="editFromView"
             unelevated
-          />
+          /> -->
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -447,16 +420,12 @@
   import { useQuasar, date } from 'quasar';
   import { useInterviewStore } from 'stores/interviewStore';
 
-  // ============================================================================
   // COMPOSABLES & STORE
-  // ============================================================================
   const $q = useQuasar();
   const interviewStore = useInterviewStore();
   const { formatDate } = date;
 
-  // ============================================================================
   // STATE
-  // ============================================================================
   const globalSearch = ref('');
   const showScheduleDialog = ref(false);
   const showViewDialog = ref(false);
@@ -490,9 +459,7 @@
     rowsPerPage: 10,
   });
 
-  // ============================================================================
   // TABLE COLUMNS
-  // ============================================================================
   const columns = [
     {
       name: 'batch_name',
@@ -570,22 +537,27 @@
       align: 'left',
       field: 'applicant_name',
       sortable: true,
-      style: 'width: 35%',
+      style: 'width: 35%; white-space: normal;', // allow wrapping
     },
-
     {
       name: 'position',
       label: 'Position',
       align: 'left',
       field: 'position',
       sortable: false,
-      style: 'width: 45%',
+      style: 'width: 45%; white-space: normal;', // allow wrapping
+    },
+    {
+      name: 'contact_no',
+      label: 'Contact No',
+      align: 'left',
+      field: 'contact_no',
+      sortable: false,
+      style: 'width: 20%; white-space: normal;', // allow wrapping
     },
   ];
 
-  // ============================================================================
   // COMPUTED PROPERTIES
-  // ============================================================================
   const filteredInterviews = computed(() => {
     if (!globalSearch.value) return interviewStore.interviews || [];
 
@@ -634,13 +606,7 @@
     return scheduleForm.value.date_interview && scheduleForm.value.selected_applicants.length > 0;
   });
 
-  // ============================================================================
   // HELPER FUNCTIONS
-  // ============================================================================
-
-  /**
-   * Format interview date for display
-   */
   const formatInterviewDate = (dateStr) => {
     if (!dateStr) return 'Not Set';
     try {
@@ -651,9 +617,6 @@
     }
   };
 
-  /**
-   * Format interview time for display
-   */
   const formatInterviewTime = (timeStr) => {
     if (!timeStr) return 'Not Set';
 
@@ -692,9 +655,6 @@
     }
   };
 
-  /**
-   * Convert time for API
-   */
   const formatTimeForApi = (timeStr) => {
     if (!timeStr) return null;
 
@@ -709,18 +669,12 @@
     return null;
   };
 
-  /**
-   * Date options for picker
-   */
-  const dateOptions = (date) => {
+  const dateOptions = (dateVal) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return new Date(date) >= today;
+    return new Date(dateVal) >= today;
   };
 
-  /**
-   * Reset schedule form
-   */
   const resetScheduleForm = () => {
     scheduleForm.value = {
       batch_name: '',
@@ -732,36 +686,21 @@
     applicantSearch.value = '';
   };
 
-  // ============================================================================
   // DIALOG METHODS
-  // ============================================================================
-
-  /**
-   * Open schedule dialog
-   */
   const openScheduleDialog = async () => {
     showScheduleDialog.value = true;
     await searchApplicants();
   };
 
-  /**
-   * Close schedule dialog
-   */
   const closeScheduleDialog = () => {
     showScheduleDialog.value = false;
     resetScheduleForm();
   };
 
-  /**
-   * Open view dialog
-   */
   const openViewDialog = () => {
     showViewDialog.value = true;
   };
 
-  /**
-   * Close view dialog
-   */
   const closeViewDialog = () => {
     showViewDialog.value = false;
     viewData.value = {};
@@ -769,88 +708,13 @@
     interviewStore.clearBatchDetails();
   };
 
-  /**
-   * Edit from view dialog
-   */
-  const editFromView = () => {
-    const interview = viewData.value;
-    closeViewDialog();
-    editInterview(interview);
-  };
+  // const editFromView = () => {
+  //   const interview = viewData.value;
+  //   closeViewDialog();
+  //   editInterview(interview);
+  // };
 
-  /**
-   * Confirm schedule
-   */
-  const confirmSchedule = () => {
-    const applicantCount = scheduleForm.value.selected_applicants.length;
-    const dateFormatted = formatDate(scheduleForm.value.date_interview, 'MMMM D, YYYY');
-    const timeText = scheduleForm.value.time_interview
-      ? formatInterviewTime(scheduleForm.value.time_interview)
-      : 'Not specified';
-    const venueText = scheduleForm.value.venue_interview || 'Not specified';
-
-    $q.dialog({
-      title: 'Confirm Interview Schedule',
-      message: `
-        <div class="q-mb-sm"><strong>Are you sure you want to schedule this interview?</strong></div>
-        <div class="q-mt-md">
-          <div class="q-mb-xs"><strong>Batch Name:</strong> ${scheduleForm.value.batch_name || 'Not specified'}</div>
-          <div class="q-mb-xs"><strong>Venue:</strong> ${venueText}</div>
-          <div class="q-mb-xs"><strong>Date:</strong> ${dateFormatted}</div>
-          <div class="q-mb-xs"><strong>Time:</strong> ${timeText}</div>
-          <div class="q-mb-xs"><strong>Applicants:</strong> ${applicantCount} applicant(s)</div>
-        </div>
-      `,
-      html: true,
-      ok: {
-        label: 'Confirm',
-        color: 'primary',
-        flat: false,
-      },
-      cancel: {
-        label: 'Cancel',
-        color: 'grey',
-        flat: true,
-      },
-      persistent: true,
-    }).onOk(() => {
-      submitSchedule();
-    });
-  };
-
-  /**
-   * Confirm delete
-   */
-  const confirmDeleteInterview = (interview) => {
-    const displayName = interview.batch_name || `Batch ${interview.id}`;
-
-    $q.dialog({
-      title: 'Cancel Interview',
-      message: `Are you sure you want to cancel the interview for <strong>${displayName}</strong>?`,
-      html: true,
-      ok: {
-        label: 'Yes, Cancel',
-        color: 'negative',
-        flat: false,
-      },
-      cancel: {
-        label: 'No',
-        color: 'grey',
-        flat: true,
-      },
-      persistent: true,
-    }).onOk(() => {
-      deleteInterview(interview);
-    });
-  };
-
-  // ============================================================================
   // API METHODS
-  // ============================================================================
-
-  /**
-   * Search applicants
-   */
   const searchApplicants = async () => {
     loadingApplicants.value = true;
     try {
@@ -867,9 +731,6 @@
     }
   };
 
-  /**
-   * Submit schedule
-   */
   const submitSchedule = async () => {
     try {
       const scheduleData = {
@@ -916,33 +777,29 @@
       });
     }
   };
-
-  /**
-   * View interview details
-   */
   const viewInterview = async (interview) => {
     try {
       viewData.value = interview;
       openViewDialog();
 
-      // Fetch batch details
-      const batchDetails = await interviewStore.fetchBatchDetails(
-        interview.date_interview,
-        interview.time_interview,
-      );
+      const detail = await interviewStore.fetchScheduleDetails(interview.schedule_id); // <-- schedule_id
 
-      if (batchDetails) {
-        // Handle different response structures
-        if (Array.isArray(batchDetails)) {
-          viewApplicants.value = batchDetails;
-        } else if (batchDetails.applicants && Array.isArray(batchDetails.applicants)) {
-          viewApplicants.value = batchDetails.applicants;
-        } else if (batchDetails.data && Array.isArray(batchDetails.data)) {
-          viewApplicants.value = batchDetails.data;
-        } else {
-          viewApplicants.value = [];
-        }
-      }
+      const schedule = detail?.schedule || detail || {};
+      viewData.value = {
+        ...schedule,
+        schedule_id: schedule.schedule_id ?? interview.schedule_id,
+        batch_name: schedule.batch_name ?? interview.batch_name,
+        venue_interview: schedule.venue_interview ?? interview.venue_interview,
+        date_interview: schedule.date_interview ?? interview.date_interview,
+        time_interview: schedule.time_interview ?? interview.time_interview,
+      };
+
+      let applicants = [];
+      if (Array.isArray(detail)) applicants = detail;
+      else if (Array.isArray(detail?.applicants)) applicants = detail.applicants;
+      else if (Array.isArray(detail?.data)) applicants = detail.data;
+
+      viewApplicants.value = applicants;
     } catch (error) {
       console.error('Error viewing interview:', error);
       $q.notify({
@@ -950,52 +807,23 @@
         message: error?.message || 'Failed to load interview details',
         position: 'top',
       });
+      closeViewDialog();
     }
   };
 
-  /**
-   * Edit interview
-   */
-  const editInterview = (interview) => {
-    const displayName = interview.batch_name || `Batch ${interview.id}`;
-    console.log('Edit interview:', interview);
+  // Stub for edit (unchanged)
+  // const editInterview = (interview) => {
+  //   const displayName = interview.batch_name || `Batch ${interview.id}`;
+  //   console.log('Edit interview:', interview);
 
-    $q.notify({
-      type: 'info',
-      message: `Editing interview: ${displayName}`,
-      position: 'top',
-    });
-    // TODO: Implement edit functionality
-  };
+  //   $q.notify({
+  //     type: 'info',
+  //     message: `Editing interview: ${displayName}`,
+  //     position: 'top',
+  //   });
+  // };
 
-  /**
-   * Delete interview
-   */
-  const deleteInterview = async (interview) => {
-    try {
-      await interviewStore.deleteInterview(interview.id);
-
-      $q.notify({
-        type: 'positive',
-        message: 'Interview cancelled successfully',
-        position: 'top',
-      });
-
-      await interviewStore.fetchInterviews();
-    } catch (error) {
-      console.error('Error cancelling interview:', error);
-      $q.notify({
-        type: 'negative',
-        message: error?.message || 'Failed to cancel interview',
-        position: 'top',
-      });
-    }
-  };
-
-  // ============================================================================
   // LIFECYCLE
-  // ============================================================================
-
   onMounted(async () => {
     try {
       await interviewStore.fetchInterviews();

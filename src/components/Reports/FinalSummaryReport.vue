@@ -16,9 +16,9 @@
         <div>Loading report...</div>
       </div>
       <div
-        v-if="!  pdfUrl && !isLoading"
+        v-if="!pdfUrl && !isLoading"
         class="column items-center justify-center text-grey q-gutter-sm"
-        style="height:   100%"
+        style="height: 100%"
       >
         <q-spinner color="primary" size="32px" />
         <div>Generating PDF preview...</div>
@@ -27,7 +27,7 @@
       <iframe
         v-if="pdfUrl"
         :src="pdfUrl"
-        style="width: 100%; height:   100%; border:  none"
+        style="width: 100%; height: 100%; border: none"
         type="application/pdf"
       ></iframe>
     </div>
@@ -36,18 +36,18 @@
 
 <script setup>
   import { ref, watch, onMounted, onUnmounted } from 'vue';
-  import { useApplicantStore } from 'stores/applicantStore';
+  import { useSummaryReportStore } from 'stores/summaryReportStore';
 
   const props = defineProps({
-    positions:   {
-      type:  Array,
+    positions: {
+      type: Array,
       default: () => [],
     },
   });
 
   const pdfUrl = ref(null);
   const isLoading = ref(false);
-  const applicantStore = useApplicantStore();
+  const summaryReportStore = useSummaryReportStore();
   const allReportsData = ref([]);
 
   // Watch for changes in positions and regenerate report
@@ -56,31 +56,31 @@
     async (newVal, oldVal) => {
       // Skip if positions haven't actually changed
       if (JSON.stringify(newVal) === JSON.stringify(oldVal)) return;
-      
+
       if (newVal && newVal.length) {
-        await fetchAllApplicants();
+        await fetchApplicantDetail();
         await generatePdfContent();
       }
-    }
+    },
   );
 
-  async function fetchAllApplicants() {
+  async function fetchApplicantDetail() {
     // Prevent duplicate calls
-    if (isLoading.  value) return;
-    
+    if (isLoading.value) return;
+
     allReportsData.value = [];
     isLoading.value = true;
-    
+
     try {
       // Fetch all applicants in parallel instead of sequentially
-      const promises = props.positions.map(positionId => 
-        applicantStore. fetchApplicantDetail(positionId)
+      const promises = props.positions.map((positionId) =>
+        summaryReportStore.fetchApplicantDetail(positionId),
       );
-      
+
       const results = await Promise.all(promises);
-      
+
       // Filter out any null/undefined results
-      allReportsData.value = results.  filter(data => data);
+      allReportsData.value = results.filter((data) => data);
     } catch (error) {
       console.error('Error fetching applicants:', error);
     } finally {
@@ -97,7 +97,7 @@
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
         reader.onerror = reject;
-        reader.  readAsDataURL(blob);
+        reader.readAsDataURL(blob);
       });
     } catch (error) {
       console.error('Error loading image:', error);
@@ -111,7 +111,7 @@
 
     let maxRaters = 0;
     reportData.applicants.forEach((item) => {
-      const ratersCount = item.score?. length || 0;
+      const ratersCount = item.score?.length || 0;
       if (ratersCount > maxRaters) {
         maxRaters = ratersCount;
       }
@@ -121,17 +121,17 @@
 
   // Function to get unique raters for a single report
   function getAllRaters(reportData) {
-    if (!reportData?. applicants) return [];
+    if (!reportData?.applicants) return [];
 
     const ratersMap = new Map();
 
     reportData.applicants.forEach((item) => {
       if (item.score && Array.isArray(item.score)) {
         item.score.forEach((scoreItem) => {
-          if (!  ratersMap.has(scoreItem. rater_id)) {
-            ratersMap.  set(scoreItem.rater_id, {
+          if (!ratersMap.has(scoreItem.rater_id)) {
+            ratersMap.set(scoreItem.rater_id, {
               id: scoreItem.rater_id,
-              name: scoreItem.  rater_name,
+              name: scoreItem.rater_name,
               position: scoreItem.rater_position,
             });
           }
@@ -139,28 +139,28 @@
       }
     });
 
-    return Array.from(ratersMap.  values());
+    return Array.from(ratersMap.values());
   }
 
   // Generate footer with signatories (max 3 per row)
   function generateSignatoryFooter(allRaters) {
-    if (! allRaters || allRaters.  length === 0) return [];
+    if (!allRaters || allRaters.length === 0) return [];
 
     const MAX_PER_ROW = 3;
     const footerContent = [];
 
     // Split raters into chunks of MAX_PER_ROW
-    for (let i = 0; i < allRaters. length; i += MAX_PER_ROW) {
-      const ratersInRow = allRaters. slice(i, i + MAX_PER_ROW);
-      
+    for (let i = 0; i < allRaters.length; i += MAX_PER_ROW) {
+      const ratersInRow = allRaters.slice(i, i + MAX_PER_ROW);
+
       // Create columns for this row
-      const signatoryColumns = ratersInRow.map(rater => {
+      const signatoryColumns = ratersInRow.map((rater) => {
         return {
           width: '*',
           stack: [
             {
-              text: rater.name. toUpperCase(),
-              fontSize:  10,
+              text: rater.name.toUpperCase(),
+              fontSize: 10,
               bold: true,
               alignment: 'center',
               margin: [0, 0, 0, 2],
@@ -176,11 +176,11 @@
                   lineWidth: 1,
                 },
               ],
-              alignment:   'center',
-              margin:   [0, 0, 0, 4],
+              alignment: 'center',
+              margin: [0, 0, 0, 4],
             },
             {
-              text: rater. position || 'Position',
+              text: rater.position || 'Position',
               fontSize: 9,
               alignment: 'center',
               italics: true,
@@ -191,14 +191,14 @@
 
       // Add empty columns if this row has fewer than MAX_PER_ROW raters
       while (signatoryColumns.length < MAX_PER_ROW) {
-        signatoryColumns. push({ width: '*', text: '' });
+        signatoryColumns.push({ width: '*', text: '' });
       }
 
       // Add this row to footer content
       footerContent.push({
         columns: signatoryColumns,
         columnGap: 30,
-        margin: i === 0 ? [0, 30, 0, 0] :  [0, 20, 0, 0], // First row has more top margin
+        margin: i === 0 ? [0, 30, 0, 0] : [0, 20, 0, 0], // First row has more top margin
       });
     }
 
@@ -255,14 +255,14 @@
       text: 'RANKING',
       style: 'tableHeader',
       alignment: 'center',
-      rowSpan:   2,
+      rowSpan: 2,
     });
 
     // Build second header row with individual rater names
     const subHeaderRow = [{}]; // Empty for "Name of Applicant" (rowSpan from above)
 
     allRaters.forEach((rater) => {
-      subHeaderRow.  push({
+      subHeaderRow.push({
         text: `${rater.name}`,
         style: 'tableHeader',
         alignment: 'center',
@@ -277,12 +277,12 @@
     subHeaderRow.push({}); // RANKING
 
     // Build data rows with calculations
-    const dataRowsWithScores = reportData.applicants.  map((item) => {
+    const dataRowsWithScores = reportData.applicants.map((item) => {
       const row = [];
 
       // Applicant name
       const fullName =
-        `${item.applicant?.firstname || ''} ${item.applicant?. lastname || ''}`.trim();
+        `${item.applicant?.firstname || ''} ${item.applicant?.lastname || ''}`.trim();
       row.push({ text: fullName, alignment: 'left' });
 
       // Create a map of rater scores for this applicant
@@ -290,17 +290,17 @@
       let beiScore = 0;
 
       if (item.score && Array.isArray(item.score)) {
-        item.score.  forEach((scoreItem) => {
-          scoresMap. set(scoreItem.  rater_id, scoreItem.  grand_total || scoreItem.total_qs || '');
+        item.score.forEach((scoreItem) => {
+          scoresMap.set(scoreItem.rater_id, scoreItem.grand_total || scoreItem.total_qs || '');
           // Get BEI score (assuming it's the same across raters, take the first one)
-          if (!  beiScore && scoreItem.bei) {
+          if (!beiScore && scoreItem.bei) {
             beiScore = parseFloat(scoreItem.bei) || 0;
           }
         });
       }
 
       // Add scores in order of raters
-      allRaters. forEach((rater) => {
+      allRaters.forEach((rater) => {
         const score = scoresMap.get(rater.id) || '-';
         row.push({ text: score, alignment: 'center' });
       });
@@ -316,27 +316,27 @@
       const totalRating70 = (averageRating * 0.7).toFixed(2);
       row.push({ text: totalRating70, alignment: 'center', bold: true });
 
-      const bei30 = beiScore.  toFixed(2);
+      const bei30 = beiScore.toFixed(2);
       row.push({ text: bei30, alignment: 'center', bold: true });
 
       // FINAL RATING = TOTAL RATING (70%) + BEI (30%)
       const finalRating = (parseFloat(totalRating70) + parseFloat(bei30)).toFixed(2);
-      row.push({ text: finalRating, alignment:   'center', bold: true });
+      row.push({ text: finalRating, alignment: 'center', bold: true });
 
       // Ranking placeholder (will be filled after sorting)
-      row.push({ text: '', alignment: 'center', bold:  true });
+      row.push({ text: '', alignment: 'center', bold: true });
 
       return {
         row,
-        finalRating:   parseFloat(finalRating),
+        finalRating: parseFloat(finalRating),
       };
     });
 
     // Sort by final rating (descending) and assign rankings
     dataRowsWithScores.sort((a, b) => b.finalRating - a.finalRating);
-    dataRowsWithScores.  forEach((item, index) => {
+    dataRowsWithScores.forEach((item, index) => {
       // Set ranking (last column)
-      item.row[item.row.length - 1].  text = (index + 1).toString();
+      item.row[item.row.length - 1].text = (index + 1).toString();
     });
 
     // Extract just the rows
@@ -372,7 +372,7 @@
         alignment: 'center',
       },
       {
-        text:  'QUALIFICATION STANDARDS',
+        text: 'QUALIFICATION STANDARDS',
         fontSize: 10,
         bold: true,
         margin: [0, 0, 0, 16],
@@ -395,16 +395,16 @@
             ],
             [
               {
-                text:   'Position:   ',
+                text: 'Position:   ',
                 fontSize: 10,
                 bold: false,
                 border: [false, false, false, false],
               },
-              { text: position, fontSize: 10, bold: true, border:   [false, false, false, false] },
+              { text: position, fontSize: 10, bold: true, border: [false, false, false, false] },
             ],
             [
               {
-                text:  'Salary Grade:  ',
+                text: 'Salary Grade:  ',
                 fontSize: 10,
                 bold: false,
                 border: [false, false, false, false],
@@ -425,7 +425,7 @@
               },
               {
                 text: plantillaItemNo,
-                fontSize:   10,
+                fontSize: 10,
                 bold: true,
                 border: [false, false, false, false],
               },
@@ -437,7 +437,7 @@
 
       // Main applicants table
       {
-        table:   {
+        table: {
           headerRows: 2,
           widths: widths,
           body: rows,
@@ -450,18 +450,18 @@
       },
 
       // Add signatory footer
-      ...  generateSignatoryFooter(allRaters),
+      ...generateSignatoryFooter(allRaters),
     ];
   }
 
   async function generatePdfContent() {
     // Revoke previous PDF URL to free memory
-    if (pdfUrl.  value) {
+    if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
       pdfUrl.value = null;
     }
 
-    if (!allReportsData. value || allReportsData.value.length === 0) {
+    if (!allReportsData.value || allReportsData.value.length === 0) {
       return;
     }
 
@@ -471,16 +471,16 @@
     import('pdfmake/build/pdfmake').then((pdfMakeModule) => {
       const pdfMake = pdfMakeModule.default || pdfMakeModule;
       import('pdfmake/build/vfs_fonts').then((vfsFontsModule) => {
-        pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?. vfs || vfsFontsModule;
+        pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
         // Generate content for all positions
         const allContent = [];
 
         allReportsData.value.forEach((reportData, index) => {
           const positionContent = generatePositionTable(reportData);
-          
+
           // Add all content elements for this position
-          allContent. push(... positionContent);
+          allContent.push(...positionContent);
 
           // Add page break between positions (except for the last one)
           if (index < allReportsData.value.length - 1) {
@@ -531,7 +531,7 @@
                         ...(logoBase64
                           ? [
                               {
-                                image:  logoBase64,
+                                image: logoBase64,
                                 width: 65,
                                 height: 65,
                                 absolutePosition: { x: 77, y: 22 },
@@ -541,36 +541,36 @@
                       ],
                     },
                     {
-                      width:   '*',
-                      margin:  [15, -15, 0, 0],
+                      width: '*',
+                      margin: [15, -15, 0, 0],
                       stack: [
                         {
                           text: 'REPUBLIC OF THE PHILIPPINES',
                           fontSize: 8,
                           color: '#00703c',
-                          alignment:  'left',
+                          alignment: 'left',
                           margin: [0, 20, 0, 2],
                         },
                         {
                           text: 'PROVINCE OF DAVAO DEL NORTE',
                           fontSize: 8,
                           color: '#00703c',
-                          alignment:   'left',
+                          alignment: 'left',
                           margin: [0, 0, 0, 2],
                         },
                         {
                           text: 'CITY OF TAGUM',
-                          fontSize:   10,
-                          bold:   true,
-                          color:  '#00703c',
+                          fontSize: 10,
+                          bold: true,
+                          color: '#00703c',
                           alignment: 'left',
                         },
                         {
                           text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE',
-                          fontSize:  13,
-                          bold:  true,
+                          fontSize: 13,
+                          bold: true,
                           color: 'white',
-                          margin:  [0, 5, 0, 0],
+                          margin: [0, 5, 0, 0],
                         },
                       ],
                     },
@@ -580,36 +580,36 @@
             };
           },
           content: allContent,
-          styles:  {
+          styles: {
             tableHeader: {
-              fontSize:  10,
-              bold:  true,
+              fontSize: 10,
+              bold: true,
             },
           },
           footer: function () {
             return {
-              stack:  [{}],
+              stack: [{}],
             };
           },
-          defaultStyle: { fontSize:  9 },
+          defaultStyle: { fontSize: 9 },
         };
 
         const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-        pdfDocGenerator. getBlob((blob) => {
-          pdfUrl.value = URL. createObjectURL(blob);
+        pdfDocGenerator.getBlob((blob) => {
+          pdfUrl.value = URL.createObjectURL(blob);
         });
       });
     });
   }
 
   onUnmounted(() => {
-    if (pdfUrl. value) URL.revokeObjectURL(pdfUrl.value);
+    if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
   });
 
   // Initial fetch and render
   onMounted(async () => {
     if (props.positions && props.positions.length) {
-      await fetchAllApplicants();
+      await fetchApplicantDetail();
       await generatePdfContent();
     }
   });
@@ -618,7 +618,7 @@
 <style scoped>
   .modal-card {
     width: 100%;
-    max-width:  90vw;
+    max-width: 90vw;
     height: 90vh;
     display: flex;
     flex-direction: column;

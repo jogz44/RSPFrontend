@@ -83,12 +83,12 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // Add methods for qualified and unqualified reports
+    // Add methods for qualified reports
     async fetchQualifiedReport(date) {
       try {
         this.loading = true;
         // Replace with your actual API endpoint
-        const response = await adminApi.get(`/report/qualified-applicants/${date}`);
+        const response = await adminApi.get(`/report/applicant/qualified/${date}`);
         this.error = null;
         return response.data;
       } catch (err) {
@@ -104,7 +104,7 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       try {
         this.loading = true;
         // Replace with your actual API endpoint
-        const response = await adminApi.get(`/report/unqualified-applicants/${date}`);
+        const response = await adminApi.get(`/report/applicant/unqualified/${date}`);
         this.error = null;
         return response.data;
       } catch (err) {

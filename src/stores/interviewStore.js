@@ -5,6 +5,8 @@ export const useInterviewStore = defineStore('interview', {
   state: () => ({
     interviews: [],
     availableApplicants: [],
+    details: null,
+    batchDetails: null,
     loading: false,
     loadingApplicants: false,
     error: null,
@@ -39,14 +41,28 @@ export const useInterviewStore = defineStore('interview', {
       }
     },
 
+    async fetchScheduleDetails(id) {
+      try {
+        this.loadingApplicants = true;
+        const response = await adminApi.get(`/applicant/schedule/details/${id}`);
+        const details = response?.data?.data ?? response?.data ?? null;
+        this.details = details;
+        this.error = null;
+        return details;
+      } catch (err) {
+        this.error = err.message;
+        console.error('Error fetching schedule details:', err);
+        throw err;
+      } finally {
+        this.loadingApplicants = false;
+      }
+    },
+
     async fetchBatchDetails(date, time = null) {
       try {
         this.loadingApplicants = true;
-
-        // Build URL with parameters
         let url = `/applicant/schedule/details/${date}`;
         if (time && time !== 'Not Set') {
-          // Clean time format - remove AM/PM if present
           const cleanTime = time.replace(/\s*(AM|PM)\s*/i, '').trim();
           url += `/${cleanTime}`;
         }
@@ -78,6 +94,11 @@ export const useInterviewStore = defineStore('interview', {
       } finally {
         this.loading = false;
       }
+    },
+
+    clearBatchDetails() {
+      this.batchDetails = null;
+      this.details = null;
     },
   },
 });

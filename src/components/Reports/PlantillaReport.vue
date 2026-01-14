@@ -579,28 +579,6 @@
             cellVerticalAlignment: () => 'middle',
           },
         });
-
-        content.push({
-          table: {
-            headerRows: 0,
-            widths: Array(COLS_COUNT).fill('*'),
-          },
-          layout: {
-            hLineWidth: () => 1,
-            vLineWidth: () => 1,
-            hLineColor: () => '#333',
-            vLineColor: () => '#333',
-            paddingLeft: () => 8,
-            paddingRight: () => 8,
-            paddingTop: () => 8,
-            paddingBottom: () => 8,
-            cellVerticalAlignment: () => 'middle',
-          },
-          // keep the whole footer table together on one page
-          keepTogether: true,
-          // also prevent single rows from being split
-          dontBreakRows: true,
-        });
       }
 
       const docDefinition = {
@@ -610,7 +588,7 @@
         content,
         styles: {
           title: { fontSize: 11, bold: true, margin: [0, 0, 0, 5] },
-          tableHeader: { bold: true, fontSize: 7 },
+          tableHeader: { bold: true, fontSize: 9 },
           grandTotalLabel: { bold: true, fontSize: 7, color: '#222', margin: [0, 3, 0, 0] },
           grandTotalValue: { bold: true, fontSize: 7, color: '#222', alignment: 'right' },
           footerBold: { bold: true, fontSize: 7 },
@@ -623,7 +601,7 @@
             fontSize: 8,
           };
         },
-        defaultStyle: { fontSize: 7 },
+        defaultStyle: { fontSize: 9 },
       };
 
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);

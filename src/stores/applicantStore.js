@@ -13,8 +13,11 @@ export const useApplicantStore = defineStore('applicant', {
     async fetchApplicants() {
       try {
         this.loading = true;
-        const response = await adminApi.get('/applicant/list');
-        this.applicants = response.data;
+        const res = await adminApi.get('/applicant/list');
+
+        const payload = Array.isArray(res.data) ? res.data : res.data?.data || [];
+
+        this.applicants = payload;
         this.error = null;
       } catch (err) {
         this.error = err.message;
@@ -27,14 +30,28 @@ export const useApplicantStore = defineStore('applicant', {
     async fetchApplicantDetail(firstname, lastname, date_of_birth) {
       try {
         this.loading = true;
-        const response = await adminApi.post('/applicant/details', {
+        const res = await adminApi.post('/applicant/details', {
           firstname,
           lastname,
           date_of_birth,
         });
-        this.applicantDetails = response.data;
+
+        // unwrap
+        let detail;
+        if (Array.isArray(res.data?.data)) detail = res.data.data[0] || {};
+        else if (res.data?.data) detail = res.data.data;
+        else if (Array.isArray(res.data)) detail = res.data[0] || {};
+        else detail = res.data || {};
+
+        // normalize job_post
+        if (!detail.job_post && detail.jobpost) detail.job_post = detail.jobpost;
+        if (!detail.job_post && Array.isArray(detail.applications)) {
+          detail.job_post = detail.applications.map((a) => a.job_post || a.jobpost).filter(Boolean);
+        }
+
+        this.applicantDetails = detail;
         this.error = null;
-        return response.data;
+        return detail;
       } catch (err) {
         this.error = err.message;
         console.error('Error fetching applicant details:', err);

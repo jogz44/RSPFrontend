@@ -1,4 +1,3 @@
-//Applicant Page 
 <template>
   <q-page class="q-pa-md">
     <div>
@@ -38,7 +37,7 @@
           <q-tooltip>List of Unqualified Applicants</q-tooltip>
         </q-btn>
 
-        <q-btn
+        <!-- <q-btn
           color="orange"
           icon="article"
           label="Report"
@@ -47,7 +46,7 @@
           size="md"
         >
           <q-tooltip>List of Applicant Report</q-tooltip>
-        </q-btn>
+        </q-btn> -->
       </div>
 
       <q-table
@@ -60,10 +59,13 @@
         flat
       >
         <template #body-cell-name="p">
-          <q-td :props="p">{{ p.row.firstname }} {{ p.row.lastname }}</q-td>
+          <q-td :props="p">
+            {{ p.row.n_personal_info?.firstname || p.row.firstname || '' }}
+            {{ p.row.n_personal_info?.lastname || p.row.lastname || '' }}
+          </q-td>
         </template>
         <template #body-cell-jobpost="p">
-          <q-td :props="p">{{ p.row.jobpost || 0 }}</q-td>
+          <q-td :props="p">{{ getJobPostCount(p.row) }}</q-td>
         </template>
         <template #body-cell-action="p">
           <q-td :props="p">
@@ -84,6 +86,146 @@
         </template>
       </q-table>
     </div>
+
+    <!-- Applicant Details Dialog -->
+    <q-dialog v-model="showDetailDialog" persistent>
+      <q-card style="min-width: 800px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none bg-primary text-white">
+          <div class="text-h6">Applicant Details</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup color="white" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section v-if="loadingApplicantDetails" class="q-pt-md">
+          <div class="text-center">
+            <q-spinner color="primary" size="48px" />
+            <div class="q-mt-sm text-body2">Loading applicant details...</div>
+          </div>
+        </q-card-section>
+
+        <q-card-section
+          v-else-if="selectedApplicant"
+          class="q-pt-md"
+          style="max-height: 70vh; overflow-y: auto"
+        >
+          <!-- Personal Information Section -->
+          <div class="q-mb-md">
+            <div class="text-h6 text-primary q-mb-sm">
+              <q-icon name="person" class="q-mr-xs" />
+              Personal Information
+            </div>
+            <q-separator class="q-mb-md" />
+
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7">First Name</div>
+                <div class="text-body1 text-weight-medium">
+                  {{
+                    selectedApplicant.n_personal_info?.firstname ||
+                    selectedApplicant.firstname ||
+                    'N/A'
+                  }}
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7">Last Name</div>
+                <div class="text-body1 text-weight-medium">
+                  {{
+                    selectedApplicant.n_personal_info?.lastname ||
+                    selectedApplicant.lastname ||
+                    'N/A'
+                  }}
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7">Date of Birth</div>
+                <div class="text-body1 text-weight-medium">
+                  {{
+                    selectedApplicant.n_personal_info?.date_of_birth ||
+                    selectedApplicant.date_of_birth ||
+                    'N/A'
+                  }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Job Applications Section (Table) -->
+          <div class="q-mb-md">
+            <div class="text-h6 text-primary q-mb-sm">
+              <q-icon name="work" class="q-mr-xs" />
+              Job Applications
+              <q-badge
+                color="orange"
+                :label="`${applicantJobRows.length} Position(s)`"
+                class="q-ml-sm"
+              />
+            </div>
+            <q-separator class="q-mb-md" />
+
+            <q-table
+              :rows="applicantJobRows"
+              :columns="jobColumns"
+              row-key="id"
+              flat
+              bordered
+              hide-bottom
+              no-data-label="No job applications found"
+            >
+              <template #body-cell-status="p">
+                <q-td :props="p">
+                  <q-badge
+                    :color="getJobStatusColor(p.row.status)"
+                    :label="p.row.status ? p.row.status.toUpperCase() : 'N/A'"
+                  />
+                </q-td>
+              </template>
+            </q-table>
+          </div>
+
+          <!-- Additional Information if available -->
+          <div
+            v-if="selectedApplicant.email || selectedApplicant.phone || selectedApplicant.address"
+          >
+            <div class="text-h6 text-primary q-mb-sm">
+              <q-icon name="contact_mail" class="q-mr-xs" />
+              Contact Information
+            </div>
+            <q-separator class="q-mb-md" />
+
+            <div class="row q-col-gutter-md">
+              <div v-if="selectedApplicant.email" class="col-12">
+                <div class="text-caption text-grey-7">Email</div>
+                <div class="text-body1">
+                  <q-icon name="email" size="xs" class="q-mr-xs" />
+                  {{ selectedApplicant.email }}
+                </div>
+              </div>
+              <div v-if="selectedApplicant.phone" class="col-12">
+                <div class="text-caption text-grey-7">Phone</div>
+                <div class="text-body1">
+                  <q-icon name="phone" size="xs" class="q-mr-xs" />
+                  {{ selectedApplicant.phone }}
+                </div>
+              </div>
+              <div v-if="selectedApplicant.address" class="col-12">
+                <div class="text-caption text-grey-7">Address</div>
+                <div class="text-body1">
+                  <q-icon name="home" size="xs" class="q-mr-xs" />
+                  {{ selectedApplicant.address }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Qualified Report Modal -->
     <q-dialog v-model="showQualifiedModal" persistent>
@@ -322,9 +464,18 @@
       </q-card>
     </q-dialog>
 
-    <!-- Report -->
+    <!-- Qualified Report Dialog -->
+    <q-dialog v-model="showQualifiedReportDialog" persistent>
+      <QualifiedReport :publicationDate="selectedQualifiedPublicationDate" />
+    </q-dialog>
+
+    <!-- Unqualified Report Dialog -->
+    <q-dialog v-model="showUnqualifiedReportDialog" persistent>
+      <UnqualifiedReport :publicationDate="selectedUnqualifiedPublicationDate" />
+    </q-dialog>
+
+    <!-- General Report Dialog -->
     <q-dialog v-model="showPrintDialog" persistent>
-      <!-- Pass the selected report filters (id/s) to ApplicantReport via prop -->
       <ApplicantReport
         :filterType="dateFilterType"
         :singleDate="singleDate"
@@ -337,7 +488,9 @@
 
 <script setup>
   import { ref, computed, onMounted } from 'vue';
-  import ApplicantReport from 'src/components/Reports/QualifiedReport.vue';
+  import ApplicantReport from 'src/components/Reports/ApplicantReport.vue';
+  import QualifiedReport from 'src/components/Reports/QualifiedReport.vue';
+  import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useReportStore } from 'stores/reportStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
@@ -353,6 +506,7 @@
   const showReportModal = ref(false);
   const showDetailDialog = ref(false);
   const selectedApplicant = ref(null);
+  const loadingApplicantDetails = ref(false);
   const pagination = ref({ sortBy: 'name', descending: false, page: 1, rowsPerPage: 10 });
   const dateFilterType = ref('single');
   const singleDate = ref('');
@@ -367,22 +521,67 @@
   const showQualifiedModal = ref(false);
   const selectedQualifiedPublicationDate = ref(null);
   const filteredQualifiedPublicationDateOptions = ref([]);
+  const showQualifiedReportDialog = ref(false);
 
   // Unqualified Report Modal
   const showUnqualifiedModal = ref(false);
   const selectedUnqualifiedPublicationDate = ref(null);
   const filteredUnqualifiedPublicationDateOptions = ref([]);
+  const showUnqualifiedReportDialog = ref(false);
 
   // Shared
   const loadingPublicationDates = ref(false);
   const publicationDateOptions = ref([]);
 
-  // Computed properties
+  // Helper function to get job post count
+  const getJobPostCount = (applicant) => {
+    if (Array.isArray(applicant.job_post)) {
+      return applicant.job_post.length;
+    } else if (applicant.job_post) {
+      return 1;
+    } else if (applicant.jobpost !== undefined) {
+      return applicant.jobpost;
+    }
+    return 0;
+  };
+
+  // Helper function to get applicant job posts as array
+  const getApplicantJobPosts = (applicant) => {
+    if (!applicant) return [];
+    if (Array.isArray(applicant.job_post)) {
+      return applicant.job_post;
+    } else if (applicant.job_post) {
+      return [applicant.job_post];
+    }
+    return [];
+  };
+
+  // Helper function to get status color
+  // const getStatusColor = (status) => {
+  //   if (!status) return 'grey';
+  //   const statusLower = status.toLowerCase();
+  //   if (statusLower === 'pending') return 'orange';
+  //   if (statusLower === 'approved' || statusLower === 'qualified') return 'green';
+  //   if (statusLower === 'rejected' || statusLower === 'unqualified') return 'red';
+  //   return 'blue';
+  // };
+
+  // Helper function to get job status color
+  const getJobStatusColor = (status) => {
+    if (!status) return 'grey';
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'not started') return 'grey';
+    if (statusLower === 'ongoing') return 'blue';
+    if (statusLower === 'completed' || statusLower === 'finished') return 'green';
+    return 'orange';
+  };
+
+  // Columns for main table
   const columns = computed(() => [
     { name: 'name', label: 'Name', align: 'left', field: 'name', sortable: true },
     {
       name: 'jobpost',
-      label: 'No.  of Applied Position',
+      label: 'No. of Applied Position',
       align: 'center',
       field: 'jobpost',
       sortable: true,
@@ -390,12 +589,42 @@
     { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
   ]);
 
+  // Columns for job applications sub-table
+  const jobColumns = [
+    { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: false },
+    { name: 'position', label: 'Position', field: 'position', align: 'left', sortable: false },
+    { name: 'status', label: 'Status', field: 'status', align: 'left', sortable: false },
+  ];
+
+  const applicantJobRows = computed(() => {
+    if (!selectedApplicant.value) return [];
+    const jobs = getApplicantJobPosts(selectedApplicant.value);
+    return jobs.map((job, idx) => ({
+      id: job.id ?? job.jobpost_id ?? idx + 1,
+      position: job.Position || job.position || 'N/A',
+      status: job.status || selectedApplicant.value.status || 'N/A',
+    }));
+  });
+
   const filteredApplicants = computed(() => {
     if (!globalSearch.value) return applicantStore.applicants;
     const searchTerm = globalSearch.value.toLowerCase();
     return applicantStore.applicants.filter((applicant) => {
-      const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
-      return fullName.includes(searchTerm);
+      const firstname = applicant.n_personal_info?.firstname || applicant.firstname || '';
+      const lastname = applicant.n_personal_info?.lastname || applicant.lastname || '';
+      const fullName = `${firstname} ${lastname}`.toLowerCase();
+
+      // Search in job posts
+      let positionMatch = false;
+      if (Array.isArray(applicant.job_post)) {
+        positionMatch = applicant.job_post.some((job) =>
+          job.Position?.toLowerCase().includes(searchTerm),
+        );
+      } else if (applicant.job_post) {
+        positionMatch = applicant.job_post.Position?.toLowerCase().includes(searchTerm);
+      }
+
+      return fullName.includes(searchTerm) || positionMatch;
     });
   });
 
@@ -429,11 +658,11 @@
   });
 
   // Methods
-  const openReportDialog = async () => {
-    await reportStore.fetchPositionList();
-    showReportModal.value = true;
-    selectedPositions.value = [];
-  };
+  // const openReportDialog = async () => {
+  //   await reportStore.fetchPositionList();
+  //   showReportModal.value = true;
+  //   selectedPositions.value = [];
+  // };
 
   const openQualifiedReportDialog = async () => {
     showQualifiedModal.value = true;
@@ -450,12 +679,8 @@
   const fetchPublicationDates = async () => {
     loadingPublicationDates.value = true;
     try {
-      console.log('Fetching publication dates...');
       const response = await summaryReportStore.fetchPublicationDateList();
-      console.log('Publication dates response:', response);
 
-      // Extract date values from the response array
-      // Response format: [{"date":"Nov 07, 2025"},{"date":"Nov 04, 2025"}]
       if (Array.isArray(response)) {
         publicationDateOptions.value = response.map((item) => item.date);
       } else {
@@ -464,8 +689,6 @@
 
       filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
-
-      console.log('Publication date options:', publicationDateOptions.value);
     } catch (error) {
       console.error('Error fetching publication dates:', error);
       $q.notify({
@@ -509,36 +732,36 @@
   };
 
   const generateQualifiedReport = () => {
-    console.log('Generating qualified report for:', selectedQualifiedPublicationDate.value);
-
-    // TODO: Implement your qualified report generation logic
-    // You can call your API or store method here
-
-    closeQualifiedModal();
-
-    $q.notify({
-      type: 'positive',
-      message: `Generating qualified applicants report for ${selectedQualifiedPublicationDate.value}`,
-    });
+    showQualifiedModal.value = false;
+    showQualifiedReportDialog.value = true;
   };
 
   const generateUnqualifiedReport = () => {
-    console.log('Generating unqualified report for:', selectedUnqualifiedPublicationDate.value);
-
-    // TODO: Implement your unqualified report generation logic
-    // You can call your API or store method here
-
-    closeUnqualifiedModal();
-
-    $q.notify({
-      type: 'positive',
-      message: `Generating unqualified applicants report for ${selectedUnqualifiedPublicationDate.value}`,
-    });
+    showUnqualifiedModal.value = false;
+    showUnqualifiedReportDialog.value = true;
   };
 
-  const viewApplicant = (applicant) => {
+  const viewApplicant = async (applicant) => {
     selectedApplicant.value = applicant;
     showDetailDialog.value = true;
+
+    loadingApplicantDetails.value = true;
+    try {
+      const firstname = applicant.n_personal_info?.firstname || applicant.firstname;
+      const lastname = applicant.n_personal_info?.lastname || applicant.lastname;
+      const dob = applicant.n_personal_info?.date_of_birth || applicant.date_of_birth;
+
+      const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
+      selectedApplicant.value = { ...applicant, ...details };
+    } catch (error) {
+      console.error('Error fetching applicant details:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load applicant details',
+      });
+    } finally {
+      loadingApplicantDetails.value = false;
+    }
   };
 
   const toggleSelectAll = () => {

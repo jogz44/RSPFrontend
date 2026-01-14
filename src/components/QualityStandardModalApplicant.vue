@@ -658,7 +658,6 @@
     training_remark: '',
     experience_remark: '',
     eligibility_remark: '',
-    // server might put education_qualification here (and other qualification arrays)
   });
   const xEdu = ref([]);
   const xEligibility = ref([]);
@@ -676,7 +675,7 @@
   const showSupportingDocsModal = ref(false);
   const supportingDocuments = ref({
     training_images: [],
-    education_images: [],
+    education_images:  [],
     eligibility_images: [],
     experience_images: [],
   });
@@ -698,7 +697,7 @@
     variant: {
       type: String,
       default: 'employee',
-      validator: (value) => ['employee', 'applicant'].includes(value),
+      validator: (value) => ['employee', 'applicant']. includes(value),
     },
     applicantData: Object,
     positionRequirements: Object,
@@ -706,13 +705,12 @@
     education: { type: Array, default: () => [] },
   });
 
-  const emit = defineEmits(['update:show', 'view-pds', 'toggle-qualification', 'submit', 'close']);
+  const emit = defineEmits(['update: show', 'view-pds', 'toggle-qualification', 'submit', 'close']);
   const localShow = ref(props.show);
 
   const tab = ref('education');
   const qualificationStatus = ref('');
 
-  // Helper to read selection arrays from a source by trying multiple key variants
   const readSelectionFrom = (source, variants = []) => {
     if (!source) return null;
     for (const key of variants) {
@@ -728,10 +726,9 @@
               .split(',')
               .map((s) => s.trim())
               .filter(Boolean);
-            if (splitted.length) return splitted;
+            if (splitted. length) return splitted;
           }
         }
-
         if (v === null) return null;
       }
     }
@@ -739,51 +736,58 @@
   };
 
   const mapServerSelectionToRowIds = (selectionFromServer, rows) => {
-    if (!selectionFromServer || !Array.isArray(selectionFromServer) || !rows) return null;
+    if (!selectionFromServer || !Array.isArray(selectionFromServer) || ! rows) return null;
 
-    const serverSet = new Set(selectionFromServer.map((v) => String(v).trim()));
+    const serverSet = new Set(selectionFromServer. map((v) => String(v).trim()));
     const result = [];
     const seen = new Set();
 
     for (const r of rows) {
-      const uidStr = String(r.uniqueId).trim();
-      if (serverSet.has(uidStr) && !seen.has(uidStr)) {
-        result.push(r.uniqueId); // keep original type (number or string)
+      // Check both id and uniqueId
+      const idStr = String(r.id || r.uniqueId).trim();
+      const uidStr = String(r.uniqueId || r.id).trim();
+      
+      if ((serverSet.has(idStr) || serverSet.has(uidStr)) && !seen.has(uidStr)) {
+        result.push(r. uniqueId); // Use uniqueId for internal selection tracking
         seen.add(uidStr);
       }
     }
 
-    return result.length ? result : null;
+    return result. length ?  result : null;
   };
 
-  // UNIFIED DATA MAPPERS (same as before)
+  // Updated mapping functions to store both id and uniqueId
   const mapEducationData = (eduArray) => {
     if (!eduArray || !Array.isArray(eduArray)) return [];
 
     return eduArray.map((e, index) => {
+      const id = e.id || e.uniqueId || `education_${index}`;
+      
       if (e.level || e.school_name) {
         return {
-          uniqueId: e.uniqueId || e.id || `education_${index}`,
+          id:  id,
+          uniqueId: id,
           level: e.level || e.Education || '',
           school_name: e.school_name || e.School || '',
-          degree: e.degree || e.Degree || '',
-          attendance_from: e.attendance_from || e.DateAttend?.split('-')[0]?.trim() || '',
+          degree: e.degree || e. Degree || '',
+          attendance_from: e.attendance_from || e.DateAttend?. split('-')[0]?. trim() || '',
           attendance_to: e.attendance_to || e.DateAttend?.split('-')[1]?.trim() || '',
           highest_units: e.highest_units || e.NumUnits || '',
           year_graduated: e.year_graduated || e.DateAttend?.split('-')[1]?.trim() || '',
-          scholarship: e.scholarship || e.Honors || '',
+          scholarship:  e.scholarship || e.Honors || '',
         };
       }
 
       return {
-        uniqueId: e.uniqueId || `education_${index}`,
+        id: id,
+        uniqueId: id,
         level: e.Education || '',
-        school_name: e.School || '',
+        school_name:  e.School || '',
         degree: e.Degree || '',
         attendance_from: e.DateAttend?.split('-')[0]?.trim() || '',
         attendance_to: e.DateAttend?.split('-')[1]?.trim() || '',
         highest_units: e.NumUnits || '',
-        year_graduated: e.DateAttend?.split('-')[1]?.trim() || '',
+        year_graduated: e. DateAttend?.split('-')[1]?.trim() || '',
         scholarship: e.Honors || '',
       };
     });
@@ -793,12 +797,15 @@
     if (!eligArray || !Array.isArray(eligArray)) return [];
 
     return eligArray.map((e, index) => {
+      const id = e.id || e.uniqueId || `eligibility_${index}`;
+      
       if (e.eligibility || e.rating) {
         return {
-          uniqueId: e.uniqueId || e.id || `eligibility_${index}`,
-          eligibility: e.eligibility || e.CivilServe || '',
-          rating: e.rating || e.Rates || '',
-          date_of_examination: e.date_of_examination || e.Dates || '',
+          id: id,
+          uniqueId: id,
+          eligibility: e.eligibility || e. CivilServe || '',
+          rating: e. rating || e.Rates || '',
+          date_of_examination: e.date_of_examination || e. Dates || '',
           place_of_examination: e.place_of_examination || e.Place || '',
           license_number: e.license_number || e.LNumber || '',
           date_of_validity: e.date_of_validity || e.LDate || '',
@@ -806,12 +813,13 @@
       }
 
       return {
-        uniqueId: e.uniqueId || `eligibility_${index}`,
+        id: id,
+        uniqueId: id,
         eligibility: e.CivilServe || '',
-        rating: e.Rates || '',
-        date_of_examination: e.Dates || '',
+        rating:  e.Rates || '',
+        date_of_examination: e. Dates || '',
         place_of_examination: e.Place || '',
-        license_number: e.LNumber || '',
+        license_number: e. LNumber || '',
         date_of_validity: e.LDate || '',
       };
     });
@@ -821,12 +829,15 @@
     if (!expArray || !Array.isArray(expArray)) return [];
 
     return expArray.map((e, index) => {
-      if (e.position_title || e.work_date_from) {
+      const id = e.id || e.uniqueId || `experience_${index}`;
+      
+      if (e. position_title || e.work_date_from) {
         return {
-          uniqueId: e.uniqueId || e.id || `experience_${index}`,
+          id: id,
+          uniqueId: id,
           work_date_from: e.work_date_from || e.WFrom || '',
           work_date_to: e.work_date_to || e.WTo || '',
-          position_title: e.position_title || e.WPosition || '',
+          position_title: e. position_title || e.WPosition || '',
           department: e.department || e.WCompany || '',
           monthly_salary: e.monthly_salary || e.WSalary || '0',
           salary_grade: e.salary_grade || e.WGrade || '',
@@ -836,12 +847,13 @@
       }
 
       return {
-        uniqueId: e.uniqueId || `experience_${index}`,
+        id: id,
+        uniqueId: id,
         work_date_from: e.WFrom || '',
         work_date_to: e.WTo || '',
         position_title: e.WPosition || '',
         department: e.WCompany || '',
-        monthly_salary: e.WSalary || '0',
+        monthly_salary: e. WSalary || '0',
         salary_grade: e.WGrade || '',
         status_of_appointment: e.Status || '',
         government_service: e.WGov || '',
@@ -853,35 +865,38 @@
     if (!trainArray || !Array.isArray(trainArray)) return [];
 
     return trainArray.map((t, index) => {
+      const id = t.id || t.uniqueId || `training_${index}_${Date.now()}`;
+      
       if (t.training_title || t.inclusive_date_from) {
         return {
-          uniqueId: t.uniqueId || t.id || `training_${index}_${Date.now()}`,
+          id: id,
+          uniqueId: id,
           training_title: t.training_title || t.Training || '',
           inclusive_date_from: t.inclusive_date_from || t.DateFrom || '',
           inclusive_date_to: t.inclusive_date_to || t.DateTo || '',
           number_of_hours: t.number_of_hours || t.NumHours || '0',
-          type: t.type || '',
-          conducted_by: t.conducted_by || t.Conductor || '',
+          type:  t.type || '',
+          conducted_by: t.conducted_by || t. Conductor || '',
         };
       }
 
       return {
-        uniqueId: t.uniqueId || `training_${index}_${Date.now()}`,
+        id: id,
+        uniqueId: id,
         training_title: t.Training || '',
         inclusive_date_from: t.DateFrom || '',
         inclusive_date_to: t.DateTo || '',
         number_of_hours: t.NumHours || '0',
         type: t.type || '',
-        conducted_by: t.Conductor || '',
+        conducted_by: t. Conductor || '',
       };
     });
   };
 
-  // Toggle functions — use the actual row.uniqueId values
   const toggleEducationSelection = (uniqueId) => {
     const idx = selectedEducationIds.value.indexOf(uniqueId);
     if (idx > -1) {
-      selectedEducationIds.value.splice(idx, 1);
+      selectedEducationIds. value.splice(idx, 1);
     } else {
       selectedEducationIds.value.push(uniqueId);
     }
@@ -897,7 +912,7 @@
   };
 
   const toggleTrainingSelection = (uniqueId) => {
-    const index = selectedTrainingIds.value.indexOf(uniqueId);
+    const index = selectedTrainingIds.value. indexOf(uniqueId);
     if (index > -1) {
       selectedTrainingIds.value.splice(index, 1);
     } else {
@@ -906,7 +921,7 @@
   };
 
   const toggleEligibilitySelection = (uniqueId) => {
-    const idx = selectedEligibilityIds.value.indexOf(uniqueId);
+    const idx = selectedEligibilityIds. value.indexOf(uniqueId);
     if (idx > -1) {
       selectedEligibilityIds.value.splice(idx, 1);
     } else {
@@ -914,7 +929,6 @@
     }
   };
 
-  // Date helpers (unchanged)
   const parseDate = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -931,7 +945,7 @@
 
     const yearDiff = end.getFullYear() - start.getFullYear();
     const monthDiff = end.getMonth() - start.getMonth();
-    const dayDiff = end.getDate() - start.getDate();
+    const dayDiff = end. getDate() - start.getDate();
 
     let totalMonths = yearDiff * 12 + monthDiff;
 
@@ -949,7 +963,7 @@
     const remainingMonths = months % 12;
 
     if (years === 0) {
-      return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+      return `${remainingMonths} month${remainingMonths !== 1 ? 's' :  ''}`;
     } else if (remainingMonths === 0) {
       return `${years} year${years !== 1 ? 's' : ''}`;
     } else {
@@ -970,7 +984,7 @@
 
   const formatTotalExperience = (totalMonths) => {
     if (totalMonths === 0) return 'No Experience';
-    return `Total: ${formatDuration(totalMonths)}`;
+    return `Total:  ${formatDuration(totalMonths)}`;
   };
 
   const experienceWithDuration = computed(() => {
@@ -978,14 +992,12 @@
       return [];
     }
 
-    return xExperience.value.map((exp, index) => {
+    return xExperience.value.map((exp) => {
       const durationMonths = calculateMonthsDifference(exp.work_date_from, exp.work_date_to);
       const durationText = formatDuration(durationMonths);
-      const uniqueId = exp.uniqueId || exp.id || `experience_${index}_${Date.now()}`;
 
       return {
         ...exp,
-        uniqueId,
         durationMonths,
         durationText,
       };
@@ -1001,13 +1013,12 @@
     }, 0);
   });
 
-  // Training hours helpers
   const parseTrainingHours = (hours) => {
     if (!hours) return 0;
 
     const hoursStr = hours.toString().trim();
 
-    if (!isNaN(hoursStr) && hoursStr !== '') {
+    if (! isNaN(hoursStr) && hoursStr !== '') {
       return parseInt(hoursStr) || 0;
     }
 
@@ -1025,7 +1036,7 @@
     }
 
     return xTraining.value.reduce((total, training) => {
-      if (selectedTrainingIds.value.includes(training.uniqueId)) {
+      if (selectedTrainingIds.value. includes(training.uniqueId)) {
         const hours = parseTrainingHours(training.number_of_hours);
         return total + hours;
       }
@@ -1035,7 +1046,7 @@
 
   const isJobOccupied = computed(() => {
     return (
-      props.applicantData?.Jobstatus === 'Occupied' ||
+      props.applicantData?. Jobstatus === 'Occupied' ||
       props.applicantData?.Jobstatus === 'occupied' ||
       props.applicantData?.Jobstatus === 'rated' ||
       props.applicantData?.Jobstatus === 'Unoccupied' ||
@@ -1049,7 +1060,7 @@
     const personalInfo =
       applicantData.n_personal_info ||
       applicantData.nPersonalInfo ||
-      (applicantData.firstname ? applicantData : null) ||
+      (applicantData.firstname ?  applicantData :  null) ||
       {};
 
     return personalInfo;
@@ -1057,7 +1068,7 @@
 
   const getStatusClass = (status) => {
     if (!status) return 'grey';
-    switch (status.toLowerCase()) {
+    switch (status. toLowerCase()) {
       case 'not started':
         return 'grey';
       case 'pending':
@@ -1087,17 +1098,16 @@
     return parseFloat(val).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
   };
 
-  // Column definitions (unchanged)
   const xEduCol = [
     { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
-    { name: 'level', label: 'Level', align: 'left', field: 'level', sortable: true },
+    { name:  'level', label: 'Level', align: 'left', field: 'level', sortable: true },
     { name: 'school_name', label: 'Name of School', align: 'left', field: 'school_name' },
     { name: 'course', label: 'Degree/Course', align: 'left', field: 'degree' },
-    { name: 'fromYear', label: 'From', align: 'left', field: 'attendance_from' },
-    { name: 'toYear', label: 'To', align: 'left', field: 'attendance_to' },
-    { name: 'highestLevel', label: 'Units Earned', align: 'left', field: 'highest_units' },
+    { name: 'fromYear', label: 'From', align: 'left', field:  'attendance_from' },
+    { name: 'toYear', label:  'To', align: 'left', field: 'attendance_to' },
+    { name:  'highestLevel', label: 'Units Earned', align: 'left', field: 'highest_units' },
     { name: 'yearGraduated', label: 'Year Graduated', align: 'left', field: 'year_graduated' },
-    { name: 'honors', label: 'Honors', align: 'left', field: 'scholarship' },
+    { name: 'honors', label: 'Honors', align: 'left', field:  'scholarship' },
   ];
 
   const xEligibilityCol = [
@@ -1107,7 +1117,7 @@
       label: 'Eligibility',
       field: 'eligibility',
       sortable: true,
-      align: 'left',
+      align:  'left',
     },
     { name: 'rating', label: 'Rating', field: 'rating', sortable: true, align: 'center' },
     {
@@ -1115,7 +1125,7 @@
       label: 'Date of Exam',
       field: 'date_of_examination',
       sortable: true,
-      align: 'left',
+      align:  'left',
     },
     {
       name: 'examPlace',
@@ -1128,7 +1138,7 @@
       name: 'licenseNumber',
       label: 'License #',
       field: 'license_number',
-      sortable: true,
+      sortable:  true,
       align: 'left',
     },
     {
@@ -1136,15 +1146,15 @@
       label: 'Validity',
       field: 'date_of_validity',
       sortable: true,
-      align: 'left',
+      align:  'left',
     },
   ];
 
   const xExperienceCol = [
-    { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
+    { name: 'select', label:  'Select', field: 'select', align: 'center', style: 'width: 50px' },
     { name: 'fromDate', label: 'From', field: 'work_date_from', align: 'center' },
     { name: 'toDate', label: 'To', field: 'work_date_to', align: 'center' },
-    { name: 'positionTitle', label: 'Position Title', field: 'position_title', align: 'left' },
+    { name:  'positionTitle', label: 'Position Title', field: 'position_title', align: 'left' },
     { name: 'department', label: 'Department', field: 'department', align: 'left' },
     { name: 'monthlySalary', label: 'Monthly Salary', field: 'monthly_salary', align: 'right' },
     { name: 'salaryGrade', label: 'SG', field: 'salary_grade', align: 'center' },
@@ -1157,7 +1167,7 @@
     { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
     { name: 'title', label: 'Title', field: 'training_title', align: 'left' },
     { name: 'fromDate', label: 'From', field: 'inclusive_date_from', align: 'center' },
-    { name: 'toDate', label: 'To', field: 'inclusive_date_to', align: 'center' },
+    { name: 'toDate', label:  'To', field: 'inclusive_date_to', align:  'center' },
     { name: 'hours', label: 'Hours', field: 'number_of_hours', align: 'center' },
     { name: 'type', label: 'Type', field: 'type', align: 'left' },
     { name: 'conductor', label: 'Conducted/Sponsored By', field: 'conducted_by', align: 'left' },
@@ -1171,7 +1181,7 @@
     { name: 'Experience', label: 'Experience', align: 'left', field: 'Experience' },
   ]);
   const trainingCol = ref([
-    { name: 'Training', label: 'Training', align: 'left', field: 'Training' },
+    { name: 'Training', label:  'Training', align: 'left', field: 'Training' },
   ]);
   const eligibilityCol = ref([
     { name: 'Eligibility', label: 'Eligibility', align: 'left', field: 'Eligibility' },
@@ -1180,7 +1190,7 @@
   const evaluationLocked = computed(() => props.isSubmitted);
 
   const statusColor = computed(() => {
-    switch (qualificationStatus.value) {
+    switch (qualificationStatus. value) {
       case 'Qualified':
         return 'positive';
       case 'Unqualified':
@@ -1192,7 +1202,7 @@
 
   const overallStatus = computed(() => {
     switch (qualificationStatus.value) {
-      case 'Qualified':
+      case 'Qualified': 
         return 'Meets Requirements';
       case 'Unqualified':
         return 'Does not meet the requirements';
@@ -1230,22 +1240,21 @@
         pdsData = await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
       }
 
-      if (props.applicantData?.PositionID) {
-        await usePlantilla.fetchQsData(props.applicantData.PositionID);
+      if (props.applicantData?. PositionID) {
+        await usePlantilla.fetchQsData(props.applicantData. PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
 
       const source = pdsData || props.applicantData || {};
 
-      // populate remarks and rows
-      xData.value.education_remark =
+      xData.value. education_remark =
         source.education_remark || source.educationRemark || xData.value.education_remark || '';
-      xData.value.experience_remark =
-        source.experience_remark || source.experienceRemark || xData.value.experience_remark || '';
+      xData.value. experience_remark =
+        source.experience_remark || source. experienceRemark || xData. value.experience_remark || '';
       xData.value.training_remark =
-        source.training_remark || source.trainingRemark || xData.value.training_remark || '';
+        source. training_remark || source.trainingRemark || xData.value.training_remark || '';
       xData.value.eligibility_remark =
-        source.eligibility_remark ||
+        source. eligibility_remark ||
         source.eligibilityRemark ||
         xData.value.eligibility_remark ||
         '';
@@ -1272,9 +1281,9 @@
       );
 
       supportingDocuments.value = {
-        training_images:
+        training_images: 
           (pdsData && pdsData.training_images) || props.applicantData?.training_images || [],
-        education_images:
+        education_images: 
           (pdsData && pdsData.education_images) || props.applicantData?.education_images || [],
         eligibility_images:
           (pdsData && pdsData.eligibility_images) || props.applicantData?.eligibility_images || [],
@@ -1282,8 +1291,6 @@
           (pdsData && pdsData.experience_images) || props.applicantData?.experience_images || [],
       };
 
-      // Candidate sources to search for selection arrays:
-      // IMPORTANT: include xData.value here because you said the server selection lives in xData
       const candidateSources = [
         xData.value,
         pdsData,
@@ -1294,9 +1301,8 @@
 
       const tryReadFirst = (variants) => {
         for (const s of candidateSources) {
-          if (!s) continue;
+          if (! s) continue;
           const found = readSelectionFrom(s, variants);
-          // return found even if it's an empty array - we want to respect explicit empty arrays
           if (found !== undefined) return found;
         }
         return undefined;
@@ -1337,7 +1343,6 @@
         'selectedEligibilityIds',
       ]);
 
-      // Map server selection values to the actual row.uniqueId values (preserve row type)
       const educationSelection = mapServerSelectionToRowIds(educationSelectionRaw, xEdu.value);
       const experienceSelection = mapServerSelectionToRowIds(
         experienceSelectionRaw,
@@ -1349,28 +1354,25 @@
         xEligibility.value,
       );
 
-      // OPTION A: treat null/undefined/missing selection as "no selection" (empty array).
-      // Use nullish coalescing to ensure explicit empty arrays from server are respected.
-      selectedEducationIds.value = educationSelection ?? [];
+      selectedEducationIds.value = educationSelection ??  [];
       selectedExperienceIds.value = experienceSelection ?? [];
       selectedTrainingIds.value = trainingSelection ?? [];
       selectedEligibilityIds.value = eligibilitySelection ?? [];
 
-      // debug to help you verify
       console.debug(
-        'onModalShow: xEdu uniqueIds ->',
-        (xEdu.value || []).map((r) => r.uniqueId),
+        'onModalShow:  xEdu items ->',
+        (xEdu.value || []).map((r) => ({ id: r.id, uniqueId: r.uniqueId })),
       );
-      console.debug('onModalShow: xData.education_qualification/raw ->', educationSelectionRaw);
-      console.debug('onModalShow: applied selectedEducationIds ->', selectedEducationIds.value);
+      console.debug('onModalShow: education_qualification/raw ->', educationSelectionRaw);
+      console.debug('onModalShow: selectedEducationIds ->', selectedEducationIds.value);
 
       if (
         props.applicantData?.status === 'Qualified' ||
-        props.applicantData?.status === 'Unqualified'
+        props.applicantData?. status === 'Unqualified'
       ) {
-        qualificationStatus.value = props.applicantData.status;
+        qualificationStatus.value = props.applicantData. status;
       } else {
-        qualificationStatus.value = '';
+        qualificationStatus. value = '';
       }
     } catch (error) {
       console.error('Error in onModalShow:', error);
@@ -1418,36 +1420,52 @@
     emit('toggle-qualification', newStatus);
   });
 
+  // Helper function to convert selected uniqueIds to actual IDs for the payload
+  const convertToIds = (selectedUniqueIds, dataArray) => {
+    const dedupe = (arr) => Array.from(new Set(arr));
+    
+    const ids = selectedUniqueIds
+      .map((uniqueId) => {
+        const item = dataArray.find((d) => d.uniqueId === uniqueId);
+        return item?. id || uniqueId; // Fallback to uniqueId if id not found
+      })
+      .filter(Boolean);
+    
+    return dedupe(ids);
+  };
+
   const onSubmit = () => {
     if (
       !evaluationLocked.value &&
       qualificationStatus.value &&
-      !isJobOccupied.value &&
+      ! isJobOccupied.value &&
       canModifyJobPost.value
     ) {
       const applicantId = props.applicantData?.submission_id || props.applicantData?.id;
-      if (!applicantId) {
+      if (! applicantId) {
         console.error('Applicant data:', props.applicantData);
         return;
       }
-
-      // emit the actual uniqueId values that are selected (deduped)
-      const dedupe = (arr) => Array.from(new Set(arr));
 
       const payload = {
         status: qualificationStatus.value,
         id: applicantId,
         education_remark: xData.value.education_remark || '',
-        experience_remark: xData.value.experience_remark || '',
+        experience_remark:  xData.value.experience_remark || '',
         training_remark: xData.value.training_remark || '',
-        eligibility_remark: xData.value.eligibility_remark || '',
-        education_qualification: dedupe(selectedEducationIds.value),
-        experience_qualification: dedupe(selectedExperienceIds.value),
-        training_qualification: dedupe(selectedTrainingIds.value),
-        eligibility_qualification: dedupe(selectedEligibilityIds.value),
+        eligibility_remark: xData. value.eligibility_remark || '',
+        education_qualification: convertToIds(selectedEducationIds. value, xEdu.value),
+        experience_qualification: convertToIds(selectedExperienceIds. value, experienceWithDuration.value),
+        training_qualification: convertToIds(selectedTrainingIds.value, xTraining.value),
+        eligibility_qualification: convertToIds(selectedEligibilityIds. value, xEligibility.value),
       };
 
-      console.debug('Submitting evaluation payload:', payload);
+      console. debug('Submitting evaluation payload:', payload);
+      console.debug('Education IDs:', payload.education_qualification);
+      console.debug('Experience IDs:', payload.experience_qualification);
+      console.debug('Training IDs:', payload.training_qualification);
+      console.debug('Eligibility IDs:', payload.eligibility_qualification);
+      
       emit('submit', payload);
     }
   };
