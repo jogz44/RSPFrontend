@@ -193,6 +193,33 @@
           <q-tab-panel name="applicants">
             <div class="row items-center justify-between q-mb-sm">
               <div class="text-h6 text-primary text-bold">Applicants</div>
+
+            <q-input
+              v-model="applicantSearch"
+              outlined
+              dense
+              placeholder="Search Applicant..."
+                class="q-mr-md" 
+             style="width: 280px; margin-left: -350px;"
+              clearable
+            >
+            <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+            </q-input>
+
+            <!-- <q-input
+              v-model="applicantSearch"
+              outlined
+              dense
+              placeholder="Search Applicant..."
+              clearable
+              style="width: 400px;"        
+              class="q-mr-md"
+              prepend-inner-icon="search"    
+            /> -->
+
+
               <div class="row items-center">
                 <q-btn
                   v-if="
@@ -227,7 +254,7 @@
               </div>
             </div>
 
-            <q-table
+            <!-- <q-table
               :rows="formattedApplicants"
               :columns="applicantColumns"
               row-key="id"
@@ -238,7 +265,24 @@
               v-if="applicantColumns.length"
               separator="cell"
               color="primary"
+              :rows="filteredApplicants"
+
+
+            > -->
+              <q-table
+              :rows="filteredApplicants"
+              :columns="applicantColumns"
+              row-key="id"
+              flat
+              bordered
+              class="applicants-table"
+              dense
+              v-if="applicantColumns.length"
+              separator="cell"
+              color="primary"
             >
+
+
               <template #body-cell-name="props">
                 <q-td :props="props">
                   {{ props.row.firstname }} {{ props.row.lastname }}
@@ -300,7 +344,22 @@
           <!-- Rating Results Tab Panel -->
           <q-tab-panel name="ratings">
             <div class="row items-center justify-between q-mb-sm">
-              <div class="text-h6 text-primary text-bold">Rating Results</div>
+              <div class="text-h6 text-primary text-bold">Rating Results</div> 
+
+            <!-- search -->
+            <q-input
+              v-model="applicantSearchRate"
+              outlined
+              dense
+              placeholder="Search Applicant..."
+              class="q-mr-md" 
+              style="width: 280px; margin-left: -200px;"
+              clearable
+            >
+               <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+            </q-input>
               <div class="assessment-status">
                 <q-btn
                   v-if="showUnoccupiedButton && canModifyJobPost"
@@ -319,7 +378,7 @@
               </div>
             </div>
 
-            <q-table
+            <!-- <q-table
               v-if="formattedApplicantRatings.length > 0"
               :rows="formattedApplicantRatings"
               :columns="ratingColumns"
@@ -330,7 +389,20 @@
               dense
               separator="cell"
               color="primary"
-            >
+            > -->
+            <q-table
+                v-if="filteredApplicantsRate.length > 0"
+                :rows="filteredApplicantsRate"
+                :columns="ratingColumns"
+                row-key="nPersonalInfo_id"
+                flat
+                bordered
+                class="rating-table"
+                dense
+                separator="cell"
+                color="primary"
+              >
+
               <template #body-cell-name="props">
                 <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
               </template>
@@ -586,6 +658,9 @@
   const jobPostStore = useJobPostStore();
   const authStore = useAuthStore();
 
+  const applicantSearch = ref('');
+  const applicantSearchRate = ref('');
+
   // ✅ UNIFIED LOADING STATE
   const isLoading = ref(false);
   const sendEvalConfirmDialog = ref(false);
@@ -645,6 +720,77 @@
   const pdfErrorMessage = ref('');
 
   const unoccupiedConfirmDialog = ref(false);
+
+
+  // applicant filter by searching
+// const filteredApplicants = computed(() => {
+//   if (!applicantSearch.value) {
+//     return formattedApplicants.value;
+//   }
+
+//   const search = applicantSearch.value.toLowerCase();
+
+//   return formattedApplicants.value.filter(applicant => {
+//     const fullName = `${applicant.firstname} ${applicant.lastname} ${applicant.name_extension}`.toLowerCase();
+
+//     return (
+//       fullName.includes(search) ||
+//       applicant.source?.toLowerCase().includes(search) ||
+//       applicant.status?.toLowerCase() === search // ✅ EXACT MATCH
+//     );
+//   });
+// });
+
+// applicant search
+const filteredApplicants = computed(() => {
+  if (!applicantSearch.value) {
+    return formattedApplicants.value;
+  }
+
+  const search = applicantSearch.value.toLowerCase();
+
+  return formattedApplicants.value.filter(applicant => {
+    const fullName = `${applicant.firstname} ${applicant.lastname} ${applicant.name_extension}`
+      .toLowerCase();
+
+    const status = applicant.status?.toLowerCase() || '';
+    const source = applicant.source?.toLowerCase() || '';
+
+    return (
+      fullName.includes(search) ||        // ✅ partial
+      source.includes(search) ||          // ✅ partial
+      status.startsWith(search)           // ✅ smart status match
+    );
+  });
+});
+
+ // applicant  rating search
+const filteredApplicantsRate = computed(() => {
+  if (!applicantSearchRate.value) {
+    return formattedApplicantRatings.value;
+  }
+
+  const search = applicantSearchRate.value.toLowerCase();
+
+  return formattedApplicantRatings.value.filter(applicant => {
+    const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
+
+    return (
+      fullName.includes(search) ||
+      String(applicant.education).includes(search) ||
+      String(applicant.experience).includes(search) ||
+      String(applicant.training).includes(search) ||
+      String(applicant.performance).includes(search) ||
+      String(applicant.bei).includes(search) ||
+      String(applicant.total_qs).includes(search) ||
+      String(applicant.grand_total).includes(search) ||
+      String(applicant.rank).includes(search)
+    );
+  });
+});
+
+
+
 
   const historyOptions = computed(() => {
     if (
@@ -961,7 +1107,7 @@
     }
   };
 
-  const applicantColumns = [
+  const applicantColumns = ref([
     { name: 'submission_id', label: 'No', field: 'submission_id', align: 'center', sortable: true },
     { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
     {
@@ -990,9 +1136,9 @@
       align: 'center',
       sortable: false,
     },
-  ];
+  ]);
 
-  const ratingColumns = [
+  const ratingColumns = ref([
     { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
     { name: 'education', label: 'Education', field: 'education', align: 'center', sortable: true },
     {
@@ -1021,15 +1167,18 @@
     },
     { name: 'rank', label: 'Rank', field: 'rank', align: 'center', sortable: true },
     { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
-  ];
+  ]);
 
   const formattedApplicants = computed(() => {
     if (!jobPostStore.applicant) return [];
 
     return jobPostStore.applicant.map((a) => {
+          const fullName = `${a.firstname || ''} ${a.lastname || ''} ${a.name_extension || ''}`.trim();
+
       return {
         id: a.id,
         submission_id: a.submission_id || a.id, // ✅ Add submission_id
+            name: fullName, // ✅ ADD THIS
         firstname: a.firstname || '',
         lastname: a.lastname || '',
         name_extension: a.name_extension || '',
