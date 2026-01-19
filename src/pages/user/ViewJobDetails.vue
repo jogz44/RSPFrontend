@@ -742,7 +742,7 @@
   }
 
   function downloadExcelForm() {
-    const excelFileUrl = '/pdsv2.xlsx';
+    const excelFileUrl = '/pds.xlsx';
     const a = document.createElement('a');
     a.href = excelFileUrl;
 

@@ -194,30 +194,22 @@
             <div class="row items-center justify-between q-mb-sm">
               <div class="text-h6 text-primary text-bold">Applicants</div>
 
-            <q-input
-              v-model="applicantSearch"
-              outlined
-              dense
-              placeholder="Search Applicant..."
-                class="q-mr-md" 
-             style="width: 280px; margin-left: -350px;"
-              clearable
-            >
-            <template v-slot:prepend>
-            <q-icon name="search" color="primary" />
-          </template>
-            </q-input>
 
-            <!-- <q-input
-              v-model="applicantSearch"
-              outlined
-              dense
-              placeholder="Search Applicant..."
-              clearable
-              style="width: 400px;"        
-              class="q-mr-md"
-              prepend-inner-icon="search"    
-            /> -->
+              <!-- Search Input -->
+              <div class="col-12 col-sm-6 col-md-4">
+                <q-input
+                  v-model="applicantSearch"
+                  outlined
+                  dense
+                  placeholder="Search Applicant..."
+                  clearable
+                  class="full-width"
+                >
+                  <template #prepend>
+                    <q-icon name="search" color="primary" />
+                  </template>
+                </q-input>
+              </div>
 
 
               <div class="row items-center">
@@ -269,7 +261,20 @@
 
 
             > -->
-              <q-table
+              <!-- <q-table
+              :rows="filteredApplicants"
+              :columns="applicantColumns"
+              row-key="id"
+              flat
+              bordered
+              class="applicants-table"
+              dense
+              v-if="applicantColumns.length"
+              separator="cell"
+              color="primary"
+            > -->
+
+        <q-table
               :rows="filteredApplicants"
               :columns="applicantColumns"
               row-key="id"
@@ -281,7 +286,6 @@
               separator="cell"
               color="primary"
             >
-
 
               <template #body-cell-name="props">
                 <q-td :props="props">
@@ -344,7 +348,7 @@
           <!-- Rating Results Tab Panel -->
           <q-tab-panel name="ratings">
             <div class="row items-center justify-between q-mb-sm">
-              <div class="text-h6 text-primary text-bold">Rating Results</div> 
+              <div class="text-h6 text-primary text-bold">Rating Results</div>
 
             <!-- search -->
             <q-input
@@ -352,7 +356,7 @@
               outlined
               dense
               placeholder="Search Applicant..."
-              class="q-mr-md" 
+              class="q-mr-md"
               style="width: 280px; margin-left: -200px;"
               clearable
             >
@@ -740,6 +744,8 @@
 //     );
 //   });
 // });
+
+
 
 // applicant search
 const filteredApplicants = computed(() => {
