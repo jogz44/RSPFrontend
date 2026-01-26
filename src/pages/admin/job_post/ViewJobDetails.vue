@@ -7,11 +7,24 @@
 
   <div class="q-pa-md bg-grey-1">
     <!-- Job Details Card -->
-    <q-card class="q-mb-lg shadow-3" flat bordered style="max-width: 1000px; margin: auto">
+    <q-card
+      class="q-mb-lg shadow-3"
+      flat
+      bordered
+      style="max-width: 1000px; margin: auto"
+    >
       <q-card-section v-if="!isLoading" class="q-pa-lg">
         <!-- Search and Filter Section -->
         <div class="row items-center justify-between q-mb-lg">
-          <q-btn icon="arrow_back" round flat color="primary" @click="goBack" size="md" dense />
+          <q-btn
+            icon="arrow_back"
+            round
+            flat
+            color="primary"
+            @click="goBack"
+            size="md"
+            dense
+          />
           <div class="row items center">
             <q-select
               v-if="historyOptions.length > 0"
@@ -59,11 +72,11 @@
         </div>
 
         <div class="text-h6 text-primary q-mb-xs">
-          {{ selectedJob?.Position || 'Job Title' }}
+          {{ selectedJob?.Position || "Job Title" }}
           <q-chip dense :color="statusColor" text-color="white" class="q-pa-sm">
             <span>
               Status:
-              {{ (selectedJob?.status || 'Unknown').toLowerCase() }}
+              {{ (selectedJob?.status || "Unknown").toLowerCase() }}
             </span>
           </q-chip>
         </div>
@@ -103,22 +116,22 @@
             <div class="text-subtitle1 text-grey-8">
               <q-icon name="business" size="1em" class="q-mr-xs" />
               <b>Office:</b>
-              {{ selectedJob?.Office || '-' }}
+              {{ selectedJob?.Office || "-" }}
             </div>
             <div class="text-subtitle1 text-grey-8">
               <q-icon name="apartment" size="1em" class="q-mr-xs" />
               <b>Division:</b>
-              {{ selectedJob?.Division || '-' }}
+              {{ selectedJob?.Division || "-" }}
             </div>
             <div class="text-subtitle1 text-grey-8">
               <q-icon name="call_split" size="1em" class="q-mr-xs" />
               <b>Section:</b>
-              {{ selectedJob?.Section || '-' }}
+              {{ selectedJob?.Section || "-" }}
             </div>
             <div class="text-subtitle1 text-grey-8">
               <q-icon name="group_work" size="1em" class="q-mr-xs" />
               <b>Unit:</b>
-              {{ selectedJob?.Unit || '-' }}
+              {{ selectedJob?.Unit || "-" }}
             </div>
           </div>
           <div class="col-12 col-sm-6">
@@ -126,14 +139,14 @@
               <q-icon name="event" size="1em" class="q-mr-xs" />
               <b>Posting Date:</b>
               <span class="q-ml-xs">
-                {{ formatDate(selectedJob?.post_date, 'MMM D, YYYY') || '-' }}
+                {{ formatDate(selectedJob?.post_date, "MMM D, YYYY") || "-" }}
               </span>
             </div>
             <div class="text-subtitle1 text-grey-8">
               <q-icon name="event_busy" size="1em" class="q-mr-xs" />
               <b>End Date:</b>
               <span class="q-ml-xs">
-                {{ formatDate(selectedJob?.end_date, 'MMM D, YYYY') || '-' }}
+                {{ formatDate(selectedJob?.end_date, "MMM D, YYYY") || "-" }}
               </span>
             </div>
           </div>
@@ -149,21 +162,23 @@
             <div class="col-12 col-md-6">
               <q-card flat bordered class="q-pa-sm q-mb-xs">
                 <div class="text-caption text-grey-7">Education</div>
-                <div class="text-body1">{{ selectedCriteria?.Education || 'None' }}</div>
+                <div class="text-body1">{{ selectedCriteria?.Education || "None" }}</div>
               </q-card>
               <q-card flat bordered class="q-pa-sm">
                 <div class="text-caption text-grey-7">Training</div>
-                <div class="text-body1">{{ selectedCriteria?.Training || 'None' }}</div>
+                <div class="text-body1">{{ selectedCriteria?.Training || "None" }}</div>
               </q-card>
             </div>
             <div class="col-12 col-md-6">
               <q-card flat bordered class="q-pa-sm q-mb-xs">
                 <div class="text-caption text-grey-7">Experience</div>
-                <div class="text-body1">{{ selectedCriteria?.Experience || 'None' }}</div>
+                <div class="text-body1">{{ selectedCriteria?.Experience || "None" }}</div>
               </q-card>
               <q-card flat bordered class="q-pa-sm">
                 <div class="text-caption text-grey-7">Eligibility</div>
-                <div class="text-body1">{{ selectedCriteria?.Eligibility || 'None' }}</div>
+                <div class="text-body1">
+                  {{ selectedCriteria?.Eligibility || "None" }}
+                </div>
               </q-card>
             </div>
           </div>
@@ -194,7 +209,6 @@
             <div class="row items-center justify-between q-mb-sm">
               <div class="text-h6 text-primary text-bold">Applicants</div>
 
-
               <!-- Search Input -->
               <div class="col-12 col-sm-6 col-md-4">
                 <q-input
@@ -211,12 +225,12 @@
                 </q-input>
               </div>
 
-
               <div class="row items-center">
                 <q-btn
                   v-if="
                     canModifyJobPost &&
-                    (selectedJob?.status == 'not started' || selectedJob?.status == 'pending')
+                    (selectedJob?.status == 'not started' ||
+                      selectedJob?.status == 'pending')
                   "
                   label="Import Applicants"
                   color="orange-9"
@@ -261,7 +275,7 @@
 
 
             > -->
-              <!-- <q-table
+            <!-- <q-table
               :rows="filteredApplicants"
               :columns="applicantColumns"
               row-key="id"
@@ -274,7 +288,7 @@
               color="primary"
             > -->
 
-        <q-table
+            <q-table
               :rows="filteredApplicants"
               :columns="applicantColumns"
               row-key="id"
@@ -286,16 +300,17 @@
               separator="cell"
               color="primary"
             >
-
               <template #body-cell-name="props">
                 <q-td :props="props">
                   {{ props.row.firstname }} {{ props.row.lastname }}
-                  <span v-if="props.row.name_extension">&nbsp;{{ props.row.name_extension }}</span>
+                  <span v-if="props.row.name_extension"
+                    >&nbsp;{{ props.row.name_extension }}</span
+                  >
                 </q-td>
               </template>
               <template #body-cell-appliedDate="props">
                 <q-td :props="props">
-                  {{ props.row.appliedDate || '-' }}
+                  {{ props.row.appliedDate || "-" }}
                 </q-td>
               </template>
               <template #body-cell-source="props">
@@ -316,15 +331,17 @@
                     :color="
                       props.row.status === 'Hired' || props.row.status === 'hired'
                         ? 'green'
-                        : props.row.status === 'Qualified' || props.row.status === 'qualified'
-                          ? 'yellow-8'
-                          : props.row.status === 'Unqualified' || props.row.status === 'unqualified'
-                            ? 'red'
-                            : 'grey'
+                        : props.row.status === 'Qualified' ||
+                          props.row.status === 'qualified'
+                        ? 'yellow-8'
+                        : props.row.status === 'Unqualified' ||
+                          props.row.status === 'unqualified'
+                        ? 'red'
+                        : 'grey'
                     "
                     class="text-caption q-px-sm"
                   >
-                    {{ props.row.status || '-' }}
+                    {{ props.row.status || "-" }}
                   </q-badge>
                 </q-td>
               </template>
@@ -350,20 +367,20 @@
             <div class="row items-center justify-between q-mb-sm">
               <div class="text-h6 text-primary text-bold">Rating Results</div>
 
-            <!-- search -->
-            <q-input
-              v-model="applicantSearchRate"
-              outlined
-              dense
-              placeholder="Search Applicant..."
-              class="q-mr-md"
-              style="width: 280px; margin-left: -200px;"
-              clearable
-            >
-               <template v-slot:prepend>
-            <q-icon name="search" color="primary" />
-          </template>
-            </q-input>
+              <!-- search -->
+              <q-input
+                v-model="applicantSearchRate"
+                outlined
+                dense
+                placeholder="Search Applicant..."
+                class="q-mr-md"
+                style="width: 280px; margin-left: -200px"
+                clearable
+              >
+                <template v-slot:prepend>
+                  <q-icon name="search" color="primary" />
+                </template>
+              </q-input>
               <div class="assessment-status">
                 <q-btn
                   v-if="showUnoccupiedButton && canModifyJobPost"
@@ -395,20 +412,21 @@
               color="primary"
             > -->
             <q-table
-                v-if="filteredApplicantsRate.length > 0"
-                :rows="filteredApplicantsRate"
-                :columns="ratingColumns"
-                row-key="nPersonalInfo_id"
-                flat
-                bordered
-                class="rating-table"
-                dense
-                separator="cell"
-                color="primary"
-              >
-
+              v-if="filteredApplicantsRate.length > 0"
+              :rows="filteredApplicantsRate"
+              :columns="ratingColumns"
+              row-key="nPersonalInfo_id"
+              flat
+              bordered
+              class="rating-table"
+              dense
+              separator="cell"
+              color="primary"
+            >
               <template #body-cell-name="props">
-                <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
+                <q-td :props="props"
+                  >{{ props.row.firstname }} {{ props.row.lastname }}</q-td
+                >
               </template>
               <template #body-cell-education="props">
                 <q-td :props="props">
@@ -497,7 +515,7 @@
           <div class="bg-grey-2 q-pa-md rounded-borders q-mt-md">
             <div class="text-caption text-grey-7 q-mb-xs">
               <strong>Position:</strong>
-              {{ selectedJob?.Position || 'N/A' }}
+              {{ selectedJob?.Position || "N/A" }}
             </div>
             <div class="text-caption text-grey-7 q-mb-xs">
               <strong>Total Applicants:</strong>
@@ -552,14 +570,22 @@
           <template v-if="!isLoadingPdf && pdfFileUrl">
             <iframe
               :src="pdfFileUrl"
-              style="width: 100%; height: 100%; border: 2px solid #aaa; border-radius: 10px"
+              style="
+                width: 100%;
+                height: 100%;
+                border: 2px solid #aaa;
+                border-radius: 10px;
+              "
               title="Funded Plantilla PDF"
             ></iframe>
           </template>
           <template v-if="!isLoadingPdf && !pdfFileUrl">
             <div class="text-center q-pa-md">
               <q-icon name="error_outline" size="2em" color="negative" />
-              <p>Could not load PDF document. The file might be missing or an error occurred.</p>
+              <p>
+                Could not load PDF document. The file might be missing or an error
+                occurred.
+              </p>
               <p v-if="pdfErrorMessage">{{ pdfErrorMessage }}</p>
             </div>
           </template>
@@ -585,11 +611,11 @@
           </p>
           <div class="text-caption text-grey-6 q-mt-sm">
             <strong>ID:</strong>
-            {{ selectedJob?.id || 'N/A' }}
+            {{ selectedJob?.id || "N/A" }}
           </div>
           <div class="text-caption text-grey-6 q-mt-sm">
             <strong>Job:</strong>
-            {{ selectedJob?.Position || 'N/A' }}
+            {{ selectedJob?.Position || "N/A" }}
           </div>
         </q-card-section>
 
@@ -646,87 +672,86 @@
 </template>
 
 <script setup>
-  import { useRouter, useRoute } from 'vue-router';
-  import { useJobPostStore } from 'stores/jobPostStore';
-  import { useAuthStore } from 'stores/authStore';
-  import { onMounted, ref, computed, watch } from 'vue';
-  import { date } from 'quasar';
-  import axios from 'axios';
-  import { toast } from 'src/boot/toast';
-  import QualificationModal from 'src/components/QualityStandardModalApplicant.vue';
-  import ScoreModal from 'src/components/Rater/ApplicantScore.vue';
-  import ImportApplicantsModal from 'src/components/ImportApplicant.vue';
+import { useRouter, useRoute } from "vue-router";
+import { useJobPostStore } from "stores/jobPostStore";
+import { useAuthStore } from "stores/authStore";
+import { onMounted, ref, computed, watch } from "vue";
+import { date } from "quasar";
+import axios from "axios";
+import { toast } from "src/boot/toast";
+import QualificationModal from "src/components/QualityStandardModalApplicant.vue";
+import ScoreModal from "src/components/Rater/ApplicantScore.vue";
+import ImportApplicantsModal from "src/components/ImportApplicant.vue";
 
-  const router = useRouter();
-  const route = useRoute();
-  const jobPostStore = useJobPostStore();
-  const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
+const jobPostStore = useJobPostStore();
+const authStore = useAuthStore();
 
-  const applicantSearch = ref('');
-  const applicantSearchRate = ref('');
+const applicantSearch = ref("");
+const applicantSearchRate = ref("");
 
-  // ✅ UNIFIED LOADING STATE
-  const isLoading = ref(false);
-  const sendEvalConfirmDialog = ref(false);
+// ✅ UNIFIED LOADING STATE
+const isLoading = ref(false);
+const sendEvalConfirmDialog = ref(false);
 
-  // Permission check
-  const canModifyJobPost = computed(() => {
-    return authStore.user?.permissions?.modifyJobpostAccess == '1';
-  });
+// Permission check
+const canModifyJobPost = computed(() => {
+  return authStore.user?.permissions?.modifyJobpostAccess == "1";
+});
 
-  // Get job ID from route params
-  const jobId = computed(() => route.params.id);
+// Get job ID from route params
+const jobId = computed(() => route.params.id);
 
-  const displayHistoryId = ref(null);
-  const isNavigating = ref(false);
-  const lastLoadedId = ref(null);
+const displayHistoryId = ref(null);
+const isNavigating = ref(false);
+const lastLoadedId = ref(null);
 
-  const selectedJob = ref({
-    Position: '',
-    status: '',
-    level: '',
-    PageNo: '',
-    ItemNo: '',
-    SalaryGrade: '',
-    Office: '',
-    Division: '',
-    Section: '',
-    Unit: '',
-    post_date: null,
-    end_date: null,
-    PositionID: '',
-    id: null,
-    history: [],
-  });
+const selectedJob = ref({
+  Position: "",
+  status: "",
+  level: "",
+  PageNo: "",
+  ItemNo: "",
+  SalaryGrade: "",
+  Office: "",
+  Division: "",
+  Section: "",
+  Unit: "",
+  post_date: null,
+  end_date: null,
+  PositionID: "",
+  id: null,
+  history: [],
+});
 
-  const selectedCriteria = ref({
-    Education: '',
-    Experience: '',
-    Training: '',
-    Eligibility: '',
-  });
+const selectedCriteria = ref({
+  Education: "",
+  Experience: "",
+  Training: "",
+  Eligibility: "",
+});
 
-  const { formatDate } = date;
+const { formatDate } = date;
 
-  // Tab state
-  const activeTab = ref('applicants');
+// Tab state
+const activeTab = ref("applicants");
 
-  // Modal state
-  const qualificationModalVisible = ref(false);
-  const scoreModal = ref({ visible: false, applicant: null });
-  const selectedApplicantData = ref({});
-  const showImportModal = ref(false);
+// Modal state
+const qualificationModalVisible = ref(false);
+const scoreModal = ref({ visible: false, applicant: null });
+const selectedApplicantData = ref({});
+const showImportModal = ref(false);
 
-  // PDF Modal state
-  const pdfModalVisible = ref(false);
-  const pdfFileUrl = ref('');
-  const isLoadingPdf = ref(false);
-  const pdfErrorMessage = ref('');
+// PDF Modal state
+const pdfModalVisible = ref(false);
+const pdfFileUrl = ref("");
+const isLoadingPdf = ref(false);
+const pdfErrorMessage = ref("");
 
-  const unoccupiedConfirmDialog = ref(false);
+const unoccupiedConfirmDialog = ref(false);
 
-
-  // applicant filter by searching
+// applicant filter by searching
 // const filteredApplicants = computed(() => {
 //   if (!applicantSearch.value) {
 //     return formattedApplicants.value;
@@ -745,8 +770,6 @@
 //   });
 // });
 
-
-
 // applicant search
 const filteredApplicants = computed(() => {
   if (!applicantSearch.value) {
@@ -755,22 +778,21 @@ const filteredApplicants = computed(() => {
 
   const search = applicantSearch.value.toLowerCase();
 
-  return formattedApplicants.value.filter(applicant => {
-    const fullName = `${applicant.firstname} ${applicant.lastname} ${applicant.name_extension}`
-      .toLowerCase();
+  return formattedApplicants.value.filter((applicant) => {
+    const fullName = `${applicant.firstname} ${applicant.lastname} ${applicant.name_extension}`.toLowerCase();
 
-    const status = applicant.status?.toLowerCase() || '';
-    const source = applicant.source?.toLowerCase() || '';
+    const status = applicant.status?.toLowerCase() || "";
+    const source = applicant.source?.toLowerCase() || "";
 
     return (
-      fullName.includes(search) ||        // ✅ partial
-      source.includes(search) ||          // ✅ partial
-      status.startsWith(search)           // ✅ smart status match
+      fullName.includes(search) || // ✅ partial
+      source.includes(search) || // ✅ partial
+      status.startsWith(search) // ✅ smart status match
     );
   });
 });
 
- // applicant  rating search
+// applicant  rating search
 const filteredApplicantsRate = computed(() => {
   if (!applicantSearchRate.value) {
     return formattedApplicantRatings.value;
@@ -778,7 +800,7 @@ const filteredApplicantsRate = computed(() => {
 
   const search = applicantSearchRate.value.toLowerCase();
 
-  return formattedApplicantRatings.value.filter(applicant => {
+  return formattedApplicantRatings.value.filter((applicant) => {
     const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
 
     return (
@@ -795,729 +817,811 @@ const filteredApplicantsRate = computed(() => {
   });
 });
 
+const historyOptions = computed(() => {
+  if (
+    !selectedJob.value ||
+    !selectedJob.value.history ||
+    selectedJob.value.history.length === 0
+  ) {
+    return [];
+  }
 
-
-
-  const historyOptions = computed(() => {
-    if (
-      !selectedJob.value ||
-      !selectedJob.value.history ||
-      selectedJob.value.history.length === 0
-    ) {
-      return [];
-    }
-
-    const sortedHistory = [...selectedJob.value.history].sort((a, b) => {
-      const dateA = new Date(a.post_date);
-      const dateB = new Date(b.post_date);
-      return dateB - dateA;
-    });
-
-    return sortedHistory.map((historyItem) => ({
-      label: ` ${formatDate(historyItem.post_date, 'MMM D, YYYY')} - ${formatDate(historyItem.end_date, 'MMM D, YYYY')}`,
-      value: historyItem.id,
-      historyData: historyItem,
-    }));
+  const sortedHistory = [...selectedJob.value.history].sort((a, b) => {
+    const dateA = new Date(a.post_date);
+    const dateB = new Date(b.post_date);
+    return dateB - dateA;
   });
 
-  const onHistoryChange = (historyId) => {
-    console.log('History selected:', historyId);
-    if (!historyId) return;
-    viewJobDetails(historyId);
-  };
+  return sortedHistory.map((historyItem) => ({
+    label: ` ${formatDate(historyItem.post_date, "MMM D, YYYY")} - ${formatDate(
+      historyItem.end_date,
+      "MMM D, YYYY"
+    )}`,
+    value: historyItem.id,
+    historyData: historyItem,
+  }));
+});
 
-  // ✅ UNIFIED: Load all data at once
-  const loadAllData = async (id) => {
-    isLoading.value = true;
-    try {
-      // Fetch all data in parallel
-      const [jobDetails] = await Promise.allSettled([
-        jobPostStore.fetchJobDetails(id),
-        jobPostStore.fetch_applicant(id),
-        jobPostStore.fetch_applicant_rating(id),
-      ]);
+const onHistoryChange = (historyId) => {
+  console.log("History selected:", historyId);
+  if (!historyId) return;
+  viewJobDetails(historyId);
+};
 
-      if (jobDetails.status === 'rejected') {
-        throw new Error('Failed to fetch job details');
-      }
+// ✅ UNIFIED: Load all data at once
+const loadAllData = async (id) => {
+  isLoading.value = true;
+  try {
+    // Fetch all data in parallel
+    const [jobDetails] = await Promise.allSettled([
+      jobPostStore.fetchJobDetails(id),
+      jobPostStore.fetch_applicant(id),
+      jobPostStore.fetch_applicant_rating(id),
+    ]);
 
-      const details = jobDetails.value;
-
-      selectedJob.value = {
-        id: details.id || null,
-        old_job_id: details.old_job_id || null,
-        Position: details.Position || 'Unknown Position',
-        status: details.status || 'Unknown',
-        level: details.level || 'N/A',
-        PageNo: details.PageNo || 'N/A',
-        ItemNo: details.ItemNo || 'N/A',
-        SalaryGrade: details.SalaryGrade || 'N/A',
-        Office: details.Office || 'Unknown Office',
-        Division: details.Division || 'N/A',
-        Section: details.Section || 'N/A',
-        Unit: details.Unit || 'N/A',
-        post_date: details.post_date || null,
-        end_date: details.end_date || null,
-        PositionID: details.PositionID || '',
-        tblStructureDetails_ID: details.tblStructureDetails_ID || null,
-        history: details.history || [],
-        ...details,
-      };
-
-      if (details.criteria && typeof details.criteria === 'object') {
-        selectedCriteria.value = {
-          id: details.criteria.id || null,
-          Education: details.criteria.Education || 'Not specified',
-          Experience: details.criteria.Experience || 'Not specified',
-          Training: details.criteria.Training || 'Not specified',
-          Eligibility: details.criteria.Eligibility || 'Not specified',
-        };
-      }
-
-      displayHistoryId.value = details.id;
-      lastLoadedId.value = details.id;
-
-      return details;
-    } catch (error) {
-      console.error('Error loading data:', error);
-      throw error;
-    } finally {
-      isLoading.value = false;
+    if (jobDetails.status === "rejected") {
+      throw new Error("Failed to fetch job details");
     }
-  };
 
-  const viewJobDetails = async (historyId) => {
-    if (!historyId || historyId === selectedJob.value.id) {
+    const details = jobDetails.value;
+
+    selectedJob.value = {
+      id: details.id || null,
+      old_job_id: details.old_job_id || null,
+      Position: details.Position || "Unknown Position",
+      status: details.status || "Unknown",
+      level: details.level || "N/A",
+      PageNo: details.PageNo || "N/A",
+      ItemNo: details.ItemNo || "N/A",
+      SalaryGrade: details.SalaryGrade || "N/A",
+      Office: details.Office || "Unknown Office",
+      Division: details.Division || "N/A",
+      Section: details.Section || "N/A",
+      Unit: details.Unit || "N/A",
+      post_date: details.post_date || null,
+      end_date: details.end_date || null,
+      PositionID: details.PositionID || "",
+      tblStructureDetails_ID: details.tblStructureDetails_ID || null,
+      history: details.history || [],
+      ...details,
+    };
+
+    if (details.criteria && typeof details.criteria === "object") {
+      selectedCriteria.value = {
+        id: details.criteria.id || null,
+        Education: details.criteria.Education || "Not specified",
+        Experience: details.criteria.Experience || "Not specified",
+        Training: details.criteria.Training || "Not specified",
+        Eligibility: details.criteria.Eligibility || "Not specified",
+      };
+    }
+
+    displayHistoryId.value = details.id;
+    lastLoadedId.value = details.id;
+
+    return details;
+  } catch (error) {
+    console.error("Error loading data:", error);
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const viewJobDetails = async (historyId) => {
+  if (!historyId || historyId === selectedJob.value.id) {
+    return;
+  }
+
+  isNavigating.value = true;
+
+  try {
+    await loadAllData(historyId);
+    await router.push({
+      name: "JobPost View",
+      params: { id: historyId },
+    });
+  } catch (error) {
+    console.error("Error fetching job details:", error);
+    toast.error("Failed to load job details. Please try again.");
+  } finally {
+    isNavigating.value = false;
+  }
+};
+
+const refreshJobDetails = async () => {
+  await loadAllData(jobId.value);
+};
+
+const refreshApplicantData = async () => {
+  if (!selectedJob.value.id) return;
+
+  isLoading.value = true;
+  try {
+    await Promise.allSettled([
+      jobPostStore.fetch_applicant(selectedJob.value.id),
+      jobPostStore.fetch_applicant_rating(selectedJob.value.id),
+    ]);
+  } catch (error) {
+    console.error("Error refreshing applicant data:", error);
+    toast.error("Failed to refresh applicant data");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const updateJobStatusToUnoccupied = async () => {
+  if (!selectedJob.value || !selectedJob.value.id) {
+    toast.error("Job ID not found. Cannot update status.");
+    unoccupiedConfirmDialog.value = false;
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    const payload = {
+      id: selectedJob.value.id,
+      status: "Unoccupied",
+    };
+
+    await jobPostStore.updateJobStatus(selectedJob.value.id, payload);
+    toast.success("Job status updated to Unoccupied successfully!");
+    unoccupiedConfirmDialog.value = false;
+    await refreshJobDetails();
+  } catch (error) {
+    console.error("Error updating job status:", error);
+    toast.error("Failed to update job status. Please try again.");
+    unoccupiedConfirmDialog.value = false;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const onApplicantsImported = async (importedApplicants) => {
+  console.log("Applicants imported:", importedApplicants);
+  toast.success(`Successfully imported ${importedApplicants.length} applicant(s)`);
+  await refreshApplicantData();
+};
+
+// const submitEvaluation = async (evaluationData) => {
+//   // update and submit applicant
+//   try {
+//     console.log("Received evaluation data:", evaluationData);
+
+//     if (!evaluationData.id) {
+//       toast.error("Missing applicant ID for evaluation submission");
+//       console.error("Invalid evaluation data:", evaluationData);
+//       return;
+//     }
+
+//     if (!evaluationData.status || evaluationData.status === "Pending") {
+//       toast.warning("Please select a qualification status before submitting.");
+//       return;
+//     }
+
+//     isLoading.value = true;
+//     await jobPostStore.evaluation(evaluationData);
+//     selectedApplicantData.value.status = evaluationData.status;
+//     qualificationModalVisible.value = false;
+
+//     await Promise.all([refreshJobDetails(), refreshApplicantData()]);
+//     toast.success("Evaluation submitted successfully!");
+//   } catch (error) {
+//     console.error("Evaluation submission error:", error);
+//     toast.error("Failed to submit evaluation");
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
+const submitEvaluation = async (evaluationData) => {
+  try {
+    console.log("Received evaluation data:", evaluationData);
+
+    if (!evaluationData.id) {
+      toast.error("Missing applicant ID for evaluation submission");
+      console.error("Invalid evaluation data:", evaluationData);
       return;
     }
 
-    isNavigating.value = true;
-
-    try {
-      await loadAllData(historyId);
-      await router.push({
-        name: 'JobPost View',
-        params: { id: historyId },
-      });
-    } catch (error) {
-      console.error('Error fetching job details:', error);
-      toast.error('Failed to load job details. Please try again.');
-    } finally {
-      isNavigating.value = false;
-    }
-  };
-
-  const refreshJobDetails = async () => {
-    await loadAllData(jobId.value);
-  };
-
-  const refreshApplicantData = async () => {
-    if (!selectedJob.value.id) return;
-
-    isLoading.value = true;
-    try {
-      await Promise.allSettled([
-        jobPostStore.fetch_applicant(selectedJob.value.id),
-        jobPostStore.fetch_applicant_rating(selectedJob.value.id),
-      ]);
-    } catch (error) {
-      console.error('Error refreshing applicant data:', error);
-      toast.error('Failed to refresh applicant data');
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const updateJobStatusToUnoccupied = async () => {
-    if (!selectedJob.value || !selectedJob.value.id) {
-      toast.error('Job ID not found. Cannot update status.');
-      unoccupiedConfirmDialog.value = false;
+    if (!evaluationData.status || evaluationData.status === "Pending") {
+      toast.warning("Please select a qualification status before submitting.");
       return;
     }
 
-    isLoading.value = true;
-    try {
-      const payload = {
-        id: selectedJob.value.id,
-        status: 'Unoccupied',
-      };
+    // ✅ DON'T set isLoading.value = true here - it blocks the entire page
+    // The modal will close immediately, giving instant feedback
 
-      await jobPostStore.updateJobStatus(selectedJob.value.id, payload);
-      toast.success('Job status updated to Unoccupied successfully!');
-      unoccupiedConfirmDialog.value = false;
-      await refreshJobDetails();
-    } catch (error) {
-      console.error('Error updating job status:', error);
-      toast.error('Failed to update job status. Please try again.');
-      unoccupiedConfirmDialog.value = false;
-    } finally {
-      isLoading.value = false;
+    // ✅ Submit the evaluation
+    await jobPostStore.evaluation(evaluationData);
+
+    // ✅ Update the applicant in the store directly
+    const applicantInStore = jobPostStore.applicant.find(
+      (app) => app.id === evaluationData.id || app.submission_id === evaluationData.id
+    );
+
+    if (applicantInStore) {
+      applicantInStore.status = evaluationData.status;
+      applicantInStore.education_remark = evaluationData.education_remark;
+      applicantInStore.experience_remark = evaluationData.experience_remark;
+      applicantInStore.training_remark = evaluationData.training_remark;
+      applicantInStore.eligibility_remark = evaluationData.eligibility_remark;
     }
-  };
 
-  const onApplicantsImported = async (importedApplicants) => {
-    console.log('Applicants imported:', importedApplicants);
-    toast.success(`Successfully imported ${importedApplicants.length} applicant(s)`);
+    // ✅ Update selectedApplicantData to reflect the change
+    selectedApplicantData.value.status = evaluationData.status;
+
+    // ✅ Close the modal - the child already closes it, but ensure it's closed
+    qualificationModalVisible.value = false;
+
+    // ✅ Show success message
+    toast.success("Evaluation submitted successfully!");
+  } catch (error) {
+    console.error("Evaluation submission error:", error);
+    toast.error("Failed to submit evaluation");
+
+    // ✅ Only show loading if there's an error and we need to retry
+    // Otherwise, keep the UI responsive
+  }
+};
+
+const ratingData = computed(() => {
+  if (!jobPostStore.applicant_rating) {
+    return { total_completed: 0, total_assigned: 0 };
+  }
+
+  return {
+    total_completed: jobPostStore.applicant_rating.total_completed || 0,
+    total_assigned: jobPostStore.applicant_rating.total_assigned || 0,
+  };
+});
+
+const totalApplicants = computed(() => {
+  return formattedApplicants.value.length;
+});
+
+const assessedCount = computed(() => {
+  return formattedApplicants.value.filter(
+    (applicant) => applicant.status === "Qualified" || applicant.status === "Unqualified"
+  ).length;
+});
+
+const goBack = () => {
+  router.push("/job-post");
+};
+
+const onApplicantHired = async () => {
+  try {
+    await refreshJobDetails();
     await refreshApplicantData();
-  };
+    closeScoreModal();
+  } catch (error) {
+    console.error("Error refreshing after hire:", error);
+    toast.error("Failed to refresh data after hiring.");
+  }
+};
 
-  const submitEvaluation = async (evaluationData) => {
-    try {
-      console.log('Received evaluation data:', evaluationData);
+const confirmSendFinalEvaluation = async () => {
+  if (!selectedJob.value || !selectedJob.value.id) {
+    toast.error("Job ID not found. Cannot send final evaluation.");
+    sendEvalConfirmDialog.value = false;
+    return;
+  }
 
-      if (!evaluationData.id) {
-        toast.error('Missing applicant ID for evaluation submission');
-        console.error('Invalid evaluation data:', evaluationData);
-        return;
-      }
+  // Add validation check
+  if (assessedCount.value === 0) {
+    toast.warning("No applicants have been assessed yet.");
+    sendEvalConfirmDialog.value = false;
+    return;
+  }
 
-      if (!evaluationData.status || evaluationData.status === 'Pending') {
-        toast.warning('Please select a qualification status before submitting.');
-        return;
-      }
+  isLoading.value = true;
 
-      isLoading.value = true;
-      await jobPostStore.evaluation(evaluationData);
-      selectedApplicantData.value.status = evaluationData.status;
-      qualificationModalVisible.value = false;
+  try {
+    const payload = {
+      job_batches_rsp_id: selectedJob.value.id, // ✅ Changed from 'id' to 'job_batches_rsp_id'
+      position: selectedJob.value.Position,
+      total_applicants: totalApplicants.value,
+      assessed_count: assessedCount.value,
+    };
 
-      await Promise.all([refreshJobDetails(), refreshApplicantData()]);
-      toast.success('Evaluation submitted successfully!');
-    } catch (error) {
-      console.error('Evaluation submission error:', error);
-      toast.error('Failed to submit evaluation');
-    } finally {
-      isLoading.value = false;
+    console.log("Sending final evaluation with payload:", payload);
+
+    const response = await jobPostStore.sendFinalEval(payload);
+
+    if (response && response.data && response.data.success) {
+      toast.success("Final evaluation emails sent successfully!");
+      sendEvalConfirmDialog.value = false;
+
+      // Optionally refresh data
+      await refreshApplicantData();
+    } else {
+      const errorMessage =
+        response?.data?.message || "Failed to send final evaluation emails";
+      toast.error(errorMessage);
     }
-  };
+  } catch (error) {
+    console.error("Error sending final evaluation:", error);
 
-  const ratingData = computed(() => {
-    if (!jobPostStore.applicant_rating) {
-      return { total_completed: 0, total_assigned: 0 };
+    // ✅ Better error handling
+    if (error.response && error.response.data && error.response.data.message) {
+      toast.error(error.response.data.message);
+    } else {
+      toast.error("An error occurred while sending final evaluation emails.");
     }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const viewFundedDocument = async () => {
+  if (!selectedJob.value || !selectedJob.value.PositionID || !selectedJob.value.ItemNo) {
+    toast.error(
+      "PositionID or ItemNo not found for the selected job. Cannot fetch document."
+    );
+    return;
+  }
+  isLoadingPdf.value = true;
+  pdfModalVisible.value = true;
+  pdfFileUrl.value = "";
+  pdfErrorMessage.value = "";
+  try {
+    const apiUrl = process.env.VUE_APP_API_URL;
+    const response = await axios.get(
+      `${apiUrl}/on-funded-plantilla/by-funded/${selectedJob.value.id}`
+    );
+    let apiPDF = apiUrl.replace(/\/api\/?$/, "");
+    if (response.data.status === "success" && response.data.data.fileUpload) {
+      pdfFileUrl.value = `${apiPDF}/storage/${response.data.data.fileUpload}`;
+    } else {
+      pdfErrorMessage.value =
+        response.data.message || "Failed to fetch PDF path or file is missing.";
+      toast.error(pdfErrorMessage.value);
+    }
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.message) {
+      pdfErrorMessage.value = error.response.data.message;
+    } else {
+      pdfErrorMessage.value = "An unexpected error occurred while fetching the PDF.";
+    }
+    toast.error(pdfErrorMessage.value);
+  } finally {
+    isLoadingPdf.value = false;
+  }
+};
+
+const applicantColumns = ref([
+  {
+    name: "submission_id",
+    label: "No",
+    field: "submission_id",
+    align: "center",
+    sortable: true,
+  },
+  { name: "name", label: "Name", field: "name", align: "left", sortable: true },
+  {
+    name: "appliedDate",
+    label: "Applied Date",
+    field: "appliedDate",
+    align: "center",
+  },
+  {
+    name: "source",
+    label: "Source",
+    field: "source",
+    align: "center",
+    sortable: true,
+  },
+  {
+    name: "status",
+    label: "Status",
+    field: "status",
+    align: "center",
+  },
+  {
+    name: "action",
+    label: "Action",
+    field: "action",
+    align: "center",
+    sortable: false,
+  },
+]);
+
+const ratingColumns = ref([
+  { name: "name", label: "Name", field: "name", align: "left", sortable: true },
+  {
+    name: "education",
+    label: "Education",
+    field: "education",
+    align: "center",
+    sortable: true,
+  },
+  {
+    name: "experience",
+    label: "Experience",
+    field: "experience",
+    align: "center",
+    sortable: true,
+  },
+  {
+    name: "training",
+    label: "Training",
+    field: "training",
+    align: "center",
+    sortable: true,
+  },
+  {
+    name: "performance",
+    label: "Performance",
+    field: "performance",
+    align: "center",
+    sortable: true,
+  },
+  { name: "bei", label: "BEI", field: "bei", align: "center", sortable: true },
+  {
+    name: "total_qs",
+    label: "Total QS",
+    field: "total_qs",
+    align: "center",
+    sortable: true,
+  },
+  {
+    name: "grand_total",
+    label: "Grand Total",
+    field: "grand_total",
+    align: "center",
+    sortable: true,
+  },
+  { name: "rank", label: "Rank", field: "rank", align: "center", sortable: true },
+  { name: "action", label: "Action", field: "action", align: "center", sortable: false },
+]);
+
+const formattedApplicants = computed(() => {
+  if (!jobPostStore.applicant) return [];
+
+  return jobPostStore.applicant.map((a) => {
+    const fullName = `${a.firstname || ""} ${a.lastname || ""} ${
+      a.name_extension || ""
+    }`.trim();
 
     return {
-      total_completed: jobPostStore.applicant_rating.total_completed || 0,
-      total_assigned: jobPostStore.applicant_rating.total_assigned || 0,
+      id: a.id,
+      submission_id: a.submission_id || a.id, // ✅ Add submission_id
+      name: fullName, // ✅ ADD THIS
+      firstname: a.firstname || "",
+      lastname: a.lastname || "",
+      name_extension: a.name_extension || "",
+      image_url: a.image_url || "https://placehold.co/100",
+      appliedDate:
+        a.appliedDate ||
+        (a.application_date ? formatDate(a.application_date, "MMM D, YYYY") : "-"),
+      source: a.ControlNo || a.controlno ? "Internal" : "External",
+      status: a.status || "-",
+      ranking: a.ranking,
+      education: a.education || [],
+      raw: a,
+      education_remark: a.education_remark,
+      experience_remark: a.experience_remark,
+      training_remark: a.training_remark,
+      eligibility_remark: a.eligibility_remark,
     };
   });
+});
 
-  const totalApplicants = computed(() => {
-    return formattedApplicants.value.length;
-  });
+const statusColor = computed(() => {
+  const status = (selectedJob.value?.status || "").toLowerCase();
 
-  const assessedCount = computed(() => {
-    return formattedApplicants.value.filter(
-      (applicant) => applicant.status === 'Qualified' || applicant.status === 'Unqualified',
-    ).length;
-  });
+  switch (status) {
+    case "not started":
+      return "grey";
+    case "pending":
+      return "orange";
+    case "assessed":
+      return "blue";
+    case "rated":
+      return "purple";
+    case "occupied":
+    case "qualified":
+      return "green";
+    case "unqualified":
+      return "red";
+    case "unoccupied":
+      return "red-9";
+    case "republished":
+      return "yellow-8";
+    default:
+      return "grey";
+  }
+});
 
-  const goBack = () => {
-    router.push('/job-post');
-  };
+const showUnoccupiedButton = computed(() => {
+  const status = selectedJob.value?.status;
+  if (!status) return false;
 
-  const onApplicantHired = async () => {
-    try {
-      await refreshJobDetails();
-      await refreshApplicantData();
-      closeScoreModal();
-    } catch (error) {
-      console.error('Error refreshing after hire:', error);
-      toast.error('Failed to refresh data after hiring.');
-    }
-  };
+  const normalizedStatus = status.toLowerCase().trim();
+  return normalizedStatus === "rated" || normalizedStatus === "rating completed";
+});
 
-  const confirmSendFinalEvaluation = async () => {
-    if (!selectedJob.value || !selectedJob.value.id) {
-      toast.error('Job ID not found. Cannot send final evaluation.');
-      sendEvalConfirmDialog.value = false;
-      return;
-    }
+const formattedApplicantRatings = computed(() => {
+  if (!jobPostStore.applicant_rating) return [];
 
-    // Add validation check
-    if (assessedCount.value === 0) {
-      toast.warning('No applicants have been assessed yet.');
-      sendEvalConfirmDialog.value = false;
-      return;
-    }
+  let ratingsArray = [];
 
-    isLoading.value = true;
+  if (
+    jobPostStore.applicant_rating.applicants &&
+    typeof jobPostStore.applicant_rating.applicants === "object"
+  ) {
+    ratingsArray = Object.values(jobPostStore.applicant_rating.applicants);
+  } else if (Array.isArray(jobPostStore.applicant_rating)) {
+    ratingsArray = jobPostStore.applicant_rating;
+  } else if (typeof jobPostStore.applicant_rating === "object") {
+    ratingsArray = Object.values(jobPostStore.applicant_rating);
+  }
 
-    try {
-      const payload = {
-        job_batches_rsp_id: selectedJob.value.id, // ✅ Changed from 'id' to 'job_batches_rsp_id'
-        position: selectedJob.value.Position,
-        total_applicants: totalApplicants.value,
-        assessed_count: assessedCount.value,
-      };
+  const formatted = ratingsArray
+    .map((rating) => ({
+      submission_id: rating.submission_id, // ✅ Include submission_id
+      nPersonalInfo_id: rating.nPersonalInfo_id,
+      firstname: rating.firstname || "",
+      lastname: rating.lastname || "",
+      education: rating.education || "0.00",
+      experience: rating.experience || "0.00",
+      training: rating.training || "0.00",
+      performance: rating.performance || "0.00",
+      bei: rating.bei || "0.00",
+      total_qs: rating.total_qs || "0.00",
+      grand_total: rating.grand_total || "0.00",
+      rank: rating.rank || "-",
+      image_url: rating.image_url || "https://placehold.co/100",
+      job_batches_rsp_id: rating.job_batches_rsp_id,
+      history: rating.history || [],
+      originalData: rating,
+      raw: rating,
+    }))
+    .sort((a, b) => parseInt(a.rank) - parseInt(b.rank));
 
-      console.log('Sending final evaluation with payload:', payload);
+  return formatted;
+});
 
-      const response = await jobPostStore.sendFinalEval(payload);
-
-      if (response && response.data && response.data.success) {
-        toast.success('Final evaluation emails sent successfully!');
-        sendEvalConfirmDialog.value = false;
-
-        // Optionally refresh data
-        await refreshApplicantData();
-      } else {
-        const errorMessage = response?.data?.message || 'Failed to send final evaluation emails';
-        toast.error(errorMessage);
-      }
-    } catch (error) {
-      console.error('Error sending final evaluation:', error);
-
-      // ✅ Better error handling
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('An error occurred while sending final evaluation emails.');
-      }
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const viewFundedDocument = async () => {
-    if (!selectedJob.value || !selectedJob.value.PositionID || !selectedJob.value.ItemNo) {
-      toast.error('PositionID or ItemNo not found for the selected job. Cannot fetch document.');
-      return;
-    }
-    isLoadingPdf.value = true;
-    pdfModalVisible.value = true;
-    pdfFileUrl.value = '';
-    pdfErrorMessage.value = '';
-    try {
-      const apiUrl = process.env.VUE_APP_API_URL;
-      const response = await axios.get(
-        `${apiUrl}/on-funded-plantilla/by-funded/${selectedJob.value.id}`,
-      );
-      let apiPDF = apiUrl.replace(/\/api\/?$/, '');
-      if (response.data.status === 'success' && response.data.data.fileUpload) {
-        pdfFileUrl.value = `${apiPDF}/storage/${response.data.data.fileUpload}`;
-      } else {
-        pdfErrorMessage.value =
-          response.data.message || 'Failed to fetch PDF path or file is missing.';
-        toast.error(pdfErrorMessage.value);
-      }
-    } catch (error) {
-      if (error.response && error.response.data && error.response.data.message) {
-        pdfErrorMessage.value = error.response.data.message;
-      } else {
-        pdfErrorMessage.value = 'An unexpected error occurred while fetching the PDF.';
-      }
-      toast.error(pdfErrorMessage.value);
-    } finally {
-      isLoadingPdf.value = false;
-    }
-  };
-
-  const applicantColumns = ref([
-    { name: 'submission_id', label: 'No', field: 'submission_id', align: 'center', sortable: true },
-    { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
-    {
-      name: 'appliedDate',
-      label: 'Applied Date',
-      field: 'appliedDate',
-      align: 'center',
-    },
-    {
-      name: 'source',
-      label: 'Source',
-      field: 'source',
-      align: 'center',
-      sortable: true,
-    },
-    {
-      name: 'status',
-      label: 'Status',
-      field: 'status',
-      align: 'center',
-    },
-    {
-      name: 'action',
-      label: 'Action',
-      field: 'action',
-      align: 'center',
-      sortable: false,
-    },
-  ]);
-
-  const ratingColumns = ref([
-    { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
-    { name: 'education', label: 'Education', field: 'education', align: 'center', sortable: true },
-    {
-      name: 'experience',
-      label: 'Experience',
-      field: 'experience',
-      align: 'center',
-      sortable: true,
-    },
-    { name: 'training', label: 'Training', field: 'training', align: 'center', sortable: true },
-    {
-      name: 'performance',
-      label: 'Performance',
-      field: 'performance',
-      align: 'center',
-      sortable: true,
-    },
-    { name: 'bei', label: 'BEI', field: 'bei', align: 'center', sortable: true },
-    { name: 'total_qs', label: 'Total QS', field: 'total_qs', align: 'center', sortable: true },
-    {
-      name: 'grand_total',
-      label: 'Grand Total',
-      field: 'grand_total',
-      align: 'center',
-      sortable: true,
-    },
-    { name: 'rank', label: 'Rank', field: 'rank', align: 'center', sortable: true },
-    { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
-  ]);
-
-  const formattedApplicants = computed(() => {
-    if (!jobPostStore.applicant) return [];
-
-    return jobPostStore.applicant.map((a) => {
-          const fullName = `${a.firstname || ''} ${a.lastname || ''} ${a.name_extension || ''}`.trim();
-
-      return {
-        id: a.id,
-        submission_id: a.submission_id || a.id, // ✅ Add submission_id
-            name: fullName, // ✅ ADD THIS
-        firstname: a.firstname || '',
-        lastname: a.lastname || '',
-        name_extension: a.name_extension || '',
-        image_url: a.image_url || 'https://placehold.co/100',
-        appliedDate:
-          a.appliedDate ||
-          (a.application_date ? formatDate(a.application_date, 'MMM D, YYYY') : '-'),
-        source: a.ControlNo || a.controlno ? 'Internal' : 'External',
-        status: a.status || '-',
-        ranking: a.ranking,
-        education: a.education || [],
-        raw: a,
-        education_remark: a.education_remark,
-        experience_remark: a.experience_remark,
-        training_remark: a.training_remark,
-        eligibility_remark: a.eligibility_remark,
-      };
-    });
-  });
-
-  const statusColor = computed(() => {
-    const status = (selectedJob.value?.status || '').toLowerCase();
-
-    switch (status) {
-      case 'not started':
-        return 'grey';
-      case 'pending':
-        return 'orange';
-      case 'assessed':
-        return 'blue';
-      case 'rated':
-        return 'purple';
-      case 'occupied':
-      case 'qualified':
-        return 'green';
-      case 'unqualified':
-        return 'red';
-      case 'unoccupied':
-        return 'red-9';
-      case 'republished':
-        return 'yellow-8';
-      default:
-        return 'grey';
-    }
-  });
-
-  const showUnoccupiedButton = computed(() => {
-    const status = selectedJob.value?.status;
-    if (!status) return false;
-
-    const normalizedStatus = status.toLowerCase().trim();
-    return normalizedStatus === 'rated' || normalizedStatus === 'rating completed';
-  });
-
-  const formattedApplicantRatings = computed(() => {
-    if (!jobPostStore.applicant_rating) return [];
-
-    let ratingsArray = [];
-
-    if (
-      jobPostStore.applicant_rating.applicants &&
-      typeof jobPostStore.applicant_rating.applicants === 'object'
-    ) {
-      ratingsArray = Object.values(jobPostStore.applicant_rating.applicants);
-    } else if (Array.isArray(jobPostStore.applicant_rating)) {
-      ratingsArray = jobPostStore.applicant_rating;
-    } else if (typeof jobPostStore.applicant_rating === 'object') {
-      ratingsArray = Object.values(jobPostStore.applicant_rating);
-    }
-
-    const formatted = ratingsArray
-      .map((rating) => ({
-        submission_id: rating.submission_id, // ✅ Include submission_id
-        nPersonalInfo_id: rating.nPersonalInfo_id,
-        firstname: rating.firstname || '',
-        lastname: rating.lastname || '',
-        education: rating.education || '0.00',
-        experience: rating.experience || '0.00',
-        training: rating.training || '0.00',
-        performance: rating.performance || '0.00',
-        bei: rating.bei || '0.00',
-        total_qs: rating.total_qs || '0.00',
-        grand_total: rating.grand_total || '0.00',
-        rank: rating.rank || '-',
-        image_url: rating.image_url || 'https://placehold.co/100',
-        job_batches_rsp_id: rating.job_batches_rsp_id,
-        history: rating.history || [],
-        originalData: rating,
-        raw: rating,
-      }))
-      .sort((a, b) => parseInt(a.rank) - parseInt(b.rank));
-
-    return formatted;
-  });
-
-  // ✅ Updated to pass submission_id
-  function viewApplicantDetails(row) {
-    selectedApplicantData.value = {
-      ControlNo: row.raw?.ControlNo || row.ControlNo,
-      id: row.raw?.id || row.id,
-      submission_id: row.raw?.submission_id || row.submission_id || row.id, // ✅ Add submission_id
-      job_batches_rsp_id: row.raw?.job_batches_rsp_id,
-      status: row.status || 'Pending',
-      name: `${row.firstname} ${row.lastname}${row.name_extension ? ' ' + row.name_extension : ''}`,
-      position: selectedJob.value?.Position || 'N/A',
-      level: selectedJob.value?.level || 'N/A',
-      appliedDate: row.appliedDate,
-      PositionID: selectedJob.value?.PositionID,
-      ItemNo: selectedJob.value?.ItemNo,
-      Jobstatus: selectedJob.value?.status,
-      image_url: row.image_url,
-      education_remark: row.education_remark,
-      experience_remark: row.experience_remark,
-      training_remark: row.training_remark,
-      eligibility_remark: row.eligibility_remark,
+// ✅ Updated to pass submission_id
+function viewApplicantDetails(row) {
+  selectedApplicantData.value = {
+    ControlNo: row.raw?.ControlNo || row.ControlNo,
+    id: row.raw?.id || row.id,
+    submission_id: row.raw?.submission_id || row.submission_id || row.id, // ✅ Add submission_id
+    job_batches_rsp_id: row.raw?.job_batches_rsp_id,
+    status: row.status || "Pending",
+    name: `${row.firstname} ${row.lastname}${
+      row.name_extension ? " " + row.name_extension : ""
+    }`,
+    position: selectedJob.value?.Position || "N/A",
+    level: selectedJob.value?.level || "N/A",
+    appliedDate: row.appliedDate,
+    PositionID: selectedJob.value?.PositionID,
+    ItemNo: selectedJob.value?.ItemNo,
+    Jobstatus: selectedJob.value?.status,
+    image_url: row.image_url,
+    education_remark: row.education_remark,
+    experience_remark: row.experience_remark,
+    training_remark: row.training_remark,
+    eligibility_remark: row.eligibility_remark,
+    education: row.education || row.raw?.education || [],
+    education_images: row.educatiuon_images || row.raw?.education_images || null,
+    experience_images: row.experience_images || row.raw?.experience_images || null,
+    training_images: row.training_images || row.raw?.training_images || null,
+    eligibility_images: row.eligibility_images || row.raw?.eligibility_images || null,
+    n_personal_info: {
       education: row.education || row.raw?.education || [],
-      education_images: row.educatiuon_images || row.raw?.education_images || null,
-      experience_images: row.experience_images || row.raw?.experience_images || null,
-      training_images: row.training_images || row.raw?.training_images || null,
-      eligibility_images: row.eligibility_images || row.raw?.eligibility_images || null,
-      n_personal_info: {
-        education: row.education || row.raw?.education || [],
-        work_experience: row.work_experience || row.raw?.work_experience || [],
-        training: row.training || row.raw?.training || [],
-        eligibity: row.eligibity || row.raw?.eligibity || [],
-      },
-      raw: row.raw,
-    };
-    qualificationModalVisible.value = true;
+      work_experience: row.work_experience || row.raw?.work_experience || [],
+      training: row.training || row.raw?.training || [],
+      eligibity: row.eligibity || row.raw?.eligibity || [],
+    },
+    raw: row.raw,
+  };
+  qualificationModalVisible.value = true;
+}
+
+// ✅ Updated to pass submission_id
+function viewApplicantScore(applicantRow) {
+  let historyData = [];
+
+  if (applicantRow.originalData && applicantRow.originalData.history) {
+    historyData = applicantRow.originalData.history;
+  } else if (applicantRow.history) {
+    historyData = applicantRow.history;
+  } else if (applicantRow.raw && applicantRow.raw.history) {
+    historyData = applicantRow.raw.history;
   }
 
-  // ✅ Updated to pass submission_id
-  function viewApplicantScore(applicantRow) {
-    let historyData = [];
+  scoreModal.value = {
+    visible: true,
+    applicant: {
+      submission_id: applicantRow.submission_id, // ✅ Include submission_id
+      nPersonalInfo_id: applicantRow.nPersonalInfo_id,
+      firstname: applicantRow.firstname,
+      lastname: applicantRow.lastname,
+      name_extension: applicantRow.name_extension || "",
+      status: applicantRow.status || "N/A",
+      image_url: applicantRow.image_url,
+      position: selectedJob.value?.Position || "N/A",
+      Jobstatus: selectedJob.value?.status,
+      education: applicantRow.education,
+      experience: applicantRow.experience,
+      training: applicantRow.training,
+      performance: applicantRow.performance,
+      bei: applicantRow.bei,
+      total_qs: applicantRow.total_qs,
+      grand_total: applicantRow.grand_total,
+      rank: applicantRow.rank,
+      history: historyData,
+    },
+    jobDetails: selectedJob.value || {},
+  };
+}
 
-    if (applicantRow.originalData && applicantRow.originalData.history) {
-      historyData = applicantRow.originalData.history;
-    } else if (applicantRow.history) {
-      historyData = applicantRow.history;
-    } else if (applicantRow.raw && applicantRow.raw.history) {
-      historyData = applicantRow.raw.history;
+const handleQualificationModalUpdate = (value) => {
+  qualificationModalVisible.value = value;
+};
+
+const handleScoreModalUpdate = (value) => {
+  scoreModal.value.visible = value;
+};
+
+function closeScoreModal() {
+  scoreModal.value = { visible: false, applicant: null };
+}
+
+const onToggleQualification = (status) => {
+  selectedApplicantData.value.status = status;
+};
+
+const onCloseQualificationModal = () => {
+  qualificationModalVisible.value = false;
+  selectedApplicantData.value = {};
+};
+
+const onViewPDS = () => {
+  console.log("View PDS requested for:", selectedApplicantData.value.name);
+};
+
+onMounted(async () => {
+  console.log("Component mounting, jobId:", jobId.value);
+
+  if (!jobId.value) {
+    console.error("No job ID provided in route params");
+    toast.error("No job ID provided");
+    router.push("/job-post");
+    return;
+  }
+
+  try {
+    isNavigating.value = false;
+
+    // ✅ Load everything at once
+    await loadAllData(jobId.value);
+
+    await jobPostStore.job_post();
+
+    console.log("Initial data loading completed");
+  } catch (error) {
+    console.error("Error during initial data loading:", error);
+
+    let errorMessage = "Failed to load job details";
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = "Job not found";
+      } else if (error.response.status === 403) {
+        errorMessage = "Access denied";
+      } else {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
 
-    scoreModal.value = {
-      visible: true,
-      applicant: {
-        submission_id: applicantRow.submission_id, // ✅ Include submission_id
-        nPersonalInfo_id: applicantRow.nPersonalInfo_id,
-        firstname: applicantRow.firstname,
-        lastname: applicantRow.lastname,
-        name_extension: applicantRow.name_extension || '',
-        status: applicantRow.status || 'N/A',
-        image_url: applicantRow.image_url,
-        position: selectedJob.value?.Position || 'N/A',
-        Jobstatus: selectedJob.value?.status,
-        education: applicantRow.education,
-        experience: applicantRow.experience,
-        training: applicantRow.training,
-        performance: applicantRow.performance,
-        bei: applicantRow.bei,
-        total_qs: applicantRow.total_qs,
-        grand_total: applicantRow.grand_total,
-        rank: applicantRow.rank,
-        history: historyData,
-      },
-      jobDetails: selectedJob.value || {},
-    };
+    toast.error(errorMessage);
+
+    if (error.response?.status === 404) {
+      setTimeout(() => {
+        router.push("/job-post");
+      }, 2000);
+    }
   }
+});
 
-  const handleQualificationModalUpdate = (value) => {
-    qualificationModalVisible.value = value;
-  };
-
-  const handleScoreModalUpdate = (value) => {
-    scoreModal.value.visible = value;
-  };
-
-  function closeScoreModal() {
-    scoreModal.value = { visible: false, applicant: null };
-  }
-
-  const onToggleQualification = (status) => {
-    selectedApplicantData.value.status = status;
-  };
-
-  const onCloseQualificationModal = () => {
-    qualificationModalVisible.value = false;
-    selectedApplicantData.value = {};
-  };
-
-  const onViewPDS = () => {
-    console.log('View PDS requested for:', selectedApplicantData.value.name);
-  };
-
-  onMounted(async () => {
-    console.log('Component mounting, jobId:', jobId.value);
-
-    if (!jobId.value) {
-      console.error('No job ID provided in route params');
-      toast.error('No job ID provided');
-      router.push('/job-post');
+watch(
+  () => route.params.id,
+  async (newId, oldId) => {
+    if (isNavigating.value) {
+      console.log("Skipping watcher - programmatic navigation in progress");
       return;
     }
 
-    try {
-      isNavigating.value = false;
-
-      // ✅ Load everything at once
-      await loadAllData(jobId.value);
-
-      await jobPostStore.job_post();
-
-      console.log('Initial data loading completed');
-    } catch (error) {
-      console.error('Error during initial data loading:', error);
-
-      let errorMessage = 'Failed to load job details';
-      if (error.response) {
-        if (error.response.status === 404) {
-          errorMessage = 'Job not found';
-        } else if (error.response.status === 403) {
-          errorMessage = 'Access denied';
-        } else {
-          errorMessage = error.response.data?.message || errorMessage;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      toast.error(errorMessage);
-
-      if (error.response?.status === 404) {
-        setTimeout(() => {
-          router.push('/job-post');
-        }, 2000);
-      }
+    if (newId === lastLoadedId.value || !newId) {
+      console.log("Skipping watcher - same ID or invalid");
+      return;
     }
-  });
 
-  watch(
-    () => route.params.id,
-    async (newId, oldId) => {
-      if (isNavigating.value) {
-        console.log('Skipping watcher - programmatic navigation in progress');
-        return;
-      }
+    console.log("Route changed (browser navigation):", oldId, "→", newId);
 
-      if (newId === lastLoadedId.value || !newId) {
-        console.log('Skipping watcher - same ID or invalid');
-        return;
-      }
-
-      console.log('Route changed (browser navigation):', oldId, '→', newId);
-
-      try {
-        await loadAllData(newId);
-      } catch (error) {
-        console.error('Error on route change:', error);
-        toast.error('Failed to load job details');
-      }
-    },
-  );
+    try {
+      await loadAllData(newId);
+    } catch (error) {
+      console.error("Error on route change:", error);
+      toast.error("Failed to load job details");
+    }
+  }
+);
 </script>
 
 <style scoped>
-  .chips-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+.chips-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-  .chip-padding {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
+.chip-padding {
+  padding-left: 18px;
+  padding-right: 18px;
+}
 
-  .level-chip {
-    background: #a8d5a4;
-    color: #161616;
-  }
-  .page-chip {
-    background: #e3f0fc;
-    color: #2156a4;
-  }
-  .item-chip {
-    background: #fff6df;
-    color: #ff9800;
-  }
-  .salary-chip {
-    background: #f3eafd;
-    color: #6626a6;
-  }
+.level-chip {
+  background: #a8d5a4;
+  color: #161616;
+}
+.page-chip {
+  background: #e3f0fc;
+  color: #2156a4;
+}
+.item-chip {
+  background: #fff6df;
+  color: #ff9800;
+}
+.salary-chip {
+  background: #f3eafd;
+  color: #6626a6;
+}
 
-  .chip-label {
-    font-size: 1rem;
-    font-weight: 400;
-    font-family: 'Montserrat', 'Roboto', Arial, sans-serif;
-  }
-  .chip-label b {
-    font-weight: 700;
-  }
+.chip-label {
+  font-size: 1rem;
+  font-weight: 400;
+  font-family: "Montserrat", "Roboto", Arial, sans-serif;
+}
+.chip-label b {
+  font-weight: 700;
+}
 
-  .q-chip__icon,
-  .q-icon {
-    font-size: 1.15em;
-    margin-right: 4px;
-  }
+.q-chip__icon,
+.q-icon {
+  font-size: 1.15em;
+  margin-right: 4px;
+}
 
-  .assessment-status .q-badge {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-    border-radius: 4px;
-  }
+.assessment-status .q-badge {
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
 
-  .q-tabs {
-    background-color: #fff;
-    border-radius: 8px 8px 0 0;
-  }
+.q-tabs {
+  background-color: #fff;
+  border-radius: 8px 8px 0 0;
+}
 
-  .q-tab {
-    font-weight: 500;
-    padding: 12px;
-  }
+.q-tab {
+  font-weight: 500;
+  padding: 12px;
+}
 
-  .q-tab-panels {
-    background-color: white;
-  }
+.q-tab-panels {
+  background-color: white;
+}
 
-  .q-tab-panel {
-    padding: 16px;
-  }
+.q-tab-panel {
+  padding: 16px;
+}
 
-  .q-table tr:hover {
-    background-color: #f5f5f5;
-  }
+.q-table tr:hover {
+  background-color: #f5f5f5;
+}
 </style>

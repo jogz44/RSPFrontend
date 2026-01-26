@@ -13,5 +13,6 @@
   },
   "[dotenv]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  "vue3snippets.enable-compile-vue-file-on-did-save-code": true
 }
