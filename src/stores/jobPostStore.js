@@ -19,6 +19,8 @@ export const useJobPostStore = defineStore('jobPost', {
     // ✅ ADD THESE: Confirmation token state
     confirmationToken: null,
     confirmationExpiresAt: null,
+    // postDate: null,
+    // endDate: null
   }),
 
   getters: {
@@ -387,31 +389,80 @@ export const useJobPostStore = defineStore('jobPost', {
       }
     },
 
-    async job_post() {
-      this.loading = true;
-      try {
-        const { data } = await adminApi.get('/job-post');
-        if (Array.isArray(data)) {
-          this.jobPosts = data;
-        } else if (data && typeof data === 'object' && Array.isArray(data.data)) {
-          this.jobPosts = data.data;
-        } else if (data && typeof data === 'object' && Array.isArray(data.jobPosts)) {
-          this.jobPosts = data.jobPosts;
-        } else if (data && typeof data === 'object') {
-          this.jobPosts = Object.values(data).filter(
-            (item) => item && typeof item === 'object' && (item.PositionID || item.id),
-          );
-        } else {
-          this.jobPosts = [];
-        }
-        this.error = null;
-      } catch (err) {
-        this.error = err;
-        this.jobPosts = [];
-      } finally {
-        this.loading = false;
-      }
-    },
+
+
+// Main method - handles both filtered and all jobs
+async job_post(postDate = null, endDate = null) {
+  this.loading = true;
+  try {
+    let url;
+
+    // If no dates provided, fetch all jobs
+    if (!postDate || !endDate) {
+      url = '/job-post'; // Use the route that fetches all jobs
+    } else {
+      // Use dates in YYYY-MM-DD format for filtered results
+      url = `/job-post/${postDate}/${endDate}`;
+    }
+
+    const { data } = await adminApi.get(url);
+
+    // Handle different response formats
+    if (Array.isArray(data)) {
+      this.jobPosts = data;
+    } else if (data && typeof data === 'object' && Array.isArray(data.data)) {
+      this.jobPosts = data.data;
+    } else if (data && typeof data === 'object' && Array.isArray(data.jobPosts)) {
+      this.jobPosts = data.jobPosts;
+    } else if (data && typeof data === 'object') {
+      this.jobPosts = Object.values(data).filter(
+        (item) => item && typeof item === 'object' && (item.PositionID || item.id),
+      );
+    } else {
+      this.jobPosts = [];
+    }
+
+    this.error = null;
+  } catch (err) {
+    this.error = err;
+    this.jobPosts = [];
+    console.error('Error fetching job posts:', err);
+  } finally {
+    this.loading = false;
+  }
+},
+
+// Convenience method for fetching all jobs
+async job_post_all() {
+  return this.job_post(null, null);
+},
+
+    // async job_post() { // old code
+    //   this.loading = true;
+    //   try {
+    //     const { data } = await adminApi.get('/job-post'); // format will be send must be yy/mm/dd
+    //     if (Array.isArray(data)) {
+    //       this.jobPosts = data;
+    //     } else if (data && typeof data === 'object' && Array.isArray(data.data)) {
+    //       this.jobPosts = data.data;
+    //     } else if (data && typeof data === 'object' && Array.isArray(data.jobPosts)) {
+    //       this.jobPosts = data.jobPosts;
+    //     } else if (data && typeof data === 'object') {
+    //       this.jobPosts = Object.values(data).filter(
+    //         (item) => item && typeof item === 'object' && (item.PositionID || item.id),
+    //       );
+    //     } else {
+    //       this.jobPosts = [];
+    //     }
+    //     this.error = null;
+    //   } catch (err) {
+    //     this.error = err;
+    //     this.jobPosts = [];
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
+
 
     async fetchJobPostByPositionAndItemNo(PositionID, ItemNo) {
       this.loading = true;
