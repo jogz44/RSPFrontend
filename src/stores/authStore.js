@@ -394,7 +394,7 @@ export const useAuthStore = defineStore('auth', {
               // isCriteria: userData.permissions.isCriteria || false,
               // isDashboardStat: userData.permissions.isDashboardStat || false,
 
-              viewDashboardStat: userData.permissions?.viewDashboardStat || '0',
+              viewDashboardstat: userData.permissions?.viewDashboardstat || '0',
               viewPlantillaAccess: userData.permissions?.viewPlantillaAccess || '0',
               modifyPlantillaAccess: userData.permissions?.modifyPlantillaAccess || '0',
               viewJobpostAccess: userData.permissions?.viewJobpostAccess || '0',
