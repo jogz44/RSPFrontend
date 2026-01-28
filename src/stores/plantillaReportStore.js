@@ -14,35 +14,70 @@ export const usePlantillaReportStore = defineStore('plantillaReport', {
   }),
 
   actions: {
-    async fetchReport() {
-      this.loading = true;
-      this.error = null;
-      this.data = null;
+    // async fetchReport() {
+    //   this.loading = true;
+    //   this.error = null;
+    //   this.data = null;
 
-      // ✅ Create new abort controller
-      this.abortController = new AbortController();
+    //   // ✅ Create new abort controller
+    //   this.abortController = new AbortController();
 
-      try {
-        // Start generation
-        const response = await adminApi.get('/generate', {
-          signal: this.abortController.signal
-        });
-        this.jobId = response.data.job_id;
+    //   try {
+    //     // Start generation
+    //     const response = await adminApi.get('/generate', {
+    //       signal: this.abortController.signal
+    //     });
+    //     this.jobId = response.data.job_id;
 
-        // Poll for status
-        await this.pollStatus();
+    //     // Poll for status
+    //     await this.pollStatus();
 
-      } catch (err) {
-        if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
-          console.log('Request was cancelled');
-          this.error = 'Request cancelled by user';
-        } else {
-          this.error = err;
-        }
-        this.loading = false;
-      }
-    },
+    //   } catch (err) {
+    //     if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+    //       console.log('Request was cancelled');
+    //       this.error = 'Request cancelled by user';
+    //     } else {
+    //       this.error = err;
+    //     }
+    //     this.loading = false;
+    //   }
+    // },
 
+        async fetchReport() {
+            this.loading = true;
+            this.error = null;
+            this.data = null;
+
+            this.abortController = new AbortController();
+
+            try {
+              const response = await adminApi.get('/generate', {
+                signal: this.abortController.signal
+              });
+
+              // ✅ Check if response indicates queue worker not running
+              if (response.data.status === 'error') {
+                this.error = response.data.message;
+                this.loading = false;
+                return;
+              }
+
+              this.jobId = response.data.job_id;
+              await this.pollStatus();
+
+            } catch (err) {
+              if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+                console.log('Request was cancelled');
+                this.error = 'Request cancelled by user';
+              } else if (err.response?.status === 503) {
+                // ✅ Handle 503 Service Unavailable
+                this.error = err.response.data.message || 'Queue worker is not running. Please contact Deniel Tomenio for this issue.';
+              } else {
+                this.error = err.response?.data?.message || err.message || 'An error occurred';
+              }
+              this.loading = false;
+            }
+          },
     async pollStatus() {
       this.pollInterval = setInterval(async () => {
         try {
