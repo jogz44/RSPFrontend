@@ -30,17 +30,41 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    // async fetchApplicantDetail(jobpostId) {
+    //   try {
+    //     this.loading = true;
+    //     const response = await adminApi.get(`/report/applicant-final-score/${jobpostId}`);
+    //     this.positionDetails = response.data;
+    //     this.error = null;
+    //     return response.data;
+    //   } catch (err) {
+    //     this.error = err.message;
+    //     console.error('Error fetching applicant details:', err);
+    //     throw err;
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
+
     async fetchApplicantDetail(jobpostId) {
       try {
         this.loading = true;
         const response = await adminApi.get(`/report/applicant-final-score/${jobpostId}`);
+
+        // ✅ Check if response contains an error message
+        if (response.data.message && !response.data.applicants) {
+          console.warn(`No ratings for job post ${jobpostId}:`, response.data.message);
+          this.error = response.data.message;
+          return null; // Return null instead of throwing
+        }
+
         this.positionDetails = response.data;
         this.error = null;
         return response.data;
       } catch (err) {
-        this.error = err.message;
+        this.error = err.response?.data?.message || err.message;
         console.error('Error fetching applicant details:', err);
-        throw err;
+        return null; // Return null instead of throwing
       } finally {
         this.loading = false;
       }
