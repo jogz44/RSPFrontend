@@ -1499,7 +1499,7 @@ onMounted(async () => {
     // ✅ Load everything at once
     await loadAllData(jobId.value);
 
-    await jobPostStore.job_post();
+    // await jobPostStore.job_post();
 
     console.log("Initial data loading completed");
   } catch (error) {

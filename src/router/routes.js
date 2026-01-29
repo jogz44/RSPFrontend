@@ -1,7 +1,7 @@
 const routes = [
   // Admin Routes
   {
-    path: '/login',
+    path: '/admin/login',
     name: 'Admin Login',
     meta: { guest: true, role: 'admin' },
     component: () => import('pages/admin/LogIn.vue'),
@@ -160,7 +160,7 @@ const routes = [
 
   // Rater Routes
   {
-    path: '/rater-acc',
+    path: '/rater/login',
     name: 'Rater Login',
     meta: { guest: true, role: 'rater' },
     component: () => import('pages/rater/LoginRaterPage.vue'),
