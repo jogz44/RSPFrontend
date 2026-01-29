@@ -49,7 +49,7 @@
         </q-btn> -->
       </div>
 
-      <q-table
+      <!-- <q-table
         :rows="filteredApplicants"
         :columns="columns"
         row-key="id"
@@ -57,11 +57,22 @@
         :loading="applicantStore.loading"
         class="q-mt-md"
         flat
-      >
+      > -->
+          <q-table
+            :rows="applicantStore.applicants"
+            :columns="columns"
+            row-key="nPersonal_id"
+            v-model:pagination="pagination"
+            :rows-number="applicantStore.total"
+            :loading="applicantStore.loading"
+            @request="onRequest"
+              :rows-per-page-options="[10, 20, 50, 100, 200]"
+            flat
+          >
         <template #body-cell-name="p">
           <q-td :props="p">
-            {{ p.row.n_personal_info?.firstname || p.row.firstname || '' }}
-            {{ p.row.n_personal_info?.lastname || p.row.lastname || '' }}
+            {{ p.row.n_personal_info?.firstname || p.row.firstname || "" }}
+            {{ p.row.n_personal_info?.lastname || p.row.lastname || "" }}
           </q-td>
         </template>
         <template #body-cell-jobpost="p">
@@ -82,7 +93,9 @@
           </q-td>
         </template>
         <template #no-data>
-          <div class="full-width row flex-center q-pa-md text-grey">No Applicants Found</div>
+          <div class="full-width row flex-center q-pa-md text-grey">
+            No Applicants Found
+          </div>
         </template>
       </q-table>
     </div>
@@ -125,7 +138,7 @@
                   {{
                     selectedApplicant.n_personal_info?.firstname ||
                     selectedApplicant.firstname ||
-                    'N/A'
+                    "N/A"
                   }}
                 </div>
               </div>
@@ -135,7 +148,7 @@
                   {{
                     selectedApplicant.n_personal_info?.lastname ||
                     selectedApplicant.lastname ||
-                    'N/A'
+                    "N/A"
                   }}
                 </div>
               </div>
@@ -145,7 +158,7 @@
                   {{
                     selectedApplicant.n_personal_info?.date_of_birth ||
                     selectedApplicant.date_of_birth ||
-                    'N/A'
+                    "N/A"
                   }}
                 </div>
               </div>
@@ -187,7 +200,11 @@
 
           <!-- Additional Information if available -->
           <div
-            v-if="selectedApplicant.email || selectedApplicant.phone || selectedApplicant.address"
+            v-if="
+              selectedApplicant.email ||
+              selectedApplicant.phone ||
+              selectedApplicant.address
+            "
           >
             <div class="text-h6 text-primary q-mb-sm">
               <q-icon name="contact_mail" class="q-mr-xs" />
@@ -254,7 +271,9 @@
             >
               <template v-slot:no-option>
                 <q-item>
-                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                  <q-item-section class="text-grey"
+                    >No publication dates found</q-item-section
+                  >
                 </q-item>
               </template>
 
@@ -277,7 +296,10 @@
               </template>
             </q-select>
 
-            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+            <div
+              v-if="publicationDateOptions.length === 0"
+              class="q-mt-sm text-caption text-grey"
+            >
               No publication dates available
             </div>
           </div>
@@ -339,7 +361,10 @@
               </template>
             </q-select>
 
-            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+            <div
+              v-if="publicationDateOptions.length === 0"
+              class="q-mt-sm text-caption text-grey"
+            >
               No publication dates available
             </div>
           </div>
@@ -428,7 +453,11 @@
           >
             <template #option="scope">
               <!-- Select All Option -->
-              <q-item v-if="scope.opt.value === 'select_all'" clickable @click="toggleSelectAll">
+              <q-item
+                v-if="scope.opt.value === 'select_all'"
+                clickable
+                @click="toggleSelectAll"
+              >
                 <q-item-section>
                   <q-item-label>Select All</q-item-label>
                 </q-item-section>
@@ -487,304 +516,381 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue';
-  import ApplicantReport from 'src/components/Reports/ApplicantReport.vue';
-  import QualifiedReport from 'src/components/Reports/QualifiedReport.vue';
-  import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
-  import { useApplicantStore } from 'stores/applicantStore';
-  import { useReportStore } from 'stores/reportStore';
-  import { useSummaryReportStore } from 'stores/summaryReportStore';
-  import { useQuasar } from 'quasar';
+import { ref, computed, onMounted, watch } from "vue";
+import ApplicantReport from "src/components/Reports/ApplicantReport.vue";
+import QualifiedReport from "src/components/Reports/QualifiedReport.vue";
+import UnqualifiedReport from "src/components/Reports/UnqualifiedReport.vue";
+import { useApplicantStore } from "stores/applicantStore";
+import { useReportStore } from "stores/reportStore";
+import { useSummaryReportStore } from "stores/summaryReportStore";
+import { useQuasar } from "quasar";
 
-  const applicantStore = useApplicantStore();
-  const reportStore = useReportStore();
-  const summaryReportStore = useSummaryReportStore();
-  const $q = useQuasar();
 
-  // Reactive variables
-  const globalSearch = ref('');
-  const showReportModal = ref(false);
-  const showDetailDialog = ref(false);
-  const selectedApplicant = ref(null);
-  const loadingApplicantDetails = ref(false);
-  const pagination = ref({ sortBy: 'name', descending: false, page: 1, rowsPerPage: 10 });
-  const dateFilterType = ref('single');
-  const singleDate = ref('');
-  const dateRange = ref({ from: '', to: '' });
-  const showDatePicker = ref(false);
-  const showFromPicker = ref(false);
-  const showToPicker = ref(false);
-  const selectedPositions = ref([]);
-  const showPrintDialog = ref(false);
+let searchTimeout = null; // ✅ Manual debounce timeout
+const applicantStore = useApplicantStore();
+const reportStore = useReportStore();
+const summaryReportStore = useSummaryReportStore();
+const $q = useQuasar();
 
-  // Qualified Report Modal
-  const showQualifiedModal = ref(false);
-  const selectedQualifiedPublicationDate = ref(null);
-  const filteredQualifiedPublicationDateOptions = ref([]);
-  const showQualifiedReportDialog = ref(false);
+// Reactive variables
+const globalSearch = ref("");
+const showReportModal = ref(false);
+const showDetailDialog = ref(false);
+const selectedApplicant = ref(null);
+const loadingApplicantDetails = ref(false);
+// const pagination = ref({ sortBy: "name", descending: false, page: 1, rowsPerPage: 10 });
+const dateFilterType = ref("single");
+const singleDate = ref("");
+const dateRange = ref({ from: "", to: "" });
+const showDatePicker = ref(false);
+const showFromPicker = ref(false);
+const showToPicker = ref(false);
+const selectedPositions = ref([]);
+const showPrintDialog = ref(false);
 
-  // Unqualified Report Modal
-  const showUnqualifiedModal = ref(false);
-  const selectedUnqualifiedPublicationDate = ref(null);
-  const filteredUnqualifiedPublicationDateOptions = ref([]);
-  const showUnqualifiedReportDialog = ref(false);
+// Qualified Report Modal
+const showQualifiedModal = ref(false);
+const selectedQualifiedPublicationDate = ref(null);
+const filteredQualifiedPublicationDateOptions = ref([]);
+const showQualifiedReportDialog = ref(false);
 
-  // Shared
-  const loadingPublicationDates = ref(false);
-  const publicationDateOptions = ref([]);
+// Unqualified Report Modal
+const showUnqualifiedModal = ref(false);
+const selectedUnqualifiedPublicationDate = ref(null);
+const filteredUnqualifiedPublicationDateOptions = ref([]);
+const showUnqualifiedReportDialog = ref(false);
 
-  // Helper function to get job post count
-  const getJobPostCount = (applicant) => {
-    if (Array.isArray(applicant.job_post)) {
-      return applicant.job_post.length;
-    } else if (applicant.job_post) {
-      return 1;
-    } else if (applicant.jobpost !== undefined) {
-      return applicant.jobpost;
-    }
-    return 0;
-  };
+// Shared
+const loadingPublicationDates = ref(false);
+const publicationDateOptions = ref([]);
 
-  // Helper function to get applicant job posts as array
-  const getApplicantJobPosts = (applicant) => {
-    if (!applicant) return [];
-    if (Array.isArray(applicant.job_post)) {
-      return applicant.job_post;
-    } else if (applicant.job_post) {
-      return [applicant.job_post];
-    }
-    return [];
-  };
+const pagination = ref({
+  sortBy: "name",
+  descending: false,
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0, // ✅ This must be updated with total from backend
+});
 
-  // Helper function to get status color
-  // const getStatusColor = (status) => {
-  //   if (!status) return 'grey';
-  //   const statusLower = status.toLowerCase();
-  //   if (statusLower === 'pending') return 'orange';
-  //   if (statusLower === 'approved' || statusLower === 'qualified') return 'green';
-  //   if (statusLower === 'rejected' || statusLower === 'unqualified') return 'red';
-  //   return 'blue';
-  // };
+// Helper function to get job post count
+const getJobPostCount = (applicant) => {
+  if (Array.isArray(applicant.job_post)) {
+    return applicant.job_post.length;
+  } else if (applicant.job_post) {
+    return 1;
+  } else if (applicant.jobpost !== undefined) {
+    return applicant.jobpost;
+  }
+  return 0;
+};
 
-  // Helper function to get job status color
-  const getJobStatusColor = (status) => {
-    if (!status) return 'grey';
-    const statusLower = status.toLowerCase();
-    if (statusLower === 'not started') return 'grey';
-    if (statusLower === 'ongoing') return 'blue';
-    if (statusLower === 'completed' || statusLower === 'finished') return 'green';
-    return 'orange';
-  };
+// Helper function to get applicant job posts as array
+const getApplicantJobPosts = (applicant) => {
+  if (!applicant) return [];
+  if (Array.isArray(applicant.job_post)) {
+    return applicant.job_post;
+  } else if (applicant.job_post) {
+    return [applicant.job_post];
+  }
+  return [];
+};
 
-  // Columns for main table
-  const columns = computed(() => [
-    { name: 'name', label: 'Name', align: 'left', field: 'name', sortable: true },
-    {
-      name: 'jobpost',
-      label: 'No. of Applied Position',
-      align: 'center',
-      field: 'jobpost',
-      sortable: true,
-    },
-    { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
-  ]);
+// Helper function to get status color
+// const getStatusColor = (status) => {
+//   if (!status) return 'grey';
+//   const statusLower = status.toLowerCase();
+//   if (statusLower === 'pending') return 'orange';
+//   if (statusLower === 'approved' || statusLower === 'qualified') return 'green';
+//   if (statusLower === 'rejected' || statusLower === 'unqualified') return 'red';
+//   return 'blue';
+// };
 
-  // Columns for job applications sub-table
-  const jobColumns = [
-    { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: false },
-    { name: 'position', label: 'Position', field: 'position', align: 'left', sortable: false },
-    { name: 'status', label: 'Status', field: 'status', align: 'left', sortable: false },
-  ];
+// Helper function to get job status color
+const getJobStatusColor = (status) => {
+  if (!status) return "grey";
+  const statusLower = status.toLowerCase();
+  if (statusLower === "not started") return "grey";
+  if (statusLower === "ongoing") return "blue";
+  if (statusLower === "completed" || statusLower === "finished") return "green";
+  return "orange";
+};
 
-  const applicantJobRows = computed(() => {
-    if (!selectedApplicant.value) return [];
-    const jobs = getApplicantJobPosts(selectedApplicant.value);
-    return jobs.map((job, idx) => ({
-      id: job.id ?? job.jobpost_id ?? idx + 1,
-      position: job.Position || job.position || 'N/A',
-      status: job.status || selectedApplicant.value.status || 'N/A',
-    }));
+// Columns for main table
+const columns = computed(() => [
+  { name: "name", label: "Name", align: "left", field: "name", sortable: true },
+  {
+    name: "jobpost",
+    label: "No. of Applied Position",
+    align: "center",
+    field: "jobpost",
+    sortable: true,
+  },
+  { name: "action", label: "Action", align: "center", field: "action", sortable: false },
+]);
+
+// Columns for job applications sub-table
+const jobColumns = [
+  { name: "id", label: "ID", field: "id", align: "left", sortable: false },
+  {
+    name: "office",
+    label: "Office",
+    field: "office",
+    align: "left",
+    sortable: false,
+  },
+  {
+    name: "position",
+    label: "Position",
+    field: "position",
+    align: "left",
+    sortable: false,
+  },
+
+  { name: "status", label: "Status", field: "status", align: "left", sortable: false },
+];
+
+
+const applicantJobRows = computed(() => {
+  if (!selectedApplicant.value) return [];
+  const jobs = getApplicantJobPosts(selectedApplicant.value);
+  return jobs.map((job, idx) => ({
+    id: job.id ?? job.jobpost_id ?? idx + 1,
+    office: job.Office || job.office || "N/A",
+    position: job.Position || job.position || "N/A",
+    status: job.status || selectedApplicant.value.status || "N/A",
+  }));
+});
+
+
+
+// ✅ Watch globalSearch and use debounced function
+
+const onRequest = async (props) => {
+  const { page, rowsPerPage } = props.pagination;
+
+  await applicantStore.fetchApplicants({
+    page,
+    perPage: rowsPerPage,
+    search: globalSearch.value,
   });
 
-  const filteredApplicants = computed(() => {
-    if (!globalSearch.value) return applicantStore.applicants;
-    const searchTerm = globalSearch.value.toLowerCase();
-    return applicantStore.applicants.filter((applicant) => {
-      const firstname = applicant.n_personal_info?.firstname || applicant.firstname || '';
-      const lastname = applicant.n_personal_info?.lastname || applicant.lastname || '';
-      const fullName = `${firstname} ${lastname}`.toLowerCase();
+  pagination.value.page = page;
+  pagination.value.rowsPerPage = rowsPerPage;
+  pagination.value.rowsNumber = applicantStore.total;
+};
 
-      // Search in job posts
-      let positionMatch = false;
-      if (Array.isArray(applicant.job_post)) {
-        positionMatch = applicant.job_post.some((job) =>
-          job.Position?.toLowerCase().includes(searchTerm),
-        );
-      } else if (applicant.job_post) {
-        positionMatch = applicant.job_post.Position?.toLowerCase().includes(searchTerm);
-      }
+watch(globalSearch, (newValue) => {
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
 
-      return fullName.includes(searchTerm) || positionMatch;
+  // Set new timeout
+  searchTimeout = setTimeout(async () => {
+    pagination.value.page = 1;
+
+    await applicantStore.fetchApplicants({
+      page: 1,
+      perPage: pagination.value.rowsPerPage,
+      search: newValue,
     });
-  });
 
-  const filteredPositions = computed(() => {
-    let positions = reportStore.report || [];
-    if (dateFilterType.value === 'single' && singleDate.value) {
-      positions = positions.filter((pos) => {
-        const p = pos.post_date?.slice(0, 10);
-        const e = pos.end_date?.slice(0, 10);
-        return singleDate.value >= p && singleDate.value <= e;
-      });
-    } else if (dateFilterType.value === 'range' && dateRange.value.from && dateRange.value.to) {
-      positions = positions.filter((pos) => {
-        const p = pos.post_date?.slice(0, 10);
-        const e = pos.end_date?.slice(0, 10);
-        return !(dateRange.value.to < p || dateRange.value.from > e);
-      });
-    }
-    return positions.map((pos) => ({ value: pos.id, label: pos.Position }));
-  });
+    pagination.value.rowsNumber = applicantStore.total;
+  }, 500); // ⭐ 500ms delay
+});
 
-  const positionOptions = computed(() =>
-    filteredPositions.value.length
-      ? [{ value: 'select_all', label: 'Select All' }, ...filteredPositions.value]
-      : [],
-  );
+// const filteredApplicants = computed(() => {
+//   if (!globalSearch.value) return applicantStore.applicants;
+//   const searchTerm = globalSearch.value.toLowerCase();
+//   return applicantStore.applicants.filter((applicant) => {
+//     const firstname = applicant.n_personal_info?.firstname || applicant.firstname || "";
+//     const lastname = applicant.n_personal_info?.lastname || applicant.lastname || "";
+//     const fullName = `${firstname} ${lastname}`.toLowerCase();
 
-  const allSelected = computed(() => {
-    const ids = filteredPositions.value.map((o) => o.value);
-    return ids.length > 0 && ids.every((id) => selectedPositions.value.includes(id));
-  });
+//     // Search in job posts
+//     let positionMatch = false;
+//     if (Array.isArray(applicant.job_post)) {
+//       positionMatch = applicant.job_post.some((job) =>
+//         job.Position?.toLowerCase().includes(searchTerm)
+//       );
+//     } else if (applicant.job_post) {
+//       positionMatch = applicant.job_post.Position?.toLowerCase().includes(searchTerm);
+//     }
 
-  // Methods
-  // const openReportDialog = async () => {
-  //   await reportStore.fetchPositionList();
-  //   showReportModal.value = true;
-  //   selectedPositions.value = [];
-  // };
+//     return fullName.includes(searchTerm) || positionMatch;
+//   });
+// });
 
-  const openQualifiedReportDialog = async () => {
-    showQualifiedModal.value = true;
-    selectedQualifiedPublicationDate.value = null;
-    await fetchPublicationDates();
-  };
-
-  const openUnqualifiedReportDialog = async () => {
-    showUnqualifiedModal.value = true;
-    selectedUnqualifiedPublicationDate.value = null;
-    await fetchPublicationDates();
-  };
-
-  const fetchPublicationDates = async () => {
-    loadingPublicationDates.value = true;
-    try {
-      const response = await summaryReportStore.fetchPublicationDateList();
-
-      if (Array.isArray(response)) {
-        publicationDateOptions.value = response.map((item) => item.date);
-      } else {
-        publicationDateOptions.value = [];
-      }
-
-      filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
-      filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
-    } catch (error) {
-      console.error('Error fetching publication dates:', error);
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to load publication dates',
-      });
-      publicationDateOptions.value = [];
-      filteredQualifiedPublicationDateOptions.value = [];
-      filteredUnqualifiedPublicationDateOptions.value = [];
-    } finally {
-      loadingPublicationDates.value = false;
-    }
-  };
-
-  const filterQualifiedPublicationDates = (val, update) => {
-    update(() => {
-      const needle = val.toLowerCase();
-      filteredQualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
-        (v) => v.toLowerCase().indexOf(needle) > -1,
-      );
+const filteredPositions = computed(() => {
+  let positions = reportStore.report || [];
+  if (dateFilterType.value === "single" && singleDate.value) {
+    positions = positions.filter((pos) => {
+      const p = pos.post_date?.slice(0, 10);
+      const e = pos.end_date?.slice(0, 10);
+      return singleDate.value >= p && singleDate.value <= e;
     });
-  };
-
-  const filterUnqualifiedPublicationDates = (val, update) => {
-    update(() => {
-      const needle = val.toLowerCase();
-      filteredUnqualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
-        (v) => v.toLowerCase().indexOf(needle) > -1,
-      );
+  } else if (
+    dateFilterType.value === "range" &&
+    dateRange.value.from &&
+    dateRange.value.to
+  ) {
+    positions = positions.filter((pos) => {
+      const p = pos.post_date?.slice(0, 10);
+      const e = pos.end_date?.slice(0, 10);
+      return !(dateRange.value.to < p || dateRange.value.from > e);
     });
-  };
+  }
+  return positions.map((pos) => ({ value: pos.id, label: pos.Position }));
+});
 
-  const closeQualifiedModal = () => {
-    showQualifiedModal.value = false;
-    selectedQualifiedPublicationDate.value = null;
-  };
+const positionOptions = computed(() =>
+  filteredPositions.value.length
+    ? [{ value: "select_all", label: "Select All" }, ...filteredPositions.value]
+    : []
+);
 
-  const closeUnqualifiedModal = () => {
-    showUnqualifiedModal.value = false;
-    selectedUnqualifiedPublicationDate.value = null;
-  };
+const allSelected = computed(() => {
+  const ids = filteredPositions.value.map((o) => o.value);
+  return ids.length > 0 && ids.every((id) => selectedPositions.value.includes(id));
+});
 
-  const generateQualifiedReport = () => {
-    showQualifiedModal.value = false;
-    showQualifiedReportDialog.value = true;
-  };
+// Methods
+// const openReportDialog = async () => {
+//   await reportStore.fetchPositionList();
+//   showReportModal.value = true;
+//   selectedPositions.value = [];
+// };
 
-  const generateUnqualifiedReport = () => {
-    showUnqualifiedModal.value = false;
-    showUnqualifiedReportDialog.value = true;
-  };
+const openQualifiedReportDialog = async () => {
+  showQualifiedModal.value = true;
+  selectedQualifiedPublicationDate.value = null;
+  await fetchPublicationDates();
+};
 
-  const viewApplicant = async (applicant) => {
-    selectedApplicant.value = applicant;
-    showDetailDialog.value = true;
+const openUnqualifiedReportDialog = async () => {
+  showUnqualifiedModal.value = true;
+  selectedUnqualifiedPublicationDate.value = null;
+  await fetchPublicationDates();
+};
 
-    loadingApplicantDetails.value = true;
-    try {
-      const firstname = applicant.n_personal_info?.firstname || applicant.firstname;
-      const lastname = applicant.n_personal_info?.lastname || applicant.lastname;
-      const dob = applicant.n_personal_info?.date_of_birth || applicant.date_of_birth;
+const fetchPublicationDates = async () => {
+  loadingPublicationDates.value = true;
+  try {
+    const response = await summaryReportStore.fetchPublicationDateList();
 
-      const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
-      selectedApplicant.value = { ...applicant, ...details };
-    } catch (error) {
-      console.error('Error fetching applicant details:', error);
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to load applicant details',
-      });
-    } finally {
-      loadingApplicantDetails.value = false;
-    }
-  };
-
-  const toggleSelectAll = () => {
-    const ids = filteredPositions.value.map((o) => o.value);
-    selectedPositions.value = allSelected.value ? [] : ids.slice();
-  };
-
-  const togglePosition = (val) => {
-    if (val === 'select_all') return;
-    if (selectedPositions.value.includes(val)) {
-      selectedPositions.value = selectedPositions.value.filter((x) => x !== val);
+    if (Array.isArray(response)) {
+      publicationDateOptions.value = response.map((item) => item.date);
     } else {
-      selectedPositions.value = [...selectedPositions.value, val];
+      publicationDateOptions.value = [];
     }
-  };
 
-  const generateReport = () => {
-    showReportModal.value = false;
-    showPrintDialog.value = true;
-  };
+    filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+    filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+  } catch (error) {
+    console.error("Error fetching publication dates:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to load publication dates",
+    });
+    publicationDateOptions.value = [];
+    filteredQualifiedPublicationDateOptions.value = [];
+    filteredUnqualifiedPublicationDateOptions.value = [];
+  } finally {
+    loadingPublicationDates.value = false;
+  }
+};
 
-  // Lifecycle
-  onMounted(async () => {
-    await applicantStore.fetchApplicants();
+const filterQualifiedPublicationDates = (val, update) => {
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredQualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
+      (v) => v.toLowerCase().indexOf(needle) > -1
+    );
   });
+};
+
+const filterUnqualifiedPublicationDates = (val, update) => {
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredUnqualifiedPublicationDateOptions.value = publicationDateOptions.value.filter(
+      (v) => v.toLowerCase().indexOf(needle) > -1
+    );
+  });
+};
+
+const closeQualifiedModal = () => {
+  showQualifiedModal.value = false;
+  selectedQualifiedPublicationDate.value = null;
+};
+
+const closeUnqualifiedModal = () => {
+  showUnqualifiedModal.value = false;
+  selectedUnqualifiedPublicationDate.value = null;
+};
+
+const generateQualifiedReport = () => {
+  showQualifiedModal.value = false;
+  showQualifiedReportDialog.value = true;
+};
+
+const generateUnqualifiedReport = () => {
+  showUnqualifiedModal.value = false;
+  showUnqualifiedReportDialog.value = true;
+};
+
+const viewApplicant = async (applicant) => {
+  selectedApplicant.value = applicant;
+  showDetailDialog.value = true;
+
+  loadingApplicantDetails.value = true;
+  try {
+    const firstname = applicant.n_personal_info?.firstname || applicant.firstname;
+    const lastname = applicant.n_personal_info?.lastname || applicant.lastname;
+    const dob = applicant.n_personal_info?.date_of_birth || applicant.date_of_birth;
+
+    const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
+    selectedApplicant.value = { ...applicant, ...details };
+  } catch (error) {
+    console.error("Error fetching applicant details:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to load applicant details",
+    });
+  } finally {
+    loadingApplicantDetails.value = false;
+  }
+};
+
+const toggleSelectAll = () => {
+  const ids = filteredPositions.value.map((o) => o.value);
+  selectedPositions.value = allSelected.value ? [] : ids.slice();
+};
+
+const togglePosition = (val) => {
+  if (val === "select_all") return;
+  if (selectedPositions.value.includes(val)) {
+    selectedPositions.value = selectedPositions.value.filter((x) => x !== val);
+  } else {
+    selectedPositions.value = [...selectedPositions.value, val];
+  }
+};
+
+const generateReport = () => {
+  showReportModal.value = false;
+  showPrintDialog.value = true;
+};
+
+// Lifecycle
+// onMounted(async () => {
+//   await applicantStore.fetchApplicants();
+// });
+onMounted(async () => {
+  await applicantStore.fetchApplicants({
+    page: 1,
+    perPage: pagination.value.rowsPerPage,
+    search: '',
+  });
+
+  pagination.value.rowsNumber = applicantStore.total;
+});
 </script>

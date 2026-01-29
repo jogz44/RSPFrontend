@@ -30,11 +30,11 @@ export const DashboardStore = defineStore('dashboard', {
         this.pending = data.pending;
         this.total = data.total;
         // Optional: Show a toast
-        toast.success('Status fetched successfully!');
+        // toast.success('Status fetched successfully!');
       } catch (error) {
         console.error('Error fetching the status:', error);
         this.error = 'Failed to fetch status summary.';
-        toast.error('Failed to fetch status summary.');
+        // toast.error('Failed to fetch status summary.');
       }
     },
 

@@ -103,6 +103,14 @@
             :pagination="{ rowsPerPage: 5 }"
             dense
           >
+            <template v-slot:body-cell-office="props">
+              <q-td :props="props">
+                <div class="text-body2" style="white-space: normal; width: 300px">
+                  {{ props.row.Office }}
+                </div>
+              </q-td>
+            </template>
+
             <template v-slot:body-cell-jobs="props">
               <q-td :props="props">
                 <div class="text-body2" style="white-space: normal; width: 300px">
@@ -110,9 +118,28 @@
                 </div>
               </q-td>
             </template>
+
+            <template v-slot:body-cell-status="props">
+              <q-td :props="props">
+                <q-badge
+                  :color="getStatusColor(props.row.status)"
+                  class="status-badge q-px-md q-py-xs"
+                >
+                  {{ props.row.status }}
+                </q-badge>
+              </q-td>
+            </template>
+
             <template v-slot:body-cell-action="props">
               <q-td :props="props">
-                <q-btn flat round dense color="blue" icon="visibility" @click="viewJob(props.row)">
+                <q-btn
+                  flat
+                  round
+                  dense
+                  color="blue"
+                  icon="visibility"
+                  @click="viewJob(props.row)"
+                >
                   <q-tooltip>View Job Details</q-tooltip>
                 </q-btn>
               </q-td>
@@ -153,8 +180,8 @@
               </div>
               <q-separator class="q-my-sm" />
               <div class="text-body2 text-grey-7">
-                Explore the portal to manage recruitment and access key features. Navigate using the
-                menu to get started.
+                Explore the portal to manage recruitment and access key features. Navigate
+                using the menu to get started.
               </div>
             </div>
             <div v-else>
@@ -181,7 +208,9 @@
         >
           <q-spinner size="60px" color="primary" class="q-mb-md" />
           <div class="text-h6 text-weight-bold q-mb-xs">Loading</div>
-          <div class="text-body2 text-grey-8">Please wait while we load your dashboard...</div>
+          <div class="text-body2 text-grey-8">
+            Please wait while we load your dashboard...
+          </div>
         </q-card>
       </div>
     </div>
@@ -189,143 +218,176 @@
 </template>
 
 <script setup>
-  import { onMounted, computed } from 'vue';
-  import { useAuthStore } from 'src/stores/authStore';
-  import StatusOverview from 'src/components/Dashboard/StatusOverview.vue';
+import { onMounted, computed } from "vue";
+import { useAuthStore } from "src/stores/authStore";
+import StatusOverview from "src/components/Dashboard/StatusOverview.vue";
 
-  import { DashboardStore } from 'src/stores/dashboardStore';
-  import { useJobPostStore } from 'src/stores/jobPostStore';
-  import { useRouter } from 'vue-router';
+import { DashboardStore } from "src/stores/dashboardStore";
+import { useJobPostStore } from "src/stores/jobPostStore";
+import { useRouter } from "vue-router";
 
-  const router = useRouter();
+const router = useRouter();
 
-  const useJobPost = useJobPostStore();
-  const dashboardStore = DashboardStore();
-  const authStore = useAuthStore();
+const useJobPost = useJobPostStore();
+const dashboardStore = DashboardStore();
+const authStore = useAuthStore();
 
-  // Check if user has dashboard view permission
-  const hasViewDashboardAccess = computed(() => {
-    return authStore.user?.permissions?.viewDashboardstat == '1';
+// Check if user has dashboard view permission
+const hasViewDashboardAccess = computed(() => {
+  return authStore.user?.permissions?.viewDashboardstat == "1";
+});
+
+// ✅ UPDATED: Use computed property instead of ref
+const jobs = computed(() => {
+  return useJobPost.jobPosts.filter((job) => {
+    return job.status && job.status.toLowerCase() !== "republished";
   });
+});
 
-  // ✅ UPDATED: Use computed property instead of ref
-  const jobs = computed(() => {
-    return useJobPost.jobPosts.filter((job) => {
-      return job.status && job.status.toLowerCase() !== 'republished';
-    });
+const getStatusColor = (status) => {
+  switch (status?.toLowerCase()) {
+    case "not started":
+      return "grey";
+    case "pending":
+      return "orange";
+    case "assessed":
+      return "blue";
+    case "rated":
+      return "purple";
+    case "occupied":
+      return "green";
+    case "qualified":
+      return "green";
+    case "unqualified":
+      return "red";
+    case "unoccupied":
+      return "red-9";
+    case "republished":
+      return "yellow-8";
+    default:
+      return "grey";
+  }
+};
+
+const columns = [
+  { name: "office", label: "Office", align: "left", field: "Office", sortable: true },
+  { name: "jobs", label: "Position", align: "left", field: "Position", sortable: true },
+  { name: "status", label: "Status", align: "left", field: "status", sortable: true },
+  {
+    name: "total_applicants",
+    label: "No. of Applicants",
+    align: "center",
+    field: "total_applicants",
+    sortable: true,
+  },
+  {
+    name: "pending_count",
+    label: "Pending",
+    align: "center",
+    field: "pending_count",
+    sortable: true,
+  },
+  {
+    name: "qualified_count",
+    label: "Qualified",
+    align: "center",
+    field: "qualified_count",
+    sortable: true,
+  },
+  {
+    name: "unqualified_count",
+    label: "Unqualified",
+    align: "center",
+    field: "unqualified_count",
+    sortable: true,
+  },
+  {
+    name: "action",
+    label: "Action",
+    align: "center",
+    field: "action",
+    sortable: false,
+  },
+];
+
+const viewJob = (row) => {
+  router.push({
+    name: "JobPost View",
+    params: { id: row.id },
   });
+};
 
-  const columns = [
-    { name: 'jobs', label: 'Position', align: 'left', field: 'Position', sortable: true },
-    {
-      name: 'total_applicants',
-      label: 'No. of Applicants',
-      align: 'center',
-      field: 'total_applicants',
-      sortable: true,
-    },
-    {
-      name: 'pending_count',
-      label: 'Pending',
-      align: 'center',
-      field: 'pending_count',
-      sortable: true,
-    },
-    {
-      name: 'qualified_count',
-      label: 'Qualified',
-      align: 'center',
-      field: 'qualified_count',
-      sortable: true,
-    },
-    {
-      name: 'unqualified_count',
-      label: 'Unqualified',
-      align: 'center',
-      field: 'unqualified_count',
-      sortable: true,
-    },
-    {
-      name: 'action',
-      label: 'Action',
-      align: 'center',
-      field: 'action',
-      sortable: false,
-    },
-  ];
+onMounted(async () => {
+  await Promise.all([dashboardStore.fetchFundedCount()]);
+  await useJobPost.job_post();
 
-  const viewJob = (row) => {
-    router.push({
-      name: 'JobPost View',
-      params: { id: row.id },
-    });
-  };
-
-  onMounted(async () => {
-    await Promise.all([dashboardStore.fetchFundedCount()]);
-    await useJobPost.job_post();
-
-    console.log('Jobs loaded (republished jobs will be filtered out)');
-  });
+  console.log("Jobs loaded (republished jobs will be filtered out)");
+});
 </script>
 
 <style scoped>
-  .stat-card {
-    border-radius: 10px;
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
-  }
+.stat-card {
+  border-radius: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-  .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
-  }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+}
 
-  .date-filter {
-    max-width: 160px;
-  }
+.date-filter {
+  max-width: 160px;
+}
 
-  .table-container {
-    flex: 1;
-    min-width: 80%;
-    padding: 3px 8px;
-    border-radius: 6px;
-  }
+.table-container {
+  flex: 1;
+  min-width: 80%;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
 
-  .job-card-container {
-    width: 24%;
-    margin-left: 4px;
-  }
+.job-card-container {
+  width: 24%;
+  margin-left: 4px;
+}
 
-  .applicants-table {
-    width: 100%;
-  }
+.applicants-table {
+  width: 100%;
+}
 
-  .welcome-container {
-    position: relative;
-    height: 80vh;
-    overflow: hidden;
-  }
+.welcome-container {
+  position: relative;
+  height: 80vh;
+  overflow: hidden;
+}
 
-  .welcome-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+.welcome-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-  .welcome-card {
-    transition: transform 0.2s ease;
-  }
+.welcome-card {
+  transition: transform 0.2s ease;
+}
 
-  .welcome-card:hover {
-    transform: scale(1.01);
-  }
+.welcome-card:hover {
+  transform: scale(1.01);
+}
 
-  .access-denied-card {
-    transition: transform 0.2s ease;
-  }
+.access-denied-card {
+  transition: transform 0.2s ease;
+}
+/* Status badges */
+.status-badge {
+  font-size: 0.95rem !important;
+  padding: 4px 10px !important;
+  border-radius: 16px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+}
 </style>
