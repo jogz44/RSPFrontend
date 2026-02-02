@@ -10,22 +10,43 @@ export const useInterviewStore = defineStore('interview', {
     loading: false,
     loadingApplicants: false,
     error: null,
+
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 5,
   }),
 
   actions: {
-    async fetchInterviews() {
-      try {
-        this.loading = true;
-        const response = await adminApi.get('/applicant/schedule/list');
-        this.interviews = response.data;
-        this.error = null;
-      } catch (err) {
-        this.error = err.message;
-        console.error('Error fetching interviews:', err);
-      } finally {
-        this.loading = false;
-      }
-    },
+    async fetchInterviews({ page = 1, perPage = 5, search = '' } = {}) {
+  try {
+    this.loading = true;
+
+    const response = await adminApi.get('/applicant/schedule/list', {
+      params: {
+        page,
+        per_page: perPage,
+        search,
+      },
+    });
+
+    // ✅ MUST be array
+    this.interviews = response.data.data ?? [];
+
+    this.currentPage = response.data.current_page;
+    this.lastPage = response.data.last_page;
+    this.total = response.data.total;
+    this.perPage = response.data.per_page;
+
+    this.error = null;
+  } catch (err) {
+    this.error = err.message;
+    console.error('Error fetching interviews:', err);
+  } finally {
+    this.loading = false;
+  }
+},
+
 
     async fetchAvailableApplicants() {
       try {

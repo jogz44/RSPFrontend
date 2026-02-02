@@ -10,7 +10,7 @@
               Welcome, {{ raterStore.user.name }}
             </p>
           </div>
-          <div class="col-auto">
+          <!-- <div class="col-auto">
             <q-btn
               flat
               round
@@ -19,7 +19,7 @@
               @click="refreshData"
               :loading="raterStore.loading"
             />
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -227,11 +227,11 @@
     }
   };
 
-  const refreshData = async () => {
-    console.log('Refreshing data...');
-    // This will call checkAuth_rater internally
-    await raterStore.fetch_assigned_jobs();
-  };
+  // const refreshData = async () => {
+  //   console.log('Refreshing data...');
+  //   // This will call checkAuth_rater internally
+  //   await raterStore.fetch_assigned_jobs();
+  // };
 
   // Watchers
   watch(

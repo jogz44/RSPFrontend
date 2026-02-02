@@ -49,6 +49,8 @@
       wrap-cells
       class="full-width"
       row-key="id"
+
+
     >
       <!-- Actions column -->
       <template v-slot:body-cell-actions="props">
@@ -166,7 +168,7 @@
           label: 'Office',
           field: (row) => row.office || row.Office || 'N/A',
           align: 'left',
-          sortable: true,
+          // sortable: true,
           style: 'width: 40%',
         },
         {
@@ -174,7 +176,7 @@
           label: 'Position',
           field: (row) => row.position || row.Position || 'N/A',
           align: 'left',
-          sortable: true,
+          // sortable: true,
           style: 'width: 30%',
         },
         {
@@ -182,9 +184,17 @@
           label: 'Actions',
           field: 'actions',
           align: 'center',
-          sortable: false,
+          // sortable: false,
           style: 'width: 30%',
         },
+        //    {
+        //   name: 'submitted',
+        //   label: 'submitted',
+        //   field: 'submitted',
+        //   align: 'center',
+        //   // sortable: true,
+        //   style: 'width: 30%',
+        // },
       ];
 
       // Office options
@@ -222,7 +232,9 @@
             job.Office === officeFilter.value;
           const matchesStatus = !statusFilter.value || job.status === statusFilter.value;
           return matchesSearch && matchesOffice && matchesStatus;
-        });
+        })
+         //  PRIORITY SORT: submitted === false first
+        .sort((a, b) => Number(a.submitted) - Number(b.submitted));
       });
 
       const formatStatus = (status) => {

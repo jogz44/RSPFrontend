@@ -32,15 +32,29 @@
       </div>
 
       <!-- Interviews Table -->
-      <q-table
-        :rows="filteredInterviews"
+      <!-- <q-table
+       :rows="interviewStore.interviews || []"
         :columns="columns"
         row-key="id"
         :pagination="pagination"
         class="interviews-table q-mt-md"
         :loading="interviewStore.loading"
         table-style="min-width: 100%"
-      >
+         @request="onRequest"
+        :rows-per-page-options="[2, 20, 50, 100, 200]"
+      > -->
+      <!-- Interviews Table -->
+          <q-table
+            :rows="interviewStore.interviews || []"
+            :columns="columns"
+            row-key="schedule_id"
+            v-model:pagination="pagination"
+            class="interviews-table q-mt-md"
+            :loading="interviewStore.loading"
+            table-style="min-width: 100%"
+            @request="onRequest"
+            :rows-per-page-options="[2, 20, 50, 100, 200]"
+          >
         <template v-slot:body-cell-batch_name="props">
           <q-td :props="props" class="batch-column">
             <div class="text-body2 text-weight-medium text-black">
@@ -245,6 +259,19 @@
                 </div>
               </q-td>
             </template>
+                  <template v-slot:body-cell-office="props">
+              <q-td :props="props">
+                <div class="positions-list">
+                  <div
+                    v-for="(office, index) in props.row.offices"
+                    :key="index"
+                    class="position-item"
+                  >
+                    {{ office }}
+                  </div>
+                </div>
+              </q-td>
+            </template>
 
             <template v-slot:no-data>
               <div class="full-width row flex-center q-pa-md text-grey">
@@ -416,9 +443,11 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, watch} from 'vue';
   import { useQuasar, date } from 'quasar';
   import { useInterviewStore } from 'stores/interviewStore';
+
+  let searchTimeout = null; // ✅ Manual debounce timeout
 
   // COMPOSABLES & STORE
   const $q = useQuasar();
@@ -442,12 +471,21 @@
     selected_applicants: [],
   });
 
+  // const pagination = ref({
+  //   sortBy: 'date_interview',
+  //   descending: false,
+  //   page: 1,
+  //   rowsPerPage: 10,
+  // });
+
   const pagination = ref({
-    sortBy: 'date_interview',
-    descending: false,
-    page: 1,
-    rowsPerPage: 10,
-  });
+  sortBy: 'date_interview',
+  descending: false,
+  page: 1,
+  rowsPerPage: 2,
+  rowsNumber: 0, // ✅ REQUIRED
+});
+
 
   const applicantPagination = ref({
     page: 1,
@@ -511,6 +549,62 @@
     },
   ];
 
+
+const onRequest = async (props) => {
+  const { page, rowsPerPage, sortBy, descending } = props.pagination;
+
+  await interviewStore.fetchInterviews({
+    page,
+    perPage: rowsPerPage,
+    search: globalSearch.value,
+  });
+
+  // ✅ CRITICAL: Update all pagination properties
+  pagination.value.page = page;
+  pagination.value.rowsPerPage = rowsPerPage;
+  pagination.value.rowsNumber = interviewStore.total; // ← This enables pagination controls
+  pagination.value.sortBy = sortBy;
+  pagination.value.descending = descending;
+};
+
+    // watch(globalSearch, (newValue) => {
+    //   // Clear previous timeout
+    //   if (searchTimeout) {
+    //     clearTimeout(searchTimeout);
+    //   }
+
+    //   // Set new timeout
+    //   searchTimeout = setTimeout(async () => {
+    //     pagination.value.page = 1;
+
+    //     await interviewStore.fetchInterviews({
+    //       page: 1,
+    //       perPage: pagination.value.rowsPerPage,
+    //       search: newValue,
+    //     });
+
+    //     pagination.value.rowsNumber = interviewStore.total;
+    //   }, 500); // ⭐ 500ms delay
+    // });
+    watch(globalSearch, (newValue) => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    searchTimeout = setTimeout(async () => {
+      pagination.value.page = 1; // Reset to first page on search
+
+      await interviewStore.fetchInterviews({
+        page: 1,
+        perPage: pagination.value.rowsPerPage,
+        search: newValue,
+      });
+
+      // ✅ Update rowsNumber after search
+      pagination.value.rowsNumber = interviewStore.total;
+    }, 500);
+  });
+
   const applicantColumns = [
     {
       name: 'name',
@@ -519,6 +613,14 @@
       field: 'name',
       sortable: true,
       style: 'width: 40%',
+    },
+     {
+      name: 'office',
+      label: 'Office',
+      align: 'left',
+      field: 'office',
+      sortable: false,
+      style: 'width: 60%;',
     },
     {
       name: 'position',
@@ -558,17 +660,17 @@
   ];
 
   // COMPUTED PROPERTIES
-  const filteredInterviews = computed(() => {
-    if (!globalSearch.value) return interviewStore.interviews || [];
+  // const filteredInterviews = computed(() => {
+  //   if (!globalSearch.value) return interviewStore.interviews || [];
 
-    const searchTerm = globalSearch.value.toLowerCase();
-    return (interviewStore.interviews || []).filter((interview) => {
-      return (
-        interview.batch_name?.toLowerCase().includes(searchTerm) ||
-        interview.venue_interview?.toLowerCase().includes(searchTerm)
-      );
-    });
-  });
+  //   const searchTerm = globalSearch.value.toLowerCase();
+  //   return (interviewStore.interviews || []).filter((interview) => {
+  //     return (
+  //       interview.batch_name?.toLowerCase().includes(searchTerm) ||
+  //       interview.venue_interview?.toLowerCase().includes(searchTerm)
+  //     );
+  //   });
+  // });
 
   const transformedApplicants = computed(() => {
     const submissions = interviewStore.availableApplicants || [];
@@ -579,6 +681,7 @@
       ControlNo: submission.ControlNo,
       firstname: submission.firstname,
       lastname: submission.lastname,
+      offices: [submission.job_batch_rsp?.Office || 'N/A'],
       positions: [submission.job_batch_rsp?.Position || 'N/A'],
       job_batches_rsp_id: submission.job_batches_rsp_id,
       _rawData: submission,
@@ -592,11 +695,13 @@
     return transformedApplicants.value.filter((applicant) => {
       const fullName = `${applicant.firstname} ${applicant.lastname}`.toLowerCase();
       const positions = applicant.positions.join(' ').toLowerCase();
+      const offices = applicant.offices.join(' ').toLowerCase();
       const controlNo = applicant.ControlNo?.toLowerCase() || '';
 
       return (
         fullName.includes(searchTerm) ||
         positions.includes(searchTerm) ||
+        offices.includes(searchTerm) ||
         controlNo.includes(searchTerm)
       );
     });
@@ -824,18 +929,38 @@
   // };
 
   // LIFECYCLE
-  onMounted(async () => {
-    try {
-      await interviewStore.fetchInterviews();
-    } catch (error) {
-      console.error('Error loading interviews:', error);
-      $q.notify({
-        type: 'negative',
-        message: error?.message || 'Failed to load interviews',
-        position: 'top',
-      });
-    }
+  // onMounted(async () => {
+  //   try {
+  //     await interviewStore.fetchInterviews();
+  //   } catch (error) {
+  //     console.error('Error loading interviews:', error);
+  //     $q.notify({
+  //       type: 'negative',
+  //       message: error?.message || 'Failed to load interviews',
+  //       position: 'top',
+  //     });
+  //   }
+  // });
+//   onMounted(async () => {
+//   await interviewStore.fetchInterviews({
+//     page: 1,
+//     perPage: pagination.value.rowsPerPage,
+//     search: '',
+//   });
+
+//   pagination.value.rowsNumber = interviewStore.total;
+// });
+
+onMounted(async () => {
+  await interviewStore.fetchInterviews({
+    page: 1,
+    perPage: pagination.value.rowsPerPage,
+    search: '',
   });
+
+  // ✅ Set total rows to enable pagination
+  pagination.value.rowsNumber = interviewStore.total;
+});
 </script>
 
 <style scoped lang="scss">

@@ -503,13 +503,13 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('No authentication token found');
         }
 
-        const date = new Date(userData.BirthDate);
-        console.log('BirthDate string:', userData.BirthDate);
-        console.log('Date parsed:', date);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const birthdatePassword = `${year}${month}${day}`;
+        // const date = new Date(userData.BirthDate);
+        // console.log('BirthDate string:', userData.BirthDate);
+        // console.log('Date parsed:', date);
+        // const year = date.getFullYear();
+        // const month = String(date.getMonth() + 1).padStart(2, '0');
+        // const day = String(date.getDate()).padStart(2, '0');
+        // const birthdatePassword = `${year}${month}${day}`;
         const username = userData.name;
 
         const formattedData = {
@@ -518,7 +518,7 @@ export const useAuthStore = defineStore('auth', {
           job_batches_rsp_id: userData.job_batches_rsp_id || [],
           position: userData.position || userData.Designation,
           office: userData.Office || userData.Office,
-          password: birthdatePassword,
+          password: 'admin',
           controlNo: userData.controlNo,
         };
         const response = await adminApi.post('rater/register', formattedData, {
