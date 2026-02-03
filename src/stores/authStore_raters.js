@@ -43,6 +43,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
       position: data.position,
       active: data.active,
       rspControl: data.rspControl,
+      must_change_password: data.must_change_password,
     };
 
     // Extract dashboard statistics
@@ -52,14 +53,14 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     completionRate.value = data.completion_rate || '0%';
     assignedJobs.value = data.assigned_jobs || [];
 
-    console.log('Dashboard data extracted:', {
-      user: user.value.name,
-      assigned: assignedJobsCount.value,
-      completed: completedJobsCount.value,
-      pending: pendingJobsCount.value,
-      rate: completionRate.value,
-      jobsCount: assignedJobs.value.length,
-    });
+    // console.log('Dashboard data extracted:', {
+    //   user: user.value.name,
+    //   assigned: assignedJobsCount.value,
+    //   completed: completedJobsCount.value,
+    //   pending: pendingJobsCount.value,
+    //   rate: completionRate.value,
+    //   jobsCount: assignedJobs.value.length,
+    // });
   }
 
   function clearAuthState() {
@@ -88,54 +89,155 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     cookieSettings.forEach((setting) => (document.cookie = setting));
   }
 
-  async function login(username, password) {
-    errors.value = {};
-    loading.value = true;
 
-    try {
-      const response = await raterApi.post('/rater/login', { username, password });
+async function changePassword(passwordData) {
+  loading.value = true;
+  errors.value = {};
 
-      if (response.data.status) {
-        token.value = response.data.token;
-        isAuthenticated.value = true;
+  try {
+    const response = await raterApi.post('/rater/change-password', {
+      current_password: passwordData.current_password,
+      new_password: passwordData.new_password,
+      new_password_confirmation: passwordData.new_password_confirmation,
+    });
 
-        // Set cookie
-        document.cookie = `rater_token=${response.data.token}; path=/`;
-
-        toast.success('You are now logged in!');
-
-        // Fetch complete user data and dashboard stats using checkAuth_rater
-        await checkAuth_rater();
-      } else {
-        loading.value = false;
-        if (response.data.errors?.role_id) {
-          toast.error(response.data.errors.role_id[0] || 'Login Failed!');
-        } else {
-          toast.error(response.data.message || 'Login Failed!');
-        }
+    if (response.data.success) {
+      // Update user state to reflect password has been changed
+      if (user.value) {
+        user.value.must_change_password = false;
       }
-    } catch (error) {
-      if (error.response?.status === 403) {
-        if (error.response.data.errors?.role_id) {
-          toast.error(error.response.data.errors.role_id[0]);
-        } else {
-          toast.error(
-            error.response.data.message ||
-              'Your account is inactive. Please contact the administrator.',
-          );
-        }
-      } else if (error.response?.status === 0 || !error.response) {
-        toast.error('Please check your internet connection and try again later.');
-      } else {
-        toast.error('Login Failed!');
-      }
-      errors.value = error.response?.data?.errors || {};
-      loading.value = false;
-    } finally {
-      const logsStore = useLogsStore();
-      await logsStore.logAction('Logged In');
+
+      toast.success(response.data.message || 'Password changed successfully!');
+      return { success: true };
+    } else {
+      toast.error(response.data.message || 'Failed to change password');
+      return { success: false, errors: response.data.errors };
     }
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || 'Failed to change password. Please try again.';
+    toast.error(errorMessage);
+
+    return {
+      success: false,
+      errors: error.response?.data?.errors || {},
+    };
+  } finally {
+    loading.value = false;
   }
+}
+async function login(username, password) {
+  errors.value = {};
+  loading.value = true;
+
+  try {
+    const response = await raterApi.post('/rater/login', { username, password });
+
+    if (response.data.status) {
+      token.value = response.data.token;
+      isAuthenticated.value = true;
+
+      // Store user data including must_change_password
+      user.value = {
+        name: response.data.user.name,
+        position: response.data.user.position,
+        role_id: response.data.user.role_id,
+        role_name: response.data.user.role_name,
+        must_change_password: response.data.user.must_change_password, // ← Important!
+      };
+
+      // Set cookie
+      document.cookie = `rater_token=${response.data.token}; path=/`;
+
+      toast.success('You are now logged in!');
+
+      // Return the must_change_password flag
+      return {
+        success: true,
+        must_change_password: response.data.user.must_change_password
+      };
+    } else {
+      loading.value = false;
+      if (response.data.errors?.role_id) {
+        toast.error(response.data.errors.role_id[0] || 'Login Failed!');
+      } else {
+        toast.error(response.data.message || 'Login Failed!');
+      }
+      return { success: false };
+    }
+  } catch (error) {
+    if (error.response?.status === 403) {
+      if (error.response.data.errors?.role_id) {
+        toast.error(error.response.data.errors.role_id[0]);
+      } else {
+        toast.error(
+          error.response.data.message ||
+            'Your account is inactive. Please contact the administrator.'
+        );
+      }
+    } else if (error.response?.status === 0 || !error.response) {
+      toast.error('Please check your internet connection and try again later.');
+    } else {
+      toast.error('Login Failed!');
+    }
+    errors.value = error.response?.data?.errors || {};
+    loading.value = false;
+    return { success: false };
+  } finally {
+    const logsStore = useLogsStore();
+    await logsStore.logAction('Logged In');
+  }
+}
+  // async function login(username, password) {
+  //   errors.value = {};
+  //   loading.value = true;
+
+  //   try {
+  //     const response = await raterApi.post('/rater/login', { username, password });
+
+  //     if (response.data.status) {
+  //       token.value = response.data.token;
+  //       isAuthenticated.value = true;
+
+
+
+  //       // Set cookie
+  //       document.cookie = `rater_token=${response.data.token}; path=/`;
+
+  //       toast.success('You are now logged in!');
+
+  //       // Fetch complete user data and dashboard stats using checkAuth_rater
+  //       await checkAuth_rater();
+  //     } else {
+  //       loading.value = false;
+  //       if (response.data.errors?.role_id) {
+  //         toast.error(response.data.errors.role_id[0] || 'Login Failed!');
+  //       } else {
+  //         toast.error(response.data.message || 'Login Failed!');
+  //       }
+  //     }
+  //   } catch (error) {
+  //     if (error.response?.status === 403) {
+  //       if (error.response.data.errors?.role_id) {
+  //         toast.error(error.response.data.errors.role_id[0]);
+  //       } else {
+  //         toast.error(
+  //           error.response.data.message ||
+  //             'Your account is inactive. Please contact the administrator.',
+  //         );
+  //       }
+  //     } else if (error.response?.status === 0 || !error.response) {
+  //       toast.error('Please check your internet connection and try again later.');
+  //     } else {
+  //       toast.error('Login Failed!');
+  //     }
+  //     errors.value = error.response?.data?.errors || {};
+  //     loading.value = false;
+  //   } finally {
+  //     const logsStore = useLogsStore();
+  //     await logsStore.logAction('Logged In');
+  //   }
+  // }
 
   function handleError(error, defaultMessage) {
     if (error.response?.status === 401) {
@@ -149,18 +251,18 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     } else if (error.response?.status === 0 || !error.response) {
       // Network error - silent or minimal notification
     } else {
-      console.error(error);
+      // console.error(error);
       toast.error(defaultMessage);
     }
   }
 
-  async function changePassword({ old_password, new_password, new_password_confirmation }) {
+  async function updatePassword({ old_password, new_password, new_password_confirmation }) {
     errors.value = {};
     loading.value = true;
 
     try {
       const response = await raterApi.post(
-        '/rater/changepassword',
+        '/rater/update-password',
         {
           old_password,
           new_password,
@@ -284,7 +386,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
           errors.value = {};
           loading.value = false;
 
-          console.log('Auth check successful - Dashboard data loaded');
+          // console.log('Auth check successful - Dashboard data loaded');
         } else {
           throw new Error('Invalid response format');
         }
@@ -308,7 +410,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
    */
   async function fetch_assigned_jobs() {
     loading.value = true;
-    console.log('Fetching assigned jobs...');
+    // console.log('Fetching assigned jobs...');
 
     try {
       await checkAuth_rater();
@@ -387,8 +489,9 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     checkAuth_rater,
     handleError,
     get_rater_usernames,
-    changePassword,
+    updatePassword,
     fetch_assigned_jobs, // Alias for checkAuth_rater
     clearAuthState,
+    changePassword
   };
 });

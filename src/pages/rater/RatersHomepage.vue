@@ -133,6 +133,12 @@
         </q-card>
       </div>
     </div>
+        <ChangePasswordModal
+      v-model="showChangePasswordModal"
+      @password-changed="handlePasswordChange"
+      @logout="handleLogout"
+      ref="changePasswordModalRef"
+    />
   </q-page>
 </template>
 
@@ -140,8 +146,12 @@
   import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
   import { Chart, registerables } from 'chart.js';
   import { useRaterAuthStore } from 'stores/authStore_raters'; // Updated import
+import ChangePasswordModal from 'components/Rater/ChangePasswordModal.vue';
+import { useRouter } from 'vue-router';
 
   Chart.register(...registerables);
+// router
+const router = useRouter();
 
   // Reactive data
   const statusChart = ref(null);
@@ -154,6 +164,10 @@
   const chartData = computed(() => {
     return [raterStore.completedJobsCount, raterStore.pendingJobsCount];
   });
+
+// ← ADD THESE
+const showChangePasswordModal = ref(false);
+const changePasswordModalRef = ref(null);
 
   const initChart = () => {
     console.log('Initializing chart...');
@@ -258,12 +272,56 @@
     },
   );
 
-  // Lifecycle hooks
-  onMounted(async () => {
-    console.log('Dashboard mounted');
+  // Dashboard.vue — add this watcher alongside your existing ones
+watch(
+  () => raterStore.user?.must_change_password,
+  (val) => {
+    if (val === true) {
+      showChangePasswordModal.value = true;
+    }
+  },
+  { immediate: true } // runs immediately on mount too
+);
 
-    // Fetch data on mount using checkAuth_rater
-    if (raterStore.isAuthenticated) {
+  // Lifecycle hooks
+  // onMounted(async () => {
+  //   console.log('Dashboard mounted');
+
+  //   // Fetch data on mount using checkAuth_rater
+  //   if (raterStore.isAuthenticated) {
+  //     await raterStore.fetch_assigned_jobs();
+
+  //     await nextTick();
+  //     if (statusChart.value && raterStore.assignedJobs.length > 0) {
+  //       initChart();
+  //     }
+  //   }
+  // });
+
+//   onMounted(async () => {
+//   console.log('Dashboard mounted');
+
+//   if (raterStore.isAuthenticated) {
+//     // Check if user needs to change password
+//     if (raterStore.user?.must_change_password) {
+//       showChangePasswordModal.value = true;
+//       return; // Don't fetch data yet
+//     }
+
+//     await raterStore.fetch_assigned_jobs();
+
+//     await nextTick();
+//     if (statusChart.value && raterStore.assignedJobs.length > 0) {
+//       initChart();
+//     }
+//   }
+// });
+onMounted(async () => {
+  console.log('Dashboard mounted');
+
+  if (raterStore.isAuthenticated) {
+    // The watcher above handles the modal, so just check if password is already changed
+    if (!raterStore.user?.must_change_password) {
       await raterStore.fetch_assigned_jobs();
 
       await nextTick();
@@ -271,7 +329,42 @@
         initChart();
       }
     }
-  });
+  }
+});
+
+// ← ADD THIS: Handle password change from modal
+const handlePasswordChange = async (passwordData) => {
+  if (!changePasswordModalRef.value) return;
+
+  changePasswordModalRef.value.setLoading(true);
+
+  const result = await raterStore.changePassword(passwordData);
+
+  changePasswordModalRef.value.setLoading(false);
+
+  if (result.success) {
+    // Close modal and fetch dashboard data
+    showChangePasswordModal.value = false;
+    await raterStore.fetch_assigned_jobs();
+
+    await nextTick();
+    if (statusChart.value && raterStore.assignedJobs.length > 0) {
+      initChart();
+    }
+  } else {
+    // Show errors in modal
+    if (result.errors) {
+      changePasswordModalRef.value.setErrors(result.errors);
+    }
+  }
+};
+
+// ← ADD THIS: Handle logout
+const handleLogout = async () => {
+  await raterStore.logout();
+  showChangePasswordModal.value = false;
+  router.push({ name: 'RaterLogin' }); // Adjust route name as needed
+};
 
   onBeforeUnmount(() => {
     console.log('Dashboard unmounting');

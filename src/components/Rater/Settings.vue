@@ -319,7 +319,7 @@
           loading.value = true;
 
           if (form.value.new_password) {
-            const passwordChanged = await useRaterStore.changePassword({
+            const passwordChanged = await useRaterStore.updatePassword({
               old_password: form.value.old_password,
               new_password: form.value.new_password,
               new_password_confirmation: form.value.new_password_confirmation,

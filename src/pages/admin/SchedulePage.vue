@@ -53,7 +53,7 @@
             :loading="interviewStore.loading"
             table-style="min-width: 100%"
             @request="onRequest"
-            :rows-per-page-options="[2, 20, 50, 100, 200]"
+            :rows-per-page-options="[10, 20, 50, 100, 200]"
           >
         <template v-slot:body-cell-batch_name="props">
           <q-td :props="props" class="batch-column">
@@ -381,7 +381,7 @@
               row-key="submission_id"
               :pagination="viewPagination"
               class="applicant-view-table"
-              :rows-per-page-options="[5, 10, 20]"
+              :rows-per-page-options="[5, 10, 20, 100 , 200]"
             >
               <template v-slot:body-cell-name="props">
                 <q-td :props="props">
@@ -482,14 +482,14 @@
   sortBy: 'date_interview',
   descending: false,
   page: 1,
-  rowsPerPage: 2,
+  rowsPerPage: 10,
   rowsNumber: 0, // ✅ REQUIRED
 });
 
 
   const applicantPagination = ref({
     page: 1,
-    rowsPerPage: 5,
+    rowsPerPage: 10,
   });
 
   const viewPagination = ref({

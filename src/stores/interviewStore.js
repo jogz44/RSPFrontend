@@ -14,11 +14,11 @@ export const useInterviewStore = defineStore('interview', {
     currentPage: 1,
     lastPage: 1,
     total: 0,
-    perPage: 5,
+    perPage: 10,
   }),
 
   actions: {
-    async fetchInterviews({ page = 1, perPage = 5, search = '' } = {}) {
+    async fetchInterviews({ page = 1, perPage = 10, search = '' } = {}) {
   try {
     this.loading = true;
 
