@@ -53,11 +53,12 @@
 
         <!-- Search Bar -->
         <q-input
-          v-model="employeeSearch"
+        
           outlined
           dense
           placeholder="Search by name or control number..."
           class="q-mb-md"
+          v-model="globalSearch"
         >
           <template v-slot:prepend>
             <q-icon name="search" />
@@ -67,7 +68,6 @@
               v-if="employeeSearch"
               name="clear"
               class="cursor-pointer"
-              @click="employeeSearch = ''"
             />
           </template>
         </q-input>
@@ -76,12 +76,13 @@
         <q-table
           flat
           bordered
-          :rows="filteredEmployees"
+          :rows="usePlantilla.employee"
           :columns="employeeColumns"
           row-key="ControlNo"
           :loading="loadingEmployees"
-          :pagination="employeePagination"
-          v-model:pagination="employeePagination"
+
+          v-model:pagination="pagination"
+          @request="onRequest"
         >
           <template v-slot:body="props">
             <q-tr
@@ -502,13 +503,15 @@
   const loadingEmployees = ref(false);
   const loadingVice = ref(false);
   const qsDataLoad = ref([]);
-  const employeeList = ref([]);
+  // const employeeList = ref([]);
   const employeeSearch = ref('');
   const selectedEmployee = ref(null);
   const viceList = ref([]);
   const selectedVice = ref(null);
   const positionDesignation = ref('');
+  const globalSearch = ref('');
 
+  let searchTimeout = null; // ✅ Manual debounce timeout
   // Constants
   const employeeColumns = [
     { name: 'ControlNo', label: 'Control No', field: 'ControlNo', align: 'left', sortable: true },
@@ -516,10 +519,10 @@
     { name: 'Surname', label: 'Surname', field: 'Surname', align: 'left', sortable: true },
   ];
 
-  const employeePagination = ref({
-    page: 1,
-    rowsPerPage: 10,
-  });
+  // const employeePagination = ref({
+  //   page: 1,
+  //   rowsPerPage: 10,
+  // });
 
   const qsColumns = [
     { name: 'education', label: 'Education', field: 'Education', align: 'left' },
@@ -556,20 +559,46 @@
   });
 
   // Computed Properties
-  const filteredEmployees = computed(() => {
-    if (!employeeSearch.value) {
-      return Array.isArray(employeeList.value) ? employeeList.value : [];
-    }
-    const search = employeeSearch.value.toLowerCase();
-    return Array.isArray(employeeList.value)
-      ? employeeList.value.filter(
-          (emp) =>
-            emp.Firstname?.toLowerCase().includes(search) ||
-            emp.Surname?.toLowerCase().includes(search) ||
-            emp.ControlNo?.toLowerCase().includes(search),
-        )
-      : [];
-  });
+  // const filteredEmployees = computed(() => {
+  //   if (!employeeSearch.value) {
+  //     return Array.isArray(employeeList.value) ? employeeList.value : [];
+  //   }
+  //   const search = employeeSearch.value.toLowerCase();
+  //   return Array.isArray(employeeList.value)
+  //     ? employeeList.value.filter(
+  //         (emp) =>
+  //           emp.Firstname?.toLowerCase().includes(search) ||
+  //           emp.Surname?.toLowerCase().includes(search) ||
+  //           emp.ControlNo?.toLowerCase().includes(search),
+  //       )
+  //     : [];
+  // });
+
+  const pagination = ref({
+  sortBy: 'ControlNo',
+  descending: false,
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0, // ✅ REQUIRED
+});
+
+
+  const onRequest = async (props) => {
+    const { page, rowsPerPage, sortBy, descending } = props.pagination;
+
+    await usePlantilla.fetchAllEmployee({
+      page,
+      perPage: rowsPerPage,
+      search: globalSearch.value,
+    });
+
+    // ✅ CRITICAL: Update all pagination properties
+    pagination.value.page = page;
+    pagination.value.rowsPerPage = rowsPerPage;
+    pagination.value.rowsNumber = usePlantilla.total; // ← This enables pagination controls
+    pagination.value.sortBy = sortBy;
+    pagination.value.descending = descending;
+  };
 
   const viceOptions = computed(() => {
     return viceList.value.map((vice) => ({
@@ -731,18 +760,18 @@
   };
 
   // Data Loading Functions
-  const loadEmployees = async () => {
-    try {
-      loadingEmployees.value = true;
-      const employees = await usePlantilla.fetchAllEmployee();
-      employeeList.value = employees || [];
-    } catch (error) {
-      console.error('Error loading employees:', error);
-      toast.error('Failed to load employees');
-    } finally {
-      loadingEmployees.value = false;
-    }
-  };
+  // const loadEmployees = async () => {
+  //   try {
+  //     loadingEmployees.value = true;
+  //     const employees = await usePlantilla.fetchAllEmployee();
+  //     employeeList.value = employees || [];
+  //   } catch (error) {
+  //     console.error('Error loading employees:', error);
+  //     toast.error('Failed to load employees');
+  //   } finally {
+  //     loadingEmployees.value = false;
+  //   }
+  // };
 
   const loadPositionData = async () => {
     if (!props.positionData || !props.positionData.PositionID) {
@@ -957,7 +986,7 @@
     async (newVal) => {
       if (newVal) {
         await loadPositionData();
-        await loadEmployees();
+        // await loadEmployees();
       }
     },
   );
@@ -982,13 +1011,45 @@
     },
   );
 
+   watch(globalSearch, (newValue) => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    searchTimeout = setTimeout(async () => {
+      pagination.value.page = 1; // Reset to first page on search
+
+      await usePlantilla.fetchAllEmployee({
+        page: 1,
+        perPage: pagination.value.rowsPerPage,
+        search: newValue,
+      });
+
+      // ✅ Update rowsNumber after search
+      pagination.value.rowsNumber = usePlantilla.total;
+    }, 500);
+  });
+
   // Lifecycle
   onMounted(() => {
     if (props.show && props.positionData) {
       loadPositionData();
-      loadEmployees();
+      // loadEmployees();
     }
   });
+
+onMounted(async () => {
+
+  await usePlantilla.fetchAllEmployee({
+    page: 1,
+    perPage: pagination.value.rowsPerPage,
+    search: '',
+  });
+
+  // ✅ Set total rows to enable pagination
+  pagination.value.rowsNumber = usePlantilla.total;
+});
+
 </script>
 
 <style lang="scss" scoped>

@@ -15,6 +15,12 @@ export const usePlantillaStore = defineStore('plantilla', {
     loading: false,
     error: null,
     selectedDetails: null,
+
+
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 10,
   }),
 
   actions: {
@@ -98,29 +104,29 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
-    async fetchEmployeeList() {
-      this.loading = true;
-      this.error = null;
-      try {
-        const response = await adminApi.get('/employee/list');
+    // async fetchEmployeeList() {
+    //   this.loading = true;
+    //   this.error = null;
+    //   try {
+    //     const response = await adminApi.get('/employee/list');
 
-        // console.log(response.data) // Debugging
+    //     // console.log(response.data) // Debugging
 
-        if (Array.isArray(response.data)) {
-          this.plantillaData = response.data;
-        } else {
-          console.error('Unexpected response format', response.data);
-          this.plantillaData = [];
-        }
-      } catch (error) {
-        console.error('Fetch error:', error); // Debugging
-        toast.error('Failed to Load Plantilla Data');
-        this.error = error;
-        this.loading = false;
-      } finally {
-        this.loading = false;
-      }
-    },
+    //     if (Array.isArray(response.data)) {
+    //       this.plantillaData = response.data;
+    //     } else {
+    //       console.error('Unexpected response format', response.data);
+    //       this.plantillaData = [];
+    //     }
+    //   } catch (error) {
+    //     console.error('Fetch error:', error); // Debugging
+    //     toast.error('Failed to Load Plantilla Data');
+    //     this.error = error;
+    //     this.loading = false;
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
 
     async fetchPlantillaData() {
       this.loading = true;
@@ -197,12 +203,25 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
-    async fetchAllEmployee() {
+    async fetchAllEmployee({ page = 1, perPage = 10, search = '' } = {}) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await adminApi.get(`/employee/list`);
-        this.employee = response.data;
+        const response = await adminApi.get(`/employee/list`,{
+
+        params: {
+        page,
+        per_page: perPage,
+        search,
+      },
+        });
+        this.employee = response.data.data;
+        this.currentPage = response.data.current_page;
+        this.lastPage = response.data.last_page;
+        this.total = response.data.total;
+        this.perPage = response.data.per_page;
+
+
         return response.data;
       } catch (err) {
         this.error = err;
