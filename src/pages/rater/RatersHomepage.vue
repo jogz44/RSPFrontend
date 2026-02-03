@@ -170,7 +170,7 @@ const showChangePasswordModal = ref(false);
 const changePasswordModalRef = ref(null);
 
   const initChart = () => {
-    console.log('Initializing chart...');
+    // console.log('Initializing chart...');
 
     if (chartInstance.value) {
       chartInstance.value.destroy();
@@ -178,6 +178,7 @@ const changePasswordModalRef = ref(null);
     }
 
     if (statusChart.value && raterStore.assignedJobs.length > 0) {
+
       const ctx = statusChart.value.getContext('2d');
 
       chartInstance.value = new Chart(ctx, {
@@ -248,17 +249,25 @@ const changePasswordModalRef = ref(null);
   // };
 
   // Watchers
-  watch(
-    chartData,
-    (newData) => {
-      console.log('Chart data changed:', newData);
-      if (chartInstance.value) {
-        chartInstance.value.data.datasets[0].data = newData;
-        chartInstance.value.update('none');
-      }
-    },
-    { deep: true },
-  );
+  // watch(
+  //   chartData,
+  //   (newData) => {
+  //     // console.log('Chart data changed:', newData);
+  //     if (chartInstance.value) {
+  //       chartInstance.value.data.datasets[0].data = newData;
+  //       chartInstance.value.update('none');
+  //     }
+  //   },
+  //   // { deep: true },
+  // );
+
+  watch(chartData, (newData) => {
+  if (!chartInstance.value) return;
+
+  chartInstance.value.data.datasets[0].data = newData;
+  chartInstance.value.update();
+});
+
 
   watch(
     () => raterStore.assignedJobs.length,
@@ -367,7 +376,7 @@ const handleLogout = async () => {
 };
 
   onBeforeUnmount(() => {
-    console.log('Dashboard unmounting');
+    // console.log('Dashboard unmounting');
     if (chartInstance.value) {
       chartInstance.value.destroy();
       chartInstance.value = null;

@@ -272,7 +272,7 @@ const getStatusColor = (status) => {
 const columns = [
   { name: "office", label: "Office", align: "left", field: "Office", sortable: true },
   { name: "jobs", label: "Position", align: "left", field: "Position", sortable: true },
-  { name: "status", label: "Status", align: "left", field: "status", sortable: true },
+  // { name: "status", label: "Status", align: "left", field: "status", sortable: true },
   {
     name: "total_applicants",
     label: "No. of Applicants",

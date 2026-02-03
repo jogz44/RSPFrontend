@@ -600,7 +600,7 @@
 
   // Columns definition
   const columns = [
-    { name: 'id', label: 'ID', field: 'id', align: 'left', style: 'width: 5%' },
+    // { name: 'id', label: 'ID', field: 'id', align: 'left', style: 'width: 5%' },
     {
       name: 'name',
       label: 'Rater Name',

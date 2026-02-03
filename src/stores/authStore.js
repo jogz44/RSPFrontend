@@ -19,7 +19,6 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
 
-
     async resetPassword(userId) {
       try {
         await adminApi.post(`/users/reset-password/${userId}`)
@@ -30,6 +29,7 @@ export const useAuthStore = defineStore('auth', {
         });
 
       } catch (error) {
+        console.log(error)
         Notify.create({
           type: 'negative',
           message: 'Failed to reset password',
