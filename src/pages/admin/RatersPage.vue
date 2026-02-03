@@ -123,6 +123,11 @@
                 >
                   <q-tooltip>Edit</q-tooltip>
                 </q-btn>
+                      <!-- Reset password button -->
+              <ButtonResetPassword
+                v-if="props.row.id !== authStore.user.id"
+                :user-id="props.row.id"
+              />
               </template>
             </q-td>
           </template>
@@ -523,9 +528,10 @@
   import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { usePlantillaStore } from 'stores/plantillaStore';
-
+  import ButtonResetPassword from "components/ButtonResetPassword.vue";
   import { toast } from 'boot/toast';
   import { adminApi } from 'boot/axios_admin';
+
 
   const jobPostStore = useJobPostStore();
   const authStore = useAuthStore();

@@ -12,7 +12,7 @@
             <q-avatar>
               <q-icon name="person" />
             </q-avatar>
-            {{ authStore.user?.username || currentUserLogin }}
+            {{ authStore.user?.username }}
           </q-chip>
         </div>
       </div>
@@ -73,110 +73,33 @@
                 />
               </div>
 
-              <!-- Permissions Section -->
-              <div class="col-12">
+              <!-- ============================================================ -->
+              <!-- DYNAMIC PERMISSIONS SECTION                                   -->
+              <!-- Only renders permissions that actually came back from the API -->
+              <!-- ============================================================ -->
+              <div class="col-12" v-if="permissionKeys.length > 0">
                 <q-separator class="q-my-md" />
                 <div class="text-subtitle1 q-mb-md">Permissions</div>
                 <div class="row q-col-gutter-md">
-                  <div class="col-12 col-md-6">
+                  <div
+                    v-for="key in permissionKeys"
+                    :key="key"
+                    class="col-12 col-md-6"
+                  >
                     <q-card bordered flat class="bg-grey-1">
                       <q-card-section>
                         <div class="row items-center">
                           <div class="col">
-                            <q-checkbox
-                              v-model="form.permissions.isFunded"
-                              label="Fund Manager"
+                            <q-toggle
+                              v-model="form.permissions[key]"
+                              :label="getPermissionLabel(key)"
                               :disable="!canEditPermissions"
                               true-value="1"
                               false-value="0"
                             />
                           </div>
                           <div class="col-auto">
-                            <q-icon name="account_balance" />
-                          </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-
-                  <div class="col-12 col-md-6">
-                    <q-card bordered flat class="bg-grey-1">
-                      <q-card-section>
-                        <div class="row items-center">
-                          <div class="col">
-                            <q-checkbox
-                              v-model="form.permissions.isUserM"
-                              label="User Manager"
-                              :disable="!canEditPermissions"
-                              true-value="1"
-                              false-value="0"
-                            />
-                          </div>
-                          <div class="col-auto">
-                            <q-icon name="manage_accounts" />
-                          </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-
-                  <div class="col-12 col-md-6">
-                    <q-card bordered flat class="bg-grey-1">
-                      <q-card-section>
-                        <div class="row items-center">
-                          <div class="col">
-                            <q-checkbox
-                              v-model="form.permissions.isRaterM"
-                              label="Rater Manager"
-                              :disable="!canEditPermissions"
-                              true-value="1"
-                              false-value="0"
-                            />
-                          </div>
-                          <div class="col-auto">
-                            <q-icon name="rate_review" />
-                          </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-
-                  <div class="col-12 col-md-6">
-                    <q-card bordered flat class="bg-grey-1">
-                      <q-card-section>
-                        <div class="row items-center">
-                          <div class="col">
-                            <q-checkbox
-                              v-model="form.permissions.isCriteria"
-                              label="Criteria Manager"
-                              :disable="!canEditPermissions"
-                              true-value="1"
-                              false-value="0"
-                            />
-                          </div>
-                          <div class="col-auto">
-                            <q-icon name="checklist" />
-                          </div>
-                        </div>
-                      </q-card-section>
-                    </q-card>
-                  </div>
-
-                  <div class="col-12 col-md-6">
-                    <q-card bordered flat class="bg-grey-1">
-                      <q-card-section>
-                        <div class="row items-center">
-                          <div class="col">
-                            <q-checkbox
-                              v-model="form.permissions.isDashboardStat"
-                              label="Dashboard Statistics"
-                              :disable="!canEditPermissions"
-                              true-value="1"
-                              false-value="0"
-                            />
-                          </div>
-                          <div class="col-auto">
-                            <q-icon name="dashboard" />
+                            <q-icon :name="getPermissionIcon(key)" />
                           </div>
                         </div>
                       </q-card-section>
@@ -231,7 +154,7 @@
               <q-item>
                 <q-item-section>
                   <q-item-label caption>Username</q-item-label>
-                  <q-item-label>{{ authStore.user?.username || currentUserLogin }}</q-item-label>
+                  <q-item-label>{{ authStore.user?.username }}</q-item-label>
                 </q-item-section>
               </q-item>
             </div>
@@ -270,10 +193,30 @@
 </template>
 
 <script>
-  import { defineComponent, ref, onMounted, computed } from 'vue';
+  import { defineComponent, ref, computed, onMounted } from 'vue';
   import { useAuthStore } from 'stores/authStore';
   import { useLogsStore } from 'stores/logsStore';
   import { toast } from 'src/boot/toast';
+
+  // ================================================================
+  // LABEL + ICON MAP
+  // Add any new permission key here — the loop will pick it up
+  // automatically. No need to touch the template.
+  // ================================================================
+  const PERMISSION_META = {
+    viewDashboardstat:      { label: 'View Dashboard Statistics',  icon: 'dashboard' },
+    viewPlantillaAccess:    { label: 'View Plantilla Access',      icon: 'visibility' },
+    modifyPlantillaAccess:  { label: 'Modify Plantilla Access',    icon: 'edit' },
+    viewJobpostAccess:      { label: 'View Job Post Access',       icon: 'visibility' },
+    modifyJobpostAccess:    { label: 'Modify Job Post Access',     icon: 'edit' },
+    viewActivityLogs:       { label: 'View Activity Logs',         icon: 'history' },
+    userManagement:         { label: 'User Management Access',     icon: 'manage_accounts' },
+    viewRater:              { label: 'View Rater Module',          icon: 'visibility' },
+    modifyRater:            { label: 'Modify Rater Module',        icon: 'edit' },
+    viewCriteria:           { label: 'View Criteria Access',       icon: 'visibility' },
+    modifyCriteria:         { label: 'Modify Criteria Access',     icon: 'edit' },
+    viewReport:             { label: 'View Report Module',         icon: 'assessment' },
+  };
 
   export default defineComponent({
     name: 'EditAccountPage',
@@ -284,143 +227,113 @@
       const accountForm = ref(null);
       const validationErrors = ref(null);
 
-      // Current date/time and user login
-      const currentDateTime = ref('2025-05-08 03:27:49');
-      const currentUserLogin = ref('karlmacas29');
+      const currentDateTime = ref('');
 
+      // Form only has the base fields — permissions are added dynamically
       const form = ref({
         name: '',
         username: '',
         position: '',
-        active: true, // Add this field
+        active: true,
         new_password: '',
         confirm_password: '',
-        permissions: {
-          isFunded: false,
-          isUserM: false,
-          isRaterM: false,
-          isCriteria: false,
-          isDashboardStat: false,
-        },
+        permissions: {},   // ← populated dynamically from API response
       });
 
-      // Computed property to determine if user can edit permissions
+      // ============================================================
+      // permissionKeys = whatever keys actually came back from the API
+      // This is the single source of truth for what we render
+      // ============================================================
+      const permissionKeys = computed(() => {
+        return Object.keys(form.value.permissions);
+      });
+
+      // Only admin position can toggle permissions
       const canEditPermissions = computed(() => {
         return authStore.user?.position === 'admin';
       });
 
-      // Initialize form with user data
+      // ── helpers ─────────────────────────────────────────────────
+      const getPermissionLabel = (key) => {
+        return PERMISSION_META[key]?.label || key; // fallback: raw key
+      };
+
+      const getPermissionIcon = (key) => {
+        return PERMISSION_META[key]?.icon || 'lock'; // fallback icon
+      };
+
+      // ── populate form from store (works for any set of keys) ────
+      const populateForm = () => {
+        if (!authStore.user) return;
+
+        const apiPermissions = authStore.user.permissions || {};
+
+        form.value = {
+          name:             authStore.user.name || '',
+          username:         authStore.user.username || '',
+          position:         authStore.user.position || '',
+          active:           authStore.user.active ?? true,
+          new_password:     '',
+          confirm_password: '',
+          permissions:      { ...apiPermissions }, // spread whatever came back
+        };
+      };
+
+      // ── lifecycle ───────────────────────────────────────────────
       onMounted(() => {
         if (authStore.user) {
-          form.value = {
-            name: authStore.user.name || '',
-            username: authStore.user.username || '',
-            position: authStore.user.position || '',
-            active: authStore.user.active ?? true, // Initialize with current active status or default to true
-            new_password: '',
-            confirm_password: '',
-            permissions: {
-              isFunded: authStore.user.permissions?.isFunded || false,
-              isUserM: authStore.user.permissions?.isUserM || false,
-              isRaterM: authStore.user.permissions?.isRaterM || false,
-              isCriteria: authStore.user.permissions?.isCriteria || false,
-              isDashboardStat: authStore.user.permissions?.isDashboardStat || false,
-            },
-          };
-
-          // Update current date/time
-          currentDateTime.value = '2025-05-08 04:37:59';
-          currentUserLogin.value = '';
-        } else {
-          // If not authenticated, redirect to login
-          if (!authStore.isAuthenticated) {
-            authStore.router.push({ name: 'Admin Login' });
-          }
+          populateForm();
+          currentDateTime.value = new Date().toISOString().replace('T', ' ').slice(0, 19);
+        } else if (!authStore.isAuthenticated) {
+          authStore.router?.push({ name: 'Admin Login' });
         }
       });
 
-      // Get role name based on user permissions
+      // ── role label (kept simple) ────────────────────────────────
       const getRoleName = () => {
-        const user = authStore.user;
-        if (!user) return 'Unknown';
-
-        if (user.position === 'admin') return 'Administrator';
-
-        if (user.permissions) {
-          const permissions = user.permissions;
-          if (permissions.isFunded) return 'Fund Manager';
-          if (permissions.isUserM) return 'User Manager';
-          if (permissions.isRaterM) return 'Rater Manager';
-          if (permissions.isCriteria) return 'Criteria Manager';
-        }
-
+        if (!authStore.user) return 'Unknown';
+        if (authStore.user.position === 'admin') return 'Administrator';
         return 'Standard User';
       };
 
-      // Reset validation errors
-      const resetValidationErrors = () => {
-        validationErrors.value = null;
-      };
-
-      // Reset form to original values
+      // ── reset ───────────────────────────────────────────────────
       const resetForm = () => {
-        if (authStore.user) {
-          form.value.name = authStore.user.name || '';
-          form.value.new_password = '';
-          form.value.confirm_password = '';
-
-          // Reset permissions
-          if (authStore.user.permissions) {
-            form.value.permissions = {
-              isFunded: authStore.user.permissions.isFunded || false,
-              isUserM: authStore.user.permissions.isUserM || false,
-              isRaterM: authStore.user.permissions.isRaterM || false,
-              isCriteria: authStore.user.permissions.isCriteria || false,
-              isDashboardStat: authStore.user.permissions.isDashboardStat || false,
-            };
-          }
-        }
-        resetValidationErrors();
+        populateForm();                        // re-pull from store
+        validationErrors.value = null;
         toast.info('Form has been reset');
       };
 
-      // Save changes to user account
-      // Update the saveChanges function:
+      // ── save ────────────────────────────────────────────────────
       const saveChanges = async () => {
         try {
-          resetValidationErrors();
+          validationErrors.value = null;
 
           const isValid = await accountForm.value.validate();
           if (!isValid) return;
 
-          // Prepare user data with all required fields
           const userData = {
-            name: form.value.name.trim(),
-            username: form.value.username, // Include username
-            position: form.value.position, // Include position
-            active: true, // Include active status
-            permissions: form.value.permissions, // Always include permissions
+            name:        form.value.name.trim(),
+            username:    form.value.username,
+            position:    form.value.position,
+            active:      form.value.active,
+            permissions: { ...form.value.permissions }, // send back exactly what we have
           };
 
-          // Only include password fields if new password is provided
+          // Only attach password if the user actually typed one
           if (form.value.new_password) {
             if (form.value.new_password !== form.value.confirm_password) {
               toast.error('Passwords do not match');
               return;
             }
-            userData.password = form.value.new_password;
+            userData.password              = form.value.new_password;
             userData.password_confirmation = form.value.confirm_password;
           }
-
-          console.log('Sending update with data:', userData); // Debug log
 
           const result = await authStore.updateUser(authStore.user.id, userData);
 
           if (result) {
             await logsStore.logAction('Updated Account Information');
-
-            // Reset password fields
-            form.value.new_password = '';
+            form.value.new_password     = '';
             form.value.confirm_password = '';
           }
         } catch (error) {
@@ -428,18 +341,15 @@
 
           if (error.response?.status === 422) {
             validationErrors.value = error.response.data.errors;
-            // Show all validation errors in toast
-            const errorMessages = [];
+            const msgs = [];
             for (const field in error.response.data.errors) {
-              errorMessages.push(...error.response.data.errors[field]);
+              msgs.push(...error.response.data.errors[field]);
             }
-            toast.error(errorMessages.join('\n'));
+            toast.error(msgs.join('\n'));
           } else if (error.response?.status === 403) {
             toast.error('You do not have permission to perform this action');
-          } else if (error.response?.data?.message) {
-            toast.error(error.response.data.message);
           } else {
-            toast.error('An error occurred while updating your account');
+            toast.error(error.response?.data?.message || 'An error occurred while updating your account');
           }
         }
       };
@@ -448,13 +358,15 @@
         authStore,
         form,
         accountForm,
-        saveChanges,
-        getRoleName,
-        resetForm,
+        permissionKeys,
         canEditPermissions,
+        getPermissionLabel,
+        getPermissionIcon,
+        saveChanges,
+        resetForm,
+        getRoleName,
         validationErrors,
         currentDateTime,
-        currentUserLogin,
       };
     },
   });

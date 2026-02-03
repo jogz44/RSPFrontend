@@ -4,6 +4,7 @@ import { adminApi } from 'boot/axios_admin';
 import { toast } from 'src/boot/toast'; // Import toast instance
 import { useLogsStore } from 'stores/logsStore';
 import { usePlantillaStore } from 'stores/plantillaStore';
+import { Notify } from 'quasar';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -17,6 +18,24 @@ export const useAuthStore = defineStore('auth', {
     selectedUser: null, // Store selected user details
   }),
   actions: {
+
+
+    async resetPassword(userId) {
+      try {
+        await adminApi.post(`/users/reset-password/${userId}`)
+
+        Notify.create({
+          type: 'positive',
+          message: 'Password reset successfully',
+        });
+
+      } catch (error) {
+        Notify.create({
+          type: 'negative',
+          message: 'Failed to reset password',
+        })
+      }
+    },
     async rater_edit(id, userData) {
       this.loading = true;
       this.errors = {};

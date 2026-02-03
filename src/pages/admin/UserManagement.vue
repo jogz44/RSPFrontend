@@ -102,6 +102,21 @@
                 <q-tooltip>Edit User</q-tooltip>
               </q-btn>
 
+
+              <!-- Reset password button -->
+              <ButtonResetPassword
+                v-if="props.row.id !== authStore.user.id"
+                :user-id="props.row.id"
+              />
+
+
+            
+              <!-- delete account button -->
+              <ButtonDelete
+                v-if="props.row.id !== authStore.user.id"
+                :user-id="props.row.id"
+              />
+
               <q-badge rounded v-if="props.row.id == authStore.user.id" color="blue"
                 >You</q-badge
               >
@@ -413,9 +428,16 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { useAuthStore } from "stores/authStore";
+import ButtonResetPassword from "components/ButtonResetPassword.vue";
+import ButtonDelete from "components/ButtonDelete.vue";
 
 export default defineComponent({
   name: "UserManagement",
+
+  components: {
+    ButtonResetPassword, // ← this was missing
+    ButtonDelete
+  },
 
   setup() {
     const authStore = useAuthStore();
@@ -431,7 +453,7 @@ export default defineComponent({
     });
 
     const columns = [
-      { name: "id", align: "left", label: "ID", field: "id", sortable: true },
+      // { name: "id", align: "left", label: "ID", field: "id", sortable: true },
       { name: "name", align: "left", label: "Name", field: "name", sortable: true },
       {
         name: "username",
