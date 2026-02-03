@@ -101,13 +101,13 @@
 <script setup>
   import { useRouter } from 'vue-router';
   import { useRaterAuthStore } from 'stores/authStore_raters';
-  import { useLogsStore } from 'stores/logsStore';
+  // import { useLogsStore } from 'stores/logsStore';
   import { useQuasar } from 'quasar';
 
   const emit = defineEmits(['toggleMenu']);
 
   const useRaterStore = useRaterAuthStore();
-  const logStore = useLogsStore();
+  // const logStore = useLogsStore();
   const router = useRouter();
   const $q = useQuasar();
 
@@ -120,7 +120,7 @@
   };
 
   const onLogout = async () => {
-    await logStore.logAction('Logged Out');
+    // await logStore.logAction('Logged Out');
     await useRaterStore.logout();
   };
 

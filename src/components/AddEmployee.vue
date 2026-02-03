@@ -469,8 +469,8 @@
 <script setup>
   import { ref, computed, watch, onMounted } from 'vue';
   import { usePlantillaStore } from 'stores/plantillaStore';
-  import { useAuthStore } from 'stores/authStore';
-  import { useLogsStore } from 'stores/logsStore';
+  // import { useAuthStore } from 'stores/authStore';
+  // import { useLogsStore } from 'stores/logsStore';
   import { toast } from 'src/boot/toast';
   import { useQuasar } from 'quasar';
 
@@ -491,8 +491,8 @@
 
   // Store instances
   const usePlantilla = usePlantillaStore();
-  const authStore = useAuthStore();
-  const logStore = useLogsStore();
+  // const authStore = useAuthStore();
+  // const logStore = useLogsStore();
   const $q = useQuasar();
 
   // Refs
@@ -867,9 +867,9 @@
 
       if (response && response.data && response.data.success) {
         // Log the action
-        logStore.logAction(
-          `${authStore.user.name} added employee ${getEmployeeFullName(selectedEmployee.value)} (${employeeDetails.value.controlNo}) to position ${employeeDetails.value.Position}. PositionID: ${employeeDetails.value.PositionID}, ItemNo: ${employeeDetails.value.ItemNo}`,
-        );
+        // logStore.logAction(
+        //   `${authStore.user.name} added employee ${getEmployeeFullName(selectedEmployee.value)} (${employeeDetails.value.controlNo}) to position ${employeeDetails.value.Position}. PositionID: ${employeeDetails.value.PositionID}, ItemNo: ${employeeDetails.value.ItemNo}`,
+        // );
 
         $q.notify({
           type: 'positive',

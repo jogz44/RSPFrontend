@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { raterApi } from 'boot/axios_rater';
 import { toast } from 'src/boot/toast';
-import { useLogsStore } from 'stores/raterlogsStore';
+// import { useLogsStore } from 'stores/raterlogsStore';
 
 export const useRaterAuthStore = defineStore('rater_auth', () => {
   // State - Authentication
@@ -184,8 +184,8 @@ async function login(username, password) {
     loading.value = false;
     return { success: false };
   } finally {
-    const logsStore = useLogsStore();
-    await logsStore.logAction('Logged In');
+    // const logsStore = useLogsStore();
+    // await logsStore.logAction('Logged In');
   }
 }
   // async function login(username, password) {
@@ -330,8 +330,8 @@ async function login(username, password) {
       clearCookies();
       this.router.push({ name: 'Rater Login' });
     } finally {
-      const logsStore = useLogsStore();
-      await logsStore.logAction('Logged Out');
+      // const logsStore = useLogsStore();
+      // await logsStore.logAction('Logged Out');
     }
   }
 
@@ -457,8 +457,8 @@ async function login(username, password) {
       loading.value = false;
       return false;
     } finally {
-      const logsStore = useLogsStore();
-      await logsStore.logAction(`Deleted User ID: ${id}`);
+      // const logsStore = useLogsStore();
+      // await logsStore.logAction(`Deleted User ID: ${id}`);
     }
   }
 

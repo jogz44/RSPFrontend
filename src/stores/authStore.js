@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
 import { toast } from 'src/boot/toast'; // Import toast instance
-import { useLogsStore } from 'stores/logsStore';
+// import { useLogsStore } from 'stores/logsStore';
 import { usePlantillaStore } from 'stores/plantillaStore';
 import { Notify } from 'quasar';
 
@@ -86,8 +86,8 @@ export const useAuthStore = defineStore('auth', {
         };
       } finally {
         this.loading = false;
-        const logsStore = useLogsStore();
-        await logsStore.logAction('update New Rater');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('update New Rater');
       }
     },
 
@@ -136,8 +136,8 @@ export const useAuthStore = defineStore('auth', {
         this.errors = error.response?.data?.errors || {};
         this.loading = false;
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction('Logged In');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('Logged In');
       }
     },
     // Logout function when it has token
@@ -261,8 +261,8 @@ export const useAuthStore = defineStore('auth', {
         this.loadUser = false;
         return [];
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction('Retrieved User List');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('Retrieved User List');
       }
     },
 
@@ -299,8 +299,8 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
         return null;
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction(`Viewed User ID: ${id}`);
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction(`Viewed User ID: ${id}`);
       }
     },
 
@@ -384,8 +384,8 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
         return false;
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction(`Deleted User ID: ${id}`);
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction(`Deleted User ID: ${id}`);
       }
     },
 
@@ -452,8 +452,8 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
         return false;
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction('Registered New User');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('Registered New User');
       }
     },
 
@@ -507,8 +507,8 @@ export const useAuthStore = defineStore('auth', {
         this.loadUser = false;
         return [];
       } finally {
-        const logsStore = useLogsStore();
-        await logsStore.logAction('Retrieved Raters List');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('Retrieved Raters List');
       }
     },
 
@@ -569,8 +569,8 @@ export const useAuthStore = defineStore('auth', {
         };
       } finally {
         this.loading = false;
-        const logsStore = useLogsStore();
-        await logsStore.logAction('Registered New Rater');
+        // const logsStore = useLogsStore();
+        // await logsStore.logAction('Registered New Rater');
       }
     },
 

@@ -662,13 +662,13 @@
   import { useJobPostStore } from 'stores/jobPostStore';
   import { toast } from 'src/boot/toast';
   import axios from 'axios';
-  import { useLogsStore } from 'stores/logsStore';
+  // import { useLogsStore } from 'stores/logsStore';
   import { useQuasar } from 'quasar';
 
   const router = useRouter();
   const authStore = useAuthStore();
   const usePlantilla = usePlantillaStore();
-  const logStore = useLogsStore();
+  // const logStore = useLogsStore();
   const jobPostStore = useJobPostStore();
   const isLoading = ref(false);
   const $q = useQuasar();
@@ -1063,9 +1063,9 @@
       });
 
       // Log the action
-      logStore.logAction(
-        `${authStore.user.name} created a job post for ${postJobDetails.value.position}. PositionID: ${postJobDetails.value.PositionID}, ItemNo: ${postJobDetails.value.ItemNo}`,
-      );
+      // logStore.logAction(
+      //   `${authStore.user.name} created a job post for ${postJobDetails.value.position}. PositionID: ${postJobDetails.value.PositionID}, ItemNo: ${postJobDetails.value.ItemNo}`,
+      // );
 
       // Close modal first
       showVacantPositionModal.value = false;

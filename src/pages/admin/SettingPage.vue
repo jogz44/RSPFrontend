@@ -195,7 +195,7 @@
 <script>
   import { defineComponent, ref, computed, onMounted } from 'vue';
   import { useAuthStore } from 'stores/authStore';
-  import { useLogsStore } from 'stores/logsStore';
+  // import { useLogsStore } from 'stores/logsStore';
   import { toast } from 'src/boot/toast';
 
   // ================================================================
@@ -223,7 +223,7 @@
 
     setup() {
       const authStore = useAuthStore();
-      const logsStore = useLogsStore();
+      // const logsStore = useLogsStore();
       const accountForm = ref(null);
       const validationErrors = ref(null);
 
@@ -332,7 +332,7 @@
           const result = await authStore.updateUser(authStore.user.id, userData);
 
           if (result) {
-            await logsStore.logAction('Updated Account Information');
+            // await logsStore.logAction('Updated Account Information');
             form.value.new_password     = '';
             form.value.confirm_password = '';
           }
