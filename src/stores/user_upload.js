@@ -48,8 +48,8 @@ export const useUser_upload = defineStore('user_upload', () => {
       formData.append('zip_file', uploadedZipFile.value);
       formData.append('email', email); // Include email in submission
 
-      console.log('Submitting application with email:', email);
-      console.log('Job ID:', selectedJob.value.id);
+      // console.log('Submitting application with email:', email);
+      // console.log('Job ID:', selectedJob.value.id);
 
       const response = await adminApi.post('/applicant/submissions', formData, {
         headers: {
@@ -57,12 +57,12 @@ export const useUser_upload = defineStore('user_upload', () => {
         },
       });
 
-      console.log('Submission response:', response);
+      // console.log('Submission response:', response);
 
       isSubmitting.value = false;
       return response;
     } catch (error) {
-      console.error('Submission error:', error);
+      // console.error('Submission error:', error);
       isSubmitting.value = false;
 
       errorMessage.value =

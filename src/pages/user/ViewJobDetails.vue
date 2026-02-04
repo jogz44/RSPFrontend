@@ -1027,7 +1027,7 @@
   function closeSuccessDialog() {
     uploadStore.reset();
     successDialog.value = false;
-    router.push('/jobList');
+    // router.push('/jobList');
   }
 
   function closeCancelledDialog() {
