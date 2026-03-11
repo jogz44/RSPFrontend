@@ -98,6 +98,7 @@
               style="width: 220px"
               clearable
               bg-color="white"
+              :disable="loading"
             >
               <template v-slot:prepend>
                 <q-icon name="search" size="18px" color="grey-6" />
@@ -117,6 +118,7 @@
               fill-input
               hide-selected
               input-debounce="200"
+              :disable="loading"
               @filter="filterOfficeOptions"
             >
               <template v-slot:prepend>
@@ -140,6 +142,7 @@
               bg-color="white"
               emit-value
               map-options
+              :disable="loading"
             >
               <template v-slot:prepend>
                 <q-icon name="work_outline" size="18px" color="grey-6" />
@@ -157,6 +160,7 @@
               bg-color="white"
               emit-value
               map-options
+              :disable="loading"
             >
               <template v-slot:prepend>
                 <q-icon name="monetization_on" size="18px" color="grey-6" />
@@ -179,23 +183,48 @@
 
           <!-- Table -->
           <div style="flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden">
+            <!-- Skeleton rows while fetching data -->
+            <div v-if="loading" class="column q-pa-md" style="gap: 10px">
+              <div
+                v-for="n in 12"
+                :key="n"
+                class="row items-center q-px-sm"
+                style="gap: 10px; height: 32px"
+              >
+                <q-skeleton type="QCheckbox" size="16px" style="flex-shrink: 0" />
+                <q-skeleton type="text" width="4%" height="12px" style="border-radius: 4px" />
+                <q-skeleton type="text" width="5%" height="12px" style="border-radius: 4px" />
+                <q-skeleton type="text" width="5%" height="12px" style="border-radius: 4px" />
+                <q-skeleton
+                  type="text"
+                  :width="n % 2 === 0 ? '30%' : '25%'"
+                  height="12px"
+                  style="border-radius: 4px"
+                />
+                <q-skeleton
+                  type="text"
+                  :width="n % 3 === 0 ? '24%' : '20%'"
+                  height="12px"
+                  style="border-radius: 4px"
+                />
+                <q-skeleton type="rect" width="52px" height="20px" style="border-radius: 10px" />
+                <q-skeleton type="rect" width="58px" height="20px" style="border-radius: 10px" />
+              </div>
+            </div>
+
             <q-table
+              v-else
               flat
               dense
               :rows="filteredRows"
               :columns="columns"
               row-key="ID"
-              :loading="loading"
               v-model:selected="selectedPositions"
               selection="multiple"
               :rows-per-page-options="[0]"
               hide-bottom
               class="positions-table"
             >
-              <template v-slot:loading>
-                <q-inner-loading showing color="primary" />
-              </template>
-
               <template v-slot:body-cell-vacancyStatus="props">
                 <q-td :props="props" class="text-center">
                   <q-badge
@@ -240,6 +269,15 @@
             overflow: hidden;
           "
         >
+          <!-- Generating overlay -->
+          <q-inner-loading
+            :showing="generating"
+            color="positive"
+            label="Generating publication request..."
+            label-class="text-positive text-subtitle2"
+            label-style="font-size: 1em"
+          />
+
           <!-- Review Toolbar -->
           <div class="row items-center q-px-md q-py-sm bg-grey-1" style="flex-shrink: 0; gap: 8px">
             <q-icon name="rate_review" color="primary" size="20px" />
@@ -377,9 +415,15 @@
           label="Generate"
           color="positive"
           icon="description"
-          :disable="selectedPositions.length === 0"
+          :loading="generating"
+          :disable="selectedPositions.length === 0 || generating"
           @click="handleGenerate"
-        />
+        >
+          <template v-slot:loading>
+            <q-spinner-dots class="on-left" />
+            Generating...
+          </template>
+        </q-btn>
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -400,11 +444,11 @@
   const selectedOfficeFilter = ref(null);
   const selectedPositions = ref([]);
   const loading = ref(false);
+  const generating = ref(false);
   const allRows = ref([]);
   const filteredOfficeOptions = ref([]);
   const usePublication = usePlantillaPublicationStore();
 
-  // Vacancy status filter — default to 'vacant'
   const vacancyFilter = ref('vacant');
   const vacancyOptions = [
     { label: 'All', value: 'all' },
@@ -412,7 +456,6 @@
     { label: 'Filled', value: 'filled' },
   ];
 
-  // Funded filter — default to 'all'
   const fundedFilter = ref('all');
   const fundedOptions = [
     { label: 'All', value: 'all' },
@@ -422,7 +465,6 @@
 
   const usePlantilla = usePlantillaStore();
 
-  // ── Columns ──────────────────────────────────────────────────────
   const columns = [
     {
       name: 'ID',
@@ -491,16 +533,9 @@
     },
   ];
 
-  // Review columns: same base columns + remove button (4+6+6+30+27+7+11+5 = 96% + 3% remove = 99%)
   const reviewColumns = [
     ...columns.map((col) => {
-      // Slightly compress to make room for the remove column
-      const adjustments = {
-        position: '30%',
-        office: '27%',
-        Funded: '7%',
-        vacancyStatus: '11%',
-      };
+      const adjustments = { position: '33%', office: '33%' };
       return adjustments[col.name]
         ? {
             ...col,
@@ -514,8 +549,8 @@
       label: '',
       field: 'remove',
       align: 'center',
-      style: 'width: 3%',
-      headerStyle: 'width: 3%',
+      style: 'width: 4%',
+      headerStyle: 'width: 4%',
     },
   ];
 
@@ -587,6 +622,7 @@
   };
 
   const handleGenerate = async () => {
+    generating.value = true;
     try {
       await usePublication.generateJobPosition(selectedPositions.value);
       $q.notify({
@@ -604,6 +640,8 @@
         position: 'top',
         timeout: 4000,
       });
+    } finally {
+      generating.value = false;
     }
   };
 
@@ -614,20 +652,17 @@
       await usePlantilla.fetchPlantilla();
     }
     allRows.value = Array.isArray(usePlantilla.plantilla) ? usePlantilla.plantilla : [];
-    // Initialize after allRows is set so officeOptions computed has data
     filteredOfficeOptions.value = [...officeOptions.value];
     loading.value = false;
   });
 </script>
 
 <style scoped>
-  /* Align the checkbox column header to the left */
   .positions-table :deep(thead tr th:first-child) {
     text-align: left !important;
     padding-left: 12px !important;
   }
 
-  /* Fix checkbox cell alignment and width */
   .positions-table :deep(thead tr th:first-child),
   .positions-table :deep(tbody tr td:first-child) {
     width: 48px !important;
@@ -635,7 +670,6 @@
     max-width: 48px !important;
   }
 
-  /* Sticky header */
   .positions-table :deep(thead tr th) {
     font-size: 12px;
     font-weight: 700;
@@ -658,13 +692,11 @@
     vertical-align: middle;
   }
 
-  /* Wrap long text in position/office cells */
   .positions-table :deep(.wrap-cell) {
     white-space: normal;
     word-break: break-word;
   }
 
-  /* Kill horizontal scroll entirely */
   .positions-table :deep(.q-table__container) {
     overflow-x: hidden !important;
   }
@@ -678,7 +710,6 @@
     width: 100%;
   }
 
-  /* Remove default bottom padding from q-table */
   .positions-table :deep(.q-table__bottom) {
     display: none;
   }
