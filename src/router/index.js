@@ -28,11 +28,12 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const raterAuthStore = useRaterAuthStore();
     const emailStore = useEmailStore();
 
+
     // Check if route requires authentication
     if (to.meta.auth) {
       // Admin routes
       if (to.meta.role === 'admin') {
-        await authStore.checkAuth();
+        // await authStore.checkAuth();
         if (!authStore.isAuthenticated) {
           return { name: 'Admin Login' };
         }
@@ -57,7 +58,7 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     if (to.meta.guest) {
       // Admin login page
       if (to.meta.role === 'admin') {
-        await authStore.checkAuth();
+        // await authStore.checkAuth();
         if (authStore.isAuthenticated) {
           return { name: 'Admin Dashboard' };
         }

@@ -17,6 +17,6 @@ import NavBarPage from 'src/components/NavBar.vue'
 import { onMounted } from 'vue';
 
 onMounted(async()=> {
-  
+
 })
 </script>

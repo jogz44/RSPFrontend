@@ -2,8 +2,15 @@
 import { boot } from 'quasar/wrappers';
 import { useAuthStore } from 'src/stores/authStore';
 
-export default boot(() => {
+// export default boot(() => {
+//   const authStore = useAuthStore();
+//   authStore.checkAuth(); // Check authentication state on app load
+
+// });
+export default boot(async () => {
+
   const authStore = useAuthStore();
-  authStore.checkAuth(); // Check authentication state on app load
+
+  await authStore.checkAuth();
 
 });

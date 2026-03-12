@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', {
     errors: [],
     users: [], // Store list of users for management
     selectedUser: null, // Store selected user details
+
   }),
   actions: {
 
@@ -104,6 +105,10 @@ export const useAuthStore = defineStore('auth', {
 
           // document.cookie = `admin_token=${this.token}; path=/; SameSite=None; Secure`;
           document.cookie = `admin_token=${response.data.token}; path=/`;
+
+          // ✅ Fetch full user with permissions BEFORE redirecting
+           await this.checkAuth();
+
           toast.success('You are now logged in!');
           this.router.push({ name: 'Admin Dashboard' });
           this.loading = false;
@@ -225,6 +230,7 @@ export const useAuthStore = defineStore('auth', {
         this.errors = {};
         this.loading = false;
       }
+
     },
 
     // User Management Functions
@@ -407,11 +413,7 @@ export const useAuthStore = defineStore('auth', {
           // Only include permissions if they exist
           ...(userData.permissions && {
             permissions: {
-              // isFunded: userData.permissions.isFunded || false,
-              // isUserM: userData.permissions.isUserM || false,
-              // isRaterM: userData.permissions.isRaterM || false,
-              // isCriteria: userData.permissions.isCriteria || false,
-              // isDashboardStat: userData.permissions.isDashboardStat || false,
+
 
               viewDashboardstat: userData.permissions?.viewDashboardstat || '0',
               viewPlantillaAccess: userData.permissions?.viewPlantillaAccess || '0',
