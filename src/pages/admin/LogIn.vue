@@ -138,9 +138,9 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useAuthStore } from 'src/stores/authStore';
-  import { useQuasar } from 'quasar';
+  import { useQuasar, LocalStorage, SessionStorage } from 'quasar';
 
   const $q = useQuasar();
 
@@ -150,6 +150,64 @@
   const errorMessage = ref([]);
 
   const authStore = useAuthStore();
+
+  // Delete the specific cookie your auth store uses
+  const clearAdminTokenCookie = () => {
+    const cookieSettings = [
+      'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;',
+      'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure;',
+      'admin_token=; path=/; domain=' +
+        window.location.hostname +
+        '; expires=Thu, 01 Jan 1970 00:00:00 GMT;',
+    ];
+
+    cookieSettings.forEach((setting) => {
+      document.cookie = setting;
+    });
+  };
+
+  const clearSiteStorage = () => {
+    try {
+      localStorage.clear();
+    } catch {
+      // Ignore errors
+    }
+
+    try {
+      sessionStorage.clear();
+    } catch {
+      // Ignore errors
+    }
+
+    // If you used Quasar storage wrappers anywhere
+    try {
+      LocalStorage.clear();
+    } catch {
+      // Ignore errors
+    }
+
+    try {
+      SessionStorage.clear();
+    } catch {
+      // Ignore errors
+    }
+  };
+
+  const resetAuthState = () => {
+    // Reset Pinia auth state (since you store token/isAuthenticated/user in memory)
+    authStore.token = null;
+    authStore.isAuthenticated = false;
+    authStore.user = null;
+    authStore.errors = {};
+    authStore.loading = false;
+  };
+
+  onMounted(() => {
+    // "Clear cookies and cache" (cache can't be cleared from JS, but this clears auth + storage)
+    clearAdminTokenCookie();
+    clearSiteStorage();
+    resetAuthState();
+  });
 
   const login = async () => {
     await authStore.login(username.value, password.value);
