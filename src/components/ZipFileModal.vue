@@ -19,6 +19,7 @@
               </div>
             </div>
           </div>
+
           <q-btn
             icon="close"
             flat
@@ -78,8 +79,9 @@
 
             <div class="step-content">
               <div class="step-description text-grey-8 q-mb-md">
-                Place your supporting documents in the appropriate folders. Only image formats are
-                accepted:
+                Place your supporting documents in the appropriate folders.
+                <strong>Images and PDF</strong>
+                formats are accepted:
               </div>
 
               <div class="document-examples">
@@ -113,13 +115,93 @@
 
               <q-banner class="info-banner bg-green-1 text-green q-mt-md" rounded dense>
                 <template v-slot:avatar>
-                  <q-icon name="image" />
+                  <q-icon name="description" />
                 </template>
                 <span class="banner-text">
                   <strong>Accepted formats:</strong>
-                  JPG, JPEG, PNG, GIF, BMP, TIFF
+                  JPG, JPEG, PNG, GIF, BMP, TIFF, PDF
                 </span>
               </q-banner>
+
+              <!-- Sub-instruction: Work Experience Sheet -->
+              <div class="wes-card q-mt-md">
+                <div class="wes-header">
+                  <div class="wes-badge bg-orange-2 text-orange">
+                    <q-icon name="work" size="18px" class="q-mr-sm" />
+                    <span class="text-weight-bold">Work Experience Sheet</span>
+                  </div>
+
+                  <div class="wes-title">
+                    Download, fill up, then upload to
+                    <strong>experience</strong>
+                  </div>
+                </div>
+
+                <div class="wes-body">
+                  <div class="wes-steps">
+                    <div class="wes-step">
+                      <div class="wes-step-no bg-orange-1 text-orange">A</div>
+                      <div class="wes-step-content">
+                        <div class="wes-step-title">Download the template (DOCX)</div>
+
+                        <q-btn
+                          color="orange"
+                          size="md"
+                          unelevated
+                          icon="download"
+                          label="Download Work Experience Sheet"
+                          class="q-mt-sm"
+                          @click="downloadWES"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="wes-step">
+                      <div class="wes-step-no bg-blue-1 text-blue">B</div>
+                      <div class="wes-step-content">
+                        <div class="wes-step-title">Fill it up</div>
+                        <div class="wes-step-desc">
+                          Open the downloaded document and complete all required fields, then save
+                          it.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="wes-step">
+                      <div class="wes-step-no bg-green-1 text-green">C</div>
+                      <div class="wes-step-content">
+                        <div class="wes-step-title">
+                          Upload to the
+                          <strong>experience</strong>
+                          folder
+                        </div>
+                        <div class="wes-step-desc">
+                          Export/save as
+                          <strong>PDF</strong>
+                          or take a clear
+                          <strong>photo/scan</strong>
+                          (image), then include it in:
+                          <span class="inline-pill">experience/</span>
+                        </div>
+
+                        <q-banner class="wes-note bg-grey-2 text-grey-9 q-mt-sm" rounded dense>
+                          <template v-slot:avatar>
+                            <q-icon name="tips_and_updates" />
+                          </template>
+                          <span class="banner-text">
+                            You can upload the Work Experience Sheet as
+                            <strong>PDF</strong>
+                            or
+                            <strong>Image</strong>
+                            (JPG/PNG/etc.).
+                          </span>
+                        </q-banner>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- end WES -->
             </div>
           </div>
 
@@ -171,23 +253,41 @@
               <div class="structure-example bg-grey-1">
                 <div class="structure-header">
                   <q-icon name="folder_zip" color="orange" :size="structureIconSize" />
-                  <span class="q-ml-sm text-weight-bold structure-filename">document.zip</span>
+                  <span class="q-ml-sm text-weight-bold structure-filename">
+                    lastname_document.zip
+                  </span>
                 </div>
+
                 <div class="structure-content">
                   <div class="structure-folder" v-for="folder in folders" :key="folder.name">
                     <div class="structure-folder-header">
                       <q-icon name="folder" :color="folder.color" :size="structureIconSize" />
                       <span class="q-ml-sm">{{ folder.name }}</span>
                     </div>
+
                     <div class="structure-files">
                       <div class="structure-file" v-for="i in 2" :key="i">
                         <q-icon name="image" color="grey-6" size="14px" />
                         <span class="q-ml-xs text-caption">document{{ i }}.jpg</span>
                       </div>
+
+                      <div v-if="folder.name === 'experience'" class="structure-file">
+                        <q-icon name="picture_as_pdf" color="red-6" size="14px" />
+                        <span class="q-ml-xs text-caption">work-experience-sheet.pdf</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <q-banner class="info-banner bg-grey-2 text-grey-9 q-mt-md" rounded dense>
+                <template v-slot:avatar>
+                  <q-icon name="tips_and_updates" />
+                </template>
+                <span class="banner-text">
+                  Tip: You can include a mix of images and PDFs inside each folder.
+                </span>
+              </q-banner>
             </div>
           </div>
         </div>
@@ -211,7 +311,7 @@
 </template>
 
 <script setup>
-  import { ref, computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { useQuasar } from 'quasar';
 
   const $q = useQuasar();
@@ -232,6 +332,33 @@
     get: () => props.modelValue,
     set: (val) => emit('update:modelValue', val),
   });
+
+  /**
+   * Work Experience Sheet template (DOCX) download path
+   * User-provided path: public\CS Form No. 212 Attachment - Work Experience Sheet.docx
+   *
+   * In Quasar/Vite: anything inside /public is served from the web root (/).
+   * So the public URL becomes:
+   *   /CS Form No. 212 Attachment - Work Experience Sheet.docx
+   */
+
+  const workExperienceDocxUrl =
+    '/CS%20Form%20No.%20212%20Attachment%20-%20Work%20Experience%20Sheet.docx';
+
+  /**
+   * Download without opening a new tab:
+   * - Create a temporary <a download> and click it programmatically.
+   * - This keeps the user on the same page/modal.
+   */
+  function downloadWES() {
+    const a = document.createElement('a');
+    a.href = workExperienceDocxUrl;
+    a.download = 'CS Form No. 212 Attachment - Work Experience Sheet.docx';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
   // Responsive computed properties
   const headerIconSize = computed(() => {
@@ -306,6 +433,7 @@
         'Transcript of Records',
         'Certificate of Graduation',
         'Academic Records',
+        'Other Documents',
       ],
     },
     {
@@ -314,9 +442,10 @@
       color: 'green',
       examples: [
         'Certificate of Employment',
-        'Job Description',
+        'Work Experience Sheet (download, fill up, then upload)',
         'Performance Evaluation',
         'Work Portfolio',
+        'Other Documents',
       ],
     },
     {
@@ -328,6 +457,7 @@
         'Seminar Attendance',
         'Workshop Completion',
         'Skill Certification',
+        'Other Documents',
       ],
     },
     {
@@ -339,6 +469,7 @@
         'Board Exam Results',
         'Professional License',
         'PRC ID',
+        'Other Documents',
       ],
     },
   ]);
@@ -361,7 +492,8 @@
     },
     {
       title: 'Name your ZIP',
-      description: 'Give it a meaningful name like "supporting_documents.zip"',
+      description:
+        'You are free to name your file using any format you prefer (e.g., lastname_document)',
       icon: 'edit',
     },
   ]);
@@ -533,6 +665,102 @@
     padding: 12px 8px;
     display: flex;
     flex-wrap: wrap;
+  }
+
+  /* WES block (matches modal design language) */
+  .wes-card {
+    border: 1px solid #ffe0b2;
+    background: #fff8f0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .wes-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #ffe0b2;
+    background: linear-gradient(0deg, rgba(255, 243, 224, 1) 0%, rgba(255, 248, 240, 1) 100%);
+  }
+
+  .wes-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+  }
+
+  .wes-title {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: #4e342e;
+    line-height: 1.4;
+  }
+
+  .wes-body {
+    padding: 16px;
+  }
+
+  .wes-steps {
+    display: grid;
+    gap: 12px;
+  }
+
+  .wes-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #f0f0f0;
+    background: white;
+  }
+
+  .wes-step-no {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+  }
+
+  .wes-step-title {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+  }
+
+  .wes-step-desc {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .docx-path {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    background: #f7f7f7;
+    border: 1px solid #eee;
+    padding: 2px 6px;
+    border-radius: 6px;
+    word-break: break-word;
+  }
+
+  .inline-pill {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    background: #f7f7f7;
+    border: 1px solid #eee;
+    padding: 2px 6px;
+    border-radius: 999px;
+    word-break: break-word;
+    margin-left: 4px;
+  }
+
+  .wes-note {
+    border-radius: 10px;
   }
 
   /* ZIP Instructions */
@@ -713,6 +941,10 @@
       min-width: 180px;
       padding: 0 36px;
     }
+
+    .wes-step {
+      grid-template-columns: 34px 1fr;
+    }
   }
 
   /* Mobile (<600px) */
@@ -844,6 +1076,21 @@
       width: 100%;
       min-width: 0;
       padding: 0 24px;
+    }
+
+    .wes-body {
+      padding: 12px;
+    }
+
+    .wes-step {
+      grid-template-columns: 30px 1fr;
+      padding: 10px;
+    }
+
+    .wes-step-no {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
     }
   }
 
