@@ -181,7 +181,7 @@ export const useEmailStore = defineStore('email', {
 
       if (storedEmail && isAuth === 'true' && timestamp) {
         const authAge = Date.now() - parseInt(timestamp);
-        const maxAge = 15 * 60 * 1000; // 30 minutes in milliseconds
+        const maxAge = 120 * 60 * 1000; // 30 minutes in milliseconds
 
         if (authAge < maxAge) {
           this.email = storedEmail;
