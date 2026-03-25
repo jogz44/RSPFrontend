@@ -35,6 +35,22 @@
       <!-- Content -->
       <q-card-section class="instruction-content">
         <div class="container">
+          <!-- NEW: Top Note -->
+          <q-banner class="top-note-banner bg-grey-2 text-grey-9 q-mb-md" rounded>
+            <template v-slot:avatar>
+              <q-icon name="info" />
+            </template>
+
+            <span class="banner-text">
+              <strong>Note:</strong>
+              If ZIP upload is
+              <strong>not required</strong>
+              for the position’s qualifications, you can upload an
+              <strong>empty ZIP</strong>
+              (ZIP file with no documents inside).
+            </span>
+          </q-banner>
+
           <!-- Step 1: Create Folders -->
           <div class="instruction-step">
             <div class="step-header">
@@ -549,6 +565,11 @@
     max-width: 900px;
     margin: 0 auto;
     padding: 24px;
+  }
+
+  /* NEW: Top note banner */
+  .top-note-banner {
+    border-radius: 12px;
   }
 
   /* Step Styles */

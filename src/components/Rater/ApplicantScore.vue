@@ -60,6 +60,7 @@
                   </q-th>
                 </q-tr>
               </template>
+
               <template v-slot:body="props">
                 <q-tr :props="props" class="modern-table-row">
                   <q-td
@@ -76,6 +77,7 @@
                         ID: {{ props.row.rater_id }}
                       </div>
                     </template>
+
                     <template v-else-if="col.name === 'rank'">
                       <q-badge
                         :color="getRankColor(props.row.ranking)"
@@ -85,15 +87,18 @@
                         {{ props.row.ranking }}
                       </q-badge>
                     </template>
+
                     <template v-else-if="col.name === 'grandTotal'">
                       <span class="text-bold">{{ formatScore(props.row.grand_total) }}</span>
                     </template>
+
                     <template v-else>
                       {{ formatScore(props.row[col.field]) }}
                     </template>
                   </q-td>
                 </q-tr>
               </template>
+
               <template v-slot:no-data>
                 <div class="full-width row flex-center q-pa-md text-grey-7">
                   <q-icon name="info" size="18px" class="q-mr-sm" />
@@ -131,6 +136,7 @@
                   </q-th>
                 </q-tr>
               </template>
+
               <template v-slot:body="props">
                 <q-tr :props="props" class="modern-table-row">
                   <q-td
@@ -148,11 +154,13 @@
                         {{ props.row.rank }}
                       </q-badge>
                     </template>
+
                     <template v-else-if="col.name === 'grandTotal'">
                       <span class="text-bold text-positive">
                         {{ formatScore(props.row.grand_total) }}
                       </span>
                     </template>
+
                     <template v-else>
                       {{ formatScore(props.row[col.field]) }}
                     </template>
@@ -177,26 +185,22 @@
       <q-separator />
       <q-card-section class="footer-actions bg-grey-2 q-py-sm">
         <div class="row justify-between items-center q-gutter-sm" style="width: 100%">
-          <!-- Show hire note only if hire button is shown and job is not occupied -->
           <div class="text-body2 text-grey-8" v-if="showHireButton && !isJobOccupied">
             <q-icon name="info" color="primary" class="q-mr-xs" />
             Note: This applicant is considered qualified for the position and may be hired.
           </div>
 
-          <!-- Show occupied message when job is occupied -->
           <div class="text-body2 text-orange-8" v-if="isJobOccupied">
             <q-icon name="lock" color="orange" class="q-mr-xs" />
             Position is occupied - Hiring is disabled.
           </div>
 
-          <!-- Show no permission message -->
           <div class="text-body2 text-grey-8" v-if="!canModifyJobPost && !isJobOccupied">
             <q-icon name="visibility" color="grey" class="q-mr-xs" />
             View only - You do not have permission to hire applicants.
           </div>
 
           <div>
-            <!-- Only show hire button if user has modify permission and job is not occupied -->
             <q-btn
               v-if="
                 showHireButton &&
@@ -234,7 +238,6 @@
             Are you sure you want to hire this applicant?
           </div>
 
-          <!-- Applicant Summary Card -->
           <q-card flat bordered class="q-mb-md">
             <q-card-section class="bg-grey-1">
               <div class="row items-center q-gutter-md">
@@ -250,7 +253,6 @@
             </q-card-section>
           </q-card>
 
-          <!-- Job Details Grid -->
           <div class="row q-col-gutter-md">
             <div class="col-8">
               <div class="detail-item">
@@ -374,7 +376,13 @@
       const jobPostStore = useJobPostStore();
       const authStore = useAuthStore();
 
-      // Permission check - Only for hiring operations
+      // ✅ Use nPersonalInfo_id if present, otherwise ControlNo
+      const applicantLookupKey = computed(() => {
+        const nPersonal = props.applicant?.nPersonalInfo_id;
+        const controlNo = props.applicant?.ControlNo || props.applicant?.controlno;
+        return nPersonal || controlNo || null;
+      });
+
       const canModifyJobPost = computed(() => {
         return authStore.user?.permissions?.modifyJobpostAccess == '1';
       });
@@ -382,7 +390,7 @@
       const applicantName = computed(() => {
         if (!props.applicant) return 'Unknown Applicant';
 
-        const firstName = props.applicant.firstname;
+        const firstName = props.applicant.firstname || '';
         const lastName = props.applicant.lastname || props.applicant.last_name || '';
         const extension = props.applicant.name_extension
           ? ` ${props.applicant.name_extension}`
@@ -391,7 +399,6 @@
         return `${firstName} ${lastName}${extension}`.trim() || 'Unknown Applicant';
       });
 
-      // Computed property to check if job is occupied
       const isJobOccupied = computed(() => {
         return (
           props.jobDetails?.status === 'Occupied' ||
@@ -419,99 +426,39 @@
         );
       });
 
-      // Computed property to determine if hire button should be shown
       const showHireButton = computed(() => {
-        // Check if user has modify permission
-        if (!canModifyJobPost.value) {
-          return false;
-        }
+        if (!canModifyJobPost.value) return false;
 
-        // Check if all ratings are completed
         const allRatingsCompleted =
           props.ratingData.total_completed === props.ratingData.total_assigned;
-
-        // Check if applicant rank is within top 5
         const applicantRank = parseInt(finalScores.value?.rank) || 999;
         const isTopFive = applicantRank <= 5;
 
-        // Only show if user has permission, ratings are complete, applicant is in top 5, and job is not occupied
         return allRatingsCompleted && isTopFive && !isJobOccupied.value;
       });
 
       const columns = ref([
         { name: 'rater', label: 'Rater', field: 'rater_name', align: 'left' },
-        {
-          name: 'education',
-          label: 'Education',
-          field: 'education',
-          align: 'center',
-        },
-        {
-          name: 'experience',
-          label: 'Experience',
-          field: 'experience',
-          align: 'center',
-        },
-        {
-          name: 'training',
-          label: 'Training',
-          field: 'training',
-          align: 'center',
-        },
-        {
-          name: 'performance',
-          label: 'Performance',
-          field: 'performance',
-          align: 'center',
-        },
+        { name: 'education', label: 'Education', field: 'education', align: 'center' },
+        { name: 'experience', label: 'Experience', field: 'experience', align: 'center' },
+        { name: 'training', label: 'Training', field: 'training', align: 'center' },
+        { name: 'performance', label: 'Performance', field: 'performance', align: 'center' },
         { name: 'bei', label: 'BEI', field: 'bei', align: 'center' },
         { name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' },
         { name: 'rank', label: 'Rank', field: 'ranking', align: 'center' },
-        {
-          name: 'grandTotal',
-          label: 'Grand Total',
-          field: 'grand_total',
-          align: 'center',
-        },
+        { name: 'grandTotal', label: 'Grand Total', field: 'grand_total', align: 'center' },
       ]);
 
       const finalScoreColumns = ref([
-        {
-          name: 'education',
-          label: 'Education',
-          field: 'education',
-          align: 'center',
-        },
-        {
-          name: 'experience',
-          label: 'Experience',
-          field: 'experience',
-          align: 'center',
-        },
-        {
-          name: 'training',
-          label: 'Training',
-          field: 'training',
-          align: 'center',
-        },
-        {
-          name: 'performance',
-          label: 'Performance',
-          field: 'performance',
-          align: 'center',
-        },
+        { name: 'education', label: 'Education', field: 'education', align: 'center' },
+        { name: 'experience', label: 'Experience', field: 'experience', align: 'center' },
+        { name: 'training', label: 'Training', field: 'training', align: 'center' },
+        { name: 'performance', label: 'Performance', field: 'performance', align: 'center' },
         { name: 'bei', label: 'BEI', field: 'bei', align: 'center' },
         { name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' },
         { name: 'rank', label: 'Final Rank', field: 'rank', align: 'center' },
-        {
-          name: 'grandTotal',
-          label: 'Final Total',
-          field: 'grand_total',
-          align: 'center',
-        },
+        { name: 'grandTotal', label: 'Final Total', field: 'grand_total', align: 'center' },
       ]);
-
-      // DEFINE ALL FUNCTIONS FIRST BEFORE WATCHERS
 
       const closeModal = () => {
         localShow.value = false;
@@ -531,7 +478,6 @@
       const getRankColor = (rank) => {
         const rankNum = parseInt(rank);
         if (rankNum <= 5) return 'purple';
-
         return 'grey';
       };
 
@@ -548,49 +494,44 @@
       };
 
       const confirmHireApplicant = async () => {
-        // Check permission before hiring
         if (!canModifyJobPost.value) {
           toast.error('You do not have permission to hire applicants');
+          return;
+        }
+
+        // ✅ IMPORTANT: Use submission_id from fetched score details if available
+        const submissionId = finalScores.value?.submission_id || props.applicant?.submission_id;
+
+        if (!submissionId) {
+          toast.error('submission_id is missing for this applicant. Cannot hire.');
           return;
         }
 
         try {
           hiringLoading.value = true;
 
-          // Prepare the payload for hiring
-          const payload = {
-            submission_id: props.applicant.submission_id,
-          };
+          const payload = { submission_id: submissionId };
 
           console.log('Hiring applicant with payload:', payload);
 
-          const response = await jobPostStore.hiredApplicant(
-            props.applicant.submission_id,
-            payload,
-          );
+          const response = await jobPostStore.hiredApplicant(submissionId, payload);
           console.log('API Response:', response);
 
-          // Check if response exists and has the expected structure
           if (response && response.data) {
             if (response.data.success === true) {
               toast.success(response.data.message || 'Applicant hired successfully');
 
-              // ✅ ADDED: Emit the 'on-hired' event to trigger parent refresh
               emit('on-hired');
 
-              // Small delay before closing to allow event to propagate
               setTimeout(() => {
                 hireConfirmationDialog.value = false;
                 closeModal();
               }, 500);
             } else {
-              // Handle API errors where success is false
-              console.log('API returned success: false, message:', response.data.message);
               toast.error(response.data.message || 'Failed to hire applicant');
               hireConfirmationDialog.value = false;
             }
           } else {
-            console.log('Unexpected response structure:', response);
             toast.error('Unexpected response format.');
             hireConfirmationDialog.value = false;
           }
@@ -603,79 +544,72 @@
         }
       };
 
-      const hireApplicant = async () => {
-        showHireConfirmation();
-      };
-
       const loadScoreData = async () => {
         console.log('Loading score data for applicant:', props.applicant);
 
-        if (!props.applicant || !props.applicant.nPersonalInfo_id) {
-          console.warn('No applicant data or ID available');
+        const lookupKey = applicantLookupKey.value;
+
+        if (!props.applicant || !lookupKey) {
+          console.warn('No applicant lookup key available (nPersonalInfo_id or ControlNo)');
+          raterScores.value = [];
+          finalScores.value = null;
+          applicantImageUrl.value = '';
           return;
         }
 
-        // Set final scores from props immediately (already averaged)
-        finalScores.value = {
-          education: props.applicant.education,
-          experience: props.applicant.experience,
-          training: props.applicant.training,
-          performance: props.applicant.performance,
-          bei: props.applicant.bei,
-          total_qs: props.applicant.total_qs,
-          grand_total: props.applicant.grand_total,
-          rank: props.applicant.rank,
-          nPersonalInfo_id: props.applicant.nPersonalInfo_id,
-        };
-
-        // Set image URL from props
         applicantImageUrl.value = props.applicant.image_url || 'https://placehold.co/100';
 
         try {
           dataLoading.value = true;
 
-          // Fetch individual rater scores from API
-          const scoreData = await jobPostStore.fetchApplicantScoreDetails(
-            props.applicant.nPersonalInfo_id,
-          );
+          // ✅ API returns: { applicant: {...}, history: [...] }
+          const scoreData = await jobPostStore.fetchApplicantScoreDetails(lookupKey);
+          console.log('Fetched score details:', scoreData);
 
-          console.log('Fetched individual rater scores from API:', scoreData);
+          const apiApplicant = scoreData?.applicant || {};
 
-          // Load individual rater scores from API response
-          if (scoreData && Array.isArray(scoreData)) {
-            raterScores.value = scoreData.map((score, index) => ({
-              ...score,
-              // Ensure we have a unique ID for each row
-              id: score.id || `rater-${index}`,
-            }));
-            console.log('Loaded rater scores:', raterScores.value);
-          } else if (scoreData && scoreData.history && Array.isArray(scoreData.history)) {
-            // Fallback if data is wrapped in history property
+          // ✅ Keep displayed scores from props (already averaged), but hydrate IDs from API response
+          finalScores.value = {
+            education: props.applicant.education,
+            experience: props.applicant.experience,
+            training: props.applicant.training,
+            performance: props.applicant.performance,
+            bei: props.applicant.bei,
+            total_qs: props.applicant.total_qs,
+            grand_total: props.applicant.grand_total,
+            rank: props.applicant.rank,
+
+            submission_id: apiApplicant.submission_id ?? props.applicant.submission_id ?? null,
+            nPersonalInfo_id:
+              apiApplicant.nPersonalInfo_id ?? props.applicant.nPersonalInfo_id ?? null,
+            ControlNo:
+              apiApplicant.ControlNo ??
+              props.applicant.ControlNo ??
+              props.applicant.controlno ??
+              null,
+          };
+
+          showControlNo.value =
+            !finalScores.value.nPersonalInfo_id && !!finalScores.value.ControlNo;
+
+          if (Array.isArray(scoreData?.history)) {
             raterScores.value = scoreData.history.map((score, index) => ({
               ...score,
               id: score.id || `rater-${index}`,
             }));
           } else {
-            console.log('No rater score data found in API response');
             raterScores.value = [];
           }
-
-          console.log('Final scores set from props:', finalScores.value);
-          console.log('Rater scores set from API:', raterScores.value);
         } catch (error) {
           console.error('Error fetching individual rater scores:', error);
           toast.error('Failed to load individual rater scores');
-
-          // Set empty rater scores on error
           raterScores.value = [];
+          finalScores.value = null;
         } finally {
           dataLoading.value = false;
         }
       };
 
-      // NOW DEFINE WATCHERS AFTER ALL FUNCTIONS ARE DECLARED
-
-      // Watch for show prop changes
       watch(
         () => props.show,
         (newVal) => {
@@ -687,7 +621,6 @@
         { immediate: true },
       );
 
-      // Watch for applicant changes
       watch(
         () => props.applicant,
         () => {
@@ -700,9 +633,7 @@
 
       watch(localShow, (newVal) => {
         emit('update:show', newVal);
-        if (!newVal) {
-          cleanupModal();
-        }
+        if (!newVal) cleanupModal();
       });
 
       return {
@@ -721,7 +652,6 @@
         isJobOccupied,
         isRepublish,
         isUnoccupied,
-        hireApplicant,
         hiringLoading,
         hireConfirmationDialog,
         showHireConfirmation,
@@ -822,81 +752,6 @@
   .hire-btn {
     font-weight: 500;
     padding: 8px 16px;
-  }
-
-  // New improved job details styles
-  .job-details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-top: 16px;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .details-section {
-    background: #fafafa;
-    border-radius: 8px;
-    padding: 16px;
-    border-left: 4px solid #e0e0e0;
-    transition: all 0.3s ease;
-
-    &:hover {
-      border-left-color: #1976d2;
-      background: #f5f5f5;
-    }
-
-    &.highlight-section {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-left-color: #28a745;
-    }
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e0e0e0;
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #333;
-      margin: 0;
-    }
-  }
-
-  .details-content {
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 4px 0;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .detail-label {
-        font-weight: 500;
-        font-size: 13px;
-        color: #666;
-        min-width: 100px;
-      }
-
-      .detail-value {
-        color: #333;
-        font-weight: 400;
-        font-size: 13px;
-        text-align: right;
-        flex: 1;
-        margin-left: 12px;
-      }
-    }
   }
 
   .detail-item {

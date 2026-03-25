@@ -97,7 +97,7 @@
         <template v-slot:body-cell-post_date="props">
           <q-td :props="props" class="date-column">
             <q-badge rounded color="green" class="text-caption q-px-sm">
-              {{ formatDate(props.row.post_date, "MMM D, YYYY") }}
+              {{ formatDate(props.row.post_date, 'MMM D, YYYY') }}
             </q-badge>
           </q-td>
         </template>
@@ -132,7 +132,7 @@
               :color="getStatusColor(props.row.status)"
               class="status-badge q-px-md q-py-xs"
             >
-              {{ (props.row.status || "Unknown").toLowerCase() }}
+              {{ (props.row.status || 'Unknown').toLowerCase() }}
             </q-badge>
           </q-td>
         </template>
@@ -235,13 +235,7 @@
           <q-card-section class="q-py-none">
             <div class="row q-col-gutter-md">
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Office"
-                  label="Office"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Office" label="Office" outlined dense disable />
               </div>
               <div class="col-6">
                 <q-input
@@ -253,13 +247,7 @@
                 />
               </div>
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Group"
-                  label="Group"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Group" label="Group" outlined dense disable />
               </div>
               <div class="col-6">
                 <q-input
@@ -273,22 +261,10 @@
             </div>
             <div class="row q-col-gutter-md q-mt-sm">
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Section"
-                  label="Section"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Section" label="Section" outlined dense disable />
               </div>
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Unit"
-                  label="Unit"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Unit" label="Unit" outlined dense disable />
               </div>
             </div>
 
@@ -311,17 +287,12 @@
                   mask="date"
                   :rules="[
                     (date) =>
-                      date >= editJobDetails.post_date ||
-                      'End date cannot be before start date',
+                      date >= editJobDetails.post_date || 'End date cannot be before start date',
                   ]"
                 >
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy
-                        cover
-                        transition-show="scale"
-                        transition-hide="scale"
-                      >
+                      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                         <q-date
                           v-model="editJobDetails.end_date"
                           :options="(date) => date >= editJobDetails.post_date"
@@ -369,9 +340,7 @@
             >
               <template v-slot:body="props">
                 <q-tr :props="props">
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Education"
                       type="textarea"
@@ -381,9 +350,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Experience"
                       type="textarea"
@@ -393,9 +360,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Training"
                       type="textarea"
@@ -405,9 +370,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 120px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 120px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Eligibility"
                       type="textarea"
@@ -467,16 +430,10 @@
                 <q-icon name="upload_file" size="2em" color="grey-7" />
               </template>
             </q-file>
-            <div
-              class="text-caption text-grey-6 text-center"
-              v-if="!editJobDetails.newFile"
-            >
+            <div class="text-caption text-grey-6 text-center" v-if="!editJobDetails.newFile">
               No new file selected. Current document will be retained.
             </div>
-            <div
-              class="text-caption text-positive text-center"
-              v-if="editJobDetails.newFile"
-            >
+            <div class="text-caption text-positive text-center" v-if="editJobDetails.newFile">
               New file selected: {{ editJobDetails.newFile.name }}
             </div>
           </q-card-section>
@@ -561,13 +518,7 @@
           <q-card-section class="q-py-none">
             <div class="row q-col-gutter-md">
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Office"
-                  label="Office"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Office" label="Office" outlined dense disable />
               </div>
               <div class="col-6">
                 <q-input
@@ -579,13 +530,7 @@
                 />
               </div>
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Group"
-                  label="Group"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Group" label="Group" outlined dense disable />
               </div>
               <div class="col-6">
                 <q-input
@@ -599,22 +544,10 @@
             </div>
             <div class="row q-col-gutter-md q-mt-sm">
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Section"
-                  label="Section"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Section" label="Section" outlined dense disable />
               </div>
               <div class="col-6">
-                <q-input
-                  v-model="editJobDetails.Unit"
-                  label="Unit"
-                  outlined
-                  dense
-                  disable
-                />
+                <q-input v-model="editJobDetails.Unit" label="Unit" outlined dense disable />
               </div>
             </div>
 
@@ -637,17 +570,12 @@
                   mask="date"
                   :rules="[
                     (date) =>
-                      date >= editJobDetails.post_date ||
-                      'End date cannot be before start date',
+                      date >= editJobDetails.post_date || 'End date cannot be before start date',
                   ]"
                 >
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy
-                        cover
-                        transition-show="scale"
-                        transition-hide="scale"
-                      >
+                      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                         <q-date
                           v-model="editJobDetails.end_date"
                           :options="(date) => date >= editJobDetails.post_date"
@@ -695,9 +623,7 @@
             >
               <template v-slot:body="props">
                 <q-tr :props="props">
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Education"
                       type="textarea"
@@ -707,9 +633,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Experience"
                       type="textarea"
@@ -719,9 +643,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 100px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 100px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Training"
                       type="textarea"
@@ -731,9 +653,7 @@
                       class="q-pa-none"
                     />
                   </q-td>
-                  <q-td
-                    style="width: 120px; white-space: pre-line; word-break: break-word"
-                  >
+                  <q-td style="width: 120px; white-space: pre-line; word-break: break-word">
                     <q-input
                       v-model="props.row.Eligibility"
                       type="textarea"
@@ -793,16 +713,10 @@
                 <q-icon name="upload_file" size="2em" color="grey-7" />
               </template>
             </q-file>
-            <div
-              class="text-caption text-grey-6 text-center"
-              v-if="!editJobDetails.newFile"
-            >
+            <div class="text-caption text-grey-6 text-center" v-if="!editJobDetails.newFile">
               No new file selected. Current document will be retained.
             </div>
-            <div
-              class="text-caption text-positive text-center"
-              v-if="editJobDetails.newFile"
-            >
+            <div class="text-caption text-positive text-center" v-if="editJobDetails.newFile">
               New file selected: {{ editJobDetails.newFile.name }}
             </div>
           </q-card-section>
@@ -854,9 +768,7 @@
         </q-card-section>
         <q-separator />
         <q-card-section class="q-pt-md">
-          <div class="text-subtitle q-mb-sm">
-            Are you sure you want to delete this job post?
-          </div>
+          <div class="text-subtitle q-mb-sm">Are you sure you want to delete this job post?</div>
           <div class="q-pa-sm bg-grey-2 rounded-borders" v-if="jobToDelete">
             <div class="row q-col-gutter-sm q-mb-sm">
               <div class="col-4 text-weight-medium text-body1">Office:</div>
@@ -869,7 +781,7 @@
             <div class="row q-col-gutter-sm">
               <div class="col-4 text-weight-medium text-body1">Posted:</div>
               <div class="col-8 text-body1">
-                {{ formatDate(jobToDelete.post_date, "MMM D, YYYY") }}
+                {{ formatDate(jobToDelete.post_date, 'MMM D, YYYY') }}
               </div>
             </div>
           </div>
@@ -907,11 +819,7 @@
 
     <!-- PDS Modal (Nested Dialog) -->
     <q-dialog v-model="showPDSModal" backdrop-opacity="0.7">
-      <PDSModal
-        v-model="showPDSModal"
-        :applicant="selectedApplicant"
-        @close="closePDSModal"
-      />
+      <PDSModal v-model="showPDSModal" :applicant="selectedApplicant" @close="closePDSModal" />
     </q-dialog>
 
     <!-- Confirmation Dialog -->
@@ -921,7 +829,7 @@
           <q-icon name="help_outline" color="primary" size="sm" class="q-mr-sm" />
           <span class="text-subtitle1">
             Confirm Evaluation
-            {{ selectedApplicant.isSubmitted ? "Update" : "Submission" }}
+            {{ selectedApplicant.isSubmitted ? 'Update' : 'Submission' }}
           </span>
         </q-card-section>
         <q-separator />
@@ -929,7 +837,7 @@
           <div class="text-body2 q-mb-sm">
             You are about to
             <span class="text-weight-bold">
-              {{ selectedApplicant.isSubmitted ? "update" : "submit" }}
+              {{ selectedApplicant.isSubmitted ? 'update' : 'submit' }}
             </span>
             this evaluation:
           </div>
@@ -967,1135 +875,1119 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { date } from "quasar";
-import QualityStandardModal from "components/QualityStandardModal.vue";
-import PDSModal from "components/PDSModal.vue";
-import { useJobPostStore } from "stores/jobPostStore";
-import { useAuthStore } from "stores/authStore";
-import { useRouter } from "vue-router";
-import { useQuasar } from "quasar";
+  import { ref, computed, onMounted } from 'vue';
+  import { date } from 'quasar';
+  import QualityStandardModal from 'components/QualityStandardModal.vue';
+  import PDSModal from 'components/PDSModal.vue';
+  import { useJobPostStore } from 'stores/jobPostStore';
+  import { useAuthStore } from 'stores/authStore';
+  import { useRouter } from 'vue-router';
+  import { useQuasar } from 'quasar';
 
-const router = useRouter();
-const jobPostStore = useJobPostStore();
-const authStore = useAuthStore();
-const $q = useQuasar();
+  const router = useRouter();
+  const jobPostStore = useJobPostStore();
+  const authStore = useAuthStore();
+  const $q = useQuasar();
 
-const { formatDate } = date;
+  const { formatDate } = date;
 
-// Permission check
-const canModifyJobPost = computed(() => {
-  return authStore.user?.permissions?.modifyJobpostAccess == "1";
-});
-
-// Page State
-const showingDetails = ref(false);
-const pagination = ref({
-  sortBy: "post_date",
-  descending: true,
-  page: 1,
-  rowsPerPage: 10,
-});
-
-// Delete related state
-const showDeleteConfirmation = ref(false);
-const jobToDelete = ref(null);
-const deletingJobId = ref(null);
-
-// Edit related state
-const showEditModal = ref(false);
-const showRepublishModal = ref(false);
-const loadingCriteria = ref(false);
-const criteriaData = ref(null);
-
-const editJobDetails = ref({
-  id: null,
-  Office: "",
-  Office2: null,
-  Group: null,
-  Division: "",
-  Section: null,
-  Unit: null,
-  Position: "",
-  level: "",
-  post_date: "",
-  end_date: "",
-  PageNo: 0,
-  PositionID: "",
-  ItemNo: "",
-  SalaryGrade: "",
-  salaryMin: null,
-  salaryMax: null,
-  status: "",
-  tblStructureDetails_ID: null,
-  fileUpload: "",
-  newFile: null,
-  old_job_id: null,
-});
-
-// Track the pending status separately from the actual status
-const pendingStatus = ref("Pending");
-
-// Global Search
-const globalSearch = ref("");
-
-// Date Range as an object
-const dateRange = ref({
-  from: "",
-  to: "",
-});
-
-// Computed property for display text
-const dateRangeText = computed(() => {
-  if (!dateRange.value.from && !dateRange.value.to) return "";
-  return `${formatDate(dateRange.value.from, "MMM D, YYYY")} - ${formatDate(
-    dateRange.value.to,
-    "MMM D, YYYY"
-  )}`;
-});
-
-// Modified setDateRange to show the entire current year by default
-const setDateRange = () => {
-  const currentYear = new Date().getFullYear();
-  const fromDate = new Date(currentYear, 0, 1); // January 1st of current year
-  const toDate = new Date(currentYear, 11, 31); // December 31st of current year
-
-  dateRange.value = {
-    from: formatDate(fromDate, "YYYY-MM-DD"), // Use YYYY-MM-DD format
-    to: formatDate(toDate, "YYYY-MM-DD"), // Use YYYY-MM-DD format
-  };
-};
-
-// Add this method after the onDateRangeChange function
-//
-
-// const onDateRangeChange = (newRange) => {
-//   dateRange.value = newRange;
-// };
-
-const columns = [
-  {
-    name: "Office",
-    label: "Office",
-    align: "left",
-    field: "Office",
-    sortable: true,
-    style: "width: 18%",
-  },
-  {
-    name: "position",
-    label: "Position",
-    align: "left",
-    field: "Position",
-    sortable: true,
-    style: "width: 22%",
-  },
-  {
-    name: "post_date",
-    align: "center",
-    label: "Posted Date",
-    field: "post_date",
-    sortable: true,
-    style: "width: 12%",
-  },
-  {
-    name: "applicants",
-    align: "center",
-    label: "Applicant",
-    field: "applicants",
-    sortable: true,
-    style: "width: 8%",
-  },
-  {
-    name: "pending",
-    align: "center",
-    label: "Pending",
-    field: "pending",
-    sortable: true,
-    style: "width: 8%",
-  },
-  {
-    name: "qualified",
-    align: "center",
-    label: "Qualified",
-    field: "qualified",
-    sortable: true,
-    style: "width: 8%",
-  },
-  {
-    name: "unqualified",
-    align: "center",
-    label: "Unqualified",
-    field: "unqualified",
-    sortable: true,
-    style: "width: 8%",
-  },
-  {
-    name: "status",
-    label: "Status",
-    field: "status",
-    align: "center",
-    sortable: true,
-    style: "width: 5%",
-  },
-  {
-    name: "action",
-    align: "center",
-    label: "Actions",
-    field: "action",
-    sortable: false,
-    style: "width: 11%",
-  },
-];
-
-const jobs = ref([]);
-
-// UPDATED: Computed property to filter jobs by date range, search, AND exclude republished jobs
-const filteredJobs = computed(() => {
-  let filtered = jobs.value;
-
-  // MAIN CHANGE: Filter out jobs with 'Republished' status
-  filtered = filtered.filter((job) => {
-    return job.status && job.status.toLowerCase() !== "republished";
+  // Permission check
+  const canModifyJobPost = computed(() => {
+    return authStore.user?.permissions?.modifyJobpostAccess == '1';
   });
 
-  // Apply date range filtering
-  // if (dateRange.value.from && dateRange.value.to) {
-  //   filtered = filtered.filter((job) => {
-  //     const jobDate = new Date(job.post_date);
-  //     const from = new Date(dateRange.value.from);
-  //     const to = new Date(dateRange.value.to);
-  //     // Set time to end of day for "to" date to include the entire day
-  //     to.setHours(23, 59, 59, 999);
-  //     return jobDate >= from && jobDate <= to;
-  //   });
-  // }
+  // Page State
+  const showingDetails = ref(false);
+  const pagination = ref({
+    sortBy: 'post_date',
+    descending: true,
+    page: 1,
+    rowsPerPage: 10,
+  });
 
-  // Apply global search filter if needed
-  if (globalSearch.value) {
-    const searchTerm = globalSearch.value.toLowerCase();
+  // Delete related state
+  const showDeleteConfirmation = ref(false);
+  const jobToDelete = ref(null);
+  const deletingJobId = ref(null);
+
+  // Edit related state
+  const showEditModal = ref(false);
+  const showRepublishModal = ref(false);
+  const loadingCriteria = ref(false);
+  const criteriaData = ref(null);
+
+  const editJobDetails = ref({
+    id: null,
+    Office: '',
+    Office2: null,
+    Group: null,
+    Division: '',
+    Section: null,
+    Unit: null,
+    Position: '',
+    level: '',
+    post_date: '',
+    end_date: '',
+    PageNo: 0,
+    PositionID: '',
+    ItemNo: '',
+    SalaryGrade: '',
+    salaryMin: null,
+    salaryMax: null,
+    status: '',
+    tblStructureDetails_ID: null,
+    fileUpload: '',
+    newFile: null,
+    old_job_id: null,
+  });
+
+  // Track the pending status separately from the actual status
+  const pendingStatus = ref('Pending');
+
+  // Global Search
+  const globalSearch = ref('');
+
+  // Date Range as an object
+  const dateRange = ref({
+    from: '',
+    to: '',
+  });
+
+  // Computed property for display text
+  const dateRangeText = computed(() => {
+    if (!dateRange.value.from && !dateRange.value.to) return '';
+    return `${formatDate(dateRange.value.from, 'MMM D, YYYY')} - ${formatDate(
+      dateRange.value.to,
+      'MMM D, YYYY',
+    )}`;
+  });
+
+  // Modified setDateRange to show the entire current year by default
+  const setDateRange = () => {
+    // ✅ default is "clear" = no filter
+    dateRange.value = { from: '', to: '' };
+  };
+
+  // Add this method after the onDateRangeChange function
+  //
+
+  // const onDateRangeChange = (newRange) => {
+  //   dateRange.value = newRange;
+  // };
+
+  const columns = [
+    {
+      name: 'Office',
+      label: 'Office',
+      align: 'left',
+      field: 'Office',
+      sortable: true,
+      style: 'width: 18%',
+    },
+    {
+      name: 'position',
+      label: 'Position',
+      align: 'left',
+      field: 'Position',
+      sortable: true,
+      style: 'width: 22%',
+    },
+    {
+      name: 'post_date',
+      align: 'center',
+      label: 'Posted Date',
+      field: 'post_date',
+      sortable: true,
+      style: 'width: 12%',
+    },
+    {
+      name: 'applicants',
+      align: 'center',
+      label: 'Applicant',
+      field: 'applicants',
+      sortable: true,
+      style: 'width: 8%',
+    },
+    {
+      name: 'pending',
+      align: 'center',
+      label: 'Pending',
+      field: 'pending',
+      sortable: true,
+      style: 'width: 8%',
+    },
+    {
+      name: 'qualified',
+      align: 'center',
+      label: 'Qualified',
+      field: 'qualified',
+      sortable: true,
+      style: 'width: 8%',
+    },
+    {
+      name: 'unqualified',
+      align: 'center',
+      label: 'Unqualified',
+      field: 'unqualified',
+      sortable: true,
+      style: 'width: 8%',
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      field: 'status',
+      align: 'center',
+      sortable: true,
+      style: 'width: 5%',
+    },
+    {
+      name: 'action',
+      align: 'center',
+      label: 'Actions',
+      field: 'action',
+      sortable: false,
+      style: 'width: 11%',
+    },
+  ];
+
+  const jobs = ref([]);
+
+  // UPDATED: Computed property to filter jobs by date range, search, AND exclude republished jobs
+  const filteredJobs = computed(() => {
+    let filtered = jobs.value;
+
+    // MAIN CHANGE: Filter out jobs with 'Republished' status
     filtered = filtered.filter((job) => {
-      return (
-        (job.Office && job.Office.toLowerCase().includes(searchTerm)) ||
-        (job.Position && job.Position.toLowerCase().includes(searchTerm)) ||
-        (job.post_date &&
-          formatDate(job.post_date, "MMM D, YYYY").toLowerCase().includes(searchTerm)) ||
-        (job.applicants !== undefined &&
-          job.applicants.toString().includes(searchTerm)) ||
-        (job.pending !== undefined && job.pending.toString().includes(searchTerm)) ||
-        (job.qualified !== undefined && job.qualified.toString().includes(searchTerm)) ||
-        (job.unqualified !== undefined && job.unqualified.toString().includes(searchTerm))
-      );
+      return job.status && job.status.toLowerCase() !== 'republished';
     });
-  }
 
-  return filtered;
-});
+    // Apply date range filtering
+    // if (dateRange.value.from && dateRange.value.to) {
+    //   filtered = filtered.filter((job) => {
+    //     const jobDate = new Date(job.post_date);
+    //     const from = new Date(dateRange.value.from);
+    //     const to = new Date(dateRange.value.to);
+    //     // Set time to end of day for "to" date to include the entire day
+    //     to.setHours(23, 59, 59, 999);
+    //     return jobDate >= from && jobDate <= to;
+    //   });
+    // }
 
-const selectedJob = ref({
-  id: null,
-  officePosition: "",
-  position: "",
-  postingDate: "",
-  applicants: 0,
-  pending: 0,
-  qualified: 0,
-  unqualified: 0,
-  qualifications: [],
-});
+    // Apply global search filter if needed
+    if (globalSearch.value) {
+      const searchTerm = globalSearch.value.toLowerCase();
+      filtered = filtered.filter((job) => {
+        return (
+          (job.Office && job.Office.toLowerCase().includes(searchTerm)) ||
+          (job.Position && job.Position.toLowerCase().includes(searchTerm)) ||
+          (job.post_date &&
+            formatDate(job.post_date, 'MMM D, YYYY').toLowerCase().includes(searchTerm)) ||
+          (job.applicants !== undefined && job.applicants.toString().includes(searchTerm)) ||
+          (job.pending !== undefined && job.pending.toString().includes(searchTerm)) ||
+          (job.qualified !== undefined && job.qualified.toString().includes(searchTerm)) ||
+          (job.unqualified !== undefined && job.unqualified.toString().includes(searchTerm))
+        );
+      });
+    }
 
-const viewJobDetails = (jobData) => {
-  router.push({
-    name: "JobPost View",
-    params: { id: jobData.id },
+    return filtered;
   });
-};
 
-// Edit job post functions
-const editJobPost = async (job) => {
-  try {
-    showEditModal.value = true;
+  const selectedJob = ref({
+    id: null,
+    officePosition: '',
+    position: '',
+    postingDate: '',
+    applicants: 0,
+    pending: 0,
+    qualified: 0,
+    unqualified: 0,
+    qualifications: [],
+  });
 
-    // Fetch detailed job post data using the single fetchJobDetails method
-    await jobPostStore.fetchJobDetails(job.id);
-    const jobData = jobPostStore.jobPosts;
-
-    // Populate edit form with fetched job data
-    editJobDetails.value = {
-      id: jobData.id,
-      Office: jobData.Office || "",
-      Office2: jobData.Office2 || null,
-      Group: jobData.Group || null,
-      Division: jobData.Division || "",
-      Section: jobData.Section || null,
-      Unit: jobData.Unit || null,
-      Position: jobData.Position || "",
-      tblStructureDetails_ID: jobData.tblStructureDetails_ID || null,
-      level: jobData.level || "",
-      post_date: jobData.post_date.replace(/\//g, "-"),
-      end_date: jobData.end_date.replace(/\//g, "-"),
-      PageNo: parseInt(jobData.PageNo) || 0,
-      PositionID: jobData.PositionID,
-      ItemNo: jobData.ItemNo || "",
-      SalaryGrade: jobData.SalaryGrade || "",
-      salaryMin: jobData.salaryMin || null,
-      salaryMax: jobData.salaryMax || null,
-      status: jobData.status || "",
-      fileUpload: jobData.plantilla?.fileUpload || "",
-      newFile: null,
-      old_job_id: jobData.id,
-    };
-
-    // Set criteria data from the response
-    if (jobData.criteria) {
-      criteriaData.value = {
-        id: jobData.criteria.id,
-        Education: jobData.criteria.Education || "",
-        Experience: jobData.criteria.Experience || "",
-        Training: jobData.criteria.Training || "",
-        Eligibility: jobData.criteria.Eligibility || "",
-      };
-    }
-  } catch (error) {
-    console.error("Error loading job data for edit:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to load job data for editing",
-      position: "top",
+  const viewJobDetails = (jobData) => {
+    router.push({
+      name: 'JobPost View',
+      params: { id: jobData.id },
     });
+  };
+
+  // Edit job post functions
+  const editJobPost = async (job) => {
+    try {
+      showEditModal.value = true;
+
+      // Fetch detailed job post data using the single fetchJobDetails method
+      await jobPostStore.fetchJobDetails(job.id);
+      const jobData = jobPostStore.jobPosts;
+
+      // Populate edit form with fetched job data
+      editJobDetails.value = {
+        id: jobData.id,
+        Office: jobData.Office || '',
+        Office2: jobData.Office2 || null,
+        Group: jobData.Group || null,
+        Division: jobData.Division || '',
+        Section: jobData.Section || null,
+        Unit: jobData.Unit || null,
+        Position: jobData.Position || '',
+        tblStructureDetails_ID: jobData.tblStructureDetails_ID || null,
+        level: jobData.level || '',
+        post_date: jobData.post_date.replace(/\//g, '-'),
+        end_date: jobData.end_date.replace(/\//g, '-'),
+        PageNo: parseInt(jobData.PageNo) || 0,
+        PositionID: jobData.PositionID,
+        ItemNo: jobData.ItemNo || '',
+        SalaryGrade: jobData.SalaryGrade || '',
+        salaryMin: jobData.salaryMin || null,
+        salaryMax: jobData.salaryMax || null,
+        status: jobData.status || '',
+        fileUpload: jobData.plantilla?.fileUpload || '',
+        newFile: null,
+        old_job_id: jobData.id,
+      };
+
+      // Set criteria data from the response
+      if (jobData.criteria) {
+        criteriaData.value = {
+          id: jobData.criteria.id,
+          Education: jobData.criteria.Education || '',
+          Experience: jobData.criteria.Experience || '',
+          Training: jobData.criteria.Training || '',
+          Eligibility: jobData.criteria.Eligibility || '',
+        };
+      }
+    } catch (error) {
+      console.error('Error loading job data for edit:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load job data for editing',
+        position: 'top',
+      });
+      showEditModal.value = false;
+    }
+  };
+
+  // republish job post functions
+  const republishJobPost = async (job) => {
+    try {
+      showRepublishModal.value = true;
+
+      // Fetch detailed job post data using the single fetchJobDetails method
+      await jobPostStore.fetchJobDetails(job.id);
+      const jobData = jobPostStore.jobPosts;
+
+      // Set current date as default post_date for republish
+      const currentDate = new Date();
+      const formattedCurrentDate = formatDate(currentDate, 'YYYY-MM-DD');
+
+      // Set end date to 30 days from current date as default
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30);
+      const formattedEndDate = formatDate(defaultEndDate, 'YYYY-MM-DD');
+
+      // Populate edit form with fetched job data (include all fields)
+      editJobDetails.value = {
+        id: jobData.id,
+        Office: jobData.Office || '',
+        Office2: jobData.Office2 || null,
+        Group: jobData.Group || null,
+        Division: jobData.Division || '',
+        Section: jobData.Section || null,
+        Unit: jobData.Unit || null,
+        Position: jobData.Position || '',
+        tblStructureDetails_ID: jobData.tblStructureDetails_ID || null,
+        level: jobData.level || '',
+        post_date: formattedCurrentDate, // Set to current date for republishing
+        end_date: formattedEndDate, // Set to 30 days from now
+        PageNo: parseInt(jobData.PageNo) || 0,
+        PositionID: jobData.PositionID,
+        ItemNo: jobData.ItemNo || '',
+        SalaryGrade: jobData.SalaryGrade || '',
+        salaryMin: jobData.salaryMin || null,
+        salaryMax: jobData.salaryMax || null,
+        status: jobData.status || '',
+        fileUpload: jobData.plantilla?.fileUpload || '',
+        newFile: null,
+        old_job_id: jobData.id,
+      };
+
+      // Set criteria data from the response
+      if (jobData.criteria) {
+        criteriaData.value = {
+          id: jobData.criteria.id,
+          PositionID: jobData.criteria.PositionID || '',
+          ItemNo: jobData.criteria.ItemNo || '',
+          Education: jobData.criteria.Education || '',
+          Experience: jobData.criteria.Experience || '',
+          Training: jobData.criteria.Training || '',
+          Eligibility: jobData.criteria.Eligibility || '',
+        };
+      }
+    } catch (error) {
+      console.error('Error loading job data for republish:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load job data for republishing',
+        position: 'top',
+      });
+      showRepublishModal.value = false;
+    }
+  };
+
+  // Helper function to extract filename from file path
+  const getFileName = (filePath) => {
+    if (!filePath) return 'Unknown File';
+    const parts = filePath.split('/');
+    return parts[parts.length - 1];
+  };
+
+  // Handle file rejection (size, type, etc.)
+  const onFileRejected = (rejectedEntries) => {
+    const file = rejectedEntries[0];
+    if (file.failedPropValidation === 'max-file-size') {
+      $q.notify({
+        type: 'negative',
+        message: 'File size must be less than 5MB',
+        position: 'top',
+      });
+    } else if (file.failedPropValidation === 'accept') {
+      $q.notify({
+        type: 'negative',
+        message: 'Only PDF files are allowed',
+        position: 'top',
+      });
+    }
+  };
+
+  // Download current document
+  const downloadCurrentDocument = () => {
+    if (!editJobDetails.value.fileUpload) {
+      $q.notify({
+        type: 'warning',
+        message: 'No document available for download',
+        position: 'top',
+      });
+      return;
+    }
+
+    // Create a download link for the current document
+    const baseUrl = process.env.VUE_APP_API_URL || '';
+    const downloadUrl = `${baseUrl}/storage/${editJobDetails.value.fileUpload}`;
+
+    // Create temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = getFileName(editJobDetails.value.fileUpload);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const closeEditModal = () => {
     showEditModal.value = false;
-  }
-};
-
-// republish job post functions
-const republishJobPost = async (job) => {
-  try {
-    showRepublishModal.value = true;
-
-    // Fetch detailed job post data using the single fetchJobDetails method
-    await jobPostStore.fetchJobDetails(job.id);
-    const jobData = jobPostStore.jobPosts;
-
-    // Set current date as default post_date for republish
-    const currentDate = new Date();
-    const formattedCurrentDate = formatDate(currentDate, "YYYY-MM-DD");
-
-    // Set end date to 30 days from current date as default
-    const defaultEndDate = new Date();
-    defaultEndDate.setDate(defaultEndDate.getDate() + 30);
-    const formattedEndDate = formatDate(defaultEndDate, "YYYY-MM-DD");
-
-    // Populate edit form with fetched job data (include all fields)
+    criteriaData.value = null;
     editJobDetails.value = {
-      id: jobData.id,
-      Office: jobData.Office || "",
-      Office2: jobData.Office2 || null,
-      Group: jobData.Group || null,
-      Division: jobData.Division || "",
-      Section: jobData.Section || null,
-      Unit: jobData.Unit || null,
-      Position: jobData.Position || "",
-      tblStructureDetails_ID: jobData.tblStructureDetails_ID || null,
-      level: jobData.level || "",
-      post_date: formattedCurrentDate, // Set to current date for republishing
-      end_date: formattedEndDate, // Set to 30 days from now
-      PageNo: parseInt(jobData.PageNo) || 0,
-      PositionID: jobData.PositionID,
-      ItemNo: jobData.ItemNo || "",
-      SalaryGrade: jobData.SalaryGrade || "",
-      salaryMin: jobData.salaryMin || null,
-      salaryMax: jobData.salaryMax || null,
-      status: jobData.status || "",
-      fileUpload: jobData.plantilla?.fileUpload || "",
+      id: null,
+      Office: '',
+      Division: '',
+      Section: '',
+      Unit: '',
+      Position: '',
+      level: '',
+      post_date: '',
+      end_date: '',
+      PageNo: 0,
+      PositionID: '',
+      ItemNo: '',
+      SalaryGrade: '',
+      status: '',
+      fileUpload: '',
       newFile: null,
-      old_job_id: jobData.id,
     };
+  };
 
-    // Set criteria data from the response
-    if (jobData.criteria) {
-      criteriaData.value = {
-        id: jobData.criteria.id,
-        PositionID: jobData.criteria.PositionID || "",
-        ItemNo: jobData.criteria.ItemNo || "",
-        Education: jobData.criteria.Education || "",
-        Experience: jobData.criteria.Experience || "",
-        Training: jobData.criteria.Training || "",
-        Eligibility: jobData.criteria.Eligibility || "",
-      };
-    }
-  } catch (error) {
-    console.error("Error loading job data for republish:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to load job data for republishing",
-      position: "top",
-    });
+  const closeRepublishModal = () => {
     showRepublishModal.value = false;
-  }
-};
-
-// Helper function to extract filename from file path
-const getFileName = (filePath) => {
-  if (!filePath) return "Unknown File";
-  const parts = filePath.split("/");
-  return parts[parts.length - 1];
-};
-
-// Handle file rejection (size, type, etc.)
-const onFileRejected = (rejectedEntries) => {
-  const file = rejectedEntries[0];
-  if (file.failedPropValidation === "max-file-size") {
-    $q.notify({
-      type: "negative",
-      message: "File size must be less than 5MB",
-      position: "top",
-    });
-  } else if (file.failedPropValidation === "accept") {
-    $q.notify({
-      type: "negative",
-      message: "Only PDF files are allowed",
-      position: "top",
-    });
-  }
-};
-
-// Download current document
-const downloadCurrentDocument = () => {
-  if (!editJobDetails.value.fileUpload) {
-    $q.notify({
-      type: "warning",
-      message: "No document available for download",
-      position: "top",
-    });
-    return;
-  }
-
-  // Create a download link for the current document
-  const baseUrl = process.env.VUE_APP_API_URL || "";
-  const downloadUrl = `${baseUrl}/storage/${editJobDetails.value.fileUpload}`;
-
-  // Create temporary link and trigger download
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = getFileName(editJobDetails.value.fileUpload);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-const closeEditModal = () => {
-  showEditModal.value = false;
-  criteriaData.value = null;
-  editJobDetails.value = {
-    id: null,
-    Office: "",
-    Division: "",
-    Section: "",
-    Unit: "",
-    Position: "",
-    level: "",
-    post_date: "",
-    end_date: "",
-    PageNo: 0,
-    PositionID: "",
-    ItemNo: "",
-    SalaryGrade: "",
-    status: "",
-    fileUpload: "",
-    newFile: null,
+    criteriaData.value = null;
+    editJobDetails.value = {
+      id: null,
+      Office: '',
+      Division: '',
+      Section: '',
+      Unit: '',
+      Position: '',
+      level: '',
+      post_date: '',
+      end_date: '',
+      PageNo: 0,
+      PositionID: '',
+      ItemNo: '',
+      SalaryGrade: '',
+      status: '',
+      fileUpload: '',
+      newFile: null,
+    };
   };
-};
 
-const closeRepublishModal = () => {
-  showRepublishModal.value = false;
-  criteriaData.value = null;
-  editJobDetails.value = {
-    id: null,
-    Office: "",
-    Division: "",
-    Section: "",
-    Unit: "",
-    Position: "",
-    level: "",
-    post_date: "",
-    end_date: "",
-    PageNo: 0,
-    PositionID: "",
-    ItemNo: "",
-    SalaryGrade: "",
-    status: "",
-    fileUpload: "",
-    newFile: null,
-  };
-};
+  const updateJobPost = async () => {
+    try {
+      // Validate required fields
+      if (!editJobDetails.value.end_date) {
+        $q.notify({
+          type: 'negative',
+          message: 'Please select an end date',
+          position: 'top',
+        });
+        return;
+      }
 
-const updateJobPost = async () => {
-  try {
-    // Validate required fields
-    if (!editJobDetails.value.end_date) {
-      $q.notify({
-        type: "negative",
-        message: "Please select an end date",
-        position: "top",
-      });
-      return;
-    }
+      if (!criteriaData.value) {
+        $q.notify({
+          type: 'negative',
+          message: 'Criteria data is missing',
+          position: 'top',
+        });
+        return;
+      }
 
-    if (!criteriaData.value) {
-      $q.notify({
-        type: "negative",
-        message: "Criteria data is missing",
-        position: "top",
-      });
-      return;
-    }
-
-    // Prepare job batch update data
-    const jobBatch = {
-      PositionID: editJobDetails.value.PositionID || null,
-      post_date: editJobDetails.value.post_date.replace(/\//g, "-"),
-      end_date: editJobDetails.value.end_date.replace(/\//g, "-"),
-      PageNo: editJobDetails.value.PageNo.toString(),
-      ItemNo: editJobDetails.value.ItemNo,
-      tblStructureDetails_ID: editJobDetails.value.tblStructureDetails_ID,
-    };
-
-    // Add file if a new one was selected
-    if (editJobDetails.value.newFile) {
-      jobBatch.fileUpload = editJobDetails.value.newFile;
-    }
-
-    // Prepare criteria update data
-    const criteria = {
-      Education: criteriaData.value.Education,
-      Experience: criteriaData.value.Experience,
-      Training: criteriaData.value.Training,
-      Eligibility: criteriaData.value.Eligibility,
-    };
-
-    // Call the store's update method
-    await jobPostStore.updateJobPost({
-      id: editJobDetails.value.id,
-      jobBatch: jobBatch,
-      criteria: criteria,
-      criteriaId: criteriaData.value.id,
-    });
-
-    // Refresh the job list
-    await jobPostStore.job_post();
-    jobs.value = jobPostStore.jobPosts;
-
-    // Show success notification
-    $q.notify({
-      type: "positive",
-      message: "Job post updated successfully",
-      position: "top",
-    });
-
-    // Close the modal
-    closeEditModal();
-  } catch (error) {
-    console.error("Error updating job post:", error);
-    $q.notify({
-      type: "negative",
-      message:
-        error.response?.data?.message || "Failed to update job post. Please try again.",
-      position: "top",
-    });
-  }
-};
-
-// NEW: Republish job post action using insertJobPost
-const republishJobPostAction = async () => {
-  try {
-    // Validate required fields
-    if (!editJobDetails.value.end_date) {
-      $q.notify({
-        type: "negative",
-        message: "Please select an end date",
-        position: "top",
-      });
-      return;
-    }
-
-    if (!criteriaData.value) {
-      $q.notify({
-        type: "negative",
-        message: "Criteria data is missing",
-        position: "top",
-      });
-      return;
-    }
-
-    // Prepare job batch data for new post (include all fields except id)
-    const jobBatch = {
-      Office: editJobDetails.value.Office,
-      Office2: editJobDetails.value.Office2,
-      Group: editJobDetails.value.Group,
-      Division: editJobDetails.value.Division,
-      Section: editJobDetails.value.Section,
-      Unit: editJobDetails.value.Unit,
-      Position: editJobDetails.value.Position,
-      PositionID: editJobDetails.value.PositionID,
-      post_date: editJobDetails.value.post_date.replace(/\//g, "-"),
-      end_date: editJobDetails.value.end_date.replace(/\//g, "-"),
-      PageNo: editJobDetails.value.PageNo.toString(),
-      ItemNo: editJobDetails.value.ItemNo,
-      SalaryGrade: editJobDetails.value.SalaryGrade,
-      salaryMin: editJobDetails.value.salaryMin,
-      salaryMax: editJobDetails.value.salaryMax,
-      level: editJobDetails.value.level,
-      status: "Not Started",
-      tblStructureDetails_ID: editJobDetails.value.tblStructureDetails_ID,
-      old_job_id: editJobDetails.value.id,
-      isOpen: "1",
-
-      Education: criteriaData.value.Education || "",
-      Experience: criteriaData.value.Experience || "",
-      Training: criteriaData.value.Training || "",
-      Eligibility: criteriaData.value.Eligibility || "",
-    };
-
-    // Add file if a new one was selected, otherwise keep the existing one
-    if (editJobDetails.value.newFile) {
-      jobBatch.fileUpload = editJobDetails.value.newFile;
-    } else if (editJobDetails.value.fileUpload) {
-      console.log("Using existing file:", editJobDetails.value.fileUpload);
-    }
-
-    // Prepare criteria data for new post
-    const criteria = {
-      PositionID: editJobDetails.value.PositionID || "",
-      ItemNo: editJobDetails.value.ItemNo || "",
-      Education: criteriaData.value.Education || "",
-      Experience: criteriaData.value.Experience || "",
-      Training: criteriaData.value.Training || "",
-      Eligibility: criteriaData.value.Eligibility || "",
-    };
-
-    console.log("Republishing job post with data:", { jobBatch, criteria });
-
-    const result = await jobPostStore.republishJobPost({
-      jobBatch: jobBatch,
-      criteria: criteria,
-    });
-
-    console.log("Republish result:", result);
-
-    // Refresh the job list
-    await jobPostStore.job_post();
-    jobs.value = jobPostStore.jobPosts;
-
-    // Show success notification
-    $q.notify({
-      type: "positive",
-      message: "Job post republished successfully",
-      position: "top",
-    });
-
-    // Close the modal
-    closeRepublishModal();
-  } catch (error) {
-    console.error("Error republishing job post:", error);
-    $q.notify({
-      type: "negative",
-      message:
-        error.response?.data?.message ||
-        "Failed to republish job post. Please try again.",
-      position: "top",
-    });
-  }
-};
-
-// Updated delete functions to use the store
-const confirmDeleteJob = (job) => {
-  jobToDelete.value = job;
-  showDeleteConfirmation.value = true;
-};
-
-// Updated deleteJob function to refresh the table after deletion
-const deleteJob = async () => {
-  if (!jobToDelete.value) return;
-
-  try {
-    deletingJobId.value = jobToDelete.value.PositionID;
-
-    // Call the store's deleteJobPost method
-    await jobPostStore.deleteJobPost({ id: jobToDelete.value.id });
-
-    // Refresh the job list from the store to ensure consistency
-    await jobPostStore.job_post();
-    jobs.value = jobPostStore.jobPosts;
-
-    // Show success notification
-    $q.notify({
-      type: "positive",
-      message: "Job post deleted successfully",
-      position: "top",
-    });
-
-    // Close the dialog and reset state
-    showDeleteConfirmation.value = false;
-    jobToDelete.value = null;
-  } catch (error) {
-    console.error("Error deleting job post:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to delete job post. Please try again.",
-      position: "top",
-    });
-  } finally {
-    deletingJobId.value = null;
-  }
-};
-
-const applicants = ref([
-  {
-    id: 1,
-    name: "John Doe",
-    appliedDate: "2025-04-02",
-    status: "Pending",
-    isSubmitted: false,
-  },
-]);
-
-// Qualification Standard Modal
-const showQSModal = ref(false);
-const selectedApplicant = ref({
-  id: null,
-  name: "",
-  photo: "",
-  position: "",
-  status: "Pending",
-  isSubmitted: false,
-  applicationDate: "",
-  education: [],
-  experience: [],
-  training: [],
-  eligibility: [],
-  personalInfo: {},
-});
-
-// Create a computed property that merges the selected applicant with the pending status
-const applicantWithPendingStatus = computed(() => {
-  return {
-    ...selectedApplicant.value,
-    status: pendingStatus.value,
-  };
-});
-
-const positionRequirements = ref({});
-
-// Confirmation Modal
-const showConfirmationModal = ref(false);
-
-const closeQualificationModal = () => {
-  pendingStatus.value = selectedApplicant.value.status;
-  showQSModal.value = false;
-};
-
-const refreshApplicantStatus = () => {
-  if (selectedApplicant.value && selectedApplicant.value.id) {
-    const currentApplicant = applicants.value.find(
-      (a) => a.id === selectedApplicant.value.id
-    );
-    if (currentApplicant) {
-      selectedApplicant.value = {
-        ...selectedApplicant.value,
-        status: currentApplicant.status,
-        isSubmitted: currentApplicant.isSubmitted,
+      // Prepare job batch update data
+      const jobBatch = {
+        PositionID: editJobDetails.value.PositionID || null,
+        post_date: editJobDetails.value.post_date.replace(/\//g, '-'),
+        end_date: editJobDetails.value.end_date.replace(/\//g, '-'),
+        PageNo: editJobDetails.value.PageNo.toString(),
+        ItemNo: editJobDetails.value.ItemNo,
+        tblStructureDetails_ID: editJobDetails.value.tblStructureDetails_ID,
       };
-      pendingStatus.value = currentApplicant.status;
+
+      // Add file if a new one was selected
+      if (editJobDetails.value.newFile) {
+        jobBatch.fileUpload = editJobDetails.value.newFile;
+      }
+
+      // Prepare criteria update data
+      const criteria = {
+        Education: criteriaData.value.Education,
+        Experience: criteriaData.value.Experience,
+        Training: criteriaData.value.Training,
+        Eligibility: criteriaData.value.Eligibility,
+      };
+
+      // Call the store's update method
+      await jobPostStore.updateJobPost({
+        id: editJobDetails.value.id,
+        jobBatch: jobBatch,
+        criteria: criteria,
+        criteriaId: criteriaData.value.id,
+      });
+
+      // Refresh the job list
+      await jobPostStore.job_post();
+      jobs.value = jobPostStore.jobPosts;
+
+      // Show success notification
+      $q.notify({
+        type: 'positive',
+        message: 'Job post updated successfully',
+        position: 'top',
+      });
+
+      // Close the modal
+      closeEditModal();
+    } catch (error) {
+      console.error('Error updating job post:', error);
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Failed to update job post. Please try again.',
+        position: 'top',
+      });
     }
-  }
-};
+  };
 
-const handleTemporaryQualificationToggle = (newStatus) => {
-  pendingStatus.value = newStatus;
-};
+  // NEW: Republish job post action using insertJobPost
+  const republishJobPostAction = async () => {
+    try {
+      // Validate required fields
+      if (!editJobDetails.value.end_date) {
+        $q.notify({
+          type: 'negative',
+          message: 'Please select an end date',
+          position: 'top',
+        });
+        return;
+      }
 
-const promptSubmitEvaluation = () => {
-  if (pendingStatus.value === "Pending") {
-    console.warn("Please select Qualified or Unqualified before submitting");
-    return;
-  }
-  showConfirmationModal.value = true;
-};
+      if (!criteriaData.value) {
+        $q.notify({
+          type: 'negative',
+          message: 'Criteria data is missing',
+          position: 'top',
+        });
+        return;
+      }
 
-const submitEvaluation = () => {
-  const applicantIndex = applicants.value.findIndex(
-    (a) => a.id === selectedApplicant.value.id
-  );
-  if (applicantIndex !== -1) {
-    if (selectedApplicant.value.isSubmitted) {
-      const previousStatus = applicants.value[applicantIndex].status;
+      // Prepare job batch data for new post (include all fields except id)
+      const jobBatch = {
+        Office: editJobDetails.value.Office,
+        Office2: editJobDetails.value.Office2,
+        Group: editJobDetails.value.Group,
+        Division: editJobDetails.value.Division,
+        Section: editJobDetails.value.Section,
+        Unit: editJobDetails.value.Unit,
+        Position: editJobDetails.value.Position,
+        PositionID: editJobDetails.value.PositionID,
+        post_date: editJobDetails.value.post_date.replace(/\//g, '-'),
+        end_date: editJobDetails.value.end_date.replace(/\//g, '-'),
+        PageNo: editJobDetails.value.PageNo.toString(),
+        ItemNo: editJobDetails.value.ItemNo,
+        SalaryGrade: editJobDetails.value.SalaryGrade,
+        salaryMin: editJobDetails.value.salaryMin,
+        salaryMax: editJobDetails.value.salaryMax,
+        level: editJobDetails.value.level,
+        status: 'Not Started',
+        tblStructureDetails_ID: editJobDetails.value.tblStructureDetails_ID,
+        old_job_id: editJobDetails.value.id,
+        isOpen: '1',
 
-      if (previousStatus !== pendingStatus.value) {
+        Education: criteriaData.value.Education || '',
+        Experience: criteriaData.value.Experience || '',
+        Training: criteriaData.value.Training || '',
+        Eligibility: criteriaData.value.Eligibility || '',
+      };
+
+      // Add file if a new one was selected, otherwise keep the existing one
+      if (editJobDetails.value.newFile) {
+        jobBatch.fileUpload = editJobDetails.value.newFile;
+      } else if (editJobDetails.value.fileUpload) {
+        console.log('Using existing file:', editJobDetails.value.fileUpload);
+      }
+
+      // Prepare criteria data for new post
+      const criteria = {
+        PositionID: editJobDetails.value.PositionID || '',
+        ItemNo: editJobDetails.value.ItemNo || '',
+        Education: criteriaData.value.Education || '',
+        Experience: criteriaData.value.Experience || '',
+        Training: criteriaData.value.Training || '',
+        Eligibility: criteriaData.value.Eligibility || '',
+      };
+
+      console.log('Republishing job post with data:', { jobBatch, criteria });
+
+      const result = await jobPostStore.republishJobPost({
+        jobBatch: jobBatch,
+        criteria: criteria,
+      });
+
+      console.log('Republish result:', result);
+
+      // Refresh the job list
+      await jobPostStore.job_post();
+      jobs.value = jobPostStore.jobPosts;
+
+      // Show success notification
+      $q.notify({
+        type: 'positive',
+        message: 'Job post republished successfully',
+        position: 'top',
+      });
+
+      // Close the modal
+      closeRepublishModal();
+    } catch (error) {
+      console.error('Error republishing job post:', error);
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Failed to republish job post. Please try again.',
+        position: 'top',
+      });
+    }
+  };
+
+  // Updated delete functions to use the store
+  const confirmDeleteJob = (job) => {
+    jobToDelete.value = job;
+    showDeleteConfirmation.value = true;
+  };
+
+  // Updated deleteJob function to refresh the table after deletion
+  const deleteJob = async () => {
+    if (!jobToDelete.value) return;
+
+    try {
+      deletingJobId.value = jobToDelete.value.PositionID;
+
+      // Call the store's deleteJobPost method
+      await jobPostStore.deleteJobPost({ id: jobToDelete.value.id });
+
+      // Refresh the job list from the store to ensure consistency
+      await jobPostStore.job_post();
+      jobs.value = jobPostStore.jobPosts;
+
+      // Show success notification
+      $q.notify({
+        type: 'positive',
+        message: 'Job post deleted successfully',
+        position: 'top',
+      });
+
+      // Close the dialog and reset state
+      showDeleteConfirmation.value = false;
+      jobToDelete.value = null;
+    } catch (error) {
+      console.error('Error deleting job post:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to delete job post. Please try again.',
+        position: 'top',
+      });
+    } finally {
+      deletingJobId.value = null;
+    }
+  };
+
+  const applicants = ref([
+    {
+      id: 1,
+      name: 'John Doe',
+      appliedDate: '2025-04-02',
+      status: 'Pending',
+      isSubmitted: false,
+    },
+  ]);
+
+  // Qualification Standard Modal
+  const showQSModal = ref(false);
+  const selectedApplicant = ref({
+    id: null,
+    name: '',
+    photo: '',
+    position: '',
+    status: 'Pending',
+    isSubmitted: false,
+    applicationDate: '',
+    education: [],
+    experience: [],
+    training: [],
+    eligibility: [],
+    personalInfo: {},
+  });
+
+  // Create a computed property that merges the selected applicant with the pending status
+  const applicantWithPendingStatus = computed(() => {
+    return {
+      ...selectedApplicant.value,
+      status: pendingStatus.value,
+    };
+  });
+
+  const positionRequirements = ref({});
+
+  // Confirmation Modal
+  const showConfirmationModal = ref(false);
+
+  const closeQualificationModal = () => {
+    pendingStatus.value = selectedApplicant.value.status;
+    showQSModal.value = false;
+  };
+
+  const refreshApplicantStatus = () => {
+    if (selectedApplicant.value && selectedApplicant.value.id) {
+      const currentApplicant = applicants.value.find((a) => a.id === selectedApplicant.value.id);
+      if (currentApplicant) {
+        selectedApplicant.value = {
+          ...selectedApplicant.value,
+          status: currentApplicant.status,
+          isSubmitted: currentApplicant.isSubmitted,
+        };
+        pendingStatus.value = currentApplicant.status;
+      }
+    }
+  };
+
+  const handleTemporaryQualificationToggle = (newStatus) => {
+    pendingStatus.value = newStatus;
+  };
+
+  const promptSubmitEvaluation = () => {
+    if (pendingStatus.value === 'Pending') {
+      console.warn('Please select Qualified or Unqualified before submitting');
+      return;
+    }
+    showConfirmationModal.value = true;
+  };
+
+  const submitEvaluation = () => {
+    const applicantIndex = applicants.value.findIndex((a) => a.id === selectedApplicant.value.id);
+    if (applicantIndex !== -1) {
+      if (selectedApplicant.value.isSubmitted) {
+        const previousStatus = applicants.value[applicantIndex].status;
+
+        if (previousStatus !== pendingStatus.value) {
+          const jobIndex = jobs.value.findIndex((j) => j.id === selectedJob.value.id);
+          if (jobIndex !== -1) {
+            const job = jobs.value[jobIndex];
+
+            if (previousStatus === 'Qualified') {
+              job.qualified--;
+            } else if (previousStatus === 'Unqualified') {
+              job.unqualified--;
+            } else if (previousStatus === 'Pending') {
+              job.pending--;
+            }
+
+            if (pendingStatus.value === 'Qualified') {
+              job.qualified++;
+            } else if (pendingStatus.value === 'Unqualified') {
+              job.unqualified++;
+            } else if (pendingStatus.value === 'Pending') {
+              job.pending++;
+            }
+          }
+        }
+      } else {
         const jobIndex = jobs.value.findIndex((j) => j.id === selectedJob.value.id);
         if (jobIndex !== -1) {
           const job = jobs.value[jobIndex];
 
-          if (previousStatus === "Qualified") {
-            job.qualified--;
-          } else if (previousStatus === "Unqualified") {
-            job.unqualified--;
-          } else if (previousStatus === "Pending") {
+          if (pendingStatus.value === 'Qualified') {
+            job.qualified++;
+            job.pending--;
+          } else if (pendingStatus.value === 'Unqualified') {
+            job.unqualified++;
             job.pending--;
           }
-
-          if (pendingStatus.value === "Qualified") {
-            job.qualified++;
-          } else if (pendingStatus.value === "Unqualified") {
-            job.unqualified++;
-          } else if (pendingStatus.value === "Pending") {
-            job.pending++;
-          }
         }
       }
-    } else {
-      const jobIndex = jobs.value.findIndex((j) => j.id === selectedJob.value.id);
-      if (jobIndex !== -1) {
-        const job = jobs.value[jobIndex];
 
-        if (pendingStatus.value === "Qualified") {
-          job.qualified++;
-          job.pending--;
-        } else if (pendingStatus.value === "Unqualified") {
-          job.unqualified++;
-          job.pending--;
-        }
-      }
-    }
-
-    applicants.value[applicantIndex] = {
-      ...applicants.value[applicantIndex],
-      status: pendingStatus.value,
-      isSubmitted: true,
-    };
-
-    selectedApplicant.value.status = pendingStatus.value;
-    selectedApplicant.value.isSubmitted = true;
-  }
-
-  showQSModal.value = false;
-  showConfirmationModal.value = false;
-};
-
-// PDS Modal functions
-const showPDSModal = ref(false);
-const viewApplicantPDS = () => {
-  if (selectedApplicant.value && selectedApplicant.value.id) {
-    const fullApplicantData = applicants.value.find(
-      (a) => a.id === selectedApplicant.value.id
-    );
-    if (fullApplicantData) {
-      selectedApplicant.value = {
-        ...fullApplicantData,
-        position: selectedJob.value.position,
+      applicants.value[applicantIndex] = {
+        ...applicants.value[applicantIndex],
+        status: pendingStatus.value,
+        isSubmitted: true,
       };
+
+      selectedApplicant.value.status = pendingStatus.value;
+      selectedApplicant.value.isSubmitted = true;
     }
-    showPDSModal.value = true;
-  }
-};
 
-const closePDSModal = () => {
-  showPDSModal.value = false;
-};
+    showQSModal.value = false;
+    showConfirmationModal.value = false;
+  };
 
-const getStatusColor = (status) => {
-  switch (status?.toLowerCase()) {
-    case "not started":
-      return "grey";
-    case "pending":
-      return "orange";
-    case "assessed":
-      return "blue";
-    case "rated":
-      return "purple";
-    case "occupied":
-      return "green";
-    case "qualified":
-      return "green";
-    case "unqualified":
-      return "red";
-    case "unoccupied":
-      return "red-9";
-    case "republished":
-      return "yellow-8";
-    default:
-      return "grey";
-  }
-};
+  // PDS Modal functions
+  const showPDSModal = ref(false);
+  const viewApplicantPDS = () => {
+    if (selectedApplicant.value && selectedApplicant.value.id) {
+      const fullApplicantData = applicants.value.find((a) => a.id === selectedApplicant.value.id);
+      if (fullApplicantData) {
+        selectedApplicant.value = {
+          ...fullApplicantData,
+          position: selectedJob.value.position,
+        };
+      }
+      showPDSModal.value = true;
+    }
+  };
 
-// onMounted(async () => {
-//   try {
-//     // Fetch job posts from the store
-//     await jobPostStore.job_post();
-//     jobs.value = jobPostStore.jobPosts;
+  const closePDSModal = () => {
+    showPDSModal.value = false;
+  };
 
-//     // Set the date range to the current year
-//     setDateRange();
-//   } catch (error) {
-//     console.error('Error loading job posts:', error);
-//     $q.notify({
-//       type: 'negative',
-//       message: 'Failed to load job posts',
-//       position: 'top',
-//     });
-//   }
-// });
-// const fetchJobsWithDateRange = async () => {
-//   if (dateRange.value.from && dateRange.value.to) {
-//     try {
-//       await jobPostStore.job_post(dateRange.value.from, dateRange.value.to);
-//       jobs.value = jobPostStore.jobPosts;
-//     } catch (error) {
-//       console.error("Error fetching jobs with date range:", error);
-//       $q.notify({
-//         type: "negative",
-//         message: "Failed to fetch jobs",
-//         position: "top",
-//       });
-//     }
-//   }
-// };
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'not started':
+        return 'grey';
+      case 'pending':
+        return 'orange';
+      case 'assessed':
+        return 'blue';
+      case 'rated':
+        return 'purple';
+      case 'occupied':
+        return 'green';
+      case 'qualified':
+        return 'green';
+      case 'unqualified':
+        return 'red';
+      case 'unoccupied':
+        return 'red-9';
+      case 'republished':
+        return 'yellow-8';
+      default:
+        return 'grey';
+    }
+  };
 
-// Update fetchJobsWithDateRange to handle empty dates
-const fetchJobsWithDateRange = async () => {
-  try {
-    // If no dates selected, fetch all data (you may need a different endpoint)
-    if (!dateRange.value.from || !dateRange.value.to) {
-      // Option 1: Use a different endpoint for all data
-      await jobPostStore.job_post_all(); // You'd need to create this method
+  // onMounted(async () => {
+  //   try {
+  //     // Fetch job posts from the store
+  //     await jobPostStore.job_post();
+  //     jobs.value = jobPostStore.jobPosts;
 
-      // Option 2: Use very wide date range (e.g., 10 years)
-      // const tenYearsAgo = formatDate(new Date().setFullYear(new Date().getFullYear() - 10), 'YYYY-MM-DD');
-      // const tenYearsLater = formatDate(new Date().setFullYear(new Date().getFullYear() + 10), 'YYYY-MM-DD');
-      // await jobPostStore.job_post(tenYearsAgo, tenYearsLater);
-    } else {
+  //     // Set the date range to the current year
+  //     setDateRange();
+  //   } catch (error) {
+  //     console.error('Error loading job posts:', error);
+  //     $q.notify({
+  //       type: 'negative',
+  //       message: 'Failed to load job posts',
+  //       position: 'top',
+  //     });
+  //   }
+  // });
+  // const fetchJobsWithDateRange = async () => {
+  //   if (dateRange.value.from && dateRange.value.to) {
+  //     try {
+  //       await jobPostStore.job_post(dateRange.value.from, dateRange.value.to);
+  //       jobs.value = jobPostStore.jobPosts;
+  //     } catch (error) {
+  //       console.error("Error fetching jobs with date range:", error);
+  //       $q.notify({
+  //         type: "negative",
+  //         message: "Failed to fetch jobs",
+  //         position: "top",
+  //       });
+  //     }
+  //   }
+  // };
+
+  // Update fetchJobsWithDateRange to handle empty dates
+  const fetchJobsWithDateRange = async () => {
+    try {
+      // If no dates selected, fetch all data (you may need a different endpoint)
+      if (!dateRange.value.from || !dateRange.value.to) {
+        // Option 1: Use a different endpoint for all data
+        await jobPostStore.job_post_all(); // You'd need to create this method
+
+        // Option 2: Use very wide date range (e.g., 10 years)
+        // const tenYearsAgo = formatDate(new Date().setFullYear(new Date().getFullYear() - 10), 'YYYY-MM-DD');
+        // const tenYearsLater = formatDate(new Date().setFullYear(new Date().getFullYear() + 10), 'YYYY-MM-DD');
+        // await jobPostStore.job_post(tenYearsAgo, tenYearsLater);
+      } else {
+        await jobPostStore.job_post(dateRange.value.from, dateRange.value.to);
+      }
+      jobs.value = jobPostStore.jobPosts;
+    } catch (error) {
+      console.error('Error fetching jobs with date range:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to fetch jobs',
+        position: 'top',
+      });
+    }
+  };
+
+  // // Add clearDateRange method
+  const clearDateRange = () => {
+    dateRange.value = { from: '', to: '' };
+    fetchJobsWithDateRange();
+  };
+
+  // Update the onDateRangeChange method
+  const onDateRangeChange = async (newRange) => {
+    dateRange.value = newRange;
+    // Fetch new data when date range changes
+    await fetchJobsWithDateRange();
+  };
+  onMounted(async () => {
+    try {
+      // Set the date range to the current year first
+      setDateRange();
+
+      // Fetch job posts with date range parameters
       await jobPostStore.job_post(dateRange.value.from, dateRange.value.to);
+      jobs.value = jobPostStore.jobPosts;
+    } catch (error) {
+      console.error('Error loading job posts:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load job posts',
+        position: 'top',
+      });
     }
-    jobs.value = jobPostStore.jobPosts;
-  } catch (error) {
-    console.error("Error fetching jobs with date range:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to fetch jobs",
-      position: "top",
-    });
-  }
-};
-
-// // Add clearDateRange method
-const clearDateRange = () => {
-  dateRange.value = { from: "", to: "" };
-  fetchJobsWithDateRange();
-};
-
-// Update the onDateRangeChange method
-const onDateRangeChange = async (newRange) => {
-  dateRange.value = newRange;
-  // Fetch new data when date range changes
-  await fetchJobsWithDateRange();
-};
-onMounted(async () => {
-  try {
-    // Set the date range to the current year first
-    setDateRange();
-
-    // Fetch job posts with date range parameters
-    await jobPostStore.job_post(dateRange.value.from, dateRange.value.to);
-    jobs.value = jobPostStore.jobPosts;
-  } catch (error) {
-    console.error("Error loading job posts:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to load job posts",
-      position: "top",
-    });
-  }
-});
+  });
 </script>
 
 <style scoped lang="scss">
-/* Typography improvements */
-.text-h1,
-.text-h2,
-.text-h3,
-.text-h5,
-.text-h6 {
-  letter-spacing: -0.01em;
-}
-
-/* Main page title */
-.text-h3 {
-  font-size: 1.8rem;
-  line-height: 2.2rem;
-  margin-bottom: 1rem;
-}
-
-/* Section headings */
-.text-h5 {
-  font-size: 1.3rem;
-  line-height: 1.7rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Subsection headings */
-.text-h6 {
-  font-size: 1.1rem;
-  line-height: 1.5rem;
-}
-
-/* Table improvements */
-.job-posts-table {
-  font-size: 0.9rem;
-  table-layout: fixed;
-  width: 100%;
-
-  th {
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 8px 12px;
-    background-color: #f5f5f5;
+  /* Typography improvements */
+  .text-h1,
+  .text-h2,
+  .text-h3,
+  .text-h5,
+  .text-h6 {
+    letter-spacing: -0.01em;
   }
 
-  td {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-    vertical-align: middle;
+  /* Main page title */
+  .text-h3 {
+    font-size: 1.8rem;
+    line-height: 2.2rem;
+    margin-bottom: 1rem;
   }
 
-  .office-column {
-    width: 18%;
-    white-space: normal;
-    word-break: break-word;
+  /* Section headings */
+  .text-h5 {
+    font-size: 1.3rem;
+    line-height: 1.7rem;
+    margin-bottom: 0.5rem;
   }
 
-  .position-column {
-    width: 22%;
-    white-space: normal;
-    word-break: break-word;
+  /* Subsection headings */
+  .text-h6 {
+    font-size: 1.1rem;
+    line-height: 1.5rem;
   }
 
-  .date-column {
-    width: 12%;
-    text-align: center;
-  }
-
-  .count-column {
-    width: 9%;
-    text-align: center;
-  }
-
-  .action-column {
-    width: 11%;
-    text-align: center;
-  }
-}
-
-/* Status badges */
-.status-badge {
-  font-size: 0.95rem !important;
-  padding: 4px 10px !important;
-  border-radius: 16px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px;
-}
-
-/* Date picker improvements */
-.q-date__range {
-  background-color: rgba(25, 118, 210, 0.08);
-}
-
-.q-date__range-from,
-.q-date__range-to {
-  background-color: var(--q-primary);
-  color: white;
-  border-radius: 50%;
-}
-
-.q-date__range-between {
-  background-color: rgba(25, 118, 210, 0.1);
-}
-
-/* Spacing improvements - increased for better readability */
-.q-mb-sm {
-  margin-bottom: 10px;
-}
-
-.q-mb-md {
-  margin-bottom: 16px;
-}
-
-.q-mb-lg {
-  margin-bottom: 24px;
-}
-
-.q-my-md {
-  margin-top: 16px;
-  margin-bottom: 16px;
-}
-
-/* Add spacing between rows */
-.q-table tbody tr td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* Button sizing */
-.q-btn {
-  font-size: 0.9rem;
-  padding: 0.4em 0.8em;
-}
-
-/* Qualification list styling */
-.text-body1 {
-  font-size: 0.95rem;
-  line-height: 1.4rem;
-}
-
-/* Padding adjustments - more breathing room */
-.q-pa-md {
-  padding: 12px;
-}
-
-.q-pa-sm {
-  padding: 10px;
-}
-
-.q-pa-xs {
-  padding: 4px;
-}
-
-.q-card-section {
-  padding: 12px;
-}
-
-/* Edit button styling */
-.bg-orange-1 {
-  background-color: rgba(255, 152, 0, 0.1);
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
+  /* Table improvements */
   .job-posts-table {
-    th,
+    font-size: 0.9rem;
+    table-layout: fixed;
+    width: 100%;
+
+    th {
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 8px 12px;
+      background-color: #f5f5f5;
+    }
+
     td {
-      padding: 6px 8px;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      vertical-align: middle;
+    }
+
+    .office-column {
+      width: 18%;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .position-column {
+      width: 22%;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .date-column {
+      width: 12%;
+      text-align: center;
+    }
+
+    .count-column {
+      width: 9%;
+      text-align: center;
+    }
+
+    .action-column {
+      width: 11%;
+      text-align: center;
     }
   }
-}
 
-/* Editable criteria table styling */
-.q-table .q-input {
-  min-height: auto;
-}
+  /* Status badges */
+  .status-badge {
+    font-size: 0.95rem !important;
+    padding: 4px 10px !important;
+    border-radius: 16px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+  }
 
-.q-table .q-input .q-field__control {
-  min-height: auto;
-}
+  /* Date picker improvements */
+  .q-date__range {
+    background-color: rgba(25, 118, 210, 0.08);
+  }
 
-.q-table .q-input .q-field__native {
-  padding: 4px 0;
-}
+  .q-date__range-from,
+  .q-date__range-to {
+    background-color: var(--q-primary);
+    color: white;
+    border-radius: 50%;
+  }
+
+  .q-date__range-between {
+    background-color: rgba(25, 118, 210, 0.1);
+  }
+
+  /* Spacing improvements - increased for better readability */
+  .q-mb-sm {
+    margin-bottom: 10px;
+  }
+
+  .q-mb-md {
+    margin-bottom: 16px;
+  }
+
+  .q-mb-lg {
+    margin-bottom: 24px;
+  }
+
+  .q-my-md {
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Add spacing between rows */
+  .q-table tbody tr td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  /* Button sizing */
+  .q-btn {
+    font-size: 0.9rem;
+    padding: 0.4em 0.8em;
+  }
+
+  /* Qualification list styling */
+  .text-body1 {
+    font-size: 0.95rem;
+    line-height: 1.4rem;
+  }
+
+  /* Padding adjustments - more breathing room */
+  .q-pa-md {
+    padding: 12px;
+  }
+
+  .q-pa-sm {
+    padding: 10px;
+  }
+
+  .q-pa-xs {
+    padding: 4px;
+  }
+
+  .q-card-section {
+    padding: 12px;
+  }
+
+  /* Edit button styling */
+  .bg-orange-1 {
+    background-color: rgba(255, 152, 0, 0.1);
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .job-posts-table {
+      th,
+      td {
+        padding: 6px 8px;
+      }
+    }
+  }
+
+  /* Editable criteria table styling */
+  .q-table .q-input {
+    min-height: auto;
+  }
+
+  .q-table .q-input .q-field__control {
+    min-height: auto;
+  }
+
+  .q-table .q-input .q-field__native {
+    padding: 4px 0;
+  }
 </style>
