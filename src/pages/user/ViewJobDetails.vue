@@ -144,7 +144,7 @@
                     Get the data sheet template to fill with your details.
                   </div>
                   <q-btn
-                    label="DOWNLOAD TEMPLATE"
+                    label="DOWNLOAD DATA SHEET"
                     color="green"
                     class="action-btn full-width q-mt-md"
                     outline
