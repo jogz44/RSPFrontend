@@ -9,7 +9,7 @@
         <!-- Text content -->
         <div class="text-white grid justify-start items-start hero-text">
           <div class="row justify-start items-start welcome-text">Welcome to</div>
-          <div class="text-weight-bold main-title">Recruitment, Selection and Placement</div>
+          <div class="text-weight-bold main-title">Recruitment, Selection and Placement Sytem</div>
           <div class="row justify-start items-start subtitle-text">
             City of Tagum Human Resource Management Office
           </div>
