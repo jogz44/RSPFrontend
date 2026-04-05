@@ -897,10 +897,46 @@
     });
   });
 
-  const handleStructureSelection = (selectedData) => {
-    currentStructure.value = selectedData;
-    clearSearchFilters();
-  };
+  // const handleStructureSelection = (selectedData) => {
+  //   currentStructure.value = selectedData;
+  //   clearSearchFilters();
+  // };
+//   const handleStructureSelection = async (selectedData) => {
+//   currentStructure.value = selectedData;
+//   clearSearchFilters();
+
+//   if (selectedData?.office) {
+//     await usePlantilla.fetchPlantilla(selectedData.office); // ✅ fetch on selection
+//     positions.value = usePlantilla.plantilla.map((item) => ({
+//       ...item,
+//       Status: item.designationStatus || 'VACANT',
+//     }));
+//     tableKey.value++;
+//   }
+// };
+const handleStructureSelection = async (selectedData) => {
+  clearSearchFilters();
+
+  if (!selectedData) {
+    currentStructure.value = null;
+    positions.value = [];
+    return;
+  }
+
+  const isNewOffice = currentStructure.value?.office !== selectedData.office;
+
+  currentStructure.value = selectedData;
+
+  // ✅ Only fetch from API when office changes, not on division/section/unit clicks
+  if (isNewOffice && selectedData.office) {
+    await usePlantilla.fetchPlantilla(selectedData.office);
+    positions.value = usePlantilla.plantilla.map((item) => ({
+      ...item,
+      Status: item.designationStatus || 'VACANT',
+    }));
+    tableKey.value++;
+  }
+};
 
   const getStructureTitle = () => {
     if (!currentStructure.value) return '';
@@ -958,21 +994,33 @@
     showAddEmployeeModal.value = true;
   };
 
-  const handleEmployeeAdded = async () => {
-    // Refresh plantilla data
-    await usePlantilla.fetchPlantilla();
-    positions.value = usePlantilla.plantilla.map((item) => ({
-      ...item,
-      Status: item.designationStatus || 'VACANT',
-    }));
+  // const handleEmployeeAdded = async () => {
+  //   // Refresh plantilla data
+  //   await usePlantilla.fetchPlantilla();
+  //   positions.value = usePlantilla.plantilla.map((item) => ({
+  //     ...item,
+  //     Status: item.designationStatus || 'VACANT',
+  //   }));
 
-    // Refresh job posts
-    await jobPostStore.job_post();
+  //   // Refresh job posts
+  //   await jobPostStore.job_post();
 
-    // Force table re-render
-    tableKey.value++;
-  };
-
+  //   // Force table re-render
+  //   tableKey.value++;
+  // };
+// handleEmployeeAdded - pass the current office
+const handleEmployeeAdded = async () => {
+  const currentOffice = currentStructure.value?.office;
+  if (currentOffice) {
+    await usePlantilla.fetchPlantilla(currentOffice); // ✅ pass office
+  }
+  positions.value = usePlantilla.plantilla.map((item) => ({
+    ...item,
+    Status: item.designationStatus || 'VACANT',
+  }));
+  await jobPostStore.job_post();
+  tableKey.value++;
+};
   const printPosition = async (row) => {
     try {
       const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
@@ -1226,11 +1274,11 @@
     postJobDetails.value.endedDate = today;
 
     try {
-      await usePlantilla.fetchPlantilla();
-      positions.value = usePlantilla.plantilla.map((item) => ({
-        ...item,
-        Status: item.designationStatus || 'VACANT',
-      }));
+      // await usePlantilla.fetchPlantilla();
+      // positions.value = usePlantilla.plantilla.map((item) => ({
+      //   ...item,
+      //   Status: item.designationStatus || 'VACANT',
+      // }));
 
       await jobPostStore.job_post();
     } catch (error) {

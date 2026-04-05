@@ -15,7 +15,7 @@ export const usePlantillaStore = defineStore('plantilla', {
     loading: false,
     error: null,
     selectedDetails: null,
-
+    offices: [],
 
     currentPage: 1,
     lastPage: 1,
@@ -47,11 +47,14 @@ export const usePlantillaStore = defineStore('plantilla', {
     //     this.loading = false;
     //   }
     // },
-    async fetchPlantilla() {
+    async fetchPlantilla(office) {
+      // ✅ accept office as parameter
       this.loading = true;
       this.error = null;
       try {
-        const response = await adminApi.get('/plantilla');
+        const response = await adminApi.get('/plantilla', {
+          params: { office }, // sends as ?office=...
+        });
         this.plantilla = Array.isArray(response.data) ? response.data : [];
       } catch (error) {
         console.error('Fetch error:', error);
@@ -61,6 +64,41 @@ export const usePlantillaStore = defineStore('plantilla', {
         this.loading = false;
       }
     },
+    async plantillaOffice() {
+      this.loading = true;
+      try {
+        const response = await adminApi.get('/plantilla/offices');
+
+        this.offices = Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        this.error = error;
+      } finally {
+        this.loading = false;
+      }
+    },
+    // async plantillaOffice() {
+    // this.loading = true;
+    // this.error = null;
+    // try {
+    //   const response = await adminApi.get('/plantilla/offices');
+
+    //   // Log the full response
+    //   console.log('Full Response:', response);
+
+    //   // Extract data safely
+    //   this.plantilla = Array.isArray(response.data) ? response.data : [];
+
+    //   // Log the data only
+    //   console.log('Plantilla Data:', this.plantilla);
+
+    // } catch (error) {
+    //   console.error('Fetch error:', error);
+    //   toast.error('Failed to Load Plantilla');
+    //   this.error = error;
+    // } finally {
+    //   this.loading = false;
+    // }
+    // },
     //  // NEW: fetch plantilla filtered by office
     //     async fetchPlantillaByOffice(office) {
     //       this.loading = true;
@@ -207,20 +245,18 @@ export const usePlantillaStore = defineStore('plantilla', {
       this.loading = true;
       this.error = null;
       try {
-        const response = await adminApi.get(`/employee/list`,{
-
-        params: {
-        page,
-        per_page: perPage,
-        search,
-      },
+        const response = await adminApi.get(`/employee/list`, {
+          params: {
+            page,
+            per_page: perPage,
+            search,
+          },
         });
         this.employee = response.data.data;
         this.currentPage = response.data.current_page;
         this.lastPage = response.data.last_page;
         this.total = response.data.total;
         this.perPage = response.data.per_page;
-
 
         return response.data;
       } catch (err) {

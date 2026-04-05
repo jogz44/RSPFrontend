@@ -7,15 +7,7 @@
           <div class="text-h5 text-bold">Plantilla</div>
         </div>
         <div class="col-auto">
-          <!-- <q-btn
-            dense
-            color="primary"
-            label="DBM"
-            icon="print"
-            class="q-mr-sm q-mb-sm"
-            size="sm"
-            @click="handlePrintDBM"
-          /> -->
+
           <q-btn
             dense
             color="primary"
@@ -527,55 +519,125 @@
 
   const getOptions = () => filteredOptions.value || [];
 
+  // const getUniqueValues = () => {
+  //   if (!officeData.value.length) return [];
+  //   const values = new Set();
+  //   officeData.value.forEach((office) => {
+  //     if (office.office) values.add(office.office);
+  //   });
+  //   return Array.from(values).sort();
+  // };
   const getUniqueValues = () => {
-    if (!officeData.value.length) return [];
-    const values = new Set();
-    officeData.value.forEach((office) => {
-      if (office.office) values.add(office.office);
-    });
-    return Array.from(values).sort();
-  };
+  if (!officeData.value.length) return [];
+  const values = new Set();
+  officeData.value.forEach((office) => {
+    if (office.Office) values.add(office.Office); // ✅ capital "Office" matches your API response
+  });
+  return Array.from(values).sort();
+};
+
+
+  // const filterOptions = (val, update) => {
+  //   if (usePlantilla.loading) return;
+  //   update(() => {
+  //     const needle = val.toLowerCase();
+  //     filteredOptions.value = getUniqueValues().filter((v) => v.toLowerCase().includes(needle));
+  //   });
+  // };
 
   const filterOptions = (val, update) => {
+  update(() => {
     if (usePlantilla.loading) return;
-    update(() => {
-      const needle = val.toLowerCase();
-      filteredOptions.value = getUniqueValues().filter((v) => v.toLowerCase().includes(needle));
-    });
-  };
-
-  const structureTree = computed(() => {
-    if (!selectedValue.value || !officeData.value.length) return [];
-    const officeItems = officeData.value.filter((item) => item.office === selectedValue.value);
-    return generateTreeStructure(officeItems, selectedValue.value);
+    const needle = val.toLowerCase();
+    filteredOptions.value = needle
+      ? getUniqueValues().filter((v) => v.toLowerCase().includes(needle))
+      : getUniqueValues(); // ✅ show all options when input is empty
   });
+};
 
-  const handleSelection = () => {
-    selectedNode.value = null;
-    selectedNodeData.value = null;
-    if (selectedValue.value) {
-      emit('structure-selected', { office: selectedValue.value });
-    } else {
-      emit('structure-selected', null);
-    }
-  };
+  // const structureTree = computed(() => {
+  //   if (!selectedValue.value || !officeData.value.length) return [];
+  //   const officeItems = officeData.value.filter((item) => item.office === selectedValue.value);
+  //   return generateTreeStructure(officeItems, selectedValue.value);
+  // });
 
-  const handleNodeSelection = (key) => {
-    const findNode = (nodes) => {
-      for (const node of nodes) {
-        if (node.id === key) return node;
-        if (node.children?.length) {
-          const found = findNode(node.children);
-          if (found) return found;
-        }
+  // Change officeData to read from plantilla (structure data)
+const structureTree = computed(() => {
+  if (!selectedValue.value || !usePlantilla.plantilla.length) return [];
+  // plantilla already filtered by office from API, pass all of it
+  return generateTreeStructure(usePlantilla.plantilla, selectedValue.value);
+});
+
+  // const handleSelection = () => {
+  //   selectedNode.value = null;
+  //   selectedNodeData.value = null;
+  //   if (selectedValue.value) {
+  //     emit('structure-selected', { office: selectedValue.value });
+  //   } else {
+  //     emit('structure-selected', null);
+  //   }
+  // };
+
+//   const handleSelection = async () => {
+//   selectedNode.value = null;
+//   selectedNodeData.value = null;
+
+//   if (selectedValue.value) {
+//     await usePlantilla.fetchPlantilla(selectedValue.value); // ✅ fetch structure
+//     emit('structure-selected', { office: selectedValue.value });
+//   } else {
+//     emit('structure-selected', null);
+//   }
+// };
+
+// Only fetch when office dropdown changes, NOT on tree node selection
+const handleSelection = async () => {
+  selectedNode.value = null;
+  selectedNodeData.value = null;
+
+  if (selectedValue.value) {
+    await usePlantilla.fetchPlantilla(selectedValue.value); // ✅ only called from dropdown
+    emit('structure-selected', { office: selectedValue.value });
+  } else {
+    usePlantilla.plantilla = []; // clear on deselect
+    emit('structure-selected', null);
+  }
+};
+
+
+  // const handleNodeSelection = (key) => {
+  //   const findNode = (nodes) => {
+  //     for (const node of nodes) {
+  //       if (node.id === key) return node;
+  //       if (node.children?.length) {
+  //         const found = findNode(node.children);
+  //         if (found) return found;
+  //       }
+  //     }
+  //     return null;
+  //   };
+  //   selectedNodeData.value = findNode(structureTree.value);
+  //   if (selectedNodeData.value?.data) {
+  //     emit('structure-selected', selectedNodeData.value.data);
+  //   }
+  // };
+  // Tree node selection — just emit, NO fetch
+const handleNodeSelection = (key) => {
+  const findNode = (nodes) => {
+    for (const node of nodes) {
+      if (node.id === key) return node;
+      if (node.children?.length) {
+        const found = findNode(node.children);
+        if (found) return found;
       }
-      return null;
-    };
-    selectedNodeData.value = findNode(structureTree.value);
-    if (selectedNodeData.value?.data) {
-      emit('structure-selected', selectedNodeData.value.data);
     }
+    return null;
   };
+  selectedNodeData.value = findNode(structureTree.value);
+  if (selectedNodeData.value?.data) {
+    emit('structure-selected', selectedNodeData.value.data); // ✅ just emit, no fetch
+  }
+};
 
   const getNodeIcon = (node) => {
     const iconMap = {
@@ -589,20 +651,39 @@
     return iconMap[node.nodeType] || 'label';
   };
 
+  // watch(
+  //   () => usePlantilla.loading,
+  //   (isLoading) => {
+  //     if (!isLoading) {
+  //       filteredOptions.value = getUniqueValues();
+  //     }
+  //   },
+  // );
   watch(
-    () => usePlantilla.loading,
-    (isLoading) => {
-      if (!isLoading) {
-        filteredOptions.value = getUniqueValues();
-      }
-    },
-  );
+  () => usePlantilla.loading,
+  (isLoading) => {
+    if (!isLoading) {
+      officeData.value = Array.isArray(usePlantilla.offices) ? usePlantilla.offices : []; // ✅ add this
+      filteredOptions.value = getUniqueValues();
+    }
+  },
+);
 
-  onMounted(async () => {
-    await usePlantilla.fetchPlantilla();
-    officeData.value = Array.isArray(usePlantilla.plantilla) ? usePlantilla.plantilla : [];
-    filteredOptions.value = getUniqueValues();
-  });
+  // onMounted(async () => {
+  //   await usePlantilla.plantillaOffice();
+  //   officeData.value = Array.isArray(usePlantilla.plantilla) ? usePlantilla.plantilla : [];
+  //   filteredOptions.value = getUniqueValues();
+  // });
+//   onMounted(async () => {
+//   await usePlantilla.plantillaOffice();
+//   officeData.value = Array.isArray(usePlantilla.offices) ? usePlantilla.offices : []; // ✅ offices
+//   filteredOptions.value = getUniqueValues();
+// });
+onMounted(async () => {
+  await usePlantilla.plantillaOffice();
+  officeData.value = Array.isArray(usePlantilla.offices) ? usePlantilla.offices : [];
+  filteredOptions.value = getUniqueValues(); // ✅ set immediately after await
+});
 </script>
 
 <style scoped>
