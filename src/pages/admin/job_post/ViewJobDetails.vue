@@ -210,143 +210,146 @@
         </q-tabs>
 
         <q-separator />
-<q-tab-panels v-model="activeTab" animated>
-  <!-- ===== Applicants Tab ===== -->
-  <q-tab-panel name="applicants">
-    <!-- Toolbar -->
-    <div class="row items-center justify-between q-mb-sm q-gutter-sm">
-      <div>
-        <div class="text-h6 text-primary text-bold">Applicants</div>
-        <q-input
+        <q-tab-panels v-model="activeTab" animated>
+          <!-- ===== Applicants Tab ===== -->
+          <q-tab-panel name="applicants">
+            <!-- Toolbar -->
+            <div class="row items-center justify-between q-mb-sm q-gutter-sm">
+              <div>
+                <div class="text-h6 text-primary text-bold">Applicants</div>
+                <!-- <q-input
           v-model="applicantSearch"
           outlined
           dense
           placeholder="Search Applicant..."
           clearable
           style="width: 220px"
-        >
-          <template #prepend>
-            <q-icon name="search" color="primary" />
-          </template>
-        </q-input>
-      </div>
+        > -->
+                <q-input
+                  v-model="globalSearch"
+                  outlined
+                  dense
+                  placeholder="Search Applicant..."
+                  clearable
+                  style="width: 220px"
+                >
+                  <template #prepend>
+                    <q-icon name="search" color="primary" />
+                  </template>
+                </q-input>
+              </div>
 
-      <div class="row items-center q-gutter-sm">
-        <q-btn
-          v-if="
-            canModifyJobPost &&
-            (selectedJob?.status == 'not started' || selectedJob?.status == 'pending')
-          "
-          label="Import"
-          color="orange-9"
-          rounded
-          dense
-          no-caps
-          style="font-size: 8pt"
-          @click="showImportModal = true"
-          icon="person_add"
-        />
+              <div class="row items-center q-gutter-sm">
+                <q-btn
+                  v-if="
+                    canModifyJobPost &&
+                    (selectedJob?.status == 'not started' || selectedJob?.status == 'pending')
+                  "
+                  label="Import"
+                  color="orange-9"
+                  rounded
+                  dense
+                  no-caps
+                  style="font-size: 8pt"
+                  @click="showImportModal = true"
+                  icon="person_add"
+                />
 
-        <q-btn
-          v-if="canModifyJobPost && selectedJob?.status == 'assessed'"
-          label="Unqualified"
-          color="green-9"
-          icon="email"
-          rounded
-          dense
-          no-caps
-          style="font-size: 8pt"
-          @click="openNotifyUnqualifiedDialog"
-          :disable="isLoading"
-        />
-        <q-badge class="q-pa-sm" color="blue">Internal: {{ internalCount }}</q-badge>
-        <q-badge class="q-pa-sm" color="orange">External: {{ externalCount }}</q-badge>
+                <q-btn
+                  v-if="canModifyJobPost && selectedJob?.status == 'assessed'"
+                  label="Unqualified"
+                  color="green-9"
+                  icon="email"
+                  rounded
+                  dense
+                  no-caps
+                  style="font-size: 8pt"
+                  @click="openNotifyUnqualifiedDialog"
+                  :disable="isLoading"
+                />
+                <q-badge class="q-pa-sm" color="blue">Internal: {{ internalCount }}</q-badge>
+                <q-badge class="q-pa-sm" color="orange">External: {{ externalCount }}</q-badge>
 
-        <q-badge class="q-pa-sm" color="primary">
-          <q-icon name="assessment" class="q-mr-xs" />
-          Assessed: {{ assessedCount }}/{{ totalApplicants }}
-        </q-badge>
-      </div>
-    </div>
+                <q-badge class="q-pa-sm" color="primary">
+                  <q-icon name="assessment" class="q-mr-xs" />
+                  Assessed: {{ assessedCount }}/{{ totalApplicants }}
+                </q-badge>
+              </div>
+            </div>
 
-   <!-- Applicants Table -->
-<q-table
-  :rows="filteredApplicants"
-  :columns="applicantColumns"
-  row-key="id"
-  flat
-  bordered
-  class="applicants-table"
-  dense
-  v-if="applicantColumns.length"
-  separator="cell"
-  color="primary"
-     v-model:pagination="applicantPagination"
-  :rows-number="totalApplicants"
-  :loading="jobPostStore.loading"
-  @request="onApplicantRequest"
-  :rows-per-page-options="[2, 10, 20, 50, 100, 0]"
-
-
->
-  <template #body-cell-name="props">
-    <q-td :props="props">
-      {{ props.row.firstname }} {{ props.row.lastname }}
-      <span v-if="props.row.name_extension">&nbsp;{{ props.row.name_extension }}</span>
-    </q-td>
-  </template>
-  <template #body-cell-appliedDate="props">
-    <q-td :props="props">{{ props.row.appliedDate || '-' }}</q-td>
-  </template>
-  <template #body-cell-source="props">
-    <q-td :props="props">
-      <q-badge
-        rounded
-        :color="props.row.source === 'Internal' ? 'blue' : 'orange'"
-        class="text-caption q-px-sm"
-      >
-        {{ props.row.source }}
-      </q-badge>
-    </q-td>
-  </template>
-  <template #body-cell-status="props">
-    <q-td :props="props">
-      <q-badge
-        rounded
-        :color="
-          props.row.status === 'Hired' || props.row.status === 'hired'
-            ? 'green'
-            : props.row.status === 'Qualified' || props.row.status === 'qualified'
-              ? 'yellow-8'
-              : props.row.status === 'Unqualified' || props.row.status === 'unqualified'
-                ? 'red'
-                : 'grey'
-        "
-        class="text-caption q-px-sm"
-      >
-        {{ props.row.status || '-' }}
-      </q-badge>
-    </q-td>
-  </template>
-  <template #body-cell-action="props">
-    <q-td :props="props">
-      <q-btn
-        size="sm"
-        flat
-        icon="visibility"
-        color="primary"
-        @click="viewApplicantDetails(props.row)"
-      />
-    </q-td>
-  </template>
-
-
-</q-table>
-    <div v-else class="text-caption text-grey-6 q-mt-md q-ml-sm">
-      No applicant data available.
-    </div>
-  </q-tab-panel>
-
+            <!-- Applicants Table -->
+            <q-table
+              :rows="filteredApplicants"
+              :columns="applicantColumns"
+              row-key="id"
+              flat
+              bordered
+              class="applicants-table"
+              dense
+              v-if="applicantColumns.length"
+              separator="cell"
+              color="primary"
+              v-model:pagination="applicantPagination"
+              :rows-number="totalApplicants"
+              :loading="jobPostStore.loading"
+              @request="onApplicantRequest"
+              :rows-per-page-options="[2, 10, 20, 50, 100, 0]"
+            >
+              <template #body-cell-name="props">
+                <q-td :props="props">
+                  {{ props.row.firstname }} {{ props.row.lastname }}
+                  <span v-if="props.row.name_extension">&nbsp;{{ props.row.name_extension }}</span>
+                </q-td>
+              </template>
+              <template #body-cell-appliedDate="props">
+                <q-td :props="props">{{ props.row.appliedDate || '-' }}</q-td>
+              </template>
+              <template #body-cell-source="props">
+                <q-td :props="props">
+                  <q-badge
+                    rounded
+                    :color="props.row.source === 'Internal' ? 'blue' : 'orange'"
+                    class="text-caption q-px-sm"
+                  >
+                    {{ props.row.source }}
+                  </q-badge>
+                </q-td>
+              </template>
+              <template #body-cell-status="props">
+                <q-td :props="props">
+                  <q-badge
+                    rounded
+                    :color="
+                      props.row.status === 'Hired' || props.row.status === 'hired'
+                        ? 'green'
+                        : props.row.status === 'Qualified' || props.row.status === 'qualified'
+                          ? 'yellow-8'
+                          : props.row.status === 'Unqualified' || props.row.status === 'unqualified'
+                            ? 'red'
+                            : 'grey'
+                    "
+                    class="text-caption q-px-sm"
+                  >
+                    {{ props.row.status || '-' }}
+                  </q-badge>
+                </q-td>
+              </template>
+              <template #body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    size="sm"
+                    flat
+                    icon="visibility"
+                    color="primary"
+                    @click="viewApplicantDetails(props.row)"
+                  />
+                </q-td>
+              </template>
+            </q-table>
+            <div v-else class="text-caption text-grey-6 q-mt-md q-ml-sm">
+              No applicant data available.
+            </div>
+          </q-tab-panel>
 
           <!-- ===== Rating Results Tab ===== -->
           <q-tab-panel name="ratings">
@@ -779,64 +782,93 @@
   // );
 
   // --- ADD these instead, reading from the store meta ---
-const internalCount = computed(() => jobPostStore.applicantMeta.internal_applicants);
-const externalCount = computed(() => jobPostStore.applicantMeta.external_applicants);
-const totalApplicants = computed(() => jobPostStore.applicantMeta.total_applicants);
+  const internalCount = computed(() => jobPostStore.applicantMeta.internal_applicants);
+  const externalCount = computed(() => jobPostStore.applicantMeta.external_applicants);
+  const totalApplicants = computed(() => jobPostStore.applicantMeta.total_applicants);
 
-// assessed comes as "6/6" string — parse the left side for the count
-const assessedCount = computed(() => {
-  const raw = jobPostStore.applicantMeta.assessed ?? '0/0';
-  return parseInt(raw.split('/')[0]) || 0;
-});
+  // assessed comes as "6/6" string — parse the left side for the count
+  const assessedCount = computed(() => {
+    const raw = jobPostStore.applicantMeta.assessed ?? '0/0';
+    return parseInt(raw.split('/')[0]) || 0;
+  });
 
-// Pagination — Quasar server-side style
-const applicantPagination = ref({
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0,  // total from server, kept in sync below
-});
+  // Pagination — Quasar server-side style
+  const applicantPagination = ref({
+    page: 1,
+    rowsPerPage: 10,
+    rowsNumber: 0, // total from server, kept in sync below
+  });
 
-// Called by q-table on page/perPage change
-const onApplicantRequest = async (props) => {
-  const { page, rowsPerPage } = props.pagination;
+  const globalSearch = ref('');
+  let searchTimeout = null;
 
-  // rowsPerPage === 0 means "All" in Quasar
-  const perPage = rowsPerPage === 0 ? 'all' : rowsPerPage;
+  // Pagination/sort changes — no debounce needed here
+  const onApplicantRequest = async (props) => {
+    const { page, rowsPerPage } = props.pagination;
+    const perPage = rowsPerPage === 0 ? 'all' : rowsPerPage;
 
-  await jobPostStore.fetch_applicant(selectedJob.value.id, page, perPage);
+    await jobPostStore.fetch_applicant(selectedJob.value.id, {
+      page,
+      perPage,
+      search: globalSearch.value,
+    });
 
-  // Sync pagination state back
-  applicantPagination.value.page = page;
-  applicantPagination.value.rowsPerPage = rowsPerPage;
-  applicantPagination.value.rowsNumber = totalApplicants.value;
-};
+    applicantPagination.value.page = page;
+    applicantPagination.value.rowsPerPage = rowsPerPage;
+    applicantPagination.value.rowsNumber = totalApplicants.value;
+  };
 
-// Pagination
-// const applicantPage = ref(1);
-// const applicantLastPage = computed(() => jobPostStore.applicantMeta.last_page);
+  // Watch for search changes — reset to page 1
+  // ✅ Debounced watch — only fires 500ms after user stops typing
+  watch(globalSearch, (newValue) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+      applicantPagination.value.page = 1;
+      await jobPostStore.fetch_applicant(selectedJob.value.id, {
+        page: 1,
+        perPage:
+          applicantPagination.value.rowsPerPage === 0
+            ? 'all'
+            : applicantPagination.value.rowsPerPage,
+        search: newValue,
+      });
+      applicantPagination.value.rowsNumber = totalApplicants.value;
+    }, 500); // ✅ 500ms debounce
+  });
 
-// // Updated to pass perPage
-// const onApplicantPageChange = async (page) => {
-//   applicantPage.value = page;
-//   await jobPostStore.fetch_applicant(selectedJob.value.id, page, applicantPerPage.value);
-// };
+  // onMounted — also pass id
+  // onMounted(async () => {
+  //   await jobPostStore.fetch_applicant(selectedJob.value.id, { // ✅ pass id
+  //     page: 1,
+  //     perPage: applicantPagination.value.rowsPerPage,
+  //     search: '',
+  //   });
+  //   applicantPagination.value.rowsNumber = totalApplicants.value;
+  // });
 
+  // Pagination
+  // const applicantPage = ref(1);
+  // const applicantLastPage = computed(() => jobPostStore.applicantMeta.last_page);
 
+  // // Updated to pass perPage
+  // const onApplicantPageChange = async (page) => {
+  //   applicantPage.value = page;
+  //   await jobPostStore.fetch_applicant(selectedJob.value.id, page, applicantPerPage.value);
+  // };
 
-// const applicantPerPage = ref(10);
-// const perPageOptions = [
-//   { label: '15',  value: 15  },
-//   { label: '20',  value: 20  },
-//   { label: '50',  value: 50  },
-//   { label: '100', value: 100 },
-//   { label: 'All', value: 'all' },
-// ];
+  // const applicantPerPage = ref(10);
+  // const perPageOptions = [
+  //   { label: '15',  value: 15  },
+  //   { label: '20',  value: 20  },
+  //   { label: '50',  value: 50  },
+  //   { label: '100', value: 100 },
+  //   { label: 'All', value: 'all' },
+  // ];
 
-// const onPerPageChange = async () => {
-//   applicantPage.value = 1; // reset to first page on per-page change
-//   await jobPostStore.fetch_applicant(selectedJob.value.id, 1, applicantPerPage.value);
-// };
-
+  // const onPerPageChange = async () => {
+  //   applicantPage.value = 1; // reset to first page on per-page change
+  //   await jobPostStore.fetch_applicant(selectedJob.value.id, 1, applicantPerPage.value);
+  // };
 
   // ===== Unqualified list for modal =====
   const unqualifiedApplicants = computed(() =>
@@ -903,7 +935,14 @@ const onApplicantRequest = async (props) => {
     try {
       const [jobDetails] = await Promise.allSettled([
         jobPostStore.fetchJobDetails(id),
-        jobPostStore.fetch_applicant(id),
+        // jobPostStore.fetch_applicant(id),
+        jobPostStore.fetch_applicant(id, {
+          // ✅ pass id directly, not selectedJob.value.id
+          page: 1,
+          perPage: applicantPagination.value.rowsPerPage,
+          search: '',
+        }),
+
         jobPostStore.fetch_applicant_rating(id),
       ]);
       if (jobDetails.status === 'rejected') throw new Error('Failed to fetch job details');
@@ -939,6 +978,8 @@ const onApplicantRequest = async (props) => {
       }
       displayHistoryId.value = details.id;
       lastLoadedId.value = details.id;
+      applicantPagination.value.rowsNumber = totalApplicants.value; // ✅ sync pagination here
+
       return details;
     } catch (error) {
       console.error('Error loading data:', error);
@@ -1214,32 +1255,30 @@ const onApplicantRequest = async (props) => {
   //   });
   // });
   const formattedApplicants = computed(() => {
-  if (!jobPostStore.applicant) return [];
-  return jobPostStore.applicant.map((a) => {
-    const fullName = `${a.firstname || ''} ${a.lastname || ''} ${a.name_extension || ''}`.trim();
-    return {
-      id: a.nPersonalInfo_id || a.submission_id,
-      submission_id: a.submission_id,
-      name: fullName,
-      firstname: a.firstname || '',
-      lastname: a.lastname || '',
-      name_extension: a.name_extension || '',
-      image_url: a.image_url || 'https://placehold.co/100',
-      appliedDate: a.application_date
-        ? formatDate(a.application_date, 'MMM D, YYYY')
-        : '-',
-      // Use applicant_type directly instead of deriving from ControlNo
-      source: a.applicant_type === 'internal' ? 'Internal' : 'External',
-      status: a.status || '-',
-      education: a.education || [],
-      raw: a,
-      education_remark: a.education_remark,
-      experience_remark: a.experience_remark,
-      training_remark: a.training_remark,
-      eligibility_remark: a.eligibility_remark,
-    };
+    if (!jobPostStore.applicant) return [];
+    return jobPostStore.applicant.map((a) => {
+      const fullName = `${a.firstname || ''} ${a.lastname || ''} ${a.name_extension || ''}`.trim();
+      return {
+        id: a.nPersonalInfo_id || a.submission_id,
+        submission_id: a.submission_id,
+        name: fullName,
+        firstname: a.firstname || '',
+        lastname: a.lastname || '',
+        name_extension: a.name_extension || '',
+        image_url: a.image_url || 'https://placehold.co/100',
+        appliedDate: a.application_date ? formatDate(a.application_date, 'MMM D, YYYY') : '-',
+        // Use applicant_type directly instead of deriving from ControlNo
+        source: a.applicant_type === 'internal' ? 'Internal' : 'External',
+        status: a.status || '-',
+        education: a.education || [],
+        raw: a,
+        education_remark: a.education_remark,
+        experience_remark: a.experience_remark,
+        training_remark: a.training_remark,
+        eligibility_remark: a.eligibility_remark,
+      };
+    });
   });
-});
 
   const statusColor = computed(() => {
     const status = (selectedJob.value?.status || '').toLowerCase();
@@ -1428,8 +1467,8 @@ const onApplicantRequest = async (props) => {
     }
   });
   watch(totalApplicants, (val) => {
-  applicantPagination.value.rowsNumber = val;
-});
+    applicantPagination.value.rowsNumber = val;
+  });
 
   watch(
     () => route.params.id,

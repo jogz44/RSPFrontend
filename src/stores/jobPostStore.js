@@ -212,15 +212,16 @@ export const useJobPostStore = defineStore('jobPost', {
     //   }
     // },
 
- async fetch_applicant(id, page = 1, perPage = 10) {
-  this.loading = true;
-  try {
-    const { data } = await adminApi.get(`/job-batches-rsp/applicant/view/${id}`, {
-      params: {
-        page: perPage === 'all' ? 1 : page,  // reset to 1 if fetching all
-        per_page: perPage,
-      },
-    });
+  async fetch_applicant(id, { page = 1, perPage = 10, search = '' } = {}) {
+    this.loading = true;
+    try {
+      const { data } = await adminApi.get(`/job-batches-rsp/applicant/view/${id}`, {
+        params: {
+          page: perPage === 'all' ? 1 : page,
+          per_page: perPage,
+          search,
+        },
+      });
 
     this.applicant = data.applicants?.data ?? [];
     this.applicantMeta = {
