@@ -126,8 +126,8 @@
               label="Verify & Continue"
               color="primary"
               @click="handleVerifyOtp"
-              :loading="emailStore.verifying"
-              :disable="!canVerifyOtp"
+              :loading="emailStore.verifying || redirecting"
+              :disable="!canVerifyOtp || redirecting"
               unelevated
               rounded
               :size="buttonSize"
@@ -183,7 +183,7 @@
   const router = useRouter();
   const $q = useQuasar();
   const emailStore = useEmailStore();
-
+  const redirecting = ref(false); // ← add this
   // Form inputs
   const emailInput = ref('');
   const otpInput = ref('');
@@ -349,17 +349,17 @@
       return;
     }
 
-    if (!emailCaptchaResponse.value) {
-      $q.notify({
-        type: 'negative',
-        message: 'Please complete the CAPTCHA verification before resending.',
-        position: 'top',
-      });
-      return;
-    }
+    // if (!emailCaptchaResponse.value) {
+    //   $q.notify({
+    //     type: 'negative',
+    //     message: 'Please complete the CAPTCHA verification before resending.',
+    //     position: 'top',
+    //   });
+    //   return;
+    // }
 
     try {
-      await emailStore.resendOtp(emailCaptchaResponse.value);
+      await emailStore.resendOtp();
 
       otpInput.value = '';
 
@@ -397,6 +397,7 @@
     try {
       await emailStore.verifyOtp(otpInput.value);
 
+       redirecting.value = true; // ← lock the button immediately after success
       $q.notify({
         type: 'positive',
         message: 'Verification successful! Redirecting...',
@@ -409,6 +410,7 @@
         router.push('/page');
       }, 2000);
     } catch (error) {
+          redirecting.value = false; // ← only reset on error
       $q.notify({
         type: 'negative',
         message: error.message || 'Invalid verification code.',

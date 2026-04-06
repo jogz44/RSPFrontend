@@ -74,7 +74,7 @@ export const useEmailStore = defineStore('email', {
      * @param {string} recaptchaResponse - reCAPTCHA token
      * @returns {Promise<Object>} Response data
      */
-    async resendOtp(recaptchaResponse) {
+    async resendOtp() {
       if (!this.canResend) {
         throw {
           success: false,
@@ -84,9 +84,9 @@ export const useEmailStore = defineStore('email', {
 
       this.resending = true;
       try {
-        const response = await adminApi.post('/send-verification', {
+        const response = await adminApi.post('/resend-verification', {
           email: this.email,
-          recaptchaResponse,
+          // recaptchaResponse,
         });
 
         console.log('Resend OTP response:', response);
