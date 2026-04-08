@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
-
+import { cancelApplicantExamSchedule } from 'src/service/examService';
 export const useExamScheduleStore = defineStore('examSchedule', {
   state: () => ({
     exams: [],
@@ -82,6 +82,16 @@ export const useExamScheduleStore = defineStore('examSchedule', {
       } catch (err) {
         console.error('Error scheduling exam:', err.message || err);
         return { data: { success: false, message: 'An error occurred' } };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+
+     async cancelExamSchedule(scheduleExamId) {
+      this.loading = true;
+      try {
+        await cancelApplicantExamSchedule(scheduleExamId);
       } finally {
         this.loading = false;
       }

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
+import { deleteApplicantScore, updateApplicantScore} from 'src/service/examService';
 
 export const useExamScoreStore = defineStore('examScore', {
   state() {
@@ -23,21 +24,45 @@ export const useExamScoreStore = defineStore('examScore', {
   },
 
   actions: {
+    // async fetchScores(params = {}) {
+    //   this.loading = true;
+    //   try {
+    //     const response = await adminApi.get('/applicant/exam/list-scores', { params });
+    //     this.scores = response.data.data || [];
+    //     this.pagination = {
+    //       currentPage: response.data.current_page || 1,
+    //       total: response.data.total || 0,
+    //       perPage: response.data.per_page || 10,
+    //       lastPage: response.data.last_page || 1,
+    //     };
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
     async fetchScores(params = {}) {
-      this.loading = true;
-      try {
-        const response = await adminApi.get('/applicant/exam/list-scores', { params });
-        this.scores = response.data.data || [];
-        this.pagination = {
-          currentPage: response.data.current_page || 1,
-          total: response.data.total || 0,
-          perPage: response.data.per_page || 10,
-          lastPage: response.data.last_page || 1,
-        };
-      } finally {
-        this.loading = false;
-      }
-    },
+  this.loading = true;
+  try {
+    const response = await adminApi.get('/applicant/exam/list-scores', {
+      params: {
+        page:      params.page      || 1,
+        per_page:  params.perPage   || 10, // ✅ Laravel expects per_page, not perPage
+        search:    params.search    || undefined,
+        // position:  params.position  || undefined,
+        // sortBy:    params.sortBy    || undefined,
+        // descending: params.descending ?? undefined,
+      },
+    });
+    this.scores = response.data.data || [];
+    this.pagination = {
+      currentPage: response.data.current_page || 1,
+      total:       response.data.total        || 0,
+      perPage:     response.data.per_page     || 10,
+      lastPage:    response.data.last_page    || 1,
+    };
+  } finally {
+    this.loading = false;
+  }
+},
 
     async fetchNoScoreApplicants(params = {}) {
       this.loading = true;
@@ -65,5 +90,27 @@ export const useExamScoreStore = defineStore('examScore', {
         this.loading = false;
       }
     },
+
+    async deleteScore(applicantExamScoreId) {
+      this.loading = true;
+      try {
+        await deleteApplicantScore(applicantExamScoreId);
+        await this.fetchScores(); // refresh list
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateScore(applicantExamScoreId, payload) {
+      this.loading = true;
+      try {
+        await updateApplicantScore(applicantExamScoreId, payload);
+        // await this.fetchScores(); // refresh list
+      } finally {
+        this.loading = false;
+      }
+    },
+
+
   },
 });

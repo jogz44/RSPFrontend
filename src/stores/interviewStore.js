@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
+import { cancelApplicantInterview } from 'src/service/interviewService';
 
 export const useInterviewStore = defineStore('interview', {
   state: () => ({
@@ -120,6 +121,16 @@ export const useInterviewStore = defineStore('interview', {
     clearBatchDetails() {
       this.batchDetails = null;
       this.details = null;
+    },
+
+
+      async cancelInterview(ScheduleId) {
+      this.loading = true;
+      try {
+        await cancelApplicantInterview(ScheduleId);
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });

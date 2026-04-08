@@ -105,6 +105,17 @@
                   >
                     <q-tooltip>View Details</q-tooltip>
                   </q-btn>
+                     <q-btn
+                    round
+                    flat
+                    color="red"
+                    size="sm"
+                    class="bg-blue-1"
+                    icon="cancel"
+                    @click="cancelInterview(props.row.schedule_id)"
+                  >
+                    <q-tooltip>Cancel</q-tooltip>
+                  </q-btn>
                 </div>
               </q-td>
             </template>
@@ -200,6 +211,18 @@
                     @click="viewExam(props.row)"
                   >
                     <q-tooltip>View Details</q-tooltip>
+                  </q-btn>
+
+                        <q-btn
+                    round
+                    flat
+                    color="red"
+                    size="sm"
+                    class="bg-red-1"
+                    icon="cancel"
+                    @click="cancelExamSchedule(props.row.schedule_id)"
+                  >
+                    <q-tooltip>Cancel</q-tooltip>
                   </q-btn>
                 </div>
               </q-td>
@@ -725,6 +748,8 @@
   import { useQuasar, date } from 'quasar';
   import { useInterviewStore } from 'stores/interviewStore';
   import { useExamScheduleStore } from 'stores/examScheduleStore';
+
+
 
   let searchTimeout = null;
   let examSearchTimeout = null;
@@ -1313,6 +1338,99 @@
     }
   };
 
+      // ─── Cancel Interview ─────────────────────────────────────────────────────────
+    const cancelInterview = (scheduleId) => {
+      $q.dialog({
+        title: 'Cancel Interview',
+        message: 'Are you sure you want to cancel this interview schedule?',
+        // cancel: true,
+        persistent: true,
+        ok: {
+          label: 'Yes, Cancel It',
+          color: 'negative',
+          flat: true,
+        },
+
+        cancel: {
+          label: 'No',
+          color: 'primary',
+          flat: true,
+        },
+      }).onOk(async () => {
+        try {
+          await examStore.cancelInterview(scheduleId);
+          $q.notify({
+            type: 'positive',
+            message: 'Interview schedule cancelled successfully.',
+            position: 'top',
+          });
+          await interviewStore.fetchInterviews({
+            page: pagination.value.page,
+            perPage: pagination.value.rowsPerPage,
+            search: globalSearch.value,
+          });
+          pagination.value.rowsNumber = interviewStore.total;
+        } catch (e) {
+          $q.notify({
+            type: 'negative',
+            message: e?.response?.data?.message || e?.message || 'Failed to cancel interview.',
+            position: 'top',
+
+          });
+            //  console.log('Attempting to cancel interview with schedule ID:', e);
+        }
+
+      });
+    };
+
+ 
+
+
+     // ─── Cancel Interview ─────────────────────────────────────────────────────────
+    const cancelExamSchedule = (scheduleExamId) => {
+      $q.dialog({
+        title: 'Cancel Examination',
+        message: 'Are you sure you want to cancel this examination schedule?',
+        // cancel: true,
+        persistent: true,
+        ok: {
+          label: 'Yes, Cancel It',
+          color: 'negative',
+          flat: true,
+        },
+
+        cancel: {
+          label: 'No',
+          color: 'primary',
+          flat: true,
+        },
+      }).onOk(async () => {
+        try {
+          await examStore.cancelExamSchedule(scheduleExamId);
+          $q.notify({
+            type: 'positive',
+            message: 'Examination schedule cancelled successfully.',
+            position: 'top',
+          });
+          await examStore.fetchExams({
+            page: examPagination.value.page,
+            perPage: examPagination.value.rowsPerPage,
+            search: globalSearch.value,
+          });
+          examPagination.value.rowsNumber = examStore.total;
+        } catch (e) {
+          $q.notify({
+            type: 'negative',
+            message: e?.response?.data?.message || e?.message || 'Failed to cancel examination.',
+            position: 'top',
+
+          });
+             console.log('Attempting to cancel examination with schedule ID:', e);
+        }
+
+      });
+    };
+
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
   onMounted(async () => {
     // Load interview list
@@ -1327,6 +1445,20 @@
     await examStore.fetchExams({ page: 1, perPage: examPagination.value.rowsPerPage, search: '' });
     examPagination.value.rowsNumber = examStore.total;
   });
+   // ─── Lifecycle ────────────────────────────────────────────────────────────────
+  // onMounted(async () => {
+  //   // Load interview list
+  //   await interviewStore.fetchInterviews({
+  //     page: 1,
+  //     perPage: pagination.value.rowsPerPage,
+  //     search: '',
+  //   });
+  //   pagination.value.rowsNumber = interviewStore.total;
+
+  //   // Load exam list
+  //   await examStore.fetchExams({ page: 1, perPage: examPagination.value.rowsPerPage, search: '' });
+  //   examPagination.value.rowsNumber = examStore.total;
+  // });
 </script>
 
 <style scoped lang="scss">
