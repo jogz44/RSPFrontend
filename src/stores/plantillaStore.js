@@ -47,6 +47,23 @@ export const usePlantillaStore = defineStore('plantilla', {
     //     this.loading = false;
     //   }
     // },
+    async plantillaPublication(office) {
+      // ✅ accept office as parameter
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminApi.get('/plantilla/publication', {
+          params: { office }, // sends as ?office=...
+        });
+        this.plantilla = Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to Load Plantilla');
+        this.error = error;
+      } finally {
+        this.loading = false;
+      }
+    },
     async fetchPlantilla(office) {
       // ✅ accept office as parameter
       this.loading = true;

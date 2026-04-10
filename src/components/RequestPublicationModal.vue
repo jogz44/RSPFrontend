@@ -649,7 +649,7 @@
   onMounted(async () => {
     loading.value = true;
     if (!usePlantilla.plantilla?.length) {
-      await usePlantilla.fetchPlantilla();
+      await usePlantilla.plantillaPublication();
     }
     allRows.value = Array.isArray(usePlantilla.plantilla) ? usePlantilla.plantilla : [];
     filteredOfficeOptions.value = [...officeOptions.value];
