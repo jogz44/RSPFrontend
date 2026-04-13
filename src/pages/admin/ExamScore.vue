@@ -50,8 +50,8 @@
         :columns="columns"
         row-key="submission_id"
         v-model:pagination="pagination"
-       @request="onRequest"
-      :rows-per-page-options="[10, 20, 50, 100, 200]"
+        @request="onRequest"
+        :rows-per-page-options="[10, 20, 50, 100, 200]"
         flat
         wrap-cells
       >
@@ -87,7 +87,7 @@
               <q-tooltip>View Details</q-tooltip>
             </q-btn>
 
-                <q-btn
+            <q-btn
               flat
               round
               dense
@@ -105,14 +105,12 @@
               color="red"
               class="bg-red-1"
               icon="delete"
-             @click="deleteScore(p.row.exam_score_id)"
+              @click="deleteScore(p.row.exam_score_id)"
             >
               <q-tooltip>Delete</q-tooltip>
             </q-btn>
           </q-td>
         </template>
-
-
 
         <template #no-data>
           <div class="full-width row flex-center q-pa-md text-grey">No Exam Scores Found</div>
@@ -166,28 +164,10 @@
             <div class="row q-col-gutter-md q-mb-md items-end">
               <div class="col-12 col-sm-6">
                 <!--
-                  HOW THIS WORKS:
-                  ─────────────────────────────────────────────────────────────
-                  allPositionOptions   → full sorted list, built ONCE on dialog
-                                         open from the large (perPage=9999) fetch.
-                  positionOptionsData  → the subset shown in the dropdown; starts
-                                         as a copy of allPositionOptions and is
-                                         narrowed client-side by @filter so no
-                                         extra API round-trip is needed per keystroke.
-                  emit-value           → v-model (selectedPosition) holds a plain
-                                         string such as "COMPUTER PROGRAMMER II",
-                                         NOT a { label, value } object.
-                  map-options          → tells q-select how to display the options
-                                         (use the `label` key for text).
-                  @filter              → called while the user is typing; updates
-                                         positionOptionsData client-side.
-                  @update:model-value  → called when the user picks an option;
-                                         triggers a fresh paginated API fetch with
-                                         the chosen position string.
-                  @clear               → called when the user clicks ×; resets
-                                         selectedPosition to null and re-fetches
-                                         without any position filter.
-                  ─────────────────────────────────────────────────────────────
+                  FIX: emit-value + map-options so v-model holds the raw string (not an object).
+                       @filter does a fast client-side search over allPositionOptions.
+                       @update:model-value fires the API fetch with the selected string.
+                       @clear resets and re-fetches without a position filter.
                 -->
                 <q-select
                   v-model="selectedPosition"
@@ -609,170 +589,173 @@
       </q-card>
     </q-dialog>
 
-
-   <q-dialog
-  v-model="editDetailDialog"
-  persistent
-  :maximized="$q.screen.lt.sm"
-  transition-show="slide-up"
-  transition-hide="slide-down"
->
-  <q-card style="width: 680px; max-width: 95vw; border-radius: 12px;">
-
-    <!-- Header -->
-    <q-card-section class="row items-center q-pb-none q-pt-md q-px-lg">
-      <div class="row items-center q-gutter-sm">
-        <q-icon name="grading" color="primary" size="22px" />
-        <div>
-          <div class="text-subtitle1 text-bold text-grey-9">Edit exam score</div>
-          <div class="text-caption text-grey-5">
-            Submission ID: {{ selectedScore?.submission_id || 'N/A' }}
+    <q-dialog
+      v-model="editDetailDialog"
+      persistent
+      :maximized="$q.screen.lt.sm"
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <q-card style="width: 680px; max-width: 95vw; border-radius: 12px">
+        <!-- Header -->
+        <q-card-section class="row items-center q-pb-none q-pt-md q-px-lg">
+          <div class="row items-center q-gutter-sm">
+            <q-icon name="grading" color="primary" size="22px" />
+            <div>
+              <div class="text-subtitle1 text-bold text-grey-9">Edit exam score</div>
+              <div class="text-caption text-grey-5">
+                Submission ID: {{ selectedScore?.submission_id || 'N/A' }}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <q-space />
-      <q-btn flat round dense icon="close" color="grey-5" v-close-popup />
-    </q-card-section>
+          <q-space />
+          <q-btn flat round dense icon="close" color="grey-5" v-close-popup />
+        </q-card-section>
 
-    <q-separator class="q-mt-sm" />
+        <q-separator class="q-mt-sm" />
 
-    <q-card-section class="q-pa-lg" style="max-height: 70vh; overflow-y: auto;">
-
-      <!-- Applicant Info (read-only) -->
-      <div class="text-caption text-uppercase text-grey-5 text-bold q-mb-sm"
-           style="letter-spacing: 0.06em;">
-        <q-icon name="person" size="13px" class="q-mr-xs" />Applicant information
-      </div>
-
-      <div class="row q-col-gutter-sm q-mb-lg">
-        <div class="col-6 col-sm-4" v-for="(item, i) in [
-          { label: 'First name',       val: selectedScore?.firstname },
-          { label: 'Last name',        val: selectedScore?.lastname },
-          { label: 'Position applied', val: selectedScore?.position },
-          { label: 'Applicant type',   val: selectedScore?.applicant_type },
-          { label: 'Control no.',      val: selectedScore?.ControlNo },
-        ]" :key="i">
-          <div class="bg-grey-1 rounded-borders q-pa-sm">
-            <div class="text-caption text-grey-5">{{ item.label }}</div>
-            <div class="text-body2 text-grey-9 text-bold">{{ item.val || 'N/A' }}</div>
-          </div>
-        </div>
-      </div>
-
-      <q-separator class="q-mb-lg" />
-
-      <!-- Editable Score Fields -->
-      <div class="text-caption text-uppercase text-grey-5 text-bold q-mb-md"
-           style="letter-spacing: 0.06em;">
-        <q-icon name="edit" size="13px" class="q-mr-xs" />Edit score details
-      </div>
-
-      <div class="row q-col-gutter-md q-mb-md">
-        <!-- Exam Type -->
-        <div class="col-12 col-sm-6">
-          <q-select
-            v-model="editForm.exam_type"
-            :options="['Civil Service Exam', 'Written Exam', 'Practical Exam']"
-            label="Exam type"
-            outlined
-            dense
-            emit-value
-            map-options
-          />
-        </div>
-
-        <!-- Exam Date -->
-        <div class="col-12 col-sm-6">
-          <q-input
-            v-model="editForm.exam_date"
-            label="Exam date"
-            outlined
-            dense
+        <q-card-section class="q-pa-lg" style="max-height: 70vh; overflow-y: auto">
+          <!-- Applicant Info (read-only) -->
+          <div
+            class="text-caption text-uppercase text-grey-5 text-bold q-mb-sm"
+            style="letter-spacing: 0.06em"
           >
-            <template #append>
-              <q-icon name="event" class="cursor-pointer" color="grey-6">
-                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-date v-model="editForm.exam_date" mask="YYYY-MM-DD">
-                    <div class="row items-center justify-end">
-                      <q-btn v-close-popup label="Close" color="primary" flat />
-                    </div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
-        </div>
-      </div>
-
-      <!-- Score Cards -->
-      <div class="row q-col-gutter-md q-mb-md">
-        <div class="col-12 col-sm-6">
-          <div class="bg-grey-1 rounded-borders q-pa-md">
-            <div class="text-caption text-grey-5 q-mb-sm">Raw score</div>
-            <q-input
-              v-model.number="editForm.exam_score"
-              type="number"
-              outlined
-              dense
-              min="0"
-              :max="editForm.exam_total_score"
-              suffix="pts"
-              :rules="[v => v >= 0 || 'Must be 0 or above', v => v <= editForm.exam_total_score || 'Cannot exceed total']"
-            />    <!-- Dynamic passing badge -->
-            <q-badge
-              class="q-mt-sm"
-              :color="passingStatus.color"
-              :label="passingStatus.label"
-              style="font-size: 11px; padding: 4px 8px;"
-            />
+            <q-icon name="person" size="13px" class="q-mr-xs" />
+            Applicant information
           </div>
-        </div>
 
-        <div class="col-12 col-sm-6">
-          <div class="bg-grey-1 rounded-borders q-pa-md">
-            <div class="text-caption text-grey-5 q-mb-sm">Total score (out of)</div>
-            <q-input
-              v-model.number="editForm.exam_total_score"
-              type="number"
-              outlined
-              dense
-              min="1"
-              suffix="pts"
-            />
-        
+          <div class="row q-col-gutter-sm q-mb-lg">
+            <div
+              class="col-6 col-sm-4"
+              v-for="(item, i) in [
+                { label: 'First name', val: selectedScore?.firstname },
+                { label: 'Last name', val: selectedScore?.lastname },
+                { label: 'Position applied', val: selectedScore?.position },
+                { label: 'Applicant type', val: selectedScore?.applicant_type },
+                { label: 'Control no.', val: selectedScore?.ControlNo },
+              ]"
+              :key="i"
+            >
+              <div class="bg-grey-1 rounded-borders q-pa-sm">
+                <div class="text-caption text-grey-5">{{ item.label }}</div>
+                <div class="text-body2 text-grey-9 text-bold">{{ item.val || 'N/A' }}</div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Remarks -->
-      <q-input
-        v-model="editForm.exam_remarks"
-        label="Remarks"
-        outlined
-        dense
-        type="textarea"
-        autogrow
-        :input-style="{ minHeight: '72px' }"
-      />
+          <q-separator class="q-mb-lg" />
 
-    </q-card-section>
+          <!-- Editable Score Fields -->
+          <div
+            class="text-caption text-uppercase text-grey-5 text-bold q-mb-md"
+            style="letter-spacing: 0.06em"
+          >
+            <q-icon name="edit" size="13px" class="q-mr-xs" />
+            Edit score details
+          </div>
 
-    <q-separator />
+          <div class="row q-col-gutter-md q-mb-md">
+            <!-- Exam Type -->
+            <div class="col-12 col-sm-6">
+              <q-select
+                v-model="editForm.exam_type"
+                :options="['Civil Service Exam', 'Written Exam', 'Practical Exam']"
+                label="Exam type"
+                outlined
+                dense
+                emit-value
+                map-options
+              />
+            </div>
 
-    <q-card-actions align="right" class="q-px-lg q-py-sm bg-grey-1">
-      <q-btn flat label="Cancel" color="grey-7" v-close-popup />
-      <q-btn
-        unelevated
-        label="Save changes"
-        color="primary"
-        icon="save"
-        :loading="savingScore"
-        @click="submitEditScore"
-      />
-    </q-card-actions>
+            <!-- Exam Date -->
+            <div class="col-12 col-sm-6">
+              <q-input v-model="editForm.exam_date" label="Exam date" outlined dense>
+                <template #append>
+                  <q-icon name="event" class="cursor-pointer" color="grey-6">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="editForm.exam_date" mask="YYYY-MM-DD">
+                        <div class="row items-center justify-end">
+                          <q-btn v-close-popup label="Close" color="primary" flat />
+                        </div>
+                      </q-date>
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
+            </div>
+          </div>
 
-  </q-card>
-</q-dialog>
+          <!-- Score Cards -->
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-12 col-sm-6">
+              <div class="bg-grey-1 rounded-borders q-pa-md">
+                <div class="text-caption text-grey-5 q-mb-sm">Raw score</div>
+                <q-input
+                  v-model.number="editForm.exam_score"
+                  type="number"
+                  outlined
+                  dense
+                  min="0"
+                  :max="editForm.exam_total_score"
+                  suffix="pts"
+                  :rules="[
+                    (v) => v >= 0 || 'Must be 0 or above',
+                    (v) => v <= editForm.exam_total_score || 'Cannot exceed total',
+                  ]"
+                />
+                <!-- Dynamic passing badge -->
+                <q-badge
+                  class="q-mt-sm"
+                  :color="passingStatus.color"
+                  :label="passingStatus.label"
+                  style="font-size: 11px; padding: 4px 8px"
+                />
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="bg-grey-1 rounded-borders q-pa-md">
+                <div class="text-caption text-grey-5 q-mb-sm">Total score (out of)</div>
+                <q-input
+                  v-model.number="editForm.exam_total_score"
+                  type="number"
+                  outlined
+                  dense
+                  min="1"
+                  suffix="pts"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Remarks -->
+          <q-input
+            v-model="editForm.exam_remarks"
+            label="Remarks"
+            outlined
+            dense
+            type="textarea"
+            autogrow
+            :input-style="{ minHeight: '72px' }"
+          />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-px-lg q-py-sm bg-grey-1">
+          <q-btn flat label="Cancel" color="grey-7" v-close-popup />
+          <q-btn
+            unelevated
+            label="Save changes"
+            color="primary"
+            icon="save"
+            :loading="savingScore"
+            @click="submitEditScore"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -789,14 +772,14 @@
 
     data() {
       return {
-            savingScore: false,
-            editForm: {
-            exam_type: '',
-            exam_date: '',
-            exam_score: null,
-            exam_total_score: null,
-            exam_remarks: '',
-          },
+        savingScore: false,
+        editForm: {
+          exam_type: '',
+          exam_date: '',
+          exam_score: null,
+          exam_total_score: null,
+          exam_remarks: '',
+        },
         globalSearch: '',
         pagination: {
           sortBy: 'lastname',
@@ -836,18 +819,16 @@
           { label: 'Interview', value: 'interview' },
         ],
 
-        // ── Modal position filter state ────────────────────────────────
-        //
-        // selectedPosition   : plain string (or null) — emit-value ensures this
-        // allPositionOptions  : full { label, value }[] list, built once on open
-        // positionOptionsData : filtered subset shown in the dropdown at any moment
-        //
+        // With emit-value + map-options, selectedPosition is always a plain string (or null).
         selectedPosition: null,
-        allPositionOptions: [],
-        positionOptionsData: [],
-
         applicantSearch: '',
         selectedApplicants: [],
+
+        // Full de-duplicated position list loaded once when the dialog opens.
+        // Client-side filtering slices this — no extra round-trips needed.
+        allPositionOptions: [],
+        // The subset shown in the dropdown after the user types.
+        positionOptionsData: [],
 
         noScorePagination: {
           sortBy: null,
@@ -858,13 +839,17 @@
         },
         noScoreSearchTimeout: null,
 
+        // Committed scores — plain object so Vue tracks changes reactively.
+        // key: String(submission_id), value: number | null
         modalScores: {},
+        // Draft values bound directly to the q-input fields via v-model.
+        // key: submission_id (number/string), value: number | null | ''
         draftScores: {},
       };
     },
 
     computed: {
-        passingStatus() {
+      passingStatus() {
         const score = Number(this.editForm.exam_score);
         const total = Number(this.editForm.exam_total_score);
         if (!total || isNaN(score)) return { color: 'grey', label: 'N/A' };
@@ -1058,15 +1043,15 @@
     },
 
     methods: {
-       // ✅ Fixed — populate editForm when opening the dialog
-       editScore(row) {
+      // ✅ Fixed — populate editForm when opening the dialog
+      editScore(row) {
         this.selectedScore = row;
         this.editForm = {
-          exam_type:        row.exam_type        || '',
-          exam_date:        row.exam_date        || '',
-          exam_score:       row.exam_score       ?? null,
+          exam_type: row.exam_type || '',
+          exam_date: row.exam_date || '',
+          exam_score: row.exam_score ?? null,
           exam_total_score: row.exam_total_score ?? null,
-          exam_remarks:     row.exam_remarks     || '',
+          exam_remarks: row.exam_remarks || '',
         };
         this.editDetailDialog = true;
       },
@@ -1075,10 +1060,7 @@
       async submitEditScore() {
         this.savingScore = true;
         try {
-          await this.store.updateScore(
-            this.selectedScore.submission_id,
-            this.editForm
-          );
+          await this.store.updateScore(this.selectedScore.submission_id, this.editForm);
           this.$q.notify({
             type: 'positive',
             message: 'Score updated successfully.',
@@ -1100,28 +1082,29 @@
       },
       // ── Utilities ────────────────────────────────────────────────────
       async deleteScore(applicantExamScoreId) {
-
-        this.$q.dialog({
-          title: 'Confirm Delete',
-          message: 'Are you sure you want to delete this exam score?',
-          cancel: true,
-          persistent: true,
-        }).onOk(async () => {
-          try {
-            await this.store.deleteScore(applicantExamScoreId);
-            this.$q.notify({
-              type: 'positive',
-              message: 'Exam score deleted successfully',
-              position: 'top',
-            });
-          } catch (error) {
-            this.$q.notify({
-              type: 'negative',
-              message: error.response?.data?.message || 'Failed to delete exam score',
-              position: 'top',
-            });
-          }
-        });
+        this.$q
+          .dialog({
+            title: 'Confirm Delete',
+            message: 'Are you sure you want to delete this exam score?',
+            cancel: true,
+            persistent: true,
+          })
+          .onOk(async () => {
+            try {
+              await this.store.deleteScore(applicantExamScoreId);
+              this.$q.notify({
+                type: 'positive',
+                message: 'Exam score deleted successfully',
+                position: 'top',
+              });
+            } catch (error) {
+              this.$q.notify({
+                type: 'negative',
+                message: error.response?.data?.message || 'Failed to delete exam score',
+                position: 'top',
+              });
+            }
+          });
       },
       formatScore(value) {
         if (value === null || value === undefined) return 'N/A';
@@ -1139,8 +1122,8 @@
         return 'grey-7';
       },
 
-      // Safely extract a plain string from either a string or { label, value } object.
-      // Guards against edge cases where emit-value didn't strip the wrapper object.
+      // Returns a clean string suitable for sending as an API param.
+      // Guards against both plain strings and accidental { label, value } objects.
       resolvePositionValue(pos) {
         if (!pos) return undefined;
         if (typeof pos === 'object' && pos !== null) return pos.value || undefined;
@@ -1194,23 +1177,23 @@
       //     });
       // },
       onRequest(props) {
-  const { page, rowsPerPage} = props.pagination; // ✅ add rowsPerPage
-  this.pagination.page = page;
-  this.pagination.rowsPerPage = rowsPerPage; // ✅ save it
-  // this.pagination.sortBy = sortBy;
-  // this.pagination.descending = descending;
-  this.store
-    .fetchScores({
-      ...this.buildMainFilters(),
-      page,
-      perPage: rowsPerPage, // ✅ send it to the store
-      // sortBy,
-      // descending,
-    })
-    .then(() => {
-      this.pagination.rowsNumber = this.store.pagination.total;
-    });
-},
+        const { page, rowsPerPage } = props.pagination; // ✅ add rowsPerPage
+        this.pagination.page = page;
+        this.pagination.rowsPerPage = rowsPerPage; // ✅ save it
+        // this.pagination.sortBy = sortBy;
+        // this.pagination.descending = descending;
+        this.store
+          .fetchScores({
+            ...this.buildMainFilters(),
+            page,
+            perPage: rowsPerPage, // ✅ send it to the store
+            // sortBy,
+            // descending,
+          })
+          .then(() => {
+            this.pagination.rowsNumber = this.store.pagination.total;
+          });
+      },
 
       // ── Modal table ──────────────────────────────────────────────────
 
@@ -1250,17 +1233,8 @@
 
       // ── Position filter (modal) ──────────────────────────────────────
 
-      /**
-       * @filter callback — called by q-select while the user is typing.
-       *
-       * Searches allPositionOptions purely on the client side.
-       * No API call is made here — that would add unnecessary latency and
-       * server load for every keystroke.
-       *
-       * @param {string}   val    - text the user has typed so far
-       * @param {Function} update - Quasar callback; must be called to commit
-       *                            the new filtered list to positionOptionsData
-       */
+      // Called by q-select's @filter event while the user is typing.
+      // Searches allPositionOptions client-side — no API call needed here.
       filterPositions(val, update) {
         const needle = (val || '').toLowerCase().trim();
         update(() => {
@@ -1270,40 +1244,23 @@
         });
       },
 
-      /**
-       * @update:model-value callback — called when the user selects a position.
-       *
-       * Because `emit-value` is set on the q-select, `val` is always a plain
-       * string like "COMPUTER PROGRAMMER II" (never a { label, value } object).
-       * We pass it straight to the API as the `position` query param.
-       *
-       * @param {string|null} val - the selected position string, or null if cleared
-       */
+      // Called by @update:model-value when the user selects an option.
+      // Because of emit-value, `val` is the raw string (e.g. "Engineer").
       onPositionChange(val) {
-        // resolvePositionValue is a safety net in case emit-value ever passes
-        // an object (shouldn't happen, but defensive coding doesn't hurt).
-        const position = this.resolvePositionValue(val);
         this.noScorePagination.page = 1;
         this.store
           .fetchNoScoreApplicants({
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             search: this.applicantSearch || undefined,
-            position,
+            position: this.resolvePositionValue(val),
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
           });
       },
 
-      /**
-       * @clear callback — called when the user clicks the × button.
-       *
-       * Resets:
-       *   1. selectedPosition → null  (clears the select's displayed value)
-       *   2. positionOptionsData → full list  (so all options reappear on next open)
-       *   3. Re-fetches the table without any position filter
-       */
+      // Called by @clear when the user clicks the × on the position select.
       onPositionClear() {
         this.selectedPosition = null;
         this.positionOptionsData = [...this.allPositionOptions];
@@ -1313,17 +1270,13 @@
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             search: this.applicantSearch || undefined,
-            // no `position` param → backend returns all positions
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
           });
       },
 
-      /**
-       * @clear callback on the applicant search input.
-       * Re-fetches keeping the current position filter but clearing the text search.
-       */
+      // Called by @clear on the applicant search input.
       onApplicantSearchClear() {
         this.applicantSearch = '';
         this.noScorePagination.page = 1;
@@ -1332,7 +1285,6 @@
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             position: this.resolvePositionValue(this.selectedPosition),
-            // no `search` param
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
@@ -1353,7 +1305,7 @@
       // ── Open Add Dialog ──────────────────────────────────────────────
 
       async openAddDialog() {
-        // ── Reset all dialog state ────────────────────────────────────
+        // Reset all dialog state
         this.session = {
           exam_title: '',
           exam_type: null,
@@ -1372,33 +1324,24 @@
         this.step = 1;
         this.dialog = true;
 
-        // ── Step A: build the position dropdown list ──────────────────
-        //
-        // Fetch ALL no-score applicants once (perPage=9999) so we can extract
-        // every unique position for the dropdown without a dedicated endpoint.
-        // This result is used ONLY for the dropdown options list.
-        //
+        // Step 1 — build the full position list for the dropdown.
+        // Fetch a large page once so the dropdown has every position available
+        // without needing a separate endpoint.
         try {
           await this.store.fetchNoScoreApplicants({ page: 1, perPage: 9999 });
-
           const positions = new Set(
             (this.store.noScoreApplicants || []).map((a) => a.position).filter(Boolean),
           );
           const opts = Array.from(positions)
             .sort()
             .map((p) => ({ label: p, value: p }));
-
           this.allPositionOptions = opts;
-          this.positionOptionsData = [...opts]; // start with the full set visible
+          this.positionOptionsData = [...opts];
         } catch {
-          // Non-fatal: dropdown will be empty, but the table still works fine.
+          // Non-fatal — table still works, dropdown will be empty
         }
 
-        // ── Step B: fetch the first paginated page for the table ──────
-        //
-        // This overwrites store.noScoreApplicants with just the first page,
-        // which is what the q-table should display initially.
-        //
+        // Step 2 — fetch the normal paginated first page for the table display.
         await this.store
           .fetchNoScoreApplicants({ page: 1, perPage: this.noScorePagination.rowsPerPage })
           .then(() => {
@@ -1408,6 +1351,7 @@
 
       // ── Score commit ─────────────────────────────────────────────────
 
+      // Fires on every keystroke so reviewRows stays in sync immediately.
       commitScore(submissionId, val) {
         const key = String(submissionId);
         if (val === null || val === '' || val === undefined) {
@@ -1420,6 +1364,8 @@
         this.modalScores = { ...this.modalScores };
       },
 
+      // Safety-net: fires on blur in case the input was filled by
+      // autocomplete or another mechanism that bypassed the input event.
       commitScoreFromBlur(submissionId) {
         this.commitScore(submissionId, this.draftScores[submissionId]);
       },
@@ -1481,13 +1427,8 @@
         }
       },
     },
-     // ── update ─────────────────────────────────────────────────────────
-     // ─── Edit Score state ─────────────────────────────────────────────────────────
-
-
-
-  
-  
+    // ── update ─────────────────────────────────────────────────────────
+    // ─── Edit Score state ─────────────────────────────────────────────────────────
 
     mounted() {
       this.store.fetchScores({ page: 1 }).then(() => {
@@ -1641,3 +1582,4 @@
     overflow-y: auto;
   }
 </style>
+yy

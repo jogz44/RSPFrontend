@@ -26,7 +26,7 @@
               label="History"
               option-label="label"
               option-value="value"
-              style="width: 250px"
+              style="width: 150px"
               @update:model-value="onHistoryChange"
               emit-value
               map-options
@@ -1061,7 +1061,8 @@
     return [...selectedJob.value.history]
       .sort((a, b) => new Date(b.post_date) - new Date(a.post_date))
       .map((h) => ({
-        label: `${formatDate(h.post_date, 'MMM D, YYYY')} - ${formatDate(h.end_date, 'MMM D, YYYY')}`,
+        // label: `${formatDate(h.post_date, 'MMM D, YYYY')} - ${formatDate(h.end_date, 'MMM D, YYYY')}`,
+        label: `${formatDate(h.post_date, 'MMM D, YYYY')}`,
         value: h.id,
         historyData: h,
       }));
