@@ -166,10 +166,28 @@
             <div class="row q-col-gutter-md q-mb-md items-end">
               <div class="col-12 col-sm-6">
                 <!--
-                  FIX: emit-value + map-options so v-model holds the raw string (not an object).
-                       @filter does a fast client-side search over allPositionOptions.
-                       @update:model-value fires the API fetch with the selected string.
-                       @clear resets and re-fetches without a position filter.
+                  HOW THIS WORKS:
+                  ─────────────────────────────────────────────────────────────
+                  allPositionOptions   → full sorted list, built ONCE on dialog
+                                         open from the large (perPage=9999) fetch.
+                  positionOptionsData  → the subset shown in the dropdown; starts
+                                         as a copy of allPositionOptions and is
+                                         narrowed client-side by @filter so no
+                                         extra API round-trip is needed per keystroke.
+                  emit-value           → v-model (selectedPosition) holds a plain
+                                         string such as "COMPUTER PROGRAMMER II",
+                                         NOT a { label, value } object.
+                  map-options          → tells q-select how to display the options
+                                         (use the `label` key for text).
+                  @filter              → called while the user is typing; updates
+                                         positionOptionsData client-side.
+                  @update:model-value  → called when the user picks an option;
+                                         triggers a fresh paginated API fetch with
+                                         the chosen position string.
+                  @clear               → called when the user clicks ×; resets
+                                         selectedPosition to null and re-fetches
+                                         without any position filter.
+                  ─────────────────────────────────────────────────────────────
                 -->
                 <q-select
                   v-model="selectedPosition"
@@ -818,16 +836,18 @@
           { label: 'Interview', value: 'interview' },
         ],
 
-        // With emit-value + map-options, selectedPosition is always a plain string (or null).
+        // ── Modal position filter state ────────────────────────────────
+        //
+        // selectedPosition   : plain string (or null) — emit-value ensures this
+        // allPositionOptions  : full { label, value }[] list, built once on open
+        // positionOptionsData : filtered subset shown in the dropdown at any moment
+        //
         selectedPosition: null,
+        allPositionOptions: [],
+        positionOptionsData: [],
+
         applicantSearch: '',
         selectedApplicants: [],
-
-        // Full de-duplicated position list loaded once when the dialog opens.
-        // Client-side filtering slices this — no extra round-trips needed.
-        allPositionOptions: [],
-        // The subset shown in the dropdown after the user types.
-        positionOptionsData: [],
 
         noScorePagination: {
           sortBy: null,
@@ -838,11 +858,7 @@
         },
         noScoreSearchTimeout: null,
 
-        // Committed scores — plain object so Vue tracks changes reactively.
-        // key: String(submission_id), value: number | null
         modalScores: {},
-        // Draft values bound directly to the q-input fields via v-model.
-        // key: submission_id (number/string), value: number | null | ''
         draftScores: {},
       };
     },
@@ -1123,8 +1139,8 @@
         return 'grey-7';
       },
 
-      // Returns a clean string suitable for sending as an API param.
-      // Guards against both plain strings and accidental { label, value } objects.
+      // Safely extract a plain string from either a string or { label, value } object.
+      // Guards against edge cases where emit-value didn't strip the wrapper object.
       resolvePositionValue(pos) {
         if (!pos) return undefined;
         if (typeof pos === 'object' && pos !== null) return pos.value || undefined;
@@ -1234,8 +1250,17 @@
 
       // ── Position filter (modal) ──────────────────────────────────────
 
-      // Called by q-select's @filter event while the user is typing.
-      // Searches allPositionOptions client-side — no API call needed here.
+      /**
+       * @filter callback — called by q-select while the user is typing.
+       *
+       * Searches allPositionOptions purely on the client side.
+       * No API call is made here — that would add unnecessary latency and
+       * server load for every keystroke.
+       *
+       * @param {string}   val    - text the user has typed so far
+       * @param {Function} update - Quasar callback; must be called to commit
+       *                            the new filtered list to positionOptionsData
+       */
       filterPositions(val, update) {
         const needle = (val || '').toLowerCase().trim();
         update(() => {
@@ -1245,23 +1270,40 @@
         });
       },
 
-      // Called by @update:model-value when the user selects an option.
-      // Because of emit-value, `val` is the raw string (e.g. "Engineer").
+      /**
+       * @update:model-value callback — called when the user selects a position.
+       *
+       * Because `emit-value` is set on the q-select, `val` is always a plain
+       * string like "COMPUTER PROGRAMMER II" (never a { label, value } object).
+       * We pass it straight to the API as the `position` query param.
+       *
+       * @param {string|null} val - the selected position string, or null if cleared
+       */
       onPositionChange(val) {
+        // resolvePositionValue is a safety net in case emit-value ever passes
+        // an object (shouldn't happen, but defensive coding doesn't hurt).
+        const position = this.resolvePositionValue(val);
         this.noScorePagination.page = 1;
         this.store
           .fetchNoScoreApplicants({
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             search: this.applicantSearch || undefined,
-            position: this.resolvePositionValue(val),
+            position,
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
           });
       },
 
-      // Called by @clear when the user clicks the × on the position select.
+      /**
+       * @clear callback — called when the user clicks the × button.
+       *
+       * Resets:
+       *   1. selectedPosition → null  (clears the select's displayed value)
+       *   2. positionOptionsData → full list  (so all options reappear on next open)
+       *   3. Re-fetches the table without any position filter
+       */
       onPositionClear() {
         this.selectedPosition = null;
         this.positionOptionsData = [...this.allPositionOptions];
@@ -1271,13 +1313,17 @@
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             search: this.applicantSearch || undefined,
+            // no `position` param → backend returns all positions
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
           });
       },
 
-      // Called by @clear on the applicant search input.
+      /**
+       * @clear callback on the applicant search input.
+       * Re-fetches keeping the current position filter but clearing the text search.
+       */
       onApplicantSearchClear() {
         this.applicantSearch = '';
         this.noScorePagination.page = 1;
@@ -1286,6 +1332,7 @@
             page: 1,
             perPage: this.noScorePagination.rowsPerPage,
             position: this.resolvePositionValue(this.selectedPosition),
+            // no `search` param
           })
           .then(() => {
             this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
@@ -1306,7 +1353,7 @@
       // ── Open Add Dialog ──────────────────────────────────────────────
 
       async openAddDialog() {
-        // Reset all dialog state
+        // ── Reset all dialog state ────────────────────────────────────
         this.session = {
           exam_title: '',
           exam_type: null,
@@ -1325,24 +1372,33 @@
         this.step = 1;
         this.dialog = true;
 
-        // Step 1 — build the full position list for the dropdown.
-        // Fetch a large page once so the dropdown has every position available
-        // without needing a separate endpoint.
+        // ── Step A: build the position dropdown list ──────────────────
+        //
+        // Fetch ALL no-score applicants once (perPage=9999) so we can extract
+        // every unique position for the dropdown without a dedicated endpoint.
+        // This result is used ONLY for the dropdown options list.
+        //
         try {
           await this.store.fetchNoScoreApplicants({ page: 1, perPage: 9999 });
+
           const positions = new Set(
             (this.store.noScoreApplicants || []).map((a) => a.position).filter(Boolean),
           );
           const opts = Array.from(positions)
             .sort()
             .map((p) => ({ label: p, value: p }));
+
           this.allPositionOptions = opts;
-          this.positionOptionsData = [...opts];
+          this.positionOptionsData = [...opts]; // start with the full set visible
         } catch {
-          // Non-fatal — table still works, dropdown will be empty
+          // Non-fatal: dropdown will be empty, but the table still works fine.
         }
 
-        // Step 2 — fetch the normal paginated first page for the table display.
+        // ── Step B: fetch the first paginated page for the table ──────
+        //
+        // This overwrites store.noScoreApplicants with just the first page,
+        // which is what the q-table should display initially.
+        //
         await this.store
           .fetchNoScoreApplicants({ page: 1, perPage: this.noScorePagination.rowsPerPage })
           .then(() => {
@@ -1352,7 +1408,6 @@
 
       // ── Score commit ─────────────────────────────────────────────────
 
-      // Fires on every keystroke so reviewRows stays in sync immediately.
       commitScore(submissionId, val) {
         const key = String(submissionId);
         if (val === null || val === '' || val === undefined) {
@@ -1365,8 +1420,6 @@
         this.modalScores = { ...this.modalScores };
       },
 
-      // Safety-net: fires on blur in case the input was filled by
-      // autocomplete or another mechanism that bypassed the input event.
       commitScoreFromBlur(submissionId) {
         this.commitScore(submissionId, this.draftScores[submissionId]);
       },

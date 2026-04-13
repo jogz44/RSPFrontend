@@ -423,7 +423,7 @@
 
     return [
       {
-        text: 'FINAL SUMMARY OF RATING',
+        text: 'SUMMARY OF RATING',
         fontSize: 12,
         bold: true,
         margin: [0, 0, 0, 2],
