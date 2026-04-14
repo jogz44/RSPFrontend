@@ -14,7 +14,7 @@
       <!-- Header Section -->
       <q-card-section class="row justify-between header text-black q-px-md q-py-sm">
         <div>
-          <div class="text-h5 text-bold">Qualification Standard (QS)</div>
+          <div class="text-h5 text-bold">Qualification Standard (QS)1</div>
           <!-- Applicant Outside -->
           <div class="text-subtitle1">Application Information</div>
         </div>
@@ -34,12 +34,18 @@
           <!-- Left Card (Applicant Info) -->
           <q-card class="col-2 q-mr-md">
             <q-card-section class="column justify-between items-center q-pa-md">
-              <q-img
-                :src="imageSrc"
+              <!-- <q-img
+                :src="applicantData?.image_url || 'https://placehold.co/100'"
                 class="bg-grey-4 q-mb-md"
                 style="width: 100px; height: 100px; border-radius: 10px"
                 alt="Applicant Photo"
-              />
+              /> -->
+              <q-img
+                  :src="applicantImageUrl || applicantData?.image_url || 'https://placehold.co/100'"
+                  class="bg-grey-4 q-mb-md"
+                  style="width: 100px; height: 100px; border-radius: 10px"
+                  alt="Applicant Photo"
+                />
 
               <div class="text-body text-bold text-center q-mb-xs">
                 {{ applicantData?.name || 'Please wait' }}
@@ -710,6 +716,8 @@
 
   const tab = ref('education');
   const qualificationStatus = ref('');
+  // Add this ref near the top with your other refs
+const applicantImageUrl = ref('');
 
   const readSelectionFrom = (source, variants = []) => {
     if (!source) return null;
@@ -1068,18 +1076,18 @@
     return personalInfo;
   };
 
-  const imageSrc = computed(() => {
-    const pds = jobPostStore.applicantPDS;
-    const base = props.applicantData;
+  // const imageSrc = computed(() => {
+  //   const pds = jobPostStore.applicantPDS;
+  //   const base = props.applicantData;
 
-    return (
-      pds?.image_url ||
-      pds?.image_path ||
-      base?.image_url ||
-      base?.image_path ||
-      'https://placehold.co/100'
-    );
-  });
+  //   return (
+  //     pds?.image_url ||
+  //     pds?.image_path ||
+  //     base?.image_url ||
+  //     base?.image_path ||
+  //     'https://placehold.co/100'
+  //   );
+  // });
 
   const getStatusClass = (status) => {
     if (!status) return 'grey';
@@ -1289,8 +1297,49 @@
   const showSupportingDocs = () => {
     showSupportingDocsModal.value = true;
   };
+const loadApplicantImage = async (imageUrl) => {
+  if (!imageUrl) {
+    applicantImageUrl.value = '';
+    return;
+  }
 
+  // External applicant — direct MinIO/storage URL, no auth needed
+  if (imageUrl.includes('/storage/')) {
+    applicantImageUrl.value = imageUrl;
+    return;
+  }
+
+  // Internal employee — proxy URL needs auth token, fetch as blob
+  try {
+    const token =
+      authStore.token ||
+      authStore.user?.token ||
+      localStorage.getItem('token');
+
+    const response = await fetch(imageUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'image/*',
+      },
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      if (applicantImageUrl.value?.startsWith('blob:')) {
+        URL.revokeObjectURL(applicantImageUrl.value);
+      }
+      applicantImageUrl.value = URL.createObjectURL(blob);
+    } else {
+      console.warn('Proxy image fetch failed:', response.status);
+      applicantImageUrl.value = '';
+    }
+  } catch (err) {
+    console.error('Error loading proxy image:', err);
+    applicantImageUrl.value = '';
+  }
+};
   const onModalShow = async () => {
+
     tab.value = 'education';
     selectedExperienceIds.value = [];
     selectedTrainingIds.value = [];
@@ -1308,6 +1357,14 @@
         await usePlantilla.fetchQsData(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
+
+    // ✅ Clean call — loadApplicantImage is already defined above
+    if (pdsData?.image_url) {
+      await loadApplicantImage(pdsData.image_url);
+    } else {
+      applicantImageUrl.value = '';
+    }
+
 
       const source = pdsData || props.applicantData || {};
 
@@ -1446,6 +1503,10 @@
   };
 
   const onClose = () => {
+    if (applicantImageUrl.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(applicantImageUrl.value);
+  }
+  applicantImageUrl.value = '';
     emit('close');
     positionQS.value = [];
     xData.value = {

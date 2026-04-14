@@ -127,24 +127,34 @@ export const useAuthStore = defineStore('auth', {
         }
 
         return false;
-      } catch (error) {
-        if (error.response?.status === 403) {
-          if (error.response.data.errors?.role_id) {
-            toast.error(error.response.data.errors.role_id[0]);
-          } else {
-            toast.error(
-              error.response.data.message ||
-                'Your account is inactive. Please contact the administrator.',
-            );
-          }
-        } else if (error.response?.status === 0 || !error.response) {
-          toast.error('Please check your internet connection and try again later.');
-        } else {
-          toast.error('Login Failed!');
-        }
+     } catch (error) {
+            const status = error.response?.status;
+            const data   = error.response?.data;
 
-        this.errors = error.response?.data?.errors || {};
-        return false;
+            if (status === 401 || status === 422) {
+                if (data?.errors?.role_id) {
+                    toast.error(data.errors.role_id[0]);
+                } else {
+                    toast.error(data?.message || 'Invalid credentials.');
+                }
+                error.value = data?.errors || {};
+
+            } else if (status === 403) {
+                toast.error(data?.message || 'Your account is inactive. Please contact the administrator.');
+
+            } else if (status === 429) {
+                // ✅ Rate limit hit
+                toast.error(data?.message || 'Too many attempts. Please try again later.');
+
+            } else if (!error.response) {
+                toast.error('Please check your internet connection and try again later.');
+
+            } else {
+                toast.error('Login Failed!');
+            }
+
+
+            return  false ;
       } finally {
         this.loading = false;
       }
