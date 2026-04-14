@@ -365,10 +365,12 @@
     subHeaderRow.push({});
     subHeaderRow.push({});
 
-    const dataRowsWithScores = applicants.map((item, idx) => {
+    // ✅ Build data rows using API totals directly
+    const dataRowsWithScores = applicants.map((item) => {
       const row = [];
 
-      row.push({ text: (idx + 1).toString(), alignment: 'center' });
+      // placeholder for number (will be filled after sorting)
+      row.push({ text: '', alignment: 'center' });
 
       const fullName = `${item.applicant?.firstname || ''} ${
         item.applicant?.lastname || ''
@@ -376,14 +378,12 @@
       row.push({ text: fullName, alignment: 'left' });
 
       const scoresMap = new Map();
-      let beiScore = 0;
-      let examScore = 0;
+      let beiScore = parseFloat(item.bei || 0) || 0;
+      let examScore = parseFloat(item.exam_score || 0) || 0;
 
       if (Array.isArray(item.score)) {
         item.score.forEach((scoreItem) => {
           scoresMap.set(scoreItem.rater_id, scoreItem.grand_total || scoreItem.total_qs || '');
-          if (!beiScore && scoreItem.bei) beiScore = parseFloat(scoreItem.bei) || 0;
-          if (!examScore && scoreItem.exam_score) examScore = parseFloat(scoreItem.exam_score) || 0;
         });
       }
 
@@ -392,40 +392,46 @@
         row.push({ text: formatNumber(score), alignment: 'center' });
       });
 
-      const scores = Array.from(scoresMap.values()).filter((s) => s !== '' && s !== '-');
-      const averageRating =
-        scores.length > 0
-          ? scores.reduce((sum, score) => sum + parseFloat(score), 0) / scores.length
-          : 0;
+      // ✅ Use backend totals directly
+      const totalRating70 = item.total_rating ?? '';
+      const finalRating = item.final_rating ?? '';
 
-      const totalRating70 = averageRating * 0.7;
       row.push({ text: formatNumber(totalRating70), alignment: 'center', bold: true });
-
-      let finalRating = totalRating70;
 
       if (showBEI) {
         row.push({ text: formatNumber(beiScore), alignment: 'center', bold: true });
-        finalRating += beiScore;
       }
 
       if (showExam) {
         row.push({ text: formatNumber(examScore), alignment: 'center', bold: true });
-        finalRating += examScore;
       }
 
       row.push({ text: formatNumber(finalRating), alignment: 'center', bold: true });
 
-      row.push({ text: '', alignment: 'center', bold: true });
+      // rank column (will use API if present, else computed)
+      row.push({ text: item.rank ? item.rank.toString() : '', alignment: 'center', bold: true });
 
       return {
         row,
-        finalRating: finalRating,
+        rank: item.rank ? Number(item.rank) : null,
+        finalRating: Number(finalRating) || 0,
       };
     });
 
-    dataRowsWithScores.sort((a, b) => b.finalRating - a.finalRating);
+    // ✅ Sort by rank (ascending). If rank missing, fallback to finalRating desc.
+    dataRowsWithScores.sort((a, b) => {
+      if (a.rank != null && b.rank != null) return a.rank - b.rank;
+      if (a.rank != null) return -1;
+      if (b.rank != null) return 1;
+      return b.finalRating - a.finalRating;
+    });
+
+    // ✅ Incremental numbering (1..N) based on sorted order
     dataRowsWithScores.forEach((item, index) => {
-      item.row[item.row.length - 1].text = (index + 1).toString();
+      item.row[0].text = (index + 1).toString();
+      if (!item.row[item.row.length - 1].text) {
+        item.row[item.row.length - 1].text = (index + 1).toString();
+      }
     });
 
     const dataRows = dataRowsWithScores.map((item) => item.row);

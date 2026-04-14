@@ -338,6 +338,7 @@
 
 <script>
   import { ref, computed, watch } from 'vue';
+  import axios from 'axios';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { useAuthStore } from 'stores/authStore';
   import { toast } from 'src/boot/toast';
@@ -345,22 +346,10 @@
   export default {
     name: 'ApplicantScoreModal',
     props: {
-      show: {
-        type: Boolean,
-        default: false,
-      },
-      applicant: {
-        type: Object,
-        default: () => ({}),
-      },
-      ratingData: {
-        type: Object,
-        default: () => ({ total_completed: 0, total_assigned: 0 }),
-      },
-      jobDetails: {
-        type: Object,
-        default: () => ({}),
-      },
+      show: { type: Boolean, default: false },
+      applicant: { type: Object, default: () => ({}) },
+      ratingData: { type: Object, default: () => ({ total_completed: 0, total_assigned: 0 }) },
+      jobDetails: { type: Object, default: () => ({}) },
     },
     emits: ['update:show', 'close', 'on-hired'],
     setup(props, { emit }) {
@@ -391,20 +380,18 @@
         return nPersonal || controlNo || null;
       });
 
-      const canModifyJobPost = computed(() => {
-        return authStore.user?.permissions?.modifyJobpostAccess == '1';
-      });
-
       const applicantName = computed(() => {
         if (!props.applicant) return 'Unknown Applicant';
-
         const firstName = props.applicant.firstname || '';
         const lastName = props.applicant.lastname || props.applicant.last_name || '';
         const extension = props.applicant.name_extension
           ? ` ${props.applicant.name_extension}`
           : '';
-
         return `${firstName} ${lastName}${extension}`.trim() || 'Unknown Applicant';
+      });
+
+      const canModifyJobPost = computed(() => {
+        return authStore.user?.permissions?.modifyJobpostAccess == '1';
       });
 
       const isJobOccupied = computed(() => {
@@ -445,7 +432,26 @@
         return allRatingsCompleted && isTopFive && !isJobOccupied.value;
       });
 
-      // Extract criteria weights from the criteria array
+      const fetchApplicantPhoto = async (url) => {
+        if (!url) {
+          applicantImageUrl.value = 'https://placehold.co/100';
+          return;
+        }
+
+        try {
+          const response = await axios.get(url, {
+            responseType: 'blob',
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+          });
+
+          applicantImageUrl.value = URL.createObjectURL(response.data);
+        } catch {
+          applicantImageUrl.value = 'https://placehold.co/100';
+        }
+      };
+
       const extractCriteriaWeights = (criteriaArray) => {
         if (criteriaArray && criteriaArray.length > 0) {
           const criteriaData = criteriaArray[0];
@@ -471,18 +477,14 @@
             hasExamScore.value = criteriaWeights.value.exam > 0;
           }
 
-          // Check if BEI exists in the criteria
-          // BEI is typically part of the criteria structure - check if there's a bei property
           if (criteriaData.bei !== undefined || criteriaData.bei_questions !== undefined) {
             hasBei.value = true;
           } else {
-            // Check if any rater has BEI score that's not null/undefined
             hasBei.value = false;
           }
         }
       };
 
-      // Check if BEI exists in the score data
       const checkBeiInScores = (scores) => {
         if (scores && scores.length > 0) {
           hasBei.value = scores.some(
@@ -491,11 +493,9 @@
         }
       };
 
-      // Dynamic columns for individual rater scores
       const dynamicColumns = computed(() => {
         const columns = [];
 
-        // Rater column (static)
         columns.push({
           name: 'rater',
           label: 'Rater',
@@ -503,7 +503,6 @@
           align: 'left',
         });
 
-        // Dynamic criteria columns
         if (criteriaWeights.value.education > 0) {
           columns.push({
             name: 'education',
@@ -540,7 +539,6 @@
           });
         }
 
-        // BEI column - only show if BEI exists in criteria or scores
         if (hasBei.value) {
           columns.push({
             name: 'bei',
@@ -550,7 +548,6 @@
           });
         }
 
-        // Total QS column
         columns.push({
           name: 'totalQs',
           label: 'Total QS',
@@ -558,7 +555,6 @@
           align: 'center',
         });
 
-        // Exam column if exists
         if (hasExamScore.value && criteriaWeights.value.exam > 0) {
           columns.push({
             name: 'exam',
@@ -568,7 +564,6 @@
           });
         }
 
-        // Rank column
         columns.push({
           name: 'rank',
           label: 'Rank',
@@ -576,7 +571,6 @@
           align: 'center',
         });
 
-        // Grand Total column
         columns.push({
           name: 'grandTotal',
           label: 'Grand Total',
@@ -587,7 +581,6 @@
         return columns;
       });
 
-      // Dynamic columns for final scores
       const dynamicFinalScoreColumns = computed(() => {
         const columns = [];
 
@@ -627,7 +620,6 @@
           });
         }
 
-        // BEI column - only show if BEI exists in criteria or scores
         if (hasBei.value) {
           columns.push({
             name: 'bei',
@@ -721,10 +713,7 @@
 
           const payload = { submission_id: submissionId };
 
-          console.log('Hiring applicant with payload:', payload);
-
           const response = await jobPostStore.hiredApplicant(submissionId, payload);
-          console.log('API Response:', response);
 
           if (response && response.data) {
             if (response.data.success === true) {
@@ -744,8 +733,7 @@
             toast.error('Unexpected response format.');
             hireConfirmationDialog.value = false;
           }
-        } catch (error) {
-          console.error('Network or other error:', error);
+        } catch {
           toast.error('Network error. Please try again.');
           hireConfirmationDialog.value = false;
         } finally {
@@ -754,35 +742,28 @@
       };
 
       const loadScoreData = async () => {
-        console.log('Loading score data for applicant:', props.applicant);
-
         const lookupKey = applicantLookupKey.value;
         const jobpostId = props.jobDetails?.id;
 
         if (!props.applicant || !lookupKey || !jobpostId) {
-          console.warn('Missing applicant lookup key or jobpostId');
           raterScores.value = [];
           finalScores.value = null;
           applicantImageUrl.value = '';
           return;
         }
 
-        applicantImageUrl.value = props.applicant.image_url || 'https://placehold.co/100';
-
         try {
           dataLoading.value = true;
 
           const scoreData = await jobPostStore.fetchApplicantScoreDetails(lookupKey, jobpostId);
-          console.log('Fetched score details:', scoreData);
-
           const apiApplicant = scoreData?.applicant || {};
 
-          // Extract criteria weights from the response
+          await fetchApplicantPhoto(apiApplicant.image_url || props.applicant?.image_url);
+
           if (scoreData?.criteria) {
             extractCriteriaWeights(scoreData.criteria);
           }
 
-          // Check if BEI exists in the history scores
           if (Array.isArray(scoreData?.history)) {
             checkBeiInScores(scoreData.history);
           }
@@ -818,8 +799,7 @@
           } else {
             raterScores.value = [];
           }
-        } catch (error) {
-          console.error('Error fetching individual rater scores:', error);
+        } catch {
           toast.error('Failed to load individual rater scores');
           raterScores.value = [];
           finalScores.value = null;
@@ -832,9 +812,7 @@
         () => props.show,
         (newVal) => {
           localShow.value = newVal;
-          if (newVal) {
-            loadScoreData();
-          }
+          if (newVal) loadScoreData();
         },
         { immediate: true },
       );
@@ -842,9 +820,7 @@
       watch(
         () => props.applicant,
         () => {
-          if (props.show) {
-            loadScoreData();
-          }
+          if (props.show) loadScoreData();
         },
         { deep: true },
       );

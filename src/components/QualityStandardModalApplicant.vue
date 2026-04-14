@@ -939,29 +939,80 @@
 
   const parseDate = (dateString) => {
     if (!dateString) return null;
+
+    // Check if date is in DD/MM/YYYY format (has two slashes)
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      // Try DD/MM/YYYY format first
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+      const year = parseInt(parts[2], 10);
+
+      // Create date with DD/MM/YYYY interpretation
+      let date = new Date(year, month, day);
+
+      // Validate if the date is valid (day matches, month matches)
+      if (!isNaN(date.getTime()) && date.getDate() === day && date.getMonth() === month) {
+        return date;
+      }
+
+      // If DD/MM/YYYY fails, try MM/DD/YYYY as fallback
+      const monthAlt = parseInt(parts[0], 10) - 1;
+      const dayAlt = parseInt(parts[1], 10);
+      date = new Date(year, monthAlt, dayAlt);
+
+      if (!isNaN(date.getTime()) && date.getDate() === dayAlt && date.getMonth() === monthAlt) {
+        return date;
+      }
+    }
+
+    // Fallback to default parsing
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
   };
 
   const calculateMonthsDifference = (startDate, endDate) => {
-    if (!startDate || !endDate) return 0;
+    if (!startDate || !endDate) {
+      console.log('Missing date:', { startDate, endDate });
+      return 0;
+    }
 
     const start = parseDate(startDate);
     const end = parseDate(endDate);
 
-    if (!start || !end) return 0;
+    if (!start || !end) {
+      console.log('Invalid date parsing:', {
+        startDate,
+        endDate,
+        startParsed: start,
+        endParsed: end,
+      });
+      return 0;
+    }
 
-    const yearDiff = end.getFullYear() - start.getFullYear();
-    const monthDiff = end.getMonth() - start.getMonth();
+    console.log('Calculating months between:', {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      startRaw: startDate,
+      endRaw: endDate,
+    });
+
+    // Calculate total months difference
+    let totalMonths =
+      (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+
+    // Adjust for day difference
     const dayDiff = end.getDate() - start.getDate();
 
-    let totalMonths = yearDiff * 12 + monthDiff;
-
+    // If end day is before start day, subtract one month
     if (dayDiff < 0) {
       totalMonths -= 1;
     }
 
-    return Math.max(0, totalMonths);
+    const result = Math.max(0, totalMonths);
+    console.log('Calculated months:', result);
+
+    return result;
   };
 
   const formatDuration = (months) => {

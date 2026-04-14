@@ -1,4 +1,3 @@
-<!-- View job details-->
 <template>
   <!-- Single unified loading overlay -->
   <q-inner-loading :showing="isLoading">
@@ -8,7 +7,7 @@
 
   <div class="q-pa-md bg-grey-1">
     <!-- Job Details Card -->
-    <q-card class="q-mb-lg shadow-3" flat bordered style="max-width: 1000px; margin: auto">
+    <q-card class="q-mb-lg shadow-3" flat bordered style="max-width: 1300px; margin: auto">
       <q-card-section v-if="!isLoading" class="q-pa-lg">
         <!-- Header Row: Back + History + View M.O. -->
         <div class="row items-center justify-between q-mb-lg">
@@ -21,12 +20,12 @@
               rounded
               dense
               outlined
-              class="text-subtitle1"
+              class="text-subtitle1 q-pl-md q-pr-md"
               color="primary"
               label="History"
               option-label="label"
               option-value="value"
-              style="width: 150px"
+              style="width: 200px"
               @update:model-value="onHistoryChange"
               emit-value
               map-options
@@ -64,7 +63,7 @@
           <div class="text-h6 text-primary text-bold">
             {{ selectedJob?.Position || 'Job Title' }}
           </div>
-          <q-chip dense :color="statusColor" text-color="white" class="q-pa-sm">
+          <q-chip dense :color="statusColor" text-color="white" class="q-pa-sm q-pl-md q-pr-md">
             Status: {{ (selectedJob?.status || 'Unknown').toLowerCase() }}
           </q-chip>
         </div>
@@ -195,7 +194,7 @@
     </q-card>
 
     <!-- Tabs Card -->
-    <q-card flat bordered class="shadow-2" style="max-width: 1000px; margin: auto">
+    <q-card flat bordered class="shadow-2" style="max-width: 1300px; margin: auto">
       <q-card-section v-if="!isLoading" class="q-pa-md">
         <q-tabs
           v-model="activeTab"
@@ -240,8 +239,8 @@
                   label="Import"
                   color="orange-9"
                   rounded
-                  dense
                   no-caps
+                  class="q-pl-md q-pr-md"
                   style="font-size: 8pt"
                   @click="showImportModal = true"
                   icon="person_add"
@@ -253,8 +252,8 @@
                   color="green-9"
                   icon="email"
                   rounded
-                  dense
                   no-caps
+                  class="q-pl-md q-pr-md"
                   style="font-size: 8pt"
                   @click="openNotifyUnqualifiedDialog"
                   :disable="isLoading"
@@ -368,8 +367,7 @@
                   label="Unoccupied"
                   color="red-9"
                   rounded
-                  class="q-pa-xs"
-                  dense
+                  class="q-pa-xs q-pr-md q-pl-md"
                   no-caps
                   style="font-size: 9pt"
                   @click="unoccupiedConfirmDialog = true"
@@ -396,6 +394,8 @@
               v-model:pagination="ratingPagination"
               :rows-per-page-options="[2, 10, 20, 50, 100, 0]"
               @request="onApplicantRatingRequest"
+              :table-style="{ width: '100%' }"
+              :wrap-cells="true"
             >
               <!-- Dynamic cell template for criteria columns -->
               <template
@@ -406,9 +406,6 @@
                 <q-td :props="props">
                   <div class="text-center">
                     <span class="text-weight-medium">{{ props.row[criteria.type] }}</span>
-                    <!-- <div class="text-caption text-grey-6">
-                      ({{ getCriteriaWeight(criteria.type) }}%)
-                    </div> -->
                   </div>
                 </q-td>
               </template>
@@ -1679,6 +1676,17 @@
   /* ===== Tables ===== */
   .q-table tr:hover {
     background-color: #f5f5f5;
+  }
+
+  /* ===== Rating Table: no horizontal scroll ===== */
+  .rating-table .q-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .rating-table th,
+  .rating-table td {
+    white-space: normal !important;
+    word-break: break-word;
   }
 
   /* ===== Badge ===== */
