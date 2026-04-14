@@ -1,21 +1,27 @@
 <template>
   <div class="row">
     <div class="col-3 flex justify-center items-center">
-      <img
-        v-if="props.personal?.Pics"
-        :src="props.personal.Pics"
-        class="bg-grey-4"
-        style="width: 140px; height: 140px; border-radius: 10px; object-fit: cover"
-        alt="Applicant Photo"
-      />
       <div
-        v-else
-        class="bg-grey-4 flex justify-center items-center"
-        style="width: 140px; height: 140px; border-radius: 10px"
-        title="Applicant Photo"
+        style="width: 100px; height: 100px; border-radius: 10px"
+        class="q-mb-md relative-position"
       >
-        <!-- You can put a placeholder icon or text here -->
-        No Photo
+        <!-- Loading State -->
+        <div
+          v-if="imageLoading"
+          class="bg-grey-3 flex flex-center"
+          style="width: 100px; height: 100px; border-radius: 10px"
+        >
+          <q-spinner-dots color="primary" size="30px" />
+        </div>
+
+        <!-- Image -->
+        <q-img
+          v-else
+          :src="applicantImageUrl || 'https://placehold.co/100'"
+          class="bg-grey-4"
+          style="width: 100px; height: 100px; border-radius: 10px"
+          alt="Applicant Photo"
+        />
       </div>
     </div>
     <div class="col">
@@ -312,11 +318,58 @@
   </div>
 </template>
 <script setup>
+  import { ref, watch, onUnmounted } from 'vue'; // ✅ add watch, onUnmounted
+  import { useEmployeeStore } from 'stores/employeeStore';
+  const employeeStore = useEmployeeStore();
   const props = defineProps({
     personal: {
       type: Object,
       required: true,
     },
+  });
+  const applicantImageUrl = ref('');
+  const imageLoading = ref(false);
+  // IMAGE LOADING FUNCTION
+  const loadEmployeeImage = async (controlno) => {
+    if (!controlno) {
+      applicantImageUrl.value = '';
+      return;
+    }
+
+    imageLoading.value = true;
+
+    try {
+      const blob = await employeeStore.getImageEmployeeInternal(controlno);
+
+      if (blob) {
+        if (applicantImageUrl.value?.startsWith('blob:')) {
+          URL.revokeObjectURL(applicantImageUrl.value);
+        }
+        applicantImageUrl.value = URL.createObjectURL(blob);
+      } else {
+        applicantImageUrl.value = '';
+      }
+    } catch (err) {
+      console.error('Failed to load image:', err);
+      applicantImageUrl.value = '';
+    } finally {
+      imageLoading.value = false;
+    }
+  };
+  // Watch ControlNo from props and trigger image load
+  watch(
+    () => props.personal?.ControlNo,
+    (controlno) => {
+      loadEmployeeImage(controlno);
+    },
+    { immediate: true }, // runs on mount too
+  );
+
+  //  Cleanup blob URL on unmount
+  onUnmounted(() => {
+    if (applicantImageUrl.value?.startsWith('blob:')) {
+      URL.revokeObjectURL(applicantImageUrl.value);
+    }
   });
 </script>
 <style scoped>

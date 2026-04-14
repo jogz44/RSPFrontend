@@ -1,10 +1,17 @@
 <template>
   <div class="row">
     <div class="col-3 flex justify-center items-center">
-      <img
+      <!-- <img
         :src="props.personal.image_url || 'https://placehold.co/140'"
         class="bg-grey-4"
         style="width: 140px; height: 140px; border-radius: 10px; object-fit: cover"
+        alt="Applicant Photo"
+      /> -->
+
+      <q-img
+        :src="applicantImageUrl || props.personal?.image_url || 'https://placehold.co/100'"
+        class="bg-grey-4 q-mb-md"
+        style="width: 100px; height: 100px; border-radius: 10px"
         alt="Applicant Photo"
       />
     </div>
@@ -301,7 +308,10 @@
 </template>
 
 <script setup>
-  import { computed } from 'vue';
+  import { computed, ref, watch, onUnmounted } from 'vue';
+  import { useAuthStore } from 'stores/authStore';
+
+  const authStore = useAuthStore();
 
   const props = defineProps({
     personal: {
@@ -351,20 +361,62 @@
     return isNaN(numWeight) ? weight : `${numWeight} kg`;
   };
 
-  // const getStatusColor = (status) => {
-  //   if (!status) return 'grey';
+  //image
+  const applicantImageUrl = ref('');
 
-  //   switch (status.toLowerCase()) {
-  //     case 'qualified':
-  //       return 'positive';
-  //     case 'pending':
-  //       return 'warning';
-  //     case 'disqualified':
-  //       return 'negative';
-  //     default:
-  //       return 'blue';
-  //   }
-  // };
+const loadApplicantImage = async (imageUrl) => {
+  if (!imageUrl) {
+    applicantImageUrl.value = '';
+    return;
+  }
+
+  if (imageUrl.includes('/storage/')) {
+    applicantImageUrl.value = imageUrl;
+    return;
+  }
+
+  try {
+        const token =
+      authStore.token ||
+      authStore.user?.token ||
+      localStorage.getItem('token');
+
+    const response = await fetch(imageUrl, {
+         headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'image/*',
+      },
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      // Revoke previous blob URL to avoid memory leaks
+      if (applicantImageUrl.value?.startsWith('blob:')) {
+        URL.revokeObjectURL(applicantImageUrl.value);
+      }
+      applicantImageUrl.value = URL.createObjectURL(blob);
+    } else {
+      applicantImageUrl.value = '';
+    }
+  } catch (err) {
+    console.error('Error loading proxy image:', err);
+    applicantImageUrl.value = '';
+  }
+};
+
+// ✅ Watch for the image URL and call the loader
+const imageSource = computed(() => props.personal?.image_url || props.personal?.photo || '');
+
+watch(imageSource, (newUrl) => {
+  loadApplicantImage(newUrl);
+}, { immediate: true }); // immediate: true handles the initial load too
+
+// ✅ Cleanup blob URL on unmount
+onUnmounted(() => {
+  if (applicantImageUrl.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(applicantImageUrl.value);
+  }
+});
 </script>
 
 <style scoped>

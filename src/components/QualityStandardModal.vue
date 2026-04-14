@@ -26,12 +26,34 @@
           <!-- Left Card (Applicant Info) -->
           <q-card class="col-2 q-mr-md">
             <q-card-section class="column justify-between items-center q-pa-md">
-              <q-img
+              <!-- <q-img
                 :src="applicantData?.Pics || 'https://placehold.co/100'"
                 class="bg-grey-4 q-mb-md"
                 style="width: 100px; height: 100px; border-radius: 10px"
                 alt="Applicant Photo"
-              />
+              /> -->
+              <div
+                style="width: 100px; height: 100px; border-radius: 10px"
+                class="q-mb-md relative-position"
+              >
+                <!-- Loading State -->
+                <div
+                  v-if="imageLoading"
+                  class="bg-grey-3 flex flex-center"
+                  style="width: 100px; height: 100px; border-radius: 10px"
+                >
+                  <q-spinner-dots color="primary" size="30px" />
+                </div>
+
+                <!-- Image -->
+                <q-img
+                  v-else
+                  :src="applicantImageUrl || 'https://placehold.co/100'"
+                  class="bg-grey-4"
+                  style="width: 100px; height: 100px; border-radius: 10px"
+                  alt="Applicant Photo"
+                />
+              </div>
               <div class="text-body text-bold text-center q-mb-xs">
                 {{ applicantData?.name || 'John Doe' }}
               </div>
@@ -374,13 +396,45 @@
   import { ref, computed, watch } from 'vue';
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { usexPDS } from 'stores/xUserPDS';
+  import { useEmployeeStore } from 'stores/employeeStore';
 
   const xPDS = usexPDS();
+  const employeeStore = useEmployeeStore();
 
   const xEdu = ref([]);
   const xEligibility = ref([]);
   const xExperience = ref([]);
   const xTraining = ref([]);
+  const applicantImageUrl = ref('');
+  const imageLoading = ref(false);
+
+  // IMAGE LOADING FUNCTION
+  const loadEmployeeImage = async (controlno) => {
+    if (!controlno) {
+      applicantImageUrl.value = '';
+      return;
+    }
+
+    imageLoading.value = true; // Start loading
+
+    try {
+      const blob = await employeeStore.getImageEmployeeInternal(controlno);
+
+      if (blob) {
+        if (applicantImageUrl.value?.startsWith('blob:')) {
+          URL.revokeObjectURL(applicantImageUrl.value);
+        }
+        applicantImageUrl.value = URL.createObjectURL(blob);
+      } else {
+        applicantImageUrl.value = '';
+      }
+    } catch (err) {
+      console.error('Failed to load image:', err);
+      applicantImageUrl.value = '';
+    } finally {
+      imageLoading.value = false; //  Stop loading (always runs)
+    }
+  };
 
   const xEduCol = [
     {
@@ -707,9 +761,17 @@
       xExperience.value = xPDS.xPDS.Experience;
       xTraining.value = xPDS.xPDS.Training;
     }
+
+    // Actually call it!
+    await loadEmployeeImage(props.applicantData?.controlno);
   };
 
   const onClose = () => {
+    if (applicantImageUrl.value?.startsWith('blob:')) {
+      URL.revokeObjectURL(applicantImageUrl.value);
+    }
+    applicantImageUrl.value = '';
+    imageLoading.value = false; // Reset on close
     emit('close');
     positionQS.value = [];
     xEdu.value = [];
