@@ -7,6 +7,8 @@ export const use_rater_store = defineStore('rater', () => {
   const assignedJobs = ref([]);
   const loading = ref(false);
   const error = ref(null);
+
+  // cached criteria/applicants for last fetched job
   const criteria_applicant = ref({
     criteria: [],
     applicants: [],
@@ -151,6 +153,11 @@ export const use_rater_store = defineStore('rater', () => {
     }
   };
 
+  /**
+   * Fetch criteria + applicants for a job batch.
+   * IMPORTANT: return the API data (includes `status: true/false`)
+   * so components can reliably check `result.status`.
+   */
   const fetch_criteria_applicant = async (id) => {
     loading.value = true;
     error.value = null;
@@ -162,7 +169,6 @@ export const use_rater_store = defineStore('rater', () => {
 
     try {
       const token = LocalStorage.getItem('rater_token');
-
       if (!token) throw new Error('No authentication token found');
 
       console.log(`Fetching data for job ID: ${id}`);
@@ -173,7 +179,7 @@ export const use_rater_store = defineStore('rater', () => {
 
       console.log('API Response for job', id, ':', data);
 
-      if (data.status) {
+      if (data?.status) {
         criteria_applicant.value = {
           criteria: data.criteria || [],
           applicants: data.applicants || [],
@@ -189,7 +195,13 @@ export const use_rater_store = defineStore('rater', () => {
         criteria_applicant.value = { criteria: [], applicants: [] };
       }
 
-      return criteria_applicant.value;
+      // ✅ Return the real API payload (includes status/message)
+      return {
+        status: !!data?.status,
+        message: data?.message,
+        criteria: data?.criteria || [],
+        applicants: data?.applicants || [],
+      };
     } catch (err) {
       error.value = err.response?.data?.message || err.message;
       console.error(`Failed to fetch criteria and applicants for job ${id}:`, err);

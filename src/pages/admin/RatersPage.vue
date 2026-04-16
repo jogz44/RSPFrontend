@@ -162,70 +162,70 @@
             <template v-slot:avatar>
               <q-icon name="error" color="negative" />
             </template>
-            Please fill in all required fields: Positions, Office,
-            {{ !isEditMode ? 'Rater, ' : '' }}Representation, and Role are all required.
+            Please fill in all required fields: Office, {{ !isEditMode ? 'Rater, ' : '' }}and Role
+            are required.
           </q-banner>
 
-          <!-- Select Positions -->
-       <!-- Select Positions -->
-<div class="q-mb-md">
-  <div class="text-subtitle2 text-weight-medium">
-    Select Job Positions to Rate
-    <span class="text-negative">*</span>
-  </div>
-  <q-select
-    ref="positionSelect"
-    v-model="selectedPositions"
-    multiple
-    :options="positionsWithAllOption"
-    option-value="id"
-    option-label="name"
-    label="Select one or more positions"
-    outlined
-    dense
-    use-chips
-    emit-value
-    map-options
-    @update:model-value="handlePositionSelection"
-    @before-show="snapshotPositions"
-  >
-    <template v-slot:option="scope">
-      <q-item v-bind="scope.itemProps">
-        <q-item-section>
-          <q-item-label>{{ scope.opt.name }}</q-item-label>
-        </q-item-section>
-        <q-item-section side>
-          <q-checkbox
-            :model-value="isPositionSelected(scope.opt.id)"
-            @update:model-value="(val) => togglePosition(scope.opt.id, val)"
-            @click.stop
-          />
-        </q-item-section>
-      </q-item>
-    </template>
+          <!-- Select Positions (OPTIONAL + null-safe) -->
+          <div class="q-mb-md">
+            <div class="text-subtitle2 text-weight-medium">
+              Select Job Positions to Rate
+              <span class="text-grey-7 text-caption">(optional)</span>
+            </div>
+            <q-select
+              ref="positionSelect"
+              v-model="selectedPositions"
+              multiple
+              :options="positionsWithAllOption"
+              option-value="id"
+              option-label="name"
+              label="Select one or more positions (optional)"
+              outlined
+              dense
+              use-chips
+              emit-value
+              map-options
+              clearable
+              @update:model-value="handlePositionSelection"
+              @before-show="snapshotPositions"
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.name }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-checkbox
+                      :model-value="isPositionSelected(scope.opt.id)"
+                      @update:model-value="(val) => togglePosition(scope.opt.id, val)"
+                      @click.stop
+                    />
+                  </q-item-section>
+                </q-item>
+              </template>
 
-      <template v-slot:after-options>
-      <div class="q-pa-sm row q-gutter-sm">
-        <q-btn
-          label="Cancel"
-          color="negative"
-          outlined
-          dense
-          class="col"
-          @click.stop="cancelPositionSelect"
-        />
-        <q-btn
-          label="Confirm"
-          color="primary"
-          unelevated
-          dense
-          class="col"
-          @click.stop="closePositionSelect"
-        />
-      </div>
-    </template>
-      </q-select>
-    </div>
+              <template v-slot:after-options>
+                <div class="q-pa-sm row q-gutter-sm">
+                  <q-btn
+                    label="Cancel"
+                    color="negative"
+                    outlined
+                    dense
+                    class="col"
+                    @click.stop="cancelPositionSelect"
+                  />
+                  <q-btn
+                    label="Confirm"
+                    color="primary"
+                    unelevated
+                    dense
+                    class="col"
+                    @click.stop="closePositionSelect"
+                  />
+                </div>
+              </template>
+            </q-select>
+          </div>
 
           <!-- ==================== ADD MODE ==================== -->
           <template v-if="!isEditMode">
@@ -285,25 +285,20 @@
                     </q-item-section>
                   </q-item>
                 </template>
-                       <template v-slot:after-options>
+              </q-select>
+            </div>
 
-            </template>
-                  </q-select>
-                </div>
-
-            <!-- Representation (Add Mode) -->
+            <!-- Representation (OPTIONAL) -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Representation
-                <span class="text-negative">*</span>
+                <span class="text-grey-7 text-caption">(optional)</span>
               </div>
               <q-input
                 v-model="representative"
-                label="Enter representation"
+                label="Enter representation (optional)"
                 outlined
                 dense
-                :error="showError && !representative"
-                error-message="Representation is required"
               >
                 <template v-slot:prepend>
                   <q-icon name="badge" />
@@ -311,7 +306,7 @@
               </q-input>
             </div>
 
-            <!-- Role (Add Mode) -->
+            <!-- Role -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Role
@@ -372,9 +367,6 @@
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
-                      <template v-slot:after-options>
-           
-              </template>
               </q-select>
             </div>
 
@@ -407,20 +399,17 @@
               </div>
             </div>
 
-            <!-- Representation (Edit Mode) -->
+            <!-- Representation (OPTIONAL) -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Representation
-                <span class="text-negative">*</span>
+                <span class="text-grey-7 text-caption">(optional)</span>
               </div>
               <q-input
                 v-model="representative"
-
-                label="Enter representation"
+                label="Enter representation (optional)"
                 outlined
                 dense
-                :error="showError && !representative"
-                error-message="Representation is required"
               >
                 <template v-slot:prepend>
                   <q-icon name="badge" />
@@ -562,19 +551,16 @@
         </q-card-section>
 
         <q-card-section class="q-pa-md q-mx-md scrollable-content">
-          <!-- Loading state -->
           <div v-if="isLoadingJobs" class="flex flex-center q-py-xl">
             <q-spinner size="50px" color="primary" />
             <div class="q-ml-md">Loading assigned jobs...</div>
           </div>
 
-          <!-- Error state -->
           <div v-else-if="jobLoadError" class="flex flex-center q-py-xl">
             <q-icon name="error" size="40px" color="negative" />
             <div class="q-ml-md text-negative">{{ jobLoadError }}</div>
           </div>
 
-          <!-- Jobs table -->
           <q-table
             v-else
             flat
@@ -737,13 +723,12 @@
   const raterToDelete = ref(null);
 
   // ==================== FORM STATE ====================
-  const selectedPositions = ref([]);
-  const selectedRater = ref(null);
-  const selectedOffice = ref('');
+  const selectedPositions = ref([]); // OPTIONAL (must always be array, never null)
+  const selectedRater = ref(null); // REQUIRED in add mode
+  const selectedOffice = ref(''); // REQUIRED
   const activeStatus = ref(true);
-  // FIX: renamed from 'representation' to 'representative' to match API field name
-  const representative = ref('');
-  const selectedRole = ref(null);
+  const representative = ref(''); // OPTIONAL
+  const selectedRole = ref(null); // REQUIRED
 
   // ==================== ROLE OPTIONS ====================
   const roleOptions = [
@@ -759,26 +744,27 @@
   const isLoadingRaters = ref(false);
 
   // ==================== btn select job post  ====================
-const positionSelect = ref(null); // ← ref to control the dropdown
+  const positionSelect = ref(null);
 
-const closePositionSelect = async () => {
-  await nextTick()
-  if (positionSelect.value) {
-    positionSelect.value.hidePopup?.() // try hidePopup first
-    ?? positionSelect.value.hide?.()   // fallback to hide
-  }
-}
-const positionSnapshot = ref([])
+  const closePositionSelect = async () => {
+    await nextTick();
+    if (positionSelect.value) {
+      positionSelect.value.hidePopup?.() ?? positionSelect.value.hide?.();
+    }
+  };
 
-const snapshotPositions = () => {
-  positionSnapshot.value = [...selectedPositions.value]
-}
+  const positionSnapshot = ref([]);
 
-const cancelPositionSelect = () => {
-  selectedPositions.value = [...positionSnapshot.value] // restore previous
-  positionSelect.value?.hidePopup()
-}
+  const snapshotPositions = () => {
+    positionSnapshot.value = Array.isArray(selectedPositions.value)
+      ? [...selectedPositions.value]
+      : [];
+  };
 
+  const cancelPositionSelect = () => {
+    selectedPositions.value = [...positionSnapshot.value];
+    positionSelect.value?.hidePopup();
+  };
 
   // ==================== COLUMNS ====================
   const columns = [
@@ -831,20 +817,8 @@ const cancelPositionSelect = () => {
   ];
 
   const jobColumns = [
-    {
-      name: 'position',
-      label: 'Position',
-      field: 'Position',
-      align: 'left',
-      style: 'width: 35%',
-    },
-    {
-      name: 'office',
-      label: 'Office',
-      field: 'Office',
-      align: 'left',
-      style: 'width: 40%',
-    },
+    { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 35%' },
+    { name: 'office', label: 'Office', field: 'Office', align: 'left', style: 'width: 40%' },
     {
       name: 'applicant',
       label: 'Applicants',
@@ -852,13 +826,7 @@ const cancelPositionSelect = () => {
       align: 'center',
       style: 'width: 10%',
     },
-    {
-      name: 'status',
-      label: 'Status',
-      field: 'status',
-      align: 'center',
-      style: 'width: 15%',
-    },
+    { name: 'status', label: 'Status', field: 'status', align: 'center', style: 'width: 15%' },
   ];
 
   // ==================== COMPUTED ====================
@@ -910,43 +878,40 @@ const cancelPositionSelect = () => {
   });
 
   const totalApplicants = computed(() => {
-    return raterJobs.value.reduce((total, job) => {
-      return total + parseInt(job.applicant || 0);
-    }, 0);
+    return raterJobs.value.reduce((total, job) => total + parseInt(job.applicant || 0), 0);
   });
 
-  // ==================== POSITION SELECTION METHODS ====================
+  // ==================== POSITION SELECTION METHODS (NULL SAFE) ====================
 
   const isPositionSelected = (id) => {
+    const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
     if (id === 'all') {
       return (
         positions.value.length > 0 &&
-        selectedPositions.value.filter((p) => p !== 'all').length === positions.value.length
+        current.filter((p) => p !== 'all').length === positions.value.length
       );
     }
-    return selectedPositions.value.includes(id);
+    return current.includes(id);
   };
 
   const togglePosition = (id, checked) => {
+    const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
     if (id === 'all') {
-      if (checked) {
-        selectedPositions.value = positions.value.map((p) => p.id);
-      } else {
-        selectedPositions.value = [];
-      }
+      selectedPositions.value = checked ? positions.value.map((p) => p.id) : [];
       return;
     }
+
     if (checked) {
-      if (!selectedPositions.value.includes(id)) {
-        selectedPositions.value = [...selectedPositions.value, id];
-      }
+      if (!current.includes(id)) selectedPositions.value = [...current, id];
     } else {
-      selectedPositions.value = selectedPositions.value.filter((item) => item !== id);
+      selectedPositions.value = current.filter((item) => item !== id);
     }
   };
 
   const handlePositionSelection = (newSelection) => {
-    const filtered = newSelection.filter((id) => id !== 'all');
+    // Quasar can emit null when clearable -> make it always an array
+    const safeSelection = Array.isArray(newSelection) ? newSelection : [];
+    const filtered = safeSelection.filter((id) => id !== 'all');
     selectedPositions.value = [...new Set(filtered)];
   };
 
@@ -1006,7 +971,7 @@ const cancelPositionSelect = () => {
   // ==================== FORM HELPERS ====================
 
   const resetForm = () => {
-    selectedPositions.value = [];
+    selectedPositions.value = []; // important: never null
     selectedRater.value = null;
     selectedOffice.value = '';
     filteredRatersByOffice.value = [];
@@ -1017,28 +982,20 @@ const cancelPositionSelect = () => {
     currentOfficeRaters.value = [];
     showError.value = false;
     activeStatus.value = true;
-    // FIX: reset 'representative' (not 'representation')
     representative.value = '';
     selectedRole.value = null;
   };
-
-  // const closeModal = () => {
-  //   showModal.value = false;
-  //   resetForm();
-  //   isEditMode.value = false;
-  // };
 
   const closeModal = () => {
     showModal.value = false;
     resetForm();
     isEditMode.value = false;
 
-    // ✅ Restore full positions list from jobPosts
     positions.value = jobPostStore.jobPosts.map((post) => ({
-        id: post.id,
-        name: post.Position,
+      id: post.id,
+      name: post.Position,
     }));
-};
+  };
 
   const showAddModal = () => {
     isEditMode.value = false;
@@ -1056,7 +1013,6 @@ const cancelPositionSelect = () => {
       position: rater.Position || 'N/A',
       office: rater.office,
       status: rater.status,
-      // FIX: check both 'representative' and 'representation' from API response
       representative: rater.representative || rater.representation || '',
       role: rater.role || '',
     };
@@ -1108,111 +1064,42 @@ const cancelPositionSelect = () => {
 
   // ==================== EDIT RATER ====================
 
-  // const editRater = async (rater) => {
-  //     // console.log('rater data:', rater); // ← check what fields exist
-  //   try {
-
-  //     isEditMode.value = true;
-  //     currentRaterId.value = rater.id;
-  //     currentRaterName.value = rater.name;
-  //     activeStatus.value = !!rater.active;
-
-  //     // FIX: check both 'representative' and 'representation' from API response
-  //     representative.value = rater.representative || rater.representation || '';
-  //     selectedRole.value =  rater.role_type || '';
-
-  //     if (
-  //       !offices.value.length &&
-  //       Array.isArray(plantillaStore.office) &&
-  //       plantillaStore.office.length
-  //     ) {
-  //       const names = Array.from(
-  //         new Set(
-  //           plantillaStore.office
-  //             .map((row) =>
-  //               typeof row === 'string' ? row.id : row?.Office || row?.office || row?.name,
-  //             )
-  //             .filter(Boolean),
-  //         ),
-  //       );
-  //       offices.value = names.map((n) => ({ label: n, value: n }));
-  //     }
-
-  //     selectedOffice.value = rater.office || '';
-
-  //     if (selectedOffice.value) {
-  //       await fetchEmployeesByOffice(selectedOffice.value);
-  //       currentOfficeRaters.value = officeRatersRaw.value;
-  //     }
-
-
-  //     selectedPositions.value = [];
-
-  //     const jobBatchesArray = Array.isArray(rater.job_batches_rsp) ? rater.job_batches_rsp : [];
-
-  //     const matchedIds = [];
-  //     jobBatchesArray.forEach((jobBatch) => {
-  //       const id = jobBatch.id;
-  //       if (id && !matchedIds.includes(id)) {
-  //         matchedIds.push(id);
-  //       }
-  //     });
-
-  //     selectedPositions.value = matchedIds;
-  //     showModal.value = true;
-  //   } catch (error) {
-  //     console.error('Error setting up edit mode:', error);
-  //     toast.error('Failed to prepare edit form');
-  //   }
-  // };
-const editRater = async (rater) => {
-      console.log('Store object:', jobPostStore);
-    console.log('Available keys:', Object.keys(jobPostStore));
+  const editRater = async (rater) => {
     try {
-        isEditMode.value = true;
-        currentRaterId.value = rater.id;
-        currentRaterName.value = rater.name;
-        activeStatus.value = !!rater.active;
-        representative.value = rater.representative || rater.representation || '';
-        selectedRole.value = rater.role_type || rater.role || '';
-        selectedOffice.value = rater.office || '';
+      isEditMode.value = true;
+      currentRaterId.value = rater.id;
+      currentRaterName.value = rater.name;
+      activeStatus.value = !!rater.active;
+      representative.value = rater.representative || rater.representation || '';
+      selectedRole.value = rater.role_type || rater.role || '';
+      selectedOffice.value = rater.office || '';
 
-        if (selectedOffice.value) {
-            await fetchEmployeesByOffice(selectedOffice.value);
-            currentOfficeRaters.value = officeRatersRaw.value;
-        }
+      if (selectedOffice.value) {
+        await fetchEmployeesByOffice(selectedOffice.value);
+        currentOfficeRaters.value = officeRatersRaw.value;
+      }
 
-        // ✅ Fetch job post list filtered for this rater
-        await jobPostStore.fetchJobPostListEdit(rater.id);
+      await jobPostStore.fetchJobPostListEdit(rater.id);
 
-        // ✅ Replace positions with the fetched list
-        positions.value = jobPostStore.jobPostListEdit.map((post) => ({
-            id: post.id,
-            name: post.Position,
-        }));
+      positions.value = (jobPostStore.jobPostListEdit || []).map((post) => ({
+        id: post.id,
+        name: post.Position,
+      }));
 
-        // ✅ Pre-select jobs already assigned to this rater
-        const jobBatchesArray = Array.isArray(rater.job_batches_rsp) ? rater.job_batches_rsp : [];
-        selectedPositions.value = jobBatchesArray
-            .map((job) => job.id)
-            .filter(Boolean);
+      const jobBatchesArray = Array.isArray(rater.job_batches_rsp) ? rater.job_batches_rsp : [];
+      selectedPositions.value = jobBatchesArray.map((job) => job.id).filter(Boolean);
 
-        showModal.value = true;
+      showModal.value = true;
     } catch (error) {
-        console.error('Error setting up edit mode:', error);
-        toast.error('Failed to prepare edit form');
+      console.error('Error setting up edit mode:', error);
+      toast.error('Failed to prepare edit form');
     }
-};
-  // ==================== UPDATE RATER ====================
+  };
+
+  // ==================== UPDATE RATER (NULL SAFE) ====================
 
   const updateRater = async () => {
-    // FIX: added !representative.value and !selectedRole.value to validation
-    if (
-      selectedPositions.value.length === 0 ||
-      !selectedOffice.value ||
-      !representative.value ||
-      !selectedRole.value
-    ) {
+    if (!selectedOffice.value || !selectedRole.value) {
       showError.value = true;
       return;
     }
@@ -1224,12 +1111,13 @@ const editRater = async (rater) => {
       const raterId = currentRaterId.value;
       if (!raterId) throw new Error('No rater selected for editing');
 
+      const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
+
       const userData = {
-        job_batches_rsp_id: selectedPositions.value.filter((id) => id !== 'all'),
+        job_batches_rsp_id: safePositions.filter((id) => id !== 'all'),
         Office: selectedOffice.value,
         active: activeStatus.value,
-        // FIX: key is 'representative' (not 'representation') to match API
-        representative: representative.value,
+        representative: representative.value || null,
         role: selectedRole.value,
       };
 
@@ -1250,17 +1138,10 @@ const editRater = async (rater) => {
     }
   };
 
-  // ==================== ADD RATER ====================
+  // ==================== ADD RATER (NULL SAFE) ====================
 
   const addRater = async () => {
-    // FIX: added !representative.value and !selectedRole.value to validation
-    if (
-      selectedPositions.value.length === 0 ||
-      !selectedOffice.value ||
-      !selectedRater.value ||
-      !representative.value ||
-      !selectedRole.value
-    ) {
+    if (!selectedOffice.value || !selectedRater.value || !selectedRole.value) {
       showError.value = true;
       return;
     }
@@ -1272,7 +1153,8 @@ const editRater = async (rater) => {
       const raterData = officeRatersRaw.value.find((r) => r.id === selectedRater.value);
       if (!raterData) throw new Error('Rater data not found');
 
-      const jobBatchIds = selectedPositions.value.filter((id) => id !== 'all');
+      const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
+      const jobBatchIds = safePositions.filter((id) => id !== 'all');
 
       const userData = {
         name: raterData.name,
@@ -1282,8 +1164,7 @@ const editRater = async (rater) => {
         job_batches_rsp_id: jobBatchIds,
         Office: selectedOffice.value,
         active: activeStatus.value,
-        // FIX: key is 'representative' (not 'representation') to match API
-        representative: representative.value,
+        representative: representative.value || null,
         role: selectedRole.value,
       };
 
@@ -1344,7 +1225,10 @@ const editRater = async (rater) => {
       isLoadingTable.value = false;
     }
 
-    positions.value = jobPostStore.jobPosts.map((post) => ({ id: post.id, name: post.Position }));
+    positions.value = (jobPostStore.jobPosts || []).map((post) => ({
+      id: post.id,
+      name: post.Position,
+    }));
 
     if (Array.isArray(plantillaStore.office) && plantillaStore.office.length > 0) {
       const names = Array.from(

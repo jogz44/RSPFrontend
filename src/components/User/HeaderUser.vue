@@ -65,7 +65,7 @@
         </q-item-section>
       </q-item>
 
-      <q-separator class="q-my-sm" />
+      <!-- <q-separator class="q-my-sm" />
 
       <q-item
         clickable
@@ -93,7 +93,7 @@
         <q-item-section>
           <q-item-label>Rater</q-item-label>
         </q-item-section>
-      </q-item>
+      </q-item> -->
     </q-list>
   </q-drawer>
 </template>
@@ -119,7 +119,7 @@
     return 'width: 50px; height: 50px';
   });
 
-  // Update tab when route changes
+  // Update tab when route changesx
   watch(
     () => route.name,
     (newRouteName) => {

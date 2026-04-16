@@ -253,7 +253,47 @@
             </q-card-section>
           </q-card>
 
-          <div class="row q-col-gutter-md">
+          <!-- From Date Input (dd/mm/yyyy UI, calendar popup) -->
+          <q-card flat bordered class="q-mb-md">
+            <q-card-section class="bg-grey-1">
+              <div class="row items-center q-col-gutter-md">
+                <div class="col-12">
+                  <div class="text-subtitle2 text-grey-7 q-mb-sm">From Date</div>
+                </div>
+
+                <div class="col-12">
+                  <q-input
+                    v-model="fromDateDisplay"
+                    dense
+                    outlined
+                    mask="##/##/####"
+                    placeholder="dd/mm/yyyy"
+                    hint="Format: dd/mm/yyyy"
+                    :error="!!fromDateError"
+                    :error-message="fromDateError"
+                  >
+                    <template v-slot:append>
+                      <q-icon name="event" class="cursor-pointer">
+                        <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                          <q-date
+                            v-model="fromDateDisplay"
+                            mask="DD/MM/YYYY"
+                            @update:model-value="() => validateFromDate()"
+                          >
+                            <div class="row items-center justify-end q-gutter-sm q-pa-sm">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-icon>
+                    </template>
+                  </q-input>
+                </div>
+              </div>
+            </q-card-section>
+          </q-card>
+
+          <div class="row q-col-gutter-md q-ml-xs">
             <div class="col-8">
               <div class="detail-item">
                 <q-icon name="business" class="q-mr-xs text-primary" />
@@ -328,6 +368,7 @@
             icon="check"
             @click="confirmHireApplicant"
             :loading="hiringLoading"
+            :disable="!isFromDateValid"
             unelevated
           />
         </q-card-actions>
@@ -361,6 +402,11 @@
       const hiringLoading = ref(false);
       const hireConfirmationDialog = ref(false);
       const dataLoading = ref(false);
+
+      // UI value (dd/mm/yyyy)
+      const fromDateDisplay = ref('');
+      const fromDateError = ref('');
+
       const criteriaWeights = ref({
         education: 0,
         experience: 0,
@@ -373,6 +419,67 @@
 
       const jobPostStore = useJobPostStore();
       const authStore = useAuthStore();
+
+      // --- helpers: dd/mm/yyyy -> yyyy-mm-dd ---
+      const toYmd = (ddmmyyyy) => {
+        const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((ddmmyyyy || '').trim());
+        if (!m) return null;
+        const dd = m[1];
+        const mm = m[2];
+        const yyyy = m[3];
+        return `${yyyy}-${mm}-${dd}`;
+      };
+
+      const validateFromDate = () => {
+        const val = (fromDateDisplay.value || '').trim();
+
+        if (!val) {
+          fromDateError.value = 'From date is required';
+          return false;
+        }
+
+        const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(val);
+        if (!match) {
+          fromDateError.value = 'Invalid format. Use dd/mm/yyyy';
+          return false;
+        }
+
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const year = parseInt(match[3], 10);
+
+        if (month < 1 || month > 12) {
+          fromDateError.value = 'Invalid month';
+          return false;
+        }
+
+        if (year < 1900 || year > 2100) {
+          fromDateError.value = 'Invalid year';
+          return false;
+        }
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+        if (day < 1 || day > daysInMonth) {
+          fromDateError.value = 'Invalid day';
+          return false;
+        }
+
+        fromDateError.value = '';
+        return true;
+      };
+
+      const isFromDateValid = computed(() => {
+        const val = (fromDateDisplay.value || '').trim();
+        return /^(\d{2})\/(\d{2})\/(\d{4})$/.test(val) && !fromDateError.value;
+      });
+
+      watch(fromDateDisplay, () => {
+        if (!fromDateDisplay.value) {
+          fromDateError.value = '';
+          return;
+        }
+        validateFromDate();
+      });
 
       const applicantLookupKey = computed(() => {
         const nPersonal = props.applicant?.nPersonalInfo_id;
@@ -496,12 +603,7 @@
       const dynamicColumns = computed(() => {
         const columns = [];
 
-        columns.push({
-          name: 'rater',
-          label: 'Rater',
-          field: 'rater_name',
-          align: 'left',
-        });
+        columns.push({ name: 'rater', label: 'Rater', field: 'rater_name', align: 'left' });
 
         if (criteriaWeights.value.education > 0) {
           columns.push({
@@ -540,20 +642,10 @@
         }
 
         if (hasBei.value) {
-          columns.push({
-            name: 'bei',
-            label: 'BEI',
-            field: 'bei',
-            align: 'center',
-          });
+          columns.push({ name: 'bei', label: 'BEI', field: 'bei', align: 'center' });
         }
 
-        columns.push({
-          name: 'totalQs',
-          label: 'Total QS',
-          field: 'total_qs',
-          align: 'center',
-        });
+        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
 
         if (hasExamScore.value && criteriaWeights.value.exam > 0) {
           columns.push({
@@ -564,13 +656,7 @@
           });
         }
 
-        columns.push({
-          name: 'rank',
-          label: 'Rank',
-          field: 'ranking',
-          align: 'center',
-        });
-
+        columns.push({ name: 'rank', label: 'Rank', field: 'ranking', align: 'center' });
         columns.push({
           name: 'grandTotal',
           label: 'Grand Total',
@@ -621,20 +707,10 @@
         }
 
         if (hasBei.value) {
-          columns.push({
-            name: 'bei',
-            label: 'BEI',
-            field: 'bei',
-            align: 'center',
-          });
+          columns.push({ name: 'bei', label: 'BEI', field: 'bei', align: 'center' });
         }
 
-        columns.push({
-          name: 'totalQs',
-          label: 'Total QS',
-          field: 'total_qs',
-          align: 'center',
-        });
+        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
 
         if (hasExamScore.value && criteriaWeights.value.exam > 0) {
           columns.push({
@@ -645,13 +721,7 @@
           });
         }
 
-        columns.push({
-          name: 'rank',
-          label: 'Final Rank',
-          field: 'rank',
-          align: 'center',
-        });
-
+        columns.push({ name: 'rank', label: 'Final Rank', field: 'rank', align: 'center' });
         columns.push({
           name: 'grandTotal',
           label: 'Final Total',
@@ -674,6 +744,10 @@
         hiringLoading.value = false;
         hireConfirmationDialog.value = false;
         dataLoading.value = false;
+
+        fromDateDisplay.value = '';
+        fromDateError.value = '';
+
         emit('close');
       };
 
@@ -691,6 +765,7 @@
 
       const showHireConfirmation = () => {
         if (!isJobOccupied.value && canModifyJobPost.value) {
+          fromDateError.value = '';
           hireConfirmationDialog.value = true;
         }
       };
@@ -701,6 +776,10 @@
           return;
         }
 
+        if (!validateFromDate()) {
+          return;
+        }
+
         const submissionId = finalScores.value?.submission_id || props.applicant?.submission_id;
 
         if (!submissionId) {
@@ -708,10 +787,20 @@
           return;
         }
 
+        const fromDate = toYmd(fromDateDisplay.value);
+        if (!fromDate) {
+          toast.error('Invalid date. Please use dd/mm/yyyy.');
+          return;
+        }
+
         try {
           hiringLoading.value = true;
 
-          const payload = { submission_id: submissionId };
+          // ✅ backend expects fromDate: Y-m-d
+          const payload = {
+            submission_id: submissionId,
+            fromDate,
+          };
 
           const response = await jobPostStore.hiredApplicant(submissionId, payload);
 
@@ -852,6 +941,12 @@
         confirmHireApplicant,
         canModifyJobPost,
         dataLoading,
+
+        // fromDate UI + validation
+        fromDateDisplay,
+        fromDateError,
+        validateFromDate,
+        isFromDateValid,
       };
     },
   };
@@ -931,21 +1026,6 @@
   .footer-actions {
     flex: 0 0 auto;
     border-top: 1px solid #eee;
-  }
-
-  .control-badge {
-    font-size: 9px;
-  }
-
-  .hire-note {
-    display: flex;
-    align-items: center;
-    font-size: 12px;
-  }
-
-  .hire-btn {
-    font-weight: 500;
-    padding: 8px 16px;
   }
 
   .detail-item {

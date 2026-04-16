@@ -46,11 +46,10 @@
     <!-- ── Main Table ────────────────────────────────────────────────── -->
     <div class="table-scroll-wrapper">
       <q-table
-        :rows="rows"
+        :rows="filteredScores"
         :columns="columns"
         row-key="submission_id"
         v-model:pagination="pagination"
-        @request="onRequest"
         :rows-per-page-options="[10, 20, 50, 100, 200]"
         flat
         wrap-cells
@@ -163,12 +162,6 @@
           <div v-if="step === 1" class="q-pa-md">
             <div class="row q-col-gutter-md q-mb-md items-end">
               <div class="col-12 col-sm-6">
-                <!--
-                  FIX: emit-value + map-options so v-model holds the raw string (not an object).
-                       @filter does a fast client-side search over allPositionOptions.
-                       @update:model-value fires the API fetch with the selected string.
-                       @clear resets and re-fetches without a position filter.
-                -->
                 <q-select
                   v-model="selectedPosition"
                   :options="positionOptionsData"
@@ -181,8 +174,6 @@
                   emit-value
                   map-options
                   @filter="filterPositions"
-                  @update:model-value="onPositionChange"
-                  @clear="onPositionClear"
                 >
                   <template #prepend><q-icon name="work" /></template>
                   <template #no-option>
@@ -199,8 +190,6 @@
                   dense
                   clearable
                   placeholder="Search applicant..."
-                  @update:model-value="fetchNoScoreWithFilters"
-                  @clear="onApplicantSearchClear"
                 >
                   <template #prepend><q-icon name="search" color="primary" /></template>
                 </q-input>
@@ -209,14 +198,13 @@
 
             <div class="table-scroll-wrapper">
               <q-table
-                :rows="store.noScoreApplicants"
+                :rows="filteredNoScoreApplicants"
                 :columns="applicantColumns"
                 row-key="submission_id"
                 selection="multiple"
                 v-model:selected="selectedApplicants"
                 v-model:pagination="noScorePagination"
                 :loading="store.loading"
-                @request="onModalRequest"
                 flat
                 wrap-cells
               >
@@ -589,6 +577,9 @@
       </q-card>
     </q-dialog>
 
+    <!-- ================================================================
+         EDIT DIALOG
+         ================================================================ -->
     <q-dialog
       v-model="editDetailDialog"
       persistent
@@ -704,7 +695,6 @@
                     (v) => v <= editForm.exam_total_score || 'Cannot exceed total',
                   ]"
                 />
-                <!-- Dynamic passing badge -->
                 <q-badge
                   class="q-mt-sm"
                   :color="passingStatus.color"
@@ -819,31 +809,19 @@
           { label: 'Interview', value: 'interview' },
         ],
 
-        // With emit-value + map-options, selectedPosition is always a plain string (or null).
         selectedPosition: null,
         applicantSearch: '',
         selectedApplicants: [],
 
-        // Full de-duplicated position list loaded once when the dialog opens.
-        // Client-side filtering slices this — no extra round-trips needed.
         allPositionOptions: [],
-        // The subset shown in the dropdown after the user types.
         positionOptionsData: [],
 
         noScorePagination: {
-          sortBy: null,
-          descending: false,
           page: 1,
           rowsPerPage: 10,
-          rowsNumber: 0,
         },
-        noScoreSearchTimeout: null,
 
-        // Committed scores — plain object so Vue tracks changes reactively.
-        // key: String(submission_id), value: number | null
         modalScores: {},
-        // Draft values bound directly to the q-input fields via v-model.
-        // key: submission_id (number/string), value: number | null | ''
         draftScores: {},
       };
     },
@@ -857,6 +835,43 @@
         if (pct >= 75) return { color: 'positive', label: `Passing (${pct.toFixed(1)}%)` };
         return { color: 'negative', label: `Failing (${pct.toFixed(1)}%)` };
       },
+
+      filteredScores() {
+        const search = (this.globalSearch || '').toLowerCase().trim();
+        const position = (this.mainPositionFilter?.value || this.mainPositionFilter || '')
+          .toLowerCase()
+          .trim();
+
+        return (this.store.scores || []).filter((s) => {
+          const matchesPosition = !position || (s.position || '').toLowerCase().includes(position);
+
+          const matchesSearch =
+            !search ||
+            [s.firstname, s.lastname, s.position, s.exam_type, s.status]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(search));
+
+          return matchesPosition && matchesSearch;
+        });
+      },
+
+      filteredNoScoreApplicants() {
+        const search = (this.applicantSearch || '').toLowerCase().trim();
+        const position = (this.selectedPosition || '').toLowerCase().trim();
+
+        return (this.store.noScoreApplicants || []).filter((a) => {
+          const matchesPosition = !position || (a.position || '').toLowerCase().includes(position);
+
+          const matchesSearch =
+            !search ||
+            [a.firstname, a.lastname, a.position, a.status, a.applicant_type]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(search));
+
+          return matchesPosition && matchesSearch;
+        });
+      },
+
       rows() {
         return this.store.scores || [];
       },
@@ -1031,19 +1046,9 @@
         },
         deep: true,
       },
-      'store.noScorePagination': {
-        handler(val) {
-          if (!val) return;
-          this.noScorePagination.page = val.currentPage || 1;
-          this.noScorePagination.rowsPerPage = val.perPage || 10;
-          this.noScorePagination.rowsNumber = val.total || 0;
-        },
-        deep: true,
-      },
     },
 
     methods: {
-      // ✅ Fixed — populate editForm when opening the dialog
       editScore(row) {
         this.selectedScore = row;
         this.editForm = {
@@ -1056,7 +1061,6 @@
         this.editDetailDialog = true;
       },
 
-      // ✅ Fixed — correct store method + correct ID field
       async submitEditScore() {
         this.savingScore = true;
         try {
@@ -1067,9 +1071,7 @@
             position: 'top',
           });
           this.editDetailDialog = false;
-          // Refresh the main table
-          await this.store.fetchScores({ page: this.pagination.page });
-          this.pagination.rowsNumber = this.store.pagination.total;
+          await this.store.fetchScores({ page: 1, perPage: 9999 });
         } catch (e) {
           this.$q.notify({
             type: 'negative',
@@ -1080,7 +1082,7 @@
           this.savingScore = false;
         }
       },
-      // ── Utilities ────────────────────────────────────────────────────
+
       async deleteScore(applicantExamScoreId) {
         this.$q
           .dialog({
@@ -1106,6 +1108,7 @@
             }
           });
       },
+
       formatScore(value) {
         if (value === null || value === undefined) return 'N/A';
         const num = Number(value);
@@ -1122,119 +1125,15 @@
         return 'grey-7';
       },
 
-      // Returns a clean string suitable for sending as an API param.
-      // Guards against both plain strings and accidental { label, value } objects.
-      resolvePositionValue(pos) {
-        if (!pos) return undefined;
-        if (typeof pos === 'object' && pos !== null) return pos.value || undefined;
-        if (typeof pos === 'string' && pos.trim() !== '') return pos.trim();
-        return undefined;
-      },
-
-      // ── Main table ───────────────────────────────────────────────────
-
       debouncedFetchScores() {
         if (this.searchTimeout) clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => this.fetchScoresWithFilters(), 400);
       },
 
-      // buildMainFilters() {
-      //   return {
-      //     page: this.pagination.page,
-      //     sortBy: this.pagination.sortBy,
-      //     descending: this.pagination.descending,
-      //     search: this.globalSearch || undefined,
-      //     position: this.mainPositionFilter?.value ?? this.mainPositionFilter ?? undefined,
-      //   };
-      // },
-      buildMainFilters() {
-        return {
-          page: this.pagination.page,
-          perPage: this.pagination.rowsPerPage, // ✅ add this
-          // sortBy: this.pagination.sortBy,
-          // descending: this.pagination.descending,
-          search: this.globalSearch || undefined,
-          // position: this.mainPositionFilter?.value ?? this.mainPositionFilter ?? undefined,
-        };
-      },
-
       fetchScoresWithFilters() {
-        this.pagination.page = 1;
-        this.store.fetchScores({ ...this.buildMainFilters(), page: 1 }).then(() => {
-          this.pagination.rowsNumber = this.store.pagination.total;
-        });
+        // frontend-only; no API calls needed
       },
 
-      // onRequest(props) {
-      //   const { page, sortBy, descending } = props.pagination;
-      //   this.pagination.page = page;
-      //   this.pagination.sortBy = sortBy;
-      //   this.pagination.descending = descending;
-      //   this.store
-      //     .fetchScores({ ...this.buildMainFilters(), page, sortBy, descending })
-      //     .then(() => {
-      //       this.pagination.rowsNumber = this.store.pagination.total;
-      //     });
-      // },
-      onRequest(props) {
-        const { page, rowsPerPage } = props.pagination; // ✅ add rowsPerPage
-        this.pagination.page = page;
-        this.pagination.rowsPerPage = rowsPerPage; // ✅ save it
-        // this.pagination.sortBy = sortBy;
-        // this.pagination.descending = descending;
-        this.store
-          .fetchScores({
-            ...this.buildMainFilters(),
-            page,
-            perPage: rowsPerPage, // ✅ send it to the store
-            // sortBy,
-            // descending,
-          })
-          .then(() => {
-            this.pagination.rowsNumber = this.store.pagination.total;
-          });
-      },
-
-      // ── Modal table ──────────────────────────────────────────────────
-
-      buildModalFilters() {
-        return {
-          search: this.applicantSearch || undefined,
-          position: this.resolvePositionValue(this.selectedPosition),
-        };
-      },
-
-      onModalRequest(props) {
-        const { page, rowsPerPage } = props.pagination;
-        this.noScorePagination.page = page;
-        this.noScorePagination.rowsPerPage = rowsPerPage;
-        this.store
-          .fetchNoScoreApplicants({ page, perPage: rowsPerPage, ...this.buildModalFilters() })
-          .then(() => {
-            this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-          });
-      },
-
-      fetchNoScoreWithFilters() {
-        if (this.noScoreSearchTimeout) clearTimeout(this.noScoreSearchTimeout);
-        this.noScoreSearchTimeout = setTimeout(() => {
-          this.noScorePagination.page = 1;
-          this.store
-            .fetchNoScoreApplicants({
-              page: 1,
-              perPage: this.noScorePagination.rowsPerPage,
-              ...this.buildModalFilters(),
-            })
-            .then(() => {
-              this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-            });
-        }, 400);
-      },
-
-      // ── Position filter (modal) ──────────────────────────────────────
-
-      // Called by q-select's @filter event while the user is typing.
-      // Searches allPositionOptions client-side — no API call needed here.
       filterPositions(val, update) {
         const needle = (val || '').toLowerCase().trim();
         update(() => {
@@ -1244,68 +1143,12 @@
         });
       },
 
-      // Called by @update:model-value when the user selects an option.
-      // Because of emit-value, `val` is the raw string (e.g. "Engineer").
-      onPositionChange(val) {
-        this.noScorePagination.page = 1;
-        this.store
-          .fetchNoScoreApplicants({
-            page: 1,
-            perPage: this.noScorePagination.rowsPerPage,
-            search: this.applicantSearch || undefined,
-            position: this.resolvePositionValue(val),
-          })
-          .then(() => {
-            this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-          });
-      },
-
-      // Called by @clear when the user clicks the × on the position select.
-      onPositionClear() {
-        this.selectedPosition = null;
-        this.positionOptionsData = [...this.allPositionOptions];
-        this.noScorePagination.page = 1;
-        this.store
-          .fetchNoScoreApplicants({
-            page: 1,
-            perPage: this.noScorePagination.rowsPerPage,
-            search: this.applicantSearch || undefined,
-          })
-          .then(() => {
-            this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-          });
-      },
-
-      // Called by @clear on the applicant search input.
-      onApplicantSearchClear() {
-        this.applicantSearch = '';
-        this.noScorePagination.page = 1;
-        this.store
-          .fetchNoScoreApplicants({
-            page: 1,
-            perPage: this.noScorePagination.rowsPerPage,
-            position: this.resolvePositionValue(this.selectedPosition),
-          })
-          .then(() => {
-            this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-          });
-      },
-
-      // ── View ─────────────────────────────────────────────────────────
-
       viewScore(row) {
         this.selectedScore = row;
         this.showDetailDialog = true;
       },
-      // editScore(row) {
-      //   this.selectedScore = row;
-      //   this.editDetailDialog = true;
-      // },
-
-      // ── Open Add Dialog ──────────────────────────────────────────────
 
       async openAddDialog() {
-        // Reset all dialog state
         this.session = {
           exam_title: '',
           exam_type: null,
@@ -1324,34 +1167,18 @@
         this.step = 1;
         this.dialog = true;
 
-        // Step 1 — build the full position list for the dropdown.
-        // Fetch a large page once so the dropdown has every position available
-        // without needing a separate endpoint.
-        try {
-          await this.store.fetchNoScoreApplicants({ page: 1, perPage: 9999 });
-          const positions = new Set(
-            (this.store.noScoreApplicants || []).map((a) => a.position).filter(Boolean),
-          );
-          const opts = Array.from(positions)
-            .sort()
-            .map((p) => ({ label: p, value: p }));
-          this.allPositionOptions = opts;
-          this.positionOptionsData = [...opts];
-        } catch {
-          // Non-fatal — table still works, dropdown will be empty
-        }
+        await this.store.fetchNoScoreApplicants({ page: 1, perPage: 9999 });
 
-        // Step 2 — fetch the normal paginated first page for the table display.
-        await this.store
-          .fetchNoScoreApplicants({ page: 1, perPage: this.noScorePagination.rowsPerPage })
-          .then(() => {
-            this.noScorePagination.rowsNumber = this.store.noScorePagination.total;
-          });
+        const positions = new Set(
+          (this.store.noScoreApplicants || []).map((a) => a.position).filter(Boolean),
+        );
+        const opts = Array.from(positions)
+          .sort()
+          .map((p) => ({ label: p, value: p }));
+        this.allPositionOptions = opts;
+        this.positionOptionsData = [...opts];
       },
 
-      // ── Score commit ─────────────────────────────────────────────────
-
-      // Fires on every keystroke so reviewRows stays in sync immediately.
       commitScore(submissionId, val) {
         const key = String(submissionId);
         if (val === null || val === '' || val === undefined) {
@@ -1360,17 +1187,12 @@
           const num = Number(val);
           this.modalScores[key] = Number.isFinite(num) ? num : null;
         }
-        // Spread to a new object so Vue's reactivity system detects the change.
         this.modalScores = { ...this.modalScores };
       },
 
-      // Safety-net: fires on blur in case the input was filled by
-      // autocomplete or another mechanism that bypassed the input event.
       commitScoreFromBlur(submissionId) {
         this.commitScore(submissionId, this.draftScores[submissionId]);
       },
-
-      // ── Step navigation ──────────────────────────────────────────────
 
       goToReview() {
         if (
@@ -1387,8 +1209,6 @@
         }
         this.step = 3;
       },
-
-      // ── Save ─────────────────────────────────────────────────────────
 
       async saveSession() {
         const scoredApplicants = this.selectedApplicants.filter((a) => {
@@ -1417,8 +1237,7 @@
           await this.store.saveScores(payload);
           this.$q.notify({ type: 'positive', message: 'All exam scores saved successfully' });
           this.dialog = false;
-          await this.store.fetchScores({ page: 1 });
-          this.pagination.rowsNumber = this.store.pagination.total;
+          await this.store.fetchScores({ page: 1, perPage: 9999 });
         } catch (error) {
           this.$q.notify({
             type: 'negative',
@@ -1427,11 +1246,9 @@
         }
       },
     },
-    // ── update ─────────────────────────────────────────────────────────
-    // ─── Edit Score state ─────────────────────────────────────────────────────────
 
     mounted() {
-      this.store.fetchScores({ page: 1 }).then(() => {
+      this.store.fetchScores({ page: 1, perPage: 9999 }).then(() => {
         this.pagination.rowsNumber = this.store.pagination.total;
       });
     },
@@ -1582,4 +1399,3 @@
     overflow-y: auto;
   }
 </style>
-yy

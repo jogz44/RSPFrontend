@@ -1,13 +1,10 @@
-//Store
-
 import { defineStore } from 'pinia';
 import { adminApi } from 'boot/axios_admin';
 
 export const useSummaryReportStore = defineStore('summaryReport', {
-  // Changed from 'applicant' to 'summaryReport'
   state: () => ({
     positions: [],
-    publicationDates: [], // Add dedicated state for publication dates
+    publicationDates: [],
     positionDetails: null,
     loading: false,
     error: null,
@@ -30,32 +27,15 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // async fetchApplicantDetail(jobpostId) {
-    //   try {
-    //     this.loading = true;
-    //     const response = await adminApi.get(`/report/applicant-final-score/${jobpostId}`);
-    //     this.positionDetails = response.data;
-    //     this.error = null;
-    //     return response.data;
-    //   } catch (err) {
-    //     this.error = err.message;
-    //     console.error('Error fetching applicant details:', err);
-    //     throw err;
-    //   } finally {
-    //     this.loading = false;
-    //   }
-    // },
-
     async fetchApplicantDetail(jobpostId) {
       try {
         this.loading = true;
         const response = await adminApi.get(`/report/final-summary-rating/${jobpostId}`);
 
-        // ✅ Check if response contains an error message
         if (response.data.message && !response.data.applicants) {
           console.warn(`No ratings for job post ${jobpostId}:`, response.data.message);
           this.error = response.data.message;
-          return null; // Return null instead of throwing
+          return null;
         }
 
         this.positionDetails = response.data;
@@ -64,7 +44,30 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       } catch (err) {
         this.error = err.response?.data?.message || err.message;
         console.error('Error fetching applicant details:', err);
-        return null; // Return null instead of throwing
+        return null;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchApplicantPosition(jobpostId) {
+      try {
+        this.loading = true;
+        const response = await adminApi.get(`/report/applicant/per-position/${jobpostId}`);
+
+        if (response.data.message && !response.data.applicants) {
+          console.warn(`No ratings for job post ${jobpostId}:`, response.data.message);
+          this.error = response.data.message;
+          return null;
+        }
+
+        this.positionDetails = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error fetching applicant details:', err);
+        return null;
       } finally {
         this.loading = false;
       }
@@ -73,12 +76,8 @@ export const useSummaryReportStore = defineStore('summaryReport', {
     async fetchPublicationDateList() {
       try {
         this.loading = true;
-        console.log('Store:  Fetching publication dates from API.. .');
         const response = await adminApi.get('/job-batches-rsp/postdate');
-        console.log('Store: API response:', response);
-        console.log('Store: Response data:', response.data);
-
-        this.publicationDates = response.data; // Store in dedicated state
+        this.publicationDates = response.data;
         this.error = null;
         return response.data;
       } catch (err) {
@@ -90,7 +89,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    //Top 5
     async fetchTopApplicantReport(date) {
       try {
         this.loading = true;
@@ -107,11 +105,9 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // Add methods for qualified reports
     async fetchQualifiedReport(date) {
       try {
         this.loading = true;
-        // Replace with your actual API endpoint
         const response = await adminApi.get(`/report/applicant/qualified/${date}`);
         this.error = null;
         return response.data;
@@ -127,7 +123,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
     async fetchUnqualifiedReport(date) {
       try {
         this.loading = true;
-        // Replace with your actual API endpoint
         const response = await adminApi.get(`/report/applicant/unqualified/${date}`);
         this.error = null;
         return response.data;
@@ -140,7 +135,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    //Top 5
     async fetchTopQualifiedReport(date) {
       try {
         this.loading = true;
@@ -154,6 +148,29 @@ export const useSummaryReportStore = defineStore('summaryReport', {
         throw err;
       } finally {
         this.loading = false;
+      }
+    },
+
+    // ✅ NEW: Fetch image with auth token via adminApi and return base64
+    async fetchImageBase64(imageUrl) {
+      try {
+        const response = await adminApi.get(imageUrl, { responseType: 'blob' });
+        const blob = response.data;
+
+        if (!blob || blob.size === 0) return null;
+
+        // only allow png/jpg/jpeg
+        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(blob.type)) return null;
+
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.error('Error fetching image:', imageUrl, err);
+        return null;
       }
     },
   },

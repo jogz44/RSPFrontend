@@ -1,4 +1,3 @@
-
 <template>
   <q-page class="q-pa-md">
     <div class="q-mb-md">
@@ -56,7 +55,7 @@
               </q-dialog>
             </div>
             <div v-if="dateFilterType === 'range'" class="q-mt-sm">
-              <q-input v-model="dateRange. from" label="From Date" outlined>
+              <q-input v-model="dateRange.from" label="From Date" outlined>
                 <template v-slot:append>
                   <q-icon name="event" @click="showFromDatePicker = true" />
                 </template>
@@ -103,11 +102,10 @@
               @input="onPositionInput"
             >
               <template v-slot:option="scope">
-                <!-- Select All Entry at the top -->
                 <q-item
-                  v-if="scope. opt.value === 'select_all'"
+                  v-if="scope.opt.value === 'select_all'"
                   clickable
-                  @click. stop="toggleSelectAll"
+                  @click.stop="toggleSelectAll"
                 >
                   <q-item-section>
                     <q-checkbox
@@ -115,11 +113,10 @@
                       label="Select All"
                       :checked="allSelected"
                       :indeterminate="false"
-                      @click. stop. prevent="toggleSelectAll"
+                      @click.stop.prevent="toggleSelectAll"
                     />
                   </q-item-section>
                 </q-item>
-                <!-- Regular Position Options -->
                 <q-item
                   v-else
                   :key="scope.opt.value"
@@ -129,9 +126,9 @@
                   <q-item-section>
                     <q-checkbox
                       :label="scope.opt.label"
-                      :value="isPositionSelected(scope.opt. value)"
-                      @click. stop.prevent="togglePosition(scope.opt.value)"
-                      :model-value="isPositionSelected(scope.opt. value)"
+                      :value="isPositionSelected(scope.opt.value)"
+                      @click.stop.prevent="togglePosition(scope.opt.value)"
+                      :model-value="isPositionSelected(scope.opt.value)"
                       :checked="isPositionSelected(scope.opt.value)"
                     />
                   </q-item-section>
@@ -179,11 +176,11 @@
               </template>
 
               <template v-slot:option="scope">
-                <q-item v-bind="scope. itemProps">
+                <q-item v-bind="scope.itemProps">
                   <q-item-section>
                     <q-item-label>
                       <q-icon name="event" size="xs" class="q-mr-sm" />
-                      {{ scope. opt }}
+                      {{ scope.opt }}
                     </q-item-label>
                   </q-item-section>
                 </q-item>
@@ -215,11 +212,17 @@
       </q-card>
     </q-dialog>
 
-    <!-- Final Summary Rating Modal -->
+    <!-- Final Summary / Applicant per Position Modal (shared) -->
     <q-dialog v-model="showFinalSummaryModal" persistent>
       <q-card style="min-width: 500px; max-width: 90vw">
         <q-card-section>
-          <div class="text-h6">Final Summary Report Filters</div>
+          <div class="text-h6">
+            {{
+              selectedReport?.id === 3
+                ? 'Applicant per Position Filters'
+                : 'Final Summary Report Filters'
+            }}
+          </div>
         </q-card-section>
 
         <q-card-section>
@@ -246,7 +249,11 @@
               <div v-if="finalSummaryDateFilterType === 'single'" class="q-mt-sm">
                 <q-input v-model="finalSummarySingleDate" label="Select Publication Date" outlined>
                   <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummarySingleDatePicker = true" />
+                    <q-icon
+                      name="event"
+                      class="cursor-pointer"
+                      @click="showFinalSummarySingleDatePicker = true"
+                    />
                   </template>
                 </q-input>
                 <q-dialog v-model="showFinalSummarySingleDatePicker">
@@ -261,7 +268,11 @@
               <div v-if="finalSummaryDateFilterType === 'range'" class="q-mt-sm">
                 <q-input v-model="finalSummaryDateRange.from" label="From Date" outlined>
                   <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummaryFromDatePicker = true" />
+                    <q-icon
+                      name="event"
+                      class="cursor-pointer"
+                      @click="showFinalSummaryFromDatePicker = true"
+                    />
                   </template>
                 </q-input>
                 <q-dialog v-model="showFinalSummaryFromDatePicker">
@@ -279,7 +290,11 @@
                   outlined
                 >
                   <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" @click="showFinalSummaryToDatePicker = true" />
+                    <q-icon
+                      name="event"
+                      class="cursor-pointer"
+                      @click="showFinalSummaryToDatePicker = true"
+                    />
                   </template>
                 </q-input>
                 <q-dialog v-model="showFinalSummaryToDatePicker">
@@ -313,7 +328,7 @@
               <template v-slot:option="scope">
                 <!-- Select All Entry at the top -->
                 <q-item
-                  v-if="scope.opt. value === 'select_all'"
+                  v-if="scope.opt.value === 'select_all'"
                   clickable
                   @click.stop="toggleFinalSummarySelectAll"
                 >
@@ -328,7 +343,7 @@
                 <!-- Regular Position Options -->
                 <q-item
                   v-else
-                  :key="scope.opt. value"
+                  :key="scope.opt.value"
                   clickable
                   @click.stop="toggleFinalSummaryPosition(scope.opt.value)"
                 >
@@ -368,7 +383,7 @@
           <q-btn
             color="primary"
             label="Generate Report"
-            :disable="selectedFinalSummaryPositions. length === 0"
+            :disable="selectedFinalSummaryPositions.length === 0"
             @click="openFinalSummaryReport"
           />
         </q-card-actions>
@@ -384,6 +399,11 @@
     <q-dialog v-model="showTop5ReportViewer" maximized>
       <TopApplicantReport :publicationDate="selectedPublicationDate" />
     </q-dialog>
+
+    <!-- Applicant per Position Report Component Dialog -->
+    <q-dialog v-model="showApplicantReportViewer" maximized>
+      <ApplicantPosition :jobpostId="selectedApplicantJobpostId" />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -391,30 +411,20 @@
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import FinalSummaryReport from 'components/reports/FinalSummaryReport.vue';
   import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
+  import ApplicantPosition from 'components/reports/ApplicantPositionReport.vue';
 
   export default {
-    name:  'ReportManagementPage',
+    name: 'ReportManagementPage',
     components: {
       FinalSummaryReport,
       TopApplicantReport,
+      ApplicantPosition,
     },
     data() {
       return {
         columns: [
-          {
-            name: 'id',
-            label: 'ID',
-            align: 'left',
-            field: 'id',
-            sortable: true,
-          },
-          {
-            name: 'name',
-            label: 'Report Name',
-            align: 'left',
-            field: 'name',
-            sortable: true,
-          },
+          { name: 'id', label: 'ID', align: 'left', field: 'id', sortable: true },
+          { name: 'name', label: 'Report Name', align: 'left', field: 'name', sortable: true },
           {
             name: 'description',
             label: 'Description',
@@ -422,13 +432,7 @@
             field: 'description',
             sortable: true,
           },
-          {
-            name: 'actions',
-            label: 'Actions',
-            align: 'center',
-            field: 'actions',
-            sortable: false,
-          },
+          { name: 'actions', label: 'Actions', align: 'center', field: 'actions', sortable: false },
         ],
 
         reports: [
@@ -437,22 +441,20 @@
             name: 'Final Summary of Rating',
             description: 'By Publication Date and Position',
           },
+          { id: 2, name: 'Top 5 Ranking Applicants', description: 'By Publication Date' },
           {
-            id:  2,
-            name: 'Top 5 Ranking Applicants',
-            description: 'By Publication Date',
+            id: 3,
+            name: 'Applicant per Position',
+            description: 'By Publication Date and Position',
           },
         ],
 
-        pagination: {
-          rowsPerPage: 10,
-        },
+        pagination: { rowsPerPage: 10 },
 
         showModal: false,
         showTop5ReportViewer: false,
         selectedReport: null,
 
-        // Position multi-select for schedule report
         positionOptions: [
           { value: 'select_all', label: 'Select All' },
           { value: 'developer', label: 'Developer' },
@@ -461,40 +463,31 @@
         ],
         selectedPositions: [],
 
-        // Date filter logic
         dateFilterType: 'single',
         singleDate: '',
-
-        dateRange: {
-          from: '',
-          to: '',
-        },
+        dateRange: { from: '', to: '' },
         showSingleDatePicker: false,
-        showFromDatePicker:  false,
+        showFromDatePicker: false,
         showToDatePicker: false,
 
-        // Top 5 Ranking Applicants Modal
         showTop5Modal: false,
         loadingPublicationDates: false,
         publicationDateOptions: [],
         filteredPublicationDateOptions: [],
         selectedPublicationDate: null,
 
-        // Final Summary Report
         showFinalSummaryModal: false,
         showReportViewer: false,
+        showApplicantReportViewer: false,
+        selectedApplicantJobpostId: null,
         loadingPositions: false,
         allPositionsData: [],
         finalSummaryPositionOptions: [],
         selectedFinalSummaryPositions: [],
 
-        // Final Summary Date Filters
         finalSummaryDateFilterType: 'all',
         finalSummarySingleDate: '',
-        finalSummaryDateRange: {
-          from: '',
-          to: '',
-        },
+        finalSummaryDateRange: { from: '', to: '' },
         showFinalSummarySingleDatePicker: false,
         showFinalSummaryFromDatePicker: false,
         showFinalSummaryToDatePicker: false,
@@ -502,7 +495,6 @@
     },
 
     computed: {
-      // Schedule report computed properties
       allPositions() {
         return this.positionOptions.filter((p) => p.value !== 'select_all').map((p) => p.value);
       },
@@ -512,20 +504,19 @@
       displayPositions() {
         if (this.allSelected) return 'All positions selected';
         const selectedLabels = this.positionOptions
-          .filter((opt) => this.selectedPositions. includes(opt.value) && opt.value !== 'select_all')
+          .filter((opt) => this.selectedPositions.includes(opt.value) && opt.value !== 'select_all')
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
       },
 
-      // Filtered positions based on date selection
       filteredFinalSummaryPositionOptions() {
         if (this.finalSummaryDateFilterType === 'all') {
           return this.finalSummaryPositionOptions;
         }
 
-        let filteredPositions = [... this.allPositionsData];
+        let filteredPositions = [...this.allPositionsData];
 
-        if (this. finalSummaryDateFilterType === 'single' && this.finalSummarySingleDate) {
+        if (this.finalSummaryDateFilterType === 'single' && this.finalSummarySingleDate) {
           filteredPositions = filteredPositions.filter((pos) => {
             const postDate = this.normalizeDate(pos.post_date);
             return postDate === this.finalSummarySingleDate;
@@ -536,7 +527,7 @@
           this.finalSummaryDateRange.to
         ) {
           filteredPositions = filteredPositions.filter((pos) => {
-            const postDate = this.normalizeDate(pos. post_date);
+            const postDate = this.normalizeDate(pos.post_date);
             return (
               postDate >= this.finalSummaryDateRange.from &&
               postDate <= this.finalSummaryDateRange.to
@@ -546,7 +537,7 @@
 
         return [
           { value: 'select_all', label: 'Select All' },
-          ...filteredPositions. map((pos) => ({
+          ...filteredPositions.map((pos) => ({
             value: pos.jobpostId,
             label: `${pos.Position} (${this.formatDate(pos.post_date)})`,
             postDate: pos.post_date,
@@ -554,16 +545,15 @@
         ];
       },
 
-      // Final Summary Report computed properties
       allFinalSummaryPositions() {
-        return this. filteredFinalSummaryPositionOptions
+        return this.filteredFinalSummaryPositionOptions
           .filter((p) => p.value !== 'select_all')
           .map((p) => p.value);
       },
       allFinalSummarySelected() {
         return (
-          this.selectedFinalSummaryPositions. length === this.allFinalSummaryPositions.length &&
-          this.allFinalSummaryPositions. length > 0
+          this.selectedFinalSummaryPositions.length === this.allFinalSummaryPositions.length &&
+          this.allFinalSummaryPositions.length > 0
         );
       },
       displayFinalSummaryPositions() {
@@ -581,11 +571,10 @@
     watch: {
       finalSummaryDateFilterType(newVal) {
         this.selectedFinalSummaryPositions = [];
-
         if (newVal === 'all') {
           this.finalSummarySingleDate = '';
           this.finalSummaryDateRange.from = '';
-          this. finalSummaryDateRange.to = '';
+          this.finalSummaryDateRange.to = '';
         }
       },
     },
@@ -599,15 +588,15 @@
         const summaryReportStore = useSummaryReportStore();
         this.loadingPositions = true;
         try {
-          const positions = await summaryReportStore. fetchPositionWithRating();
+          const positions = await summaryReportStore.fetchPositionWithRating();
 
           this.allPositionsData = positions;
 
           this.finalSummaryPositionOptions = [
             { value: 'select_all', label: 'Select All' },
-            ... positions.map((pos) => ({
+            ...positions.map((pos) => ({
               value: pos.jobpostId,
-              label: `${pos.Position} (${this. formatDate(pos.post_date)})`,
+              label: `${pos.Position} (${this.formatDate(pos.post_date)})`,
               postDate: pos.post_date,
             })),
           ];
@@ -627,16 +616,14 @@
         const summaryReportStore = useSummaryReportStore();
         this.loadingPublicationDates = true;
         try {
-          const response = await summaryReportStore. fetchPublicationDateList();
-
-          // Extract formatted dates from response
+          const response = await summaryReportStore.fetchPublicationDateList();
           this.publicationDateOptions = response.map((item) => item.date);
-          this.filteredPublicationDateOptions = [... this.publicationDateOptions];
+          this.filteredPublicationDateOptions = [...this.publicationDateOptions];
         } catch (error) {
           console.error('Error loading publication dates:', error);
           this.$q.notify({
             type: 'negative',
-            message:  'Failed to load publication dates',
+            message: 'Failed to load publication dates',
             position: 'top',
           });
         } finally {
@@ -647,10 +634,10 @@
       filterPublicationDates(val, update) {
         update(() => {
           if (val === '') {
-            this.filteredPublicationDateOptions = [... this.publicationDateOptions];
+            this.filteredPublicationDateOptions = [...this.publicationDateOptions];
           } else {
             const needle = val.toLowerCase();
-            this.filteredPublicationDateOptions = this.publicationDateOptions. filter(
+            this.filteredPublicationDateOptions = this.publicationDateOptions.filter(
               (date) => date.toLowerCase().indexOf(needle) > -1,
             );
           }
@@ -661,8 +648,8 @@
         if (!dateString) return '';
         const date = new Date(dateString);
         const year = date.getFullYear();
-        const month = String(date. getMonth() + 1).padStart(2, '0');
-        const day = String(date. getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       },
 
@@ -680,17 +667,14 @@
         this.selectedFinalSummaryPositions = [];
       },
 
-      // Date change handlers for Final Summary
       onFinalSummarySingleDateChange() {
         this.showFinalSummarySingleDatePicker = false;
         this.filterPositionsByDate();
       },
-
       onFinalSummaryFromDateChange() {
         this.showFinalSummaryFromDatePicker = false;
         this.filterPositionsByDate();
       },
-
       onFinalSummaryToDateChange() {
         this.showFinalSummaryToDatePicker = false;
         this.filterPositionsByDate();
@@ -699,28 +683,24 @@
       async handleAction(row) {
         this.selectedReport = row;
 
-        if (row.id === 1) {
-          // Final Summary Report
+        if (row.id === 1 || row.id === 3) {
           this.showFinalSummaryModal = true;
           this.selectedFinalSummaryPositions = [];
           this.finalSummaryDateFilterType = 'all';
           this.finalSummarySingleDate = '';
-          this.finalSummaryDateRange. from = '';
+          this.finalSummaryDateRange.from = '';
           this.finalSummaryDateRange.to = '';
         } else if (row.id === 2) {
-          // Top 5 Ranking Applicants
           this.showTop5Modal = true;
           this.selectedPublicationDate = null;
           await this.loadPublicationDates();
         } else {
-          // Schedule Report
           this.showModal = true;
         }
       },
 
-      // Schedule report methods
       onPositionInput(val) {
-        if (val. includes('select_all')) {
+        if (val.includes('select_all')) {
           this.toggleSelectAll();
         }
       },
@@ -728,14 +708,14 @@
         if (this.allSelected) {
           this.selectedPositions = [];
         } else {
-          this.selectedPositions = [... this.allPositions];
+          this.selectedPositions = [...this.allPositions];
         }
       },
       togglePosition(pos) {
-        if (this. selectedPositions.includes(pos)) {
+        if (this.selectedPositions.includes(pos)) {
           this.selectedPositions = this.selectedPositions.filter((p) => p !== pos);
         } else {
-          this. selectedPositions = [...this.selectedPositions, pos];
+          this.selectedPositions = [...this.selectedPositions, pos];
         }
       },
       isPositionSelected(pos) {
@@ -745,7 +725,7 @@
       generateReport() {
         this.showModal = false;
         alert(
-          `Report:   ${this.selectedReport?. name}\nPositions: ${this.selectedPositions.join(', ')}\nDate:   ${
+          `Report: ${this.selectedReport?.name}\nPositions: ${this.selectedPositions.join(', ')}\nDate: ${
             this.dateFilterType === 'single'
               ? this.singleDate
               : `From ${this.dateRange.from} To ${this.dateRange.to}`
@@ -753,7 +733,6 @@
         );
       },
 
-      // Top 5 Report methods
       closeTop5Modal() {
         this.showTop5Modal = false;
         this.selectedPublicationDate = null;
@@ -762,13 +741,10 @@
       },
 
       generateTop5Report() {
-        console.log('Generating Top 5 Report for:', this.selectedPublicationDate);
-
         this.showTop5Modal = false;
         this.showTop5ReportViewer = true;
       },
 
-      // Final Summary Report methods
       toggleFinalSummarySelectAll() {
         if (this.allFinalSummarySelected) {
           this.selectedFinalSummaryPositions = [];
@@ -776,7 +752,7 @@
           this.selectedFinalSummaryPositions = [...this.allFinalSummaryPositions];
         }
       },
-      
+
       toggleFinalSummaryPosition(pos) {
         const index = this.selectedFinalSummaryPositions.indexOf(pos);
         if (index > -1) {
@@ -787,7 +763,7 @@
           this.selectedFinalSummaryPositions = [...this.selectedFinalSummaryPositions, pos];
         }
       },
-      
+
       isFinalSummaryPositionSelected(pos) {
         return this.selectedFinalSummaryPositions.includes(pos);
       },
@@ -795,14 +771,21 @@
       closeFinalSummaryModal() {
         this.showFinalSummaryModal = false;
         this.selectedFinalSummaryPositions = [];
-        this. finalSummaryDateFilterType = 'all';
-        this. finalSummarySingleDate = '';
+        this.finalSummaryDateFilterType = 'all';
+        this.finalSummarySingleDate = '';
         this.finalSummaryDateRange.from = '';
         this.finalSummaryDateRange.to = '';
       },
 
       openFinalSummaryReport() {
         this.showFinalSummaryModal = false;
+
+        if (this.selectedReport?.id === 3) {
+          this.selectedApplicantJobpostId = this.selectedFinalSummaryPositions[0];
+          this.showApplicantReportViewer = true;
+          return;
+        }
+
         this.showReportViewer = true;
       },
     },

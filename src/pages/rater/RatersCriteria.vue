@@ -293,7 +293,16 @@
 
         try {
           const result = await raterStore.fetch_criteria_applicant(position.id);
-          if (result && result.criteria && result.criteria.length > 0) {
+
+          // Handle API response with status = false
+          if (!result?.status) {
+            throw new Error(
+              result?.message || 'Criteria not found for this job post. Please contact HR.',
+            );
+          }
+
+          // Process criteria
+          if (result.criteria && result.criteria.length > 0) {
             const criteriaData = result.criteria[0];
             rawCriteria.value = criteriaData;
             positionCriteria.value = transformCriteriaData(criteriaData);
@@ -302,15 +311,23 @@
             rawCriteria.value = null;
           }
 
-          positionApplicants.value = result && result.applicants ? result.applicants : [];
+          // Process applicants
+          positionApplicants.value = result.applicants || [];
+
           return true;
-        } catch {
+        } catch (error) {
+          const errorMessage =
+            error?.response?.data?.message || // axios backend error
+            error?.message || // manually thrown error
+            'Failed to load position data'; // fallback
+
           $q.notify({
             color: 'negative',
-            message: 'Failed to load position data',
+            message: errorMessage,
             icon: 'error',
             position: 'top',
           });
+
           return false;
         } finally {
           loadingModalData.value = false;
