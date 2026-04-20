@@ -70,6 +70,7 @@ export const useAuthStore = defineStore('auth', {
         const formattedData = {
           office: userData.Office,
           active: userData.active,
+          enable: userData.enable,
           role_type: userData.role,
           representative: userData.representative,
         };

@@ -4,10 +4,11 @@
       <q-card-section class="header">
         <div class="row items-center justify-between">
           <div>
-            <h6 class="q-ma-none text-weight-bold">Rating Form for Qualification Standards</h6>
+            <h6 class="q-ma-none text-weight-bold">Rating Form for Qualification Standards2</h6>
             <div class="text-subtitle1">{{ position.position }}</div>
             <div class="text-caption">Office: {{ position.office }}</div>
             <div class="text-caption">Position ID: {{ positionID }}</div>
+              <div class="text-caption">jobpostID ID: {{position.id }}</div>
           </div>
           <q-btn flat round dense icon="close" @click="closeForm" />
         </div>
@@ -478,9 +479,18 @@
           <span class="text-caption text-info">
             {{ ratedApplicantsCount }} of {{ applicantsData.length }} applicants rated
           </span>
+
         </div>
 
         <div class="row justify-end q-gutter-sm">
+          <q-btn
+          color="red"
+           icon-right="assignment"
+            @click="showModal"
+             dense
+           v-if="isRaterEnabled"
+             />
+
           <q-btn color="primary" label="Save as Draft" icon-right="save" @click="saveDraft" dense />
           <q-btn
             v-if="allApplicantsRated"
@@ -493,6 +503,7 @@
         </div>
       </q-card-section>
     </q-card>
+
   </q-dialog>
 
   <!-- Use existing QS Modal Component -->
@@ -501,15 +512,68 @@
     :applicant-data="selectedApplicantForQS"
     :variant="'applicant'"
   />
+
+  <!-- Rater Assignment Modal -->
+<q-dialog v-model="showAssignModal" persistent>
+  <q-card style="min-width: 420px; max-width: 95vw">
+    <q-card-section class="row items-center q-pb-none">
+      <div class="text-h6 text-weight-bold">Assign Rater</div>
+      <q-space />
+      <q-btn icon="close" flat round dense @click="showAssignModal = false" />
+    </q-card-section>
+
+    <q-card-section class="q-pt-md q-gutter-md">
+      <!-- Rater Select -->
+      <q-select
+        v-model="assignSelectedRater"
+        :options="raterOptions"
+        label="Select Rater"
+        outlined
+        dense
+        emit-value
+        map-options
+        clearable
+        @update:model-value="onRaterChange"
+      />
+
+      <!-- Job Select — only shows after rater is selected -->
+      <q-select
+        v-if="assignSelectedRater"
+        v-model="assignSelectedJob"
+        :options="assignJobOptions"
+        label="Select Job"
+        outlined
+        dense
+        emit-value
+        map-options
+        clearable
+        no-options-label="No jobs assigned to this rater"
+      />
+    </q-card-section>
+
+    <q-card-section class="row justify-end q-pt-none q-pb-md q-pr-md">
+      <q-btn flat label="Cancel" color="grey" @click="showAssignModal = false" class="q-mr-sm" />
+      <q-btn
+        label="Submit"
+        color="primary"
+
+             @click="submitRater"
+             :loading="isSubmittingRater"
+        :disable="!assignSelectedRater || !assignSelectedJob"
+      />
+    </q-card-section>
+  </q-card>
+</q-dialog>
 </template>
 
 <script setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch,onMounted } from 'vue';
   import { useQuasar } from 'quasar';
   import QualificationStandardModal from 'src/components/QSModal.vue';
-
+  import { use_rating_form_store } from 'stores/ratingFormStore';
+  import { useRaterAuthStore } from 'stores/authStore_raters';
   const $q = useQuasar();
-
+const useRatingStore = use_rating_form_store();
   // Props
   const props = defineProps({
     modelValue: Boolean,
@@ -519,6 +583,13 @@
     applicants: { type: Array, default: () => [] },
     loading: Boolean,
   });
+  const isSubmittingRater = ref(false);
+
+const useRater = useRaterAuthStore();
+
+  // Replace with this
+const isRaterEnabled = computed(() => useRater.user?.enable === true);
+
 
   // Emits
   const emit = defineEmits(['close', 'update:modelValue', 'submit-ratings', 'save-draft']);
@@ -1186,6 +1257,119 @@
       initializeApplicants();
     },
   );
+
+//   watch(
+//   () => props.position?.id,
+//   async (newId) => {
+//     if (newId) {
+//       await useRatingStore.raterListWithJob(newId);
+//     }
+//   },
+//   { immediate: true } // runs on mount too, replaces onMounted
+// );
+
+
+  // Rater Assignment Modal state
+const showAssignModal = ref(false);
+const assignSelectedRater = ref(null);
+const assignSelectedJob = ref(null);
+
+// Opens the modal
+const showModal = () => {
+  const jobPostId = props.position?.id;
+  // if (!jobPostId) {
+  //   $q.notify({ color: 'warning', message: 'No job post ID found', icon: 'warning', position: 'top' });
+  //   return;
+  // }
+  assignSelectedRater.value = null;
+  assignSelectedJob.value = null;
+  useRatingStore.raterListWithJob(jobPostId); // 🔁 refresh on every open
+  showAssignModal.value = true;
+};
+// const showModal = () => {
+//   assignSelectedRater.value = null;
+//   assignSelectedJob.value = null;
+//   showAssignModal.value = true;
+// };
+
+// Build rater dropdown options from store
+const raterOptions = computed(() => {
+  const raters = useRatingStore.rater;
+  if (!Array.isArray(raters)) return [];
+  return raters.map((r) => ({
+    label: r.name,
+    value: r.id,
+  }));
+});
+
+// Build job dropdown options for the selected rater
+const assignJobOptions = computed(() => {
+  const raters = useRatingStore.rater;
+  if (!Array.isArray(raters) || !assignSelectedRater.value) return [];
+
+  const rater = raters.find((r) => r.id === assignSelectedRater.value);
+  if (!rater || !Array.isArray(rater.job_batches_rsp)) return [];
+
+  return rater.job_batches_rsp.map((job) => ({
+    label: `${job.position} (${job.post_date} – ${job.end_date})`,
+    value: job.id,
+  }));
+});
+
+// Reset job when rater changes
+const onRaterChange = () => {
+  assignSelectedJob.value = null;
+};
+
+const submitRater = async () => {
+  isSubmittingRater.value = true;
+  try {
+    const result = await useRatingStore.getApplicantScore({
+      userId: assignSelectedRater.value,
+      jobPostId: assignSelectedJob.value,
+    });
+
+    if (!result?.applicants?.length) {
+      $q.notify({ color: 'warning', message: 'No applicants found', icon: 'warning', position: 'top', timeout: 2000 });
+      return;
+    }
+
+    result.applicants.forEach((raterApplicant) => {
+      const applicant = applicantsData.value.find((a) => a.id === raterApplicant.id);
+      if (!applicant) return;
+
+      const score = raterApplicant.rating_score;
+      if (!score) return;
+
+      applicant.educationScore   = score.education_score   != null ? formatNumber(score.education_score)   : '';
+      applicant.experienceScore  = score.experience_score  != null ? formatNumber(score.experience_score)  : '';
+      applicant.trainingScore    = score.training_score    != null ? formatNumber(score.training_score)    : '';
+      applicant.performanceScore = score.performance_score != null ? formatNumber(score.performance_score) : '';
+      applicant.behavioralScore  = score.behavioral_score  != null ? formatNumber(score.behavioral_score)  : '';
+      applicant.examScore        = score.exam_score        != null ? formatNumber(score.exam_score)        : '';
+      applicant.ranking          = score.ranking           ?? null;
+    });
+
+    calculateAllRankings();
+    $q.notify({ color: 'positive', message: 'Scores loaded successfully!', icon: 'check_circle', position: 'top', timeout: 2000 });
+    showAssignModal.value = false;
+  // eslint-disable-next-line no-unused-vars
+  } catch (error) {
+    $q.notify({ color: 'negative', message: 'Failed to load scores. Please try again.', icon: 'error', position: 'top', timeout: 2000 });
+  } finally {
+    isSubmittingRater.value = false; // ✅ always resets, even on error or early return
+  }
+};
+
+onMounted(async () => {
+  const jobPostId = props.position?.id; // ✅ get it from props
+  if (!jobPostId) {
+    console.warn('No jobPostId available on mount');
+    return;
+  }
+  await useRatingStore.raterListWithJob(jobPostId);
+  console.log('rater state:', useRatingStore.rater);
+});
 </script>
 
 <style lang="scss" scoped>
