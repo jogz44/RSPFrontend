@@ -326,7 +326,6 @@
               :display-value="displayFinalSummaryPositions"
             >
               <template v-slot:option="scope">
-                <!-- Select All Entry at the top -->
                 <q-item
                   v-if="scope.opt.value === 'select_all'"
                   clickable
@@ -340,7 +339,6 @@
                     />
                   </q-item-section>
                 </q-item>
-                <!-- Regular Position Options -->
                 <q-item
                   v-else
                   :key="scope.opt.value"
@@ -372,7 +370,7 @@
               {{
                 finalSummaryDateFilterType === 'all'
                   ? 'No positions available'
-                  : 'No positions found for the selected date filter.  Try selecting a different date or date range.'
+                  : 'No positions found for the selected date filter. Try selecting a different date or date range.'
               }}
             </div>
           </div>
@@ -385,6 +383,136 @@
             label="Generate Report"
             :disable="selectedFinalSummaryPositions.length === 0"
             @click="openFinalSummaryReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Newly Appointed and Promoted Permanent Employees Modal -->
+    <q-dialog v-model="showNewEmployeeModal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Newly Appointed and Promoted Permanent Employees</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingNewEmployeeDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <!-- Publication Date -->
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedNewEmployeePublicationDate"
+              :options="filteredNewEmployeeDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              option-value="date"
+              option-label="date"
+              emit-value
+              map-options
+              @filter="filterNewEmployeeDates"
+              :dropdown-icon="'arrow_drop_down'"
+              @update:model-value="onNewEmployeePublicationDateChange"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt.date }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedNewEmployeePublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedNewEmployeePublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <!-- Effective Date — only shown when multiple effective dates are available -->
+            <div
+              v-if="selectedNewEmployeePublicationDate && availableEffectiveDates.length > 1"
+              class="q-mt-md"
+            >
+              <div class="text-subtitle2 q-mb-sm">Select Effective Date</div>
+              <q-select
+                v-model="selectedNewEmployeeEffectiveDate"
+                :options="availableEffectiveDates"
+                label="Effective Date"
+                outlined
+                :dropdown-icon="'arrow_drop_down'"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No effective dates found</q-item-section>
+                  </q-item>
+                </template>
+
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+
+                <template v-slot:selected>
+                  <span v-if="selectedNewEmployeeEffectiveDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedNewEmployeeEffectiveDate }}
+                  </span>
+                </template>
+              </q-select>
+            </div>
+
+            <!-- Info when only one (or null) effective date — no selector shown -->
+            <div
+              v-if="
+                selectedNewEmployeePublicationDate &&
+                availableEffectiveDates.length <= 1 &&
+                selectedNewEmployeeEffectiveDate
+              "
+              class="q-mt-sm"
+            >
+              <q-chip icon="event" color="primary" text-color="white" size="sm">
+                Effective Date: {{ selectedNewEmployeeEffectiveDate }}
+              </q-chip>
+            </div>
+
+            <div v-if="newEmployeeDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeNewEmployeeModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="
+              !selectedNewEmployeePublicationDate ||
+              (availableEffectiveDates.length > 1 && !selectedNewEmployeeEffectiveDate)
+            "
+            @click="generateNewEmployeeReport"
           />
         </q-card-actions>
       </q-card>
@@ -404,6 +532,14 @@
     <q-dialog v-model="showApplicantReportViewer" maximized>
       <ApplicantPosition :jobpostId="selectedApplicantJobpostId" />
     </q-dialog>
+
+    <!-- Newly Appointed Report Component Dialog -->
+    <q-dialog v-model="showNewEmployeeReportViewer" maximized>
+      <NewEmployeeReport
+        :publicationDate="selectedNewEmployeePublicationDate"
+        :effectiveDate="selectedNewEmployeeEffectiveDate"
+      />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -412,6 +548,7 @@
   import FinalSummaryReport from 'components/reports/FinalSummaryReport.vue';
   import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
   import ApplicantPosition from 'components/reports/ApplicantPositionReport.vue';
+  import NewEmployeeReport from 'components/reports/NewEmployeeReport.vue';
 
   export default {
     name: 'ReportManagementPage',
@@ -419,6 +556,7 @@
       FinalSummaryReport,
       TopApplicantReport,
       ApplicantPosition,
+      NewEmployeeReport,
     },
     data() {
       return {
@@ -447,6 +585,11 @@
             name: 'Applicant per Position',
             description: 'By Publication Date and Position',
           },
+          {
+            id: 4,
+            name: 'Newly Appointed and Promoted Permanent Employees',
+            description: 'By Publication Date',
+          },
         ],
 
         pagination: { rowsPerPage: 10 },
@@ -455,12 +598,6 @@
         showTop5ReportViewer: false,
         selectedReport: null,
 
-        positionOptions: [
-          { value: 'select_all', label: 'Select All' },
-          { value: 'developer', label: 'Developer' },
-          { value: 'designer', label: 'Designer' },
-          { value: 'manager', label: 'Manager' },
-        ],
         selectedPositions: [],
 
         dateFilterType: 'single',
@@ -470,12 +607,14 @@
         showFromDatePicker: false,
         showToDatePicker: false,
 
+        // Top 5 modal
         showTop5Modal: false,
         loadingPublicationDates: false,
         publicationDateOptions: [],
         filteredPublicationDateOptions: [],
         selectedPublicationDate: null,
 
+        // Final Summary / Applicant per Position modal
         showFinalSummaryModal: false,
         showReportViewer: false,
         showApplicantReportViewer: false,
@@ -484,13 +623,21 @@
         allPositionsData: [],
         finalSummaryPositionOptions: [],
         selectedFinalSummaryPositions: [],
-
         finalSummaryDateFilterType: 'all',
         finalSummarySingleDate: '',
         finalSummaryDateRange: { from: '', to: '' },
         showFinalSummarySingleDatePicker: false,
         showFinalSummaryFromDatePicker: false,
         showFinalSummaryToDatePicker: false,
+
+        // Newly Appointed modal
+        showNewEmployeeModal: false,
+        showNewEmployeeReportViewer: false,
+        loadingNewEmployeeDates: false,
+        newEmployeeDateOptions: [],
+        filteredNewEmployeeDateOptions: [],
+        selectedNewEmployeePublicationDate: null,
+        selectedNewEmployeeEffectiveDate: null,
       };
     },
 
@@ -566,6 +713,19 @@
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
       },
+
+      // Returns the effective dates for the currently selected publication date
+      availableEffectiveDates() {
+        if (!this.selectedNewEmployeePublicationDate) return [];
+        const entry = this.newEmployeeDateOptions.find(
+          (item) => item.date === this.selectedNewEmployeePublicationDate,
+        );
+        if (!entry) return [];
+        // Filter out null values and return only valid dates
+        return entry.effective_date_available
+          .map((e) => e.effectiveDate)
+          .filter((d) => d !== null && d !== undefined);
+      },
     },
 
     watch: {
@@ -589,9 +749,7 @@
         this.loadingPositions = true;
         try {
           const positions = await summaryReportStore.fetchPositionWithRating();
-
           this.allPositionsData = positions;
-
           this.finalSummaryPositionOptions = [
             { value: 'select_all', label: 'Select All' },
             ...positions.map((pos) => ({
@@ -631,6 +789,27 @@
         }
       },
 
+      async loadNewEmployeeDates() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingNewEmployeeDates = true;
+        try {
+          const response = await summaryReportStore.fetchPublicationDateNewEmployee();
+          // response.data is the array from the API: [{ date, effective_date_available: [...] }]
+          const list = response?.data ?? response;
+          this.newEmployeeDateOptions = list;
+          this.filteredNewEmployeeDateOptions = [...list];
+        } catch (error) {
+          console.error('Error loading new employee publication dates:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to load publication dates',
+            position: 'top',
+          });
+        } finally {
+          this.loadingNewEmployeeDates = false;
+        }
+      },
+
       filterPublicationDates(val, update) {
         update(() => {
           if (val === '') {
@@ -642,6 +821,36 @@
             );
           }
         });
+      },
+
+      filterNewEmployeeDates(val, update) {
+        update(() => {
+          if (val === '') {
+            this.filteredNewEmployeeDateOptions = [...this.newEmployeeDateOptions];
+          } else {
+            const needle = val.toLowerCase();
+            this.filteredNewEmployeeDateOptions = this.newEmployeeDateOptions.filter((item) =>
+              item.date.toLowerCase().includes(needle),
+            );
+          }
+        });
+      },
+
+      // Called when the user picks a publication date in the new employee modal
+      onNewEmployeePublicationDateChange() {
+        // Reset effective date selection whenever the publication date changes
+        this.selectedNewEmployeeEffectiveDate = null;
+
+        const dates = this.availableEffectiveDates;
+
+        if (dates.length === 0) {
+          // No valid effective dates — keep null (pass null to the report)
+          this.selectedNewEmployeeEffectiveDate = null;
+        } else if (dates.length === 1) {
+          // Only one valid effective date — auto-select it silently
+          this.selectedNewEmployeeEffectiveDate = dates[0];
+        }
+        // If > 1: leave null so the user must pick via the selector
       },
 
       normalizeDate(dateString) {
@@ -694,6 +903,11 @@
           this.showTop5Modal = true;
           this.selectedPublicationDate = null;
           await this.loadPublicationDates();
+        } else if (row.id === 4) {
+          this.showNewEmployeeModal = true;
+          this.selectedNewEmployeePublicationDate = null;
+          this.selectedNewEmployeeEffectiveDate = null;
+          await this.loadNewEmployeeDates();
         } else {
           this.showModal = true;
         }
@@ -787,6 +1001,19 @@
         }
 
         this.showReportViewer = true;
+      },
+
+      closeNewEmployeeModal() {
+        this.showNewEmployeeModal = false;
+        this.selectedNewEmployeePublicationDate = null;
+        this.selectedNewEmployeeEffectiveDate = null;
+        this.newEmployeeDateOptions = [];
+        this.filteredNewEmployeeDateOptions = [];
+      },
+
+      generateNewEmployeeReport() {
+        this.showNewEmployeeModal = false;
+        this.showNewEmployeeReportViewer = true;
       },
     },
   };

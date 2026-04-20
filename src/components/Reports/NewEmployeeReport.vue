@@ -1,7 +1,7 @@
 <template>
   <q-card class="modal-card">
     <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">Top 5 Ranking Applicants Report</div>
+      <div class="text-h6">Newly Appointed and Promoted Employee Report</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -23,7 +23,6 @@
         <q-spinner color="primary" size="32px" />
         <div>Generating PDF preview...</div>
       </div>
-      <!-- PDF Viewer -->
       <iframe
         v-if="pdfUrl"
         :src="pdfUrl"
@@ -43,6 +42,10 @@
       type: String,
       required: true,
     },
+    effectiveDate: {
+      type: String,
+      default: null,
+    },
   });
 
   const pdfUrl = ref(null);
@@ -50,33 +53,45 @@
   const summaryReportStore = useSummaryReportStore();
   const reportData = ref(null);
 
-  // Watch for changes in publication date and regenerate report
   watch(
-    () => props.publicationDate,
-    async (newVal, oldVal) => {
-      if (newVal && newVal !== oldVal) {
+    () => [props.publicationDate, props.effectiveDate],
+    async ([newPub, newEff], [oldPub, oldEff]) => {
+      if (newPub && (newPub !== oldPub || newEff !== oldEff)) {
         await fetchReportData();
         await generatePdfContent();
       }
     },
   );
 
+  // Converts "Apr 14, 2026" → "2026-04-14". Passes through values already in Y-m-d format.
+  function toYMD(dateStr) {
+    if (!dateStr) return null;
+    // Already Y-m-d
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   async function fetchReportData() {
     if (isLoading.value) return;
-
     isLoading.value = true;
-
     try {
-      const data = await summaryReportStore.fetchTopApplicantReport(props.publicationDate);
+      const data = await summaryReportStore.fetchNewEmployeeReport(
+        toYMD(props.publicationDate),
+        toYMD(props.effectiveDate),
+      );
       reportData.value = data;
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      console.error('Error fetching new employee report data:', error);
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Helper function to convert image to base64
   async function getImageBase64(url) {
     try {
       const response = await fetch(url);
@@ -93,236 +108,109 @@
     }
   }
 
-  // Generate signatory footer from API rater list (block-level unbreakable)
-  function generateSignatoryFooter() {
-    const raters = reportData.value?.rater || [];
-    if (!raters.length) return [];
+  /**
+   * Build the sub-location line showing hierarchy levels above the office.
+   * Levels (root → leaf): group → office2 → division → section → unit
+   * Rules:
+   *   - Never show "office" (already in the box header)
+   *   - Show only the levels that are present
+   *   - If unit exists  → show "section - unit"  (or just "unit" if no section)
+   *   - Else if section → show "division - section" (or just "section" if no division)
+   *   - Else show remaining non-null levels joined by " - "
+   */
+  function buildSubLocation(jobPost) {
+    const { group, office2, division, section, unit } = jobPost;
 
-    const chairpersons = raters.filter((r) => (r.role_type || '').toLowerCase() === 'chairperson');
-    const others = raters.filter((r) => (r.role_type || '').toLowerCase() !== 'chairperson');
-
-    const blocks = others.map((r) => ({
-      text: r.name?.toUpperCase() || 'N/A',
-      position: r.position || '',
-      role_type: r.role_type || '',
-      representative: r.representative || '',
-    }));
-
-    const chairBlocks = chairpersons.map((r) => ({
-      text: r.name?.toUpperCase() || 'N/A',
-      position: r.position || '',
-      role_type: r.role_type || '',
-      representative: r.representative || '',
-    }));
-
-    const rows = [];
-    const chunkSize = 2;
-
-    // spacing only (no pageBreak)
-    rows.push({ text: '', margin: [0, 20, 0, 0] });
-
-    if (blocks.length % 2 === 1) {
-      const first = blocks.shift();
-      rows.push({
-        columns: [
-          { width: '*', text: '' },
-          {
-            width: 'auto',
-            stack: [
-              { text: first.text, fontSize: 8, bold: true, alignment: 'center' },
-              {
-                canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }],
-                margin: [0, 2, 0, 2],
-                alignment: 'center',
-              },
-              { text: first.position, fontSize: 7, alignment: 'center' },
-              { text: first.representative, fontSize: 7, alignment: 'center' },
-              { text: first.role_type, fontSize: 7, alignment: 'center', italics: true },
-            ],
-            unbreakable: true,
-          },
-          { width: '*', text: '' },
-        ],
-        margin: [0, 0, 0, 15],
-      });
+    if (unit) {
+      const parts = [section, unit].filter(Boolean);
+      return parts.join(' - ');
     }
 
-    for (let i = 0; i < blocks.length; i += chunkSize) {
-      const pair = blocks.slice(i, i + chunkSize);
-
-      rows.push({
-        columns: pair.map((p) => ({
-          width: '*',
-          stack: [
-            { text: p.text, fontSize: 8, bold: true, alignment: 'center' },
-            {
-              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 120, y2: 0, lineWidth: 1 }],
-              margin: [0, 2, 0, 2],
-              alignment: 'center',
-            },
-            { text: p.position, fontSize: 7, alignment: 'center' },
-            { text: p.representative, fontSize: 7, alignment: 'center' },
-            { text: p.role_type, fontSize: 7, alignment: 'center', italics: true },
-          ],
-          unbreakable: true,
-        })),
-        columnGap: 40,
-        margin: [0, 0, 0, 15],
-      });
+    if (section) {
+      const parts = [division, section].filter(Boolean);
+      return parts.join(' - ');
     }
 
-    chairBlocks.forEach((p) => {
-      rows.push({
-        columns: [
-          { width: '*', text: '' },
-          {
-            width: 'auto',
-            stack: [
-              { text: p.text, fontSize: 8, bold: true, alignment: 'center' },
-              {
-                canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }],
-                margin: [0, 2, 0, 2],
-                alignment: 'center',
-              },
-              { text: p.position, fontSize: 7, alignment: 'center' },
-              { text: p.representative, fontSize: 7, alignment: 'center' },
-              { text: p.role_type, fontSize: 7, alignment: 'center', italics: true, bold: true },
-            ],
-            unbreakable: true,
-          },
-          { width: '*', text: '' },
-        ],
-        margin: [0, 20, 0, 0],
-      });
-    });
-
-    return rows;
+    // Fall back: show whatever non-null levels exist (group, office2, division)
+    return [group, office2, division].filter(Boolean).join(' - ');
   }
 
-  // Generate content for a single job post
-  function generateJobPostContent(office, jobPost) {
+  function generateJobPostContent(jobPost) {
     const content = [];
 
-    content.push({
-      text: office.toUpperCase(),
-      fontSize: 10,
-      bold: true,
-      alignment: 'center',
-      margin: [0, 15, 0, 10],
-      fillColor: '#e8e8e8',
-      padding: [0, 5, 0, 5],
-    });
-
-    const detailsBody = [];
-
-    if (jobPost.Division) {
-      detailsBody.push([
-        {
-          text: 'Division/Section:  ',
-          fontSize: 8,
-          bold: false,
-          border: [false, false, false, false],
-        },
-        { text: jobPost.Division, fontSize: 8, bold: true, border: [false, false, false, false] },
-      ]);
-    }
-
-    detailsBody.push(
-      [
-        { text: 'Position:', fontSize: 8, bold: false, border: [false, false, false, false] },
-        {
-          text: jobPost.Position || 'N/A',
-          fontSize: 8,
-          bold: true,
-          border: [false, false, false, false],
-        },
-      ],
-      [
-        { text: 'Salary Grade:', fontSize: 8, bold: false, border: [false, false, false, false] },
-        {
-          text: jobPost['Salary Grade'] || 'N/A',
-          fontSize: 8,
-          bold: true,
-          border: [false, false, false, false],
-        },
-      ],
-      [
-        {
-          text: 'Plantilla Item No.:  ',
-          fontSize: 8,
-          bold: false,
-          border: [false, false, false, false],
-        },
-        {
-          text: jobPost['Plantilla Item No'] || 'N/A',
-          fontSize: 8,
-          bold: true,
-          border: [false, false, false, false],
-        },
-      ],
-    );
-
+    // Office box — full width, centered text, bordered
     content.push({
       table: {
-        widths: ['20%', '80%'],
-        body: detailsBody,
+        widths: ['*'],
+        body: [
+          [
+            {
+              text: jobPost.office?.toUpperCase() || '',
+              fontSize: 9,
+              bold: true,
+              alignment: 'center',
+              margin: [4, 4, 4, 4],
+            },
+          ],
+        ],
       },
-      margin: [0, 0, 0, 10],
+      layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => '#000000',
+        vLineColor: () => '#000000',
+      },
+      margin: [0, 10, 0, 0],
     });
 
+    // Sub-location line (division / section / unit hierarchy), left-aligned
+    const subLocation = buildSubLocation(jobPost);
+    if (subLocation) {
+      content.push({
+        text: subLocation.toUpperCase(),
+        fontSize: 8,
+        alignment: 'left',
+        margin: [0, 4, 0, 4],
+      });
+    }
+
+    // Applicants table
     const tableBody = [
       [
-        { text: 'RANK', style: 'tableHeader', alignment: 'center' },
-        { text: 'RECOMMENDED APPLICANTS', style: 'tableHeader', alignment: 'center' },
-        { text: 'REMARKS', style: 'tableHeader', alignment: 'center' },
+        { text: 'Appointed Personnel', style: 'tableHeader', alignment: 'center' },
+        { text: 'Plantilla No.', style: 'tableHeader', alignment: 'center' },
+        { text: 'Designation', style: 'tableHeader', alignment: 'center' },
+        { text: 'Salary Grade', style: 'tableHeader', alignment: 'center' },
       ],
     ];
 
-    const topApplicants = jobPost['Top Applicant'] || jobPost['Top 5 Applicant'] || [];
+    const hired = jobPost.hired_applicants || [];
 
-    if (topApplicants.length === 0) {
-      for (let i = 1; i <= 5; i++) {
-        tableBody.push([
-          { text: i.toString(), alignment: 'center', fontSize: 8 },
-          { text: '', alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
-        ]);
-      }
+    if (hired.length === 0) {
+      tableBody.push([{ text: '', fontSize: 8, colSpan: 4, alignment: 'center' }, {}, {}, {}]);
     } else {
-      const applicantsToShow = topApplicants.slice(0, 5);
-
-      applicantsToShow.forEach((applicant) => {
-        const fullName = `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim();
+      hired.forEach((applicant) => {
         tableBody.push([
-          { text: applicant.rank?.toString() || '-', alignment: 'center', fontSize: 8 },
-          { text: fullName, alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
+          { text: applicant.name.toUpperCase() || '', bold: true, fontSize: 8, alignment: 'left' },
+          { text: applicant.ItemNo || '', fontSize: 8, alignment: 'center' },
+          { text: applicant.designation || '', fontSize: 8, alignment: 'left' },
+          { text: applicant.salary_grade || '', fontSize: 8, alignment: 'center' },
         ]);
       });
-
-      const remainingRows = 5 - applicantsToShow.length;
-      for (let i = 0; i < remainingRows; i++) {
-        const nextRank = applicantsToShow.length + i + 1;
-        tableBody.push([
-          { text: nextRank.toString(), alignment: 'center', fontSize: 8 },
-          { text: '', alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
-        ]);
-      }
     }
 
     content.push({
       table: {
         headerRows: 1,
-        widths: ['15%', '60%', '25%'],
+        widths: ['30%', '10%', '50%', '10%'],
         body: tableBody,
       },
       layout: {
-        fillColor: function (rowIndex) {
-          return rowIndex === 0 ? 'white' : null;
-        },
+        // fillColor: (rowIndex) => (rowIndex === 0 ? '#d9d9d9' : null),
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
       },
-      margin: [0, 0, 0, 0],
+      margin: [0, 0, 0, 10],
     });
 
     return content;
@@ -334,9 +222,7 @@
       pdfUrl.value = null;
     }
 
-    if (!reportData.value) {
-      return;
-    }
+    if (!reportData.value) return;
 
     const logoBase64 = await getImageBase64('/logo.png');
 
@@ -347,61 +233,39 @@
 
         const allContent = [];
 
+        // ── Title block ──────────────────────────────────────────────────────
         allContent.push({
-          table: {
-            widths: ['*'],
-            body: [
-              [
-                {
-                  stack: [
-                    {
-                      text: reportData.value.Header?.toUpperCase() || 'TOP 5 RANKING APPLICANTS',
-                      fontSize: 13,
-                      bold: true,
-                      alignment: 'center',
-                    },
-                    {
-                      text: reportData.value.Date?.toUpperCase() || '',
-                      fontSize: 13,
-                      bold: true,
-                      alignment: 'center',
-                      margin: [0, 3, 0, 0],
-                    },
-                  ],
-                },
-              ],
-            ],
-          },
-          layout: {
-            hLineWidth: function () {
-              return 2;
+          stack: [
+            {
+              text: 'LIST OF NEWLY APPOINTED & PROMOTED PERMANENT EMPLOYEES',
+              fontSize: 11,
+              bold: true,
+              alignment: 'center',
+              margin: [0, 0, 0, 3],
             },
-            vLineWidth: function () {
-              return 2;
+            {
+              text: `As per ${reportData.value.publication_date || props.publicationDate} Publication`,
+              fontSize: 9,
+              alignment: 'center',
+              margin: [0, 0, 0, 3],
             },
-          },
-          margin: [0, 0, 0, 10],
+            {
+              text: `Effective date of Appointment: ${reportData.value.effective_date || props.effectiveDate || ''}`,
+              fontSize: 9,
+              alignment: 'center',
+              margin: [0, 0, 0, 0],
+            },
+          ],
+          margin: [0, 0, 0, 12],
         });
 
-        const offices = reportData.value.Offices || [];
-        offices.forEach((officeData, officeIndex) => {
-          const jobPosts = officeData.job_posts || [];
-          jobPosts.forEach((jobPost, jobIndex) => {
-            const jobContent = generateJobPostContent(officeData.office, jobPost);
-            allContent.push(...jobContent);
-
-            if (jobIndex < jobPosts.length - 1) {
-              allContent.push({ text: '', margin: [0, 0, 0, 20] });
-            }
-          });
-
-          if (officeIndex < offices.length - 1) {
-            allContent.push({ text: '', margin: [0, 0, 0, 15] });
-          }
+        // ── Job post sections ────────────────────────────────────────────────
+        const jobPosts = reportData.value.data || [];
+        jobPosts.forEach((jobPost) => {
+          allContent.push(...generateJobPostContent(jobPost));
         });
 
-        allContent.push(...generateSignatoryFooter());
-
+        // ── PDF document definition ──────────────────────────────────────────
         const docDefinition = {
           pageSize: 'A4',
           pageOrientation: 'portrait',
@@ -477,7 +341,7 @@
                           alignment: 'left',
                         },
                         {
-                          text: 'HUMAN RESOURCE MERIT PROMOTION AND SELECTION BOARD',
+                          text: 'OFFICE OF THE CITY MAYOR',
                           fontSize: 11,
                           bold: true,
                           color: 'white',

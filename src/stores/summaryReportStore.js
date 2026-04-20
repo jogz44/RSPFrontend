@@ -89,6 +89,22 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async fetchPublicationDateNewEmployee() {
+      try {
+        this.loading = true;
+        const response = await adminApi.get('/report/job-publication');
+        this.publicationDates = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.message;
+        console.error('Error fetching publication dates:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchTopApplicantReport(date) {
       try {
         this.loading = true;
@@ -99,6 +115,25 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       } catch (err) {
         this.error = err.message;
         console.error('Error fetching applicant details:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchNewEmployeeReport(publicationDate, effectiveDate) {
+      try {
+        this.loading = true;
+        const response = await adminApi.post('/report/list-of-appointed', {
+          publication_date: publicationDate,
+          effective_date: effectiveDate,
+        });
+        this.positionDetails = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error fetching new employee report:', err);
         throw err;
       } finally {
         this.loading = false;
