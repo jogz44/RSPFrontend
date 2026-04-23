@@ -1,78 +1,85 @@
 <template>
   <q-layout view="hHh Lpr fFf">
     <q-page-container>
-      <q-page class="row">
-        <!-- Background Image Section -->
-        <div
-          class="col-12 col-md-6 self-center"
-          :style="$q.screen.lt.md ? 'height: 40vh' : 'height: 100vh'"
-        >
-          <q-img src="/img/background/tagumbg.jpg" style="height: 100%">
-            <div class="absolute-full text-subtitle2 flex flex-center">
-              <div class="column items-start justify-start q-pa-md">
-                <img
-                  src="/logo.png"
-                  alt="Tagum City Logo"
-                  class="q-mb-md"
-                  :width="$q.screen.lt.sm ? '60' : '90'"
-                  :height="$q.screen.lt.sm ? '53' : '80'"
-                />
-                <div
-                  :class="$q.screen.lt.sm ? 'text-h5' : $q.screen.lt.md ? 'text-h4' : 'text-h2'"
-                  class="text-weight-bolder"
-                  style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5)"
-                >
-                  Recruitment,
-                  <br />
-                  Selection and
-                  <br />
-                  Placement System
-                </div>
-                <div
-                  :class="
-                    $q.screen.lt.sm ? 'text-caption' : $q.screen.lt.md ? 'text-body2' : 'text-h6'
-                  "
-                  style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5)"
-                >
-                  City of Tagum Human Resource Management Office
-                </div>
-              </div>
-            </div>
-          </q-img>
+      <q-page class="login-page">
+        <!-- Fullscreen Background -->
+        <div class="bg-container">
+          <div
+            class="bg-image"
+            :class="{ 'bg-shifted': sheetOpen && $q.screen.gt.xs }"
+            :style="{ backgroundImage: `url('${bgImage}')` }"
+          />
         </div>
 
-        <!-- Login Form Section -->
-        <div
-          class="col-12 col-md-6 flex column justify-center items-center relative-position"
-          :style="$q.screen.lt.md ? 'min-height: 60vh' : 'height: 100vh'"
-        >
-          <div
-            class="q-mx-auto q-px-md"
-            :style="$q.screen.lt.sm ? 'width: 100%; max-width: 350px' : 'width: 350px'"
-          >
+        <!-- Hero Text -->
+        <transition name="fade">
+          <div class="hero-text" v-if="!sheetOpen || $q.screen.gt.sm">
             <div
-              class="row justify-start items-center q-ma-none q-mb-md"
-              :style="$q.screen.lt.sm ? 'width: 100%' : 'width: 370px'"
+              class="hero-title text-weight-bolder"
+              :class="$q.screen.lt.sm ? 'text-h5' : $q.screen.lt.md ? 'text-h4' : 'text-h2'"
+              style="text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8)"
             >
-              <div>
-                <q-icon left :size="$q.screen.lt.sm ? '4em' : '6em'" name="admin_panel_settings" />
-              </div>
-              <div>
-                <div :class="$q.screen.lt.sm ? 'text-h5' : 'text-h4'" class="text-bold q-ma-none">
-                  Login
-                </div>
-                <div :class="$q.screen.lt.sm ? 'text-body1' : 'text-h6'" class="q-ma-none">
-                  Hello Admin
-                </div>
-              </div>
+              Recruitment, Selection
+              <br />
+              and Placement
+              <br />
+              System
             </div>
+            <div
+              class="hero-subtitle"
+              :class="$q.screen.lt.sm ? 'text-caption' : $q.screen.lt.md ? 'text-body2' : 'text-h6'"
+              style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7)"
+            >
+              <!-- Human Resource Management Office -->
+            </div>
+          </div>
+        </transition>
 
-            <div>
-              <form @submit.prevent="login" class="grid justify-center items-center q-px-md">
+        <!-- Version -->
+        <div class="version-label">
+          <q-icon name="info" size="xs" color="grey-5" />
+          <span>v 1.0.0.1</span>
+        </div>
+
+        <!-- CTA Login Button -->
+        <transition name="fade">
+          <div v-if="!sheetOpen" class="cta-wrapper">
+            <q-btn unelevated rounded label="Login" class="cta-btn" @click="openSheet" />
+          </div>
+        </transition>
+
+        <!-- Login Panel -->
+        <transition name="panel-slide">
+          <div v-if="sheetOpen" class="login-panel">
+            <!-- Back Arrow -->
+            <q-btn round flat dense icon="arrow_back" class="back-btn" @click="closeSheet" />
+
+            <!-- Form Content -->
+            <div class="form-inner">
+              <div class="row justify-start items-center q-mb-lg">
+                <q-icon
+                  name="admin_panel_settings"
+                  :size="$q.screen.lt.sm ? '4em' : '6em'"
+                  class="q-mr-sm"
+                />
+                <div>
+                  <div :class="$q.screen.lt.sm ? 'text-h5' : 'text-h4'" class="text-bold q-ma-none">
+                    Login
+                  </div>
+                  <div
+                    :class="$q.screen.lt.sm ? 'text-body1' : 'text-h6'"
+                    class="q-ma-none text-grey-6"
+                  >
+                    Hello Admin
+                  </div>
+                </div>
+              </div>
+
+              <form @submit.prevent="login">
                 <q-input
                   outlined
                   dense
-                  class="q-mb-sm full-width"
+                  class="q-mb-sm"
                   v-model="username"
                   label="Username"
                   type="text"
@@ -82,7 +89,6 @@
                 <q-input
                   outlined
                   dense
-                  class="full-width"
                   v-model="password"
                   label="Password"
                   :type="showPass ? 'text' : 'password'"
@@ -91,17 +97,17 @@
                 >
                   <template v-slot:append>
                     <q-btn
-                      @click="passwordVisible"
+                      @click="showPass = !showPass"
                       round
                       flat
-                      color="white"
-                      class="text-black"
+                      dense
+                      color="grey"
                       :icon="showPass ? 'visibility' : 'visibility_off'"
                     />
                   </template>
                 </q-input>
 
-                <div class="row justify-center items-center q-mt-md full-width">
+                <div class="row justify-center q-mt-lg">
                   <q-btn
                     type="submit"
                     :disabled="authStore.loading"
@@ -109,29 +115,14 @@
                     label="Login"
                     color="primary"
                     :size="$q.screen.lt.sm ? 'sm' : 'md'"
-                    :style="$q.screen.lt.sm ? 'width: 100%; max-width: 200px' : 'width: 200px'"
+                    :style="$q.screen.lt.sm ? 'width:100%;max-width:200px' : 'width:200px'"
                     rounded
                   />
                 </div>
               </form>
             </div>
           </div>
-
-          <!-- Version Info - Bottom Right Corner -->
-          <div
-            class="absolute"
-            :style="
-              $q.screen.lt.sm
-                ? 'bottom: 10px; right: 10px; display: flex; align-items: center; gap: 4px'
-                : 'bottom: 20px; right: 20px; display: flex; align-items: center; gap: 8px'
-            "
-          >
-            <q-icon name="info" :size="$q.screen.lt.sm ? 'xs' : 'sm'" color="grey-7" />
-            <span :class="$q.screen.lt.sm ? 'text-caption' : 'text-caption'" class="text-grey-7">
-              v 1.0.0.1
-            </span>
-          </div>
-        </div>
+        </transition>
       </q-page>
     </q-page-container>
   </q-layout>
@@ -143,15 +134,24 @@
   import { useQuasar, LocalStorage, SessionStorage } from 'quasar';
 
   const $q = useQuasar();
+  const authStore = useAuthStore();
 
   const username = ref('');
   const password = ref('');
   const showPass = ref(false);
   const errorMessage = ref([]);
+  const sheetOpen = ref(false);
 
-  const authStore = useAuthStore();
+  // ── Background image path — change this one line to swap the photo ──
+  const bgImage = '/img/background/tagumbg1.JPG';
 
-  // Delete the specific cookie your auth store uses
+  const openSheet = () => {
+    sheetOpen.value = true;
+  };
+  const closeSheet = () => {
+    sheetOpen.value = false;
+  };
+
   const clearAdminTokenCookie = () => {
     const cookieSettings = [
       'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;',
@@ -160,41 +160,33 @@
         window.location.hostname +
         '; expires=Thu, 01 Jan 1970 00:00:00 GMT;',
     ];
-
-    cookieSettings.forEach((setting) => {
-      document.cookie = setting;
-    });
+    cookieSettings.forEach((s) => (document.cookie = s));
   };
 
   const clearSiteStorage = () => {
     try {
       localStorage.clear();
     } catch {
-      // Ignore errors
+      //
     }
-
     try {
       sessionStorage.clear();
     } catch {
-      // Ignore errors
+      //
     }
-
-    // If you used Quasar storage wrappers anywhere
     try {
       LocalStorage.clear();
     } catch {
-      // Ignore errors
+      //
     }
-
     try {
       SessionStorage.clear();
     } catch {
-      // Ignore errors
+      //
     }
   };
 
   const resetAuthState = () => {
-    // Reset Pinia auth state (since you store token/isAuthenticated/user in memory)
     authStore.token = null;
     authStore.isAuthenticated = false;
     authStore.user = null;
@@ -203,7 +195,6 @@
   };
 
   onMounted(() => {
-    // "Clear cookies and cache" (cache can't be cleared from JS, but this clears auth + storage)
     clearAdminTokenCookie();
     clearSiteStorage();
     resetAuthState();
@@ -213,18 +204,192 @@
     await authStore.login(username.value, password.value);
     errorMessage.value = authStore.errors;
   };
-
-  const passwordVisible = () => {
-    showPass.value = !showPass.value;
-  };
 </script>
 
 <style scoped>
-  /* Ensure full-width on mobile */
+  .login-page {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* ── Background ── */
+  .bg-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center center;
+    transform: scale(1.1) translateX(0%);
+    transform-origin: center center;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+
+  .bg-image.bg-shifted {
+    transform: scale(1.1) translateX(-22.5%);
+  }
+
+  /* ── Hero Text ── */
+  .hero-text {
+    position: absolute;
+    top: 48px;
+    left: 48px;
+    color: white;
+    z-index: 1;
+    max-width: 50%;
+  }
+  .hero-subtitle {
+    margin-top: 10px;
+  }
+
+  /* ── Version ── */
+  .version-label {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.75rem;
+  }
+
+  /* ── CTA Button ── */
+  .cta-wrapper {
+    position: absolute;
+    bottom: 60px;
+    width: 100%;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+  }
+  .cta-btn {
+    background: white !important;
+    color: #1b5e20 !important;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 48px;
+    min-width: 200px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── Login Panel ── */
+  .login-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100vh;
+    background: white;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 40px;
+    box-sizing: border-box;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);
+  }
+
+  .form-inner {
+    width: 100%;
+    max-width: 370px;
+  }
+
+  /* ── Back Button ── */
+  .back-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #555 !important;
+    background: #f0f0f0 !important;
+  }
+  .back-btn:hover {
+    background: #e0e0e0 !important;
+  }
+
+  /* ── Panel slide from right ── */
+  .panel-slide-enter-active,
+  .panel-slide-leave-active {
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .panel-slide-enter-from,
+  .panel-slide-leave-to {
+    transform: translateX(100%);
+  }
+
+  /* ── Fade ── */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+
+  /* ── Tablet (600px–1023px) ── */
+  @media (max-width: 1023px) and (min-width: 600px) {
+    .login-panel {
+      width: 55%;
+      padding: 40px 32px;
+    }
+    .hero-text {
+      top: 32px;
+      left: 28px;
+      max-width: 40%;
+    }
+    .bg-image.bg-shifted {
+      transform: scale(1.1) translateX(-15%);
+    }
+  }
+
+  /* ── Mobile (<600px) ── */
   @media (max-width: 599px) {
-    .q-page {
-      display: flex;
-      flex-direction: column;
+    .login-panel {
+      width: 100%;
+      top: auto;
+      bottom: 0;
+      height: auto;
+      min-height: 60vh;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 24px 40px;
+      justify-content: flex-start;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+    }
+    .form-inner {
+      max-width: 100%;
+      margin-top: 16px;
+    }
+    .back-btn {
+      top: 5px;
+      left: 5px;
+    }
+    .hero-text {
+      top: 24px;
+      left: 16px;
+      max-width: 90%;
+    }
+    .bg-image.bg-shifted {
+      transform: scale(1.1) translateY(-8%);
+    }
+    .panel-slide-enter-from,
+    .panel-slide-leave-to {
+      transform: translateY(100%);
     }
   }
 </style>
