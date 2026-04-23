@@ -48,7 +48,7 @@
               />
 
               <div class="text-body text-bold text-center q-mb-xs">
-                {{ applicantData?.name || 'Please wait' }}
+                {{ applicantFullName }}
               </div>
               <q-badge
                 rounded
@@ -1048,6 +1048,36 @@
     return `Total:  ${formatDuration(totalMonths)}`;
   };
 
+  // Add this computed property near your other computed properties
+  const applicantFullName = computed(() => {
+    // First try to get from the fetched PDS data
+    const pdsData = jobPostStore.applicantPDS;
+
+    if (pdsData && (pdsData.firstname || pdsData.lastname)) {
+      const firstname = pdsData.firstname || '';
+      const lastname = pdsData.lastname || '';
+      const nameExtension = pdsData.name_extension ? ` ${pdsData.name_extension}` : '';
+      return `${firstname} ${lastname}${nameExtension}`.trim();
+    }
+
+    // Fallback to props.applicantData
+    if (props.applicantData?.firstname || props.applicantData?.lastname) {
+      const firstname = props.applicantData.firstname || '';
+      const lastname = props.applicantData.lastname || '';
+      const nameExtension = props.applicantData.name_extension
+        ? ` ${props.applicantData.name_extension}`
+        : '';
+      return `${firstname} ${lastname}${nameExtension}`.trim();
+    }
+
+    // If applicantData has a name property (from parent component)
+    if (props.applicantData?.name) {
+      return props.applicantData.name;
+    }
+
+    return 'Please wait';
+  });
+
   const experienceWithDuration = computed(() => {
     if (!xExperience.value || xExperience.value.length === 0) {
       return [];
@@ -1386,6 +1416,71 @@
       applicantImageUrl.value = '';
     }
   };
+
+  // Add this function near your other function definitions (e.g., near onModalShow)
+  const refreshQSData = async () => {
+    try {
+      // Refresh PDS data first
+      if (props.applicantData?.submission_id) {
+        await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+      }
+
+      // Refresh QS data if position exists
+      if (props.applicantData?.PositionID) {
+        await usePlantilla.fetchQsData(props.applicantData.PositionID);
+        positionQS.value = usePlantilla.qsData || [];
+      }
+
+      // Get the fresh PDS data
+      const pdsData = jobPostStore.applicantPDS;
+      const source = pdsData || props.applicantData || {};
+
+      // Update all the data arrays with fresh data
+      xEdu.value = mapEducationData(
+        (pdsData && pdsData.education) ||
+          props.education ||
+          getPersonalInfo(props.applicantData).education ||
+          props.applicantData?.education ||
+          [],
+      );
+      xEligibility.value = mapEligibilityData(
+        (pdsData && (pdsData.eligibity || pdsData.eligibility)) ||
+          getPersonalInfo(props.applicantData)?.eligibility ||
+          [],
+      );
+      xExperience.value = mapExperienceData(
+        (pdsData && pdsData.work_experience) ||
+          getPersonalInfo(props.applicantData)?.work_experience ||
+          [],
+      );
+      xTraining.value = mapTrainingData(
+        (pdsData && pdsData.training) || getPersonalInfo(props.applicantData)?.training || [],
+      );
+
+      // Update supporting documents
+      supportingDocuments.value = {
+        training_images:
+          (pdsData && pdsData.training_images) || props.applicantData?.training_images || [],
+        education_images:
+          (pdsData && pdsData.education_images) || props.applicantData?.education_images || [],
+        eligibility_images:
+          (pdsData && pdsData.eligibility_images) || props.applicantData?.eligibility_images || [],
+        experience_images:
+          (pdsData && pdsData.experience_images) || props.applicantData?.experience_images || [],
+      };
+
+      // Update remarks
+      xData.value.education_remark = source.education_remark || source.educationRemark || '';
+      xData.value.experience_remark = source.experience_remark || source.experienceRemark || '';
+      xData.value.training_remark = source.training_remark || source.trainingRemark || '';
+      xData.value.eligibility_remark = source.eligibility_remark || source.eligibilityRemark || '';
+
+      console.log('QS data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing QS data:', error);
+    }
+  };
+
   const onModalShow = async () => {
     tab.value = 'education';
     selectedExperienceIds.value = [];
@@ -1586,6 +1681,15 @@
       emit('view-pds');
     }
   };
+
+  // Add this watch outside of any function - place it after all your other watch statements
+  watch(showPDSModal, (newVal, oldVal) => {
+    // When PDS modal was open and now is closed
+    if (oldVal === true && newVal === false) {
+      console.log('PDS modal closed, refreshing QS data...');
+      refreshQSData();
+    }
+  });
 
   watch(qualificationStatus, (newStatus) => {
     emit('toggle-qualification', newStatus);

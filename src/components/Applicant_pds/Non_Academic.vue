@@ -1,8 +1,12 @@
 <template>
   <div class="q-pa-md">
-    <div class="q-mb-lg">
+    <div class="row items-center justify-between q-mb-lg">
       <div class="text-h6 text-bold">NON-ACADEMIC DISTINCTIONS / RECOGNITION</div>
+      <q-chip icon="info" color="blue-1" text-color="blue-8" size="sm" class="text-caption" outline>
+        Edit via Special Skills &amp; Hobbies tab
+      </q-chip>
     </div>
+
     <div v-if="distinctionsData.length > 0" class="row q-col-gutter-md">
       <div
         v-for="(distinction, index) in distinctionsData"
@@ -29,8 +33,16 @@
         </q-card>
       </div>
     </div>
+
     <div v-else class="text-center q-pa-md">
-      <q-banner class="text-grey-7">No non-academic distinctions available</q-banner>
+      <q-banner class="text-grey-7 rounded-borders">
+        <template v-slot:avatar>
+          <q-icon name="info" color="grey-5" />
+        </template>
+        No non-academic distinctions available. You can add entries from the
+        <strong>Special Skills &amp; Hobbies</strong>
+        tab.
+      </q-banner>
     </div>
   </div>
 </template>
@@ -46,17 +58,11 @@
     },
   });
 
-  // Transform and filter distinctions data
   const distinctionsData = computed(() => {
-    if (!Array.isArray(props.distinctions)) {
-      return [];
-    }
-
-    // Filter only items that have non_academic data or mark them as non-academic distinctions
-    return props.distinctions.filter((item) => {
-      // If there's a specific field to identify non-academic entries, use it
-      return item.non_academic || (item.skill && item.organization);
-    });
+    if (!Array.isArray(props.distinctions)) return [];
+    return props.distinctions.filter(
+      (item) => item.non_academic || (item.skill && item.organization),
+    );
   });
 </script>
 
@@ -65,14 +71,9 @@
     transition: all 0.3s ease;
     border-radius: 8px;
   }
-
   .distinction-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: var(--q-primary);
-  }
-
-  .text-primary {
-    color: var(--q-primary);
   }
 </style>

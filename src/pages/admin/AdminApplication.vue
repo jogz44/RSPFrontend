@@ -282,7 +282,7 @@
       </q-card>
     </div>
 
-    <!-- Confirmation Dialog -->
+    <!-- ==================== CONFIRM SUBMIT DIALOG ==================== -->
     <q-dialog v-model="confirmDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-teal">
@@ -368,7 +368,88 @@
       </q-card>
     </q-dialog>
 
-    <!-- Loading Overlay -->
+    <!-- ==================== ALREADY APPLIED / UPDATE DIALOG ==================== -->
+    <q-dialog v-model="alreadyAppliedDialog" persistent>
+      <q-card class="confirmation-dialog">
+        <div class="header-warning">
+          <div class="icon-container">
+            <q-icon name="update" size="28px" color="orange" />
+          </div>
+        </div>
+
+        <div class="dialog-title">
+          <div class="dialog-main-title text-orange text-center text-weight-bold">
+            Already Applied
+          </div>
+          <div class="dialog-subtitle text-center text-grey q-mt-sm">
+            {{ alreadyAppliedMessage }}
+          </div>
+        </div>
+
+        <q-separator />
+
+        <div class="dialog-content">
+          <div class="row items-center q-mb-md q-pa-sm bg-orange-1 rounded-borders">
+            <q-icon name="warning" size="16px" class="text-orange" />
+            <div class="q-ml-sm text-caption text-orange-9">
+              Updating will replace the previous application with the newly uploaded files.
+            </div>
+          </div>
+
+          <div class="row items-center q-mb-md flex-wrap">
+            <q-icon name="work" size="16px" class="text-orange" />
+            <div class="q-ml-sm">Position:</div>
+            <div class="text-orange text-weight-bold q-ml-sm position-text">
+              {{ selectedJob?.Position || 'N/A' }}
+            </div>
+          </div>
+
+          <div class="file-card q-mb-md">
+            <div class="row no-wrap">
+              <q-icon name="description" size="18px" class="text-blue q-mt-xs" />
+              <div class="file-details">
+                <div class="file-name">{{ uploadedFile?.name }}</div>
+                <div class="file-size">{{ formatFileSize(uploadedFile?.size || 0) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card">
+            <div class="row no-wrap">
+              <q-icon name="folder_zip" size="18px" class="text-orange q-mt-xs" />
+              <div class="file-details">
+                <div class="file-name">{{ uploadedZipFile?.name }}</div>
+                <div class="file-size">{{ formatFileSize(uploadedZipFile?.size || 0) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center text-grey-7 q-mt-lg confirmation-note">
+            This action will update the existing application. This cannot be undone.
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <q-btn
+            flat
+            label="CANCEL"
+            color="grey-7"
+            @click="alreadyAppliedDialog = false"
+            class="q-px-md"
+          />
+          <q-btn
+            unelevated
+            label="YES, UPDATE APPLICATION"
+            color="orange"
+            @click="processUpdateSubmission"
+            class="q-px-md"
+            :loading="uploadStore.isSubmitting"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- ==================== LOADING OVERLAY ==================== -->
     <q-dialog v-model="uploadStore.isSubmitting" persistent>
       <q-card class="loading-overlay flex flex-center">
         <q-spinner size="50px" color="teal" />
@@ -376,7 +457,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- Success Dialog -->
+    <!-- ==================== SUCCESS DIALOG ==================== -->
     <q-dialog v-model="successDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-teal">
@@ -387,10 +468,10 @@
 
         <div class="dialog-title">
           <div class="dialog-main-title text-teal text-center text-weight-bold">
-            Application Submitted!
+            {{ successTitle }}
           </div>
           <div class="dialog-subtitle text-center text-grey q-mt-sm">
-            Manual application has been successfully recorded
+            {{ successSubtitle }}
           </div>
         </div>
 
@@ -403,33 +484,25 @@
             <span class="text-teal text-weight-bold">
               {{ selectedJob?.Position || 'N/A' }}
             </span>
-            has been successfully submitted.
+            has been successfully {{ wasUpdate ? 'updated' : 'submitted' }}.
           </div>
           <div class="q-my-md success-message text-grey-7">
             The applicant's documents have been recorded in the system.
           </div>
           <div class="text-grey-7 q-mt-lg reference-number">
-            Reference #: MAN-{{ generateReferenceNumber() }}
+            Reference #: MAN-{{ referenceNumber }}
           </div>
-          <div class="text-caption text-grey-6 q-mt-xs">
-            Submitted at: {{ getCurrentDateTime() }}
-          </div>
+          <div class="text-caption text-grey-6 q-mt-xs">Submitted at: {{ submittedAt }}</div>
         </div>
 
-        <div class="dialog-actions">
-          <q-btn
-            flat
-            label="SUBMIT ANOTHER"
-            color="teal"
-            @click="resetAndContinue"
-            class="q-px-md"
-          />
-          <q-btn unelevated label="BACK TO JOB LIST" color="teal" @click="goBack" class="q-px-md" />
+        <!-- Only a single DONE button -->
+        <div class="dialog-actions dialog-actions--center">
+          <q-btn unelevated label="DONE" color="teal" @click="goBack" class="q-px-xl" />
         </div>
       </q-card>
     </q-dialog>
 
-    <!-- ZIP Instructions Dialog -->
+    <!-- ==================== ZIP INSTRUCTIONS DIALOG ==================== -->
     <q-dialog v-model="showZipInstructions">
       <q-card style="min-width: 360px; max-width: 95vw; border-radius: 12px">
         <q-card-section class="row items-center q-pb-none">
@@ -486,6 +559,25 @@
   const confirmDialog = ref(false);
   const successDialog = ref(false);
   const showZipInstructions = ref(false);
+
+  // Already-applied / update flow
+  const alreadyAppliedDialog = ref(false);
+  const alreadyAppliedMessage = ref('');
+  const pendingToken = ref('');
+
+  // Success dialog content (differs for new vs update)
+  const wasUpdate = ref(false);
+  const referenceNumber = ref('');
+  const submittedAt = ref('');
+
+  const successTitle = computed(() =>
+    wasUpdate.value ? 'Application Updated!' : 'Application Submitted!',
+  );
+  const successSubtitle = computed(() =>
+    wasUpdate.value
+      ? 'The existing application has been successfully updated'
+      : 'Manual application has been successfully recorded',
+  );
 
   // ==================== JOB DATA STATE ====================
   const selectedJob = ref(null);
@@ -612,18 +704,23 @@
     confirmDialog.value = false;
 
     try {
-      const response = await uploadStore.processManualSubmission();
-      const data = response?.data ?? response;
+      const result = await uploadStore.processManualSubmission();
 
-      if (data?.success === true || response?.status === 200 || response?.status === 201) {
-        successDialog.value = true;
-      } else {
-        $q.notify({
-          type: 'negative',
-          message: data?.message || 'Failed to submit application',
-          position: 'top',
-        });
+      if (result?.status === 'already_applied') {
+        // Show the update-confirmation dialog instead of success
+        alreadyAppliedMessage.value =
+          result.message ||
+          "You've already applied for this job. Do you want to update your previous application?";
+        pendingToken.value = result.confirmationToken;
+        alreadyAppliedDialog.value = true;
+        return;
       }
+
+      // Genuine new submission success
+      wasUpdate.value = false;
+      referenceNumber.value = generateReferenceNumber();
+      submittedAt.value = getCurrentDateTime();
+      successDialog.value = true;
     } catch (err) {
       console.error('Manual submission error:', err);
       let errorMessage = 'Network error. Please try again.';
@@ -640,9 +737,31 @@
     }
   }
 
-  function resetAndContinue() {
-    uploadStore.reset();
-    successDialog.value = false;
+  async function processUpdateSubmission() {
+    alreadyAppliedDialog.value = false;
+
+    try {
+      await uploadStore.confirmManualUpdate(pendingToken.value);
+
+      // Update success
+      wasUpdate.value = true;
+      referenceNumber.value = generateReferenceNumber();
+      submittedAt.value = getCurrentDateTime();
+      successDialog.value = true;
+    } catch (err) {
+      console.error('Update submission error:', err);
+      let errorMessage = 'Network error. Please try again.';
+      if (err.response?.data) {
+        errorMessage = err.response.data.message || err.response.data.error || errorMessage;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      $q.notify({
+        type: 'negative',
+        message: errorMessage,
+        position: 'top',
+      });
+    }
   }
 
   function goBack() {
@@ -948,6 +1067,16 @@
     align-items: center;
   }
 
+  /* Orange header for the already-applied dialog */
+  .header-warning {
+    background-color: #f57c00;
+    height: 100px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
   .icon-container {
     width: 56px;
     height: 56px;
@@ -1015,6 +1144,11 @@
     justify-content: flex-end;
     gap: 12px;
     flex-wrap: wrap;
+  }
+
+  /* Centred single-button layout for success dialog */
+  .dialog-actions--center {
+    justify-content: center;
   }
 
   .position-text {

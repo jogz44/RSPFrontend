@@ -1546,6 +1546,39 @@
     };
   }
 
+  const refreshAllData = async () => {
+    isLoading.value = true;
+    try {
+      // Refresh job details and criteria
+      await loadAllData(jobId.value);
+
+      // Refresh applicants list
+      await jobPostStore.fetch_applicant(selectedJob.value.id, {
+        page: applicantPagination.value.page,
+        perPage:
+          applicantPagination.value.rowsPerPage === 0
+            ? 'all'
+            : applicantPagination.value.rowsPerPage,
+        search: globalSearch.value,
+      });
+
+      // Refresh ratings data
+      await jobPostStore.fetch_applicant_rating(selectedJob.value.id, {
+        page: ratingPagination.value.page,
+        perPage:
+          ratingPagination.value.rowsPerPage === 0 ? 'all' : ratingPagination.value.rowsPerPage,
+        search: ratingApplicantSearch.value,
+      });
+
+      toast.success('Data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('Failed to refresh data');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const handleQualificationModalUpdate = (value) => {
     qualificationModalVisible.value = value;
   };
@@ -1561,6 +1594,8 @@
   const onCloseQualificationModal = () => {
     qualificationModalVisible.value = false;
     selectedApplicantData.value = {};
+    // Refresh all data when QS modal closes
+    refreshAllData();
   };
   const onViewPDS = () => {
     console.log('View PDS requested for:', selectedApplicantData.value.name);

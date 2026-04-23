@@ -5,6 +5,8 @@ import { toast } from 'src/boot/toast'; // Import toast instance
 export const DashboardStore = defineStore('dashboard', {
   state: () => ({
     fundedData: null,
+    summaryByOffice: [],
+
     vw_active: [],
     vw_status: [],
     totalMale: 0,
@@ -21,62 +23,65 @@ export const DashboardStore = defineStore('dashboard', {
   }),
 
   actions: {
-      async status() {
-        if (this.loading) return; // ← guard against duplicate calls
+    async status() {
+      if (this.loading) return; // ← guard against duplicate calls
 
-        this.loading = true;
-        this.error = null;
-        try {
-          const response = await adminApi.get('dashboard');
-          const data = response.data;
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminApi.get('dashboard');
+        const data = response.data;
 
-          this.fundedData = {
-            total_positions: data.total_positions,
-            funded: data.funded,
-            unfunded: data.unfunded,
-            occupied: data.occupied,
-            unoccupied: data.unoccupied,
-          };
+        this.fundedData = {
+          total_positions: data.total_positions,
+          funded: data.funded,
+          unfunded: data.unfunded,
+          occupied: data.occupied,
+          unoccupied: data.unoccupied,
+        };
 
-          this.qualified = data.qualified;
-          this.unqualified = data.unqualified;
-          this.pending = data.pending;
-          this.total_applicant = data.total_applicant;
+        this.qualified = data.qualified;
+        this.unqualified = data.unqualified;
+        this.pending = data.pending;
+        this.total_applicant = data.total_applicant;
 
+        return data;
+      } catch (error) {
+        console.error('Error fetching the status:', error);
+        this.error = 'Failed to fetch status summary.';
+      } finally {
+        this.loading = false;
+      }
+    },
 
-          return data;
-        } catch (error) {
-          console.error('Error fetching the status:', error);
-          this.error = 'Failed to fetch status summary.';
-        } finally {
-          this.loading = false;
-        }
-      },
+    async fetchSummaryByOffice() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminApi.get('/dashboard/summary-by-office');
+        this.summaryByOffice = response.data || [];
+        return this.summaryByOffice;
+      } catch (error) {
+        this.summaryByOffice = [];
+        const errorMessage = error.response?.data?.message || 'Failed to fetch summary by office';
+        console.log(errorMessage);
+        toast.warning(errorMessage);
+      } finally {
+        this.loading = false;
+      }
+    },
 
     async fetch_vwActive() {
       this.loading = true;
       this.error = null;
       try {
         const response = await adminApi.get('/vw-Active');
-        // this.vw_active = response.data
-        // console.log(response.data)
         return response.data.data;
       } catch {
         toast.error('Failed to Load vwactive');
       }
     },
-    // async fetchFundedCount() {
-    //   this.loading = true;
-    //   this.error = null;
-    //   try {
-    //     const response = await adminApi.get('/plantilla/status');
-    //     this.fundedData = response.data;
-    //     return response.data;
-    //   } catch {
-    //     toast.error('Failed to Load funded data');
-    //   }
-    // },
-    // //
+
     async fetchStatus(status) {
       this.loading = true;
       const jsonEncode = {
@@ -97,7 +102,6 @@ export const DashboardStore = defineStore('dashboard', {
       this.loading = true;
       try {
         const response = await adminApi.get('/vw-Active/count');
-        // console.log(response.data);
         this.countAll = response.data.total;
       } catch (error) {
         this.countAll = 0;
@@ -110,20 +114,15 @@ export const DashboardStore = defineStore('dashboard', {
       this.loading = true;
       this.error = null;
       try {
-        // Assuming the API endpoint is '/vw-Active/sex-count'
-        // based on the Laravel controller method name.
-        // Ensure this route is defined in your Laravel routes file.
         const response = await adminApi.get('/vw-Active/Sex');
-        // Assuming you will add totalMale and totalFemale to your state
         this.totalMale = response.data.totalMale;
         this.totalFemale = response.data.totalFemale;
-        // console.log(response.data);
       } catch (error) {
         this.totalMale = 0;
         this.totalFemale = 0;
         const errorMessage = error.response?.data?.message || 'Failed to fetch sex count';
-        console.log(errorMessage); // Logging error message as in other actions
-        toast.warning(errorMessage); // Using toast.warning consistent with other actions
+        console.log(errorMessage);
+        toast.warning(errorMessage);
       }
     },
   },

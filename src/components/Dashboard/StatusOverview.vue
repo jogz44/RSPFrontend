@@ -17,6 +17,7 @@
           </q-card-section>
         </q-card>
       </div>
+
       <div class="col-12 col-md-3">
         <q-card class="bg-white stat-card">
           <q-card-section class="card-content">
@@ -32,31 +33,46 @@
           </q-card-section>
         </q-card>
       </div>
-      <div class="col-12 col-md-3">
+
+      <!-- PRE-ASSESSMENT CARD (Qualified + Unqualified) -->
+      <div class="col-12 col-md-6">
         <q-card class="bg-white stat-card">
           <q-card-section class="card-content">
-            <div class="row items-center no-wrap full-width">
+            <div class="row items-center no-wrap full-width q-mb-xs">
               <div class="col stats-text">
-                <div class="label-text">Qualified</div>
-                <div class="value-text text-positive">{{ dashboardStore.qualified }}</div>
-              </div>
-              <div class="col-auto icon-container">
-                <q-icon name="verified_user" size="40px" color="positive" />
+                <div class="label-text">Pre-Assessment</div>
               </div>
             </div>
-          </q-card-section>
-        </q-card>
-      </div>
-      <div class="col-12 col-md-3">
-        <q-card class="bg-white stat-card">
-          <q-card-section class="card-content">
-            <div class="row items-center no-wrap full-width">
-              <div class="col stats-text">
-                <div class="label-text">Unqualified</div>
-                <div class="value-text text-negative">{{ dashboardStore.unqualified }}</div>
+
+            <q-separator class="q-mb-sm" />
+
+            <div class="row items-stretch">
+              <div class="col-6">
+                <div class="row items-center no-wrap full-width">
+                  <div class="col stats-text">
+                    <div class="label-text">Qualified</div>
+                    <div class="value-text text-positive">{{ dashboardStore.qualified }}</div>
+                  </div>
+                  <div class="col-auto icon-container">
+                    <q-icon name="verified_user" size="28px" color="positive" />
+                  </div>
+                </div>
               </div>
-              <div class="col-auto icon-container">
-                <q-icon name="cancel" size="40px" color="negative" />
+
+              <div class="col-auto flex flex-center">
+                <q-separator vertical />
+              </div>
+
+              <div class="col q-ml-md">
+                <div class="row items-center no-wrap full-width">
+                  <div class="col stats-text">
+                    <div class="label-text">Unqualified</div>
+                    <div class="value-text text-negative">{{ dashboardStore.unqualified }}</div>
+                  </div>
+                  <div class="col-auto icon-container">
+                    <q-icon name="cancel" size="28px" color="negative" />
+                  </div>
+                </div>
               </div>
             </div>
           </q-card-section>
@@ -68,12 +84,9 @@
 
 <script setup>
   import { onMounted } from 'vue';
-
   import { DashboardStore } from 'src/stores/dashboardStore';
 
   const dashboardStore = DashboardStore();
-
-  // Variable names updated to match labels
 
   onMounted(async () => {
     try {
@@ -88,7 +101,7 @@
   .stat-card {
     border-top: 4px solid #00b034;
     border-radius: 8px;
-    height: 100px;
+    height: 130px;
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
@@ -98,7 +111,8 @@
     height: 100%;
     padding: 12px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .stats-text {
@@ -136,7 +150,6 @@
     border-top: 4px solid #1088d8;
   }
 
-  /* Improve readability on smaller screens */
   @media (max-width: 1200px) {
     .label-text {
       font-size: 13px;

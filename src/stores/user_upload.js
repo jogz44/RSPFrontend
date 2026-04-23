@@ -67,6 +67,7 @@ export const useUser_upload = defineStore('user_upload', () => {
   /**
    * Process manual application submission by admin (no email required)
    * Uses /applicant/submissions/manual endpoint
+   * @returns {{ status: 'submitted' | 'already_applied', confirmationToken?: string }}
    */
   async function processManualSubmission() {
     if (!uploadedFile.value || !uploadedZipFile.value) {
@@ -95,11 +96,65 @@ export const useUser_upload = defineStore('user_upload', () => {
       });
 
       isSubmitting.value = false;
-      return response;
+
+      const data = response?.data ?? response;
+
+      // Already applied — server returns success: false with a confirmation_token
+      if (data?.success === false && data?.confirmation_token) {
+        return {
+          status: 'already_applied',
+          message: data.message,
+          confirmationToken: data.confirmation_token,
+          expiresInMinutes: data.expires_in_minutes,
+        };
+      }
+
+      return { status: 'submitted', data };
     } catch (error) {
       isSubmitting.value = false;
       errorMessage.value =
         error.response?.data?.message || error.message || 'Failed to submit manual application';
+      throw error;
+    }
+  }
+
+  /**
+   * Confirm update of an existing manual application using the confirmation token
+   * @param {string} confirmationToken
+   */
+  async function confirmManualUpdate(confirmationToken) {
+    if (!uploadedFile.value || !uploadedZipFile.value) {
+      errorMessage.value = 'Both Excel and ZIP files are required';
+      throw new Error(errorMessage.value);
+    }
+
+    if (!selectedJob.value || !selectedJob.value.id) {
+      errorMessage.value = 'No job selected';
+      throw new Error(errorMessage.value);
+    }
+
+    isSubmitting.value = true;
+    errorMessage.value = '';
+
+    try {
+      const formData = new FormData();
+      formData.append('job_batches_rsp_id', selectedJob.value.id);
+      formData.append('excel_file', uploadedFile.value);
+      formData.append('zip_file', uploadedZipFile.value);
+      formData.append('confirmation_token', confirmationToken);
+
+      const response = await adminApi.post('/applicant/submissions/manual/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      isSubmitting.value = false;
+      return { status: 'updated', data: response?.data ?? response };
+    } catch (error) {
+      isSubmitting.value = false;
+      errorMessage.value =
+        error.response?.data?.message || error.message || 'Failed to update manual application';
       throw error;
     }
   }
@@ -136,6 +191,7 @@ export const useUser_upload = defineStore('user_upload', () => {
     setSelectedJob,
     processSubmission,
     processManualSubmission,
+    confirmManualUpdate,
     reset,
     clearAll,
   };

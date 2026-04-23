@@ -1,20 +1,14 @@
 <template>
-  <!-- PDS Modal -->
   <q-dialog v-model="localShowModal" persistent class="pds-dialog">
     <q-card class="pds-container">
       <q-card-section class="row justify-between text-black q-mb-sm">
-        <div class="text-h5 text-bold items-center flex">
-          Personal Data Sheet (PDS)
-
-          <q-badge class="bg-blue q-ml-sm">View PDS</q-badge>
-        </div>
+        <div class="text-h5 text-bold items-center flex">Personal Data Sheet (PDS)</div>
         <q-btn icon="close" flat round dense class="close-btn" @click="closeModal" />
       </q-card-section>
 
       <q-card-section class="q-pa-none flex column" style="flex: 1; overflow: hidden">
-        <!-- Main Content Area -->
         <div class="row q-pa-sm q-gutter-x-sm" style="flex: 1; overflow: hidden">
-          <!-- Left Side - Tabs Navigation -->
+          <!-- Left – tabs -->
           <q-card class="col-3 bg-white q-pa-sm" style="overflow: hidden">
             <q-scroll-area style="height: 100%" class="q-pr-md">
               <q-list>
@@ -23,7 +17,7 @@
                   :key="tab.name"
                   :clickable="!isLoadingPDS"
                   :active="currentTab === tab.name"
-                  @click="!isLoadingPDS && (currentTab = tab.name)"
+                  @click="!isLoadingPDS && switchTab(tab.name)"
                   active-class="active-tab"
                   class="tab-item q-py-sm"
                   style="border-radius: 5px"
@@ -40,10 +34,9 @@
             </q-scroll-area>
           </q-card>
 
-          <!-- Right Side - Content Area -->
+          <!-- Right – content -->
           <q-card class="col" style="overflow: hidden">
             <q-scroll-area style="height: 100%">
-              <!-- Loading State -->
               <div
                 v-if="isLoadingPDS"
                 style="height: 70vh"
@@ -53,7 +46,6 @@
                 <div class="q-mt-sm text-grey">Loading PDS...</div>
               </div>
 
-              <!-- Error State -->
               <div
                 v-else-if="loadError"
                 style="height: 70vh"
@@ -64,11 +56,12 @@
                 <q-btn color="primary" class="q-mt-md" label="Retry" @click="fetchPDSData" />
               </div>
 
-              <!-- Content -->
               <div v-else>
-                <!-- Personal Information -->
                 <div v-if="currentTab === 'personal'" class="q-pa-md">
-                  <Personal_Information :personal="applicantData" />
+                  <Personal_Information
+                    :personal="applicantData"
+                    @saved="onSectionSaved('personal', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'family'" class="q-pa-md">
                   <Family_Background
@@ -77,22 +70,47 @@
                   />
                 </div>
                 <div v-else-if="currentTab === 'education'" class="q-pa-md">
-                  <Educational_Background :educ="applicantData?.education || []" />
+                  <!-- ✅ Pass personalInfoId + listen for saved -->
+                  <Educational_Background
+                    :educ="applicantData?.education || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('education', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'civilService'" class="q-pa-md">
-                  <Civil_Service_Eligibility :eligibility="applicantData?.eligibity || []" />
+                  <Civil_Service_Eligibility
+                    :eligibility="applicantData?.eligibity || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('civilService', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'work'" class="q-pa-md">
-                  <Work_Experience :experience="applicantData?.work_experience || []" />
+                  <Work_Experience
+                    :experience="applicantData?.work_experience || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('work', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'voluntary'" class="q-pa-md">
-                  <Voluntary_Work :voluntary="applicantData?.voluntary_work || []" />
+                  <Voluntary_Work
+                    :voluntary="applicantData?.voluntary_work || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('voluntary', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'training'" class="q-pa-md">
-                  <Training_Interventions :ldData="applicantData?.training || []" />
+                  <Training_Interventions
+                    :ld-data="applicantData?.training || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('training', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'skills'" class="q-pa-md">
-                  <Special_Skills_Hobbies :skills="applicantData?.skills || []" />
+                  <Special_Skills_Hobbies
+                    :skills="applicantData?.skills || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('skills', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'nonAcademic'" class="q-pa-md">
                   <Non_Academic :distinctions="applicantData?.skills || []" />
@@ -104,9 +122,12 @@
                   <Other_Information />
                 </div>
                 <div v-else-if="currentTab === 'references'" class="q-pa-md">
-                  <References :references="applicantData?.reference || []" />
+                  <References
+                    :references="applicantData?.reference || []"
+                    :personal-info-id="personalInfoId"
+                    @saved="onSectionSaved('references', $event)"
+                  />
                 </div>
-                <!-- Placeholder for other tabs -->
                 <div v-else class="q-pa-md">
                   <div class="text-h6 q-mb-md">
                     {{ tabs.find((t) => t.name === currentTab)?.label }}
@@ -118,7 +139,6 @@
           </q-card>
         </div>
 
-        <!-- Footer with buttons -->
         <q-card-actions class="justify-end q-pa-md">
           <q-btn rounded label="Close" color="grey-7" @click="closeModal" class="q-mx-sm" />
         </q-card-actions>
@@ -130,6 +150,7 @@
 <script setup>
   import { ref, watch, computed, onMounted } from 'vue';
   import { useJobPostStore } from 'stores/jobPostStore.js';
+  import { usePdsEditStore } from 'stores/pdsEditStore.js';
 
   import Personal_Information from './Applicant_pds/Personal_Information.vue';
   import Family_Background from './Applicant_pds/Family_Background.vue';
@@ -145,6 +166,7 @@
   import References from './Applicant_pds/References_User.vue';
 
   const jobStore = useJobPostStore();
+  const editStore = usePdsEditStore();
 
   const props = defineProps({
     modelValue: Boolean,
@@ -163,7 +185,7 @@
     },
   });
 
-  const emit = defineEmits(['update:modelValue', 'close']);
+  const emit = defineEmits(['update:modelValue', 'close', 'pds-updated']);
 
   const localShowModal = ref(props.modelValue);
   const currentTab = ref('personal');
@@ -172,22 +194,24 @@
 
   const applicantData = computed(() => {
     if (jobStore.applicantPDS && Object.keys(jobStore.applicantPDS).length > 0) {
-      console.log('Using PDS data from store');
       return jobStore.applicantPDS;
     }
-
     let arr = jobStore.applicants || jobStore.applicant || [];
-    if (arr.length && props.applicant && props.applicant.id) {
+    if (arr.length && props.applicant?.id) {
       const found = arr.find((a) => a.id === props.applicant.id);
-      if (found) {
-        console.log('Using data from applicants array');
-        return found;
-      }
+      if (found) return found;
     }
-
-    console.log('Using data from props');
     return props.applicant || {};
   });
+
+  /** Derive the personal_info_id from the loaded PDS or the prop */
+  const personalInfoId = computed(
+    () =>
+      applicantData.value?.nPersonalInfo_id ||
+      applicantData.value?.nPersonalInfo?.id ||
+      props.applicant?.nPersonalInfo_id ||
+      null,
+  );
 
   const tabs = ref([
     { name: 'personal', label: 'Personal Information' },
@@ -204,11 +228,26 @@
     { name: 'references', label: 'References' },
   ]);
 
+  /**
+   * Guard tab switching: if a section is in edit mode, ask user to confirm.
+   */
+  function switchTab(tabName) {
+    if (editStore.activeEditSection) {
+      // There's an active edit — just switch; the store still holds the draft.
+      // Optionally add a confirmation dialog here if you want stricter UX.
+      editStore.cancelEdit(editStore.activeEditSection);
+    }
+    currentTab.value = tabName;
+  }
+
   const fetchPDSData = async () => {
-    const submissionId = props.applicant?.submission_id || props.applicant?.id;
+    const submissionId =
+      applicantData.value?.submission_id ||
+      applicantData.value?.id ||
+      props.applicant?.submission_id ||
+      props.applicant?.id;
 
     if (!submissionId) {
-      console.warn('No submission_id or id provided');
       loadError.value = false;
       return;
     }
@@ -217,9 +256,7 @@
     loadError.value = false;
 
     try {
-      console.log('Fetching PDS for submission_id:', submissionId);
       await jobStore.fetchApplicantPDS(submissionId);
-      console.log('PDS data loaded successfully:', jobStore.applicantPDS);
     } catch (error) {
       console.error('Error fetching PDS data:', error);
       loadError.value = true;
@@ -228,11 +265,21 @@
     }
   };
 
+  /**
+   * Called by child components after a successful save.
+   * Re-fetches PDS so the view reflects the saved data.
+   */
+  async function onSectionSaved(section, responseData) {
+    console.log(`Section "${section}" saved`, responseData);
+    emit('pds-updated', { section, data: responseData });
+    // Refresh PDS data from server
+    await fetchPDSData();
+  }
+
   watch(
     () => localShowModal.value,
     (val) => {
       emit('update:modelValue', val);
-
       if (val) {
         currentTab.value = 'personal';
         fetchPDSData();
@@ -248,9 +295,12 @@
   );
 
   const closeModal = () => {
+    // Cancel any active edit before closing
+    if (editStore.activeEditSection) {
+      editStore.cancelEdit(editStore.activeEditSection);
+    }
     emit('update:modelValue', false);
     emit('close');
-
     setTimeout(() => {
       jobStore.applicantPDS = null;
       loadError.value = false;
@@ -263,21 +313,19 @@
       case 'personal':
         return !!applicantData.value.firstname;
       case 'family':
-        return applicantData.value.family || applicantData.value.family.length > 0;
+        return applicantData.value.family || applicantData.value.family?.length > 0;
       case 'education':
-        return applicantData.value.education && applicantData.value.education.length > 0;
+        return applicantData.value.education?.length > 0;
       case 'civilService':
-        return applicantData.value.eligibity && applicantData.value.eligibity.length > 0;
+        return applicantData.value.eligibity?.length > 0;
       case 'work':
-        return (
-          applicantData.value.work_experience && applicantData.value.work_experience.length > 0
-        );
+        return applicantData.value.work_experience?.length > 0;
       case 'voluntary':
-        return applicantData.value.voluntary_work && applicantData.value.voluntary_work.length > 0;
+        return applicantData.value.voluntary_work?.length > 0;
       case 'training':
-        return applicantData.value.training && applicantData.value.training.length > 0;
+        return applicantData.value.training?.length > 0;
       case 'skills':
-        return applicantData.value.skills && applicantData.value.skills.length > 0;
+        return applicantData.value.skills?.length > 0;
       case 'nonAcademic':
         return true;
       case 'membership':
@@ -285,60 +333,47 @@
       case 'other':
         return true;
       case 'references':
-        return applicantData.value.reference && applicantData.value.reference.length > 0;
+        return applicantData.value.reference?.length > 0;
       default:
         return false;
     }
   };
 
   onMounted(() => {
-    if (props.modelValue) {
-      fetchPDSData();
-    }
+    if (props.modelValue) fetchPDSData();
   });
 </script>
 
 <style lang="scss" scoped>
   .pds-dialog {
     height: 100%;
+    width: 100%;
   }
-
   .pds-container {
-    width: 1000px;
+    width: 1500px;
     max-width: 95vw;
     height: 90vh;
-    max-height: 90vh;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
     display: flex;
     flex-direction: column;
   }
-
-  .tab-container {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-
   .tab-item {
     border-left: 3px solid transparent;
     border-radius: 0;
     margin-bottom: 4px;
   }
-
   .active-tab {
     background-color: #f0f8ff;
     border-left: 7px solid #21ba45;
     font-weight: bolder;
   }
-
-  .form-title-container {
-    padding: 8px 0;
-    margin-bottom: 10px;
-  }
-
   .field-label {
     color: #666;
     font-size: 12px;
     margin-bottom: 4px;
   }
-
   .field-value {
     font-size: 14px;
     font-weight: 500;
@@ -346,35 +381,20 @@
     padding-bottom: 8px;
     margin-bottom: 16px;
   }
-
   .q-scroll-area {
     background-color: white;
   }
 
-  /* Media queries for responsiveness */
   @media (max-height: 800px) {
     .pds-container {
       height: 95vh;
       max-height: 95vh;
     }
-
-    .field-value {
-      margin-bottom: 8px;
-    }
   }
-
   @media (max-height: 600px) {
     .pds-container {
       height: 98vh;
       max-height: 98vh;
-    }
-
-    .form-title-container {
-      margin-bottom: 5px;
-    }
-
-    .field-value {
-      margin-bottom: 4px;
     }
   }
 </style>

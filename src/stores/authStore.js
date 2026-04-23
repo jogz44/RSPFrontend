@@ -76,7 +76,6 @@ export const useAuthStore = defineStore('auth', {
 
         if (Array.isArray(userData.job_batches_rsp_id) && userData.job_batches_rsp_id.length > 0) {
           formattedData.job_batches_rsp_id = userData.job_batches_rsp_id;
-
         }
 
         const response = await adminApi.post(`rater/edit/${id}`, formattedData, {
@@ -111,7 +110,6 @@ export const useAuthStore = defineStore('auth', {
           this.isAuthenticated = true;
           this.user = response.data.user;
 
-          // document.cookie = `admin_token=${response.data.token}; path=/`;
           this.saveAuthState(response.data.token, response.data.user);
           await this.checkAuth();
 
@@ -127,34 +125,30 @@ export const useAuthStore = defineStore('auth', {
         }
 
         return false;
-     } catch (error) {
-            const status = error.response?.status;
-            const data   = error.response?.data;
+      } catch (error) {
+        const status = error.response?.status;
+        const data = error.response?.data;
 
-            if (status === 401 || status === 422) {
-                if (data?.errors?.role_id) {
-                    toast.error(data.errors.role_id[0]);
-                } else {
-                    toast.error(data?.message || 'Invalid credentials.');
-                }
-                error.value = data?.errors || {};
+        if (status === 401 || status === 422) {
+          if (data?.errors?.role_id) {
+            toast.error(data.errors.role_id[0]);
+          } else {
+            toast.error(data?.message || 'Invalid credentials.');
+          }
+          error.value = data?.errors || {};
+        } else if (status === 403) {
+          toast.error(
+            data?.message || 'Your account is inactive. Please contact the administrator.',
+          );
+        } else if (status === 429) {
+          toast.error(data?.message || 'Too many attempts. Please try again later.');
+        } else if (!error.response) {
+          toast.error('Please check your internet connection and try again later.');
+        } else {
+          toast.error('Login Failed!');
+        }
 
-            } else if (status === 403) {
-                toast.error(data?.message || 'Your account is inactive. Please contact the administrator.');
-
-            } else if (status === 429) {
-                // ✅ Rate limit hit
-                toast.error(data?.message || 'Too many attempts. Please try again later.');
-
-            } else if (!error.response) {
-                toast.error('Please check your internet connection and try again later.');
-
-            } else {
-                toast.error('Login Failed!');
-            }
-
-
-            return  false ;
+        return false;
       } finally {
         this.loading = false;
       }
@@ -270,7 +264,16 @@ export const useAuthStore = defineStore('auth', {
         const token = this.getToken();
         if (!token) throw new Error('No authentication token found');
 
-        const response = await adminApi.put(`/users/${id}`, userData, {
+        // Include user_role inside permissions so backend stores it in rsp_control
+        const payload = {
+          ...userData,
+          permissions: {
+            ...userData.permissions,
+            user_role: userData.user_role || '',
+          },
+        };
+
+        const response = await adminApi.put(`/users/${id}`, payload, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         });
 
@@ -279,7 +282,7 @@ export const useAuthStore = defineStore('auth', {
         if (response.data.status) {
           if (this.user && this.user.id === id) {
             this.user = { ...this.user, ...response.data.data };
-            LocalStorage.set('admin_user', this.user); //
+            LocalStorage.set('admin_user', this.user);
           }
           return response.data.data;
         }
@@ -334,6 +337,9 @@ export const useAuthStore = defineStore('auth', {
           ...userData,
           ...(userData.permissions && {
             permissions: {
+              // Include user_role inside permissions so backend stores it in rsp_control
+              user_role: userData.user_role || '',
+
               viewDashboardstat: userData.permissions?.viewDashboardstat || '0',
               viewPlantillaAccess: userData.permissions?.viewPlantillaAccess || '0',
               modifyPlantillaAccess: userData.permissions?.modifyPlantillaAccess || '0',
@@ -346,9 +352,8 @@ export const useAuthStore = defineStore('auth', {
               viewCriteria: userData.permissions?.viewCriteria || '0',
               modifyCriteria: userData.permissions?.modifyCriteria || '0',
               viewReport: userData.permissions?.viewReport || '0',
-
-              viewSchedule:userData.permissions?.viewSchedule || '0',
-              modifySchedule:userData.permissions?.modifySchedule || '0',
+              viewSchedule: userData.permissions?.viewSchedule || '0',
+              modifySchedule: userData.permissions?.modifySchedule || '0',
               viewExam: userData.permissions?.viewExam || '0',
               modifyExam: userData.permissions?.modifyExam || '0',
             },
@@ -374,7 +379,6 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
       }
     },
-
 
     async get_all_raters() {
       this.loadUser = true;
@@ -403,7 +407,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async Rater_register(userData) {
-
       this.loading = true;
       this.errors = {};
       try {
@@ -419,7 +422,6 @@ export const useAuthStore = defineStore('auth', {
           office: userData.Office,
           password: 'admin',
           controlNo: userData.controlNo,
-          // FIX: added missing required fields
           representative: userData.representative || '',
           role: userData.role || '',
         };

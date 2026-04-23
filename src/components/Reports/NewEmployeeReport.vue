@@ -238,7 +238,7 @@
           stack: [
             {
               text: 'LIST OF NEWLY APPOINTED & PROMOTED PERMANENT EMPLOYEES',
-              fontSize: 11,
+              fontSize: 16,
               bold: true,
               alignment: 'center',
               margin: [0, 0, 0, 3],

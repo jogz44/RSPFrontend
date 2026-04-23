@@ -43,6 +43,22 @@
             />
           </template>
 
+          <!-- User Role -->
+          <template #body-cell-user_role="props">
+            <q-td :props="props">
+              <q-badge
+                v-if="props.row.rsp_control?.user_role"
+                rounded
+                :color="getRoleBadgeColor(props.row.rsp_control.user_role)"
+                class="role-badge"
+              >
+                <q-icon name="shield" size="10px" class="q-mr-xs" />
+                {{ props.row.rsp_control.user_role }}
+              </q-badge>
+              <span v-else class="text-grey-5 text-caption">—</span>
+            </q-td>
+          </template>
+
           <!-- Active status -->
           <template #body-cell-active="props">
             <q-td :props="props">
@@ -203,6 +219,53 @@
                   <template #prepend><q-icon name="work" size="18px" /></template>
                 </q-input>
 
+                <!-- ── User Role: free-text with Administrator shortcut ── -->
+                <div class="q-mb-md">
+                  <q-input
+                    v-model="form.user_role"
+                    label="User Role"
+                    outlined
+                    dense
+                    hint="Type any role name (e.g. Supervisor, HR Staff)"
+                    @update:model-value="onRoleInput"
+                  >
+                    <template #prepend>
+                      <q-icon name="admin_panel_settings" size="18px" />
+                    </template>
+                    <template #append>
+                      <q-btn
+                        v-if="form.user_role"
+                        flat
+                        round
+                        dense
+                        icon="close"
+                        size="xs"
+                        color="grey"
+                        @click="clearRole"
+                      />
+                    </template>
+                  </q-input>
+
+                  <!-- Administrator preset chip -->
+                  <div class="role-presets q-mt-sm">
+                    <div class="text-caption text-grey-6 q-mb-xs">Quick preset:</div>
+                    <q-chip
+                      clickable
+                      dense
+                      icon="shield"
+                      color="deep-purple"
+                      text-color="white"
+                      class="preset-chip"
+                      @click="applyAdministrator"
+                    >
+                      Administrator
+                      <q-tooltip>
+                        Sets role name to "Administrator" and enables all permissions
+                      </q-tooltip>
+                    </q-chip>
+                  </div>
+                </div>
+
                 <q-input
                   v-model="form.password"
                   type="password"
@@ -240,9 +303,31 @@
 
               <!-- ── Right Panel: Permissions ── -->
               <div class="right-panel q-pa-lg">
-                <div class="section-label q-mb-md">
+                <div class="section-label q-mb-sm">
                   <q-icon name="shield" size="16px" class="q-mr-xs" />
                   Module Permissions
+                </div>
+
+                <!-- Select All row -->
+                <div class="select-all-row q-mb-md">
+                  <div class="select-all-left">
+                    <q-icon name="select_all" size="14px" class="q-mr-xs text-grey-6" />
+                    <span class="text-caption text-grey-7">Select All Permissions</span>
+                  </div>
+                  <q-toggle
+                    v-model="selectAll"
+                    color="deep-purple"
+                    dense
+                    keep-color
+                    @update:model-value="onSelectAllToggle"
+                  >
+                    <span
+                      :class="selectAll ? 'text-deep-purple' : 'text-grey-6'"
+                      class="text-caption text-weight-medium"
+                    >
+                      {{ selectAll ? 'All On' : 'All Off' }}
+                    </span>
+                  </q-toggle>
                 </div>
 
                 <div class="permissions-scroll">
@@ -260,6 +345,7 @@
                         label="View Statistics"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -278,6 +364,7 @@
                         label="View"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -286,6 +373,7 @@
                         label="Modify"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -304,6 +392,7 @@
                         label="View"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -312,6 +401,7 @@
                         label="Modify"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -330,6 +420,7 @@
                         label="View"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -338,6 +429,7 @@
                         label="Modify"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -356,6 +448,7 @@
                         label="View"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -364,6 +457,7 @@
                         label="Modify"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -382,6 +476,7 @@
                         label="View Raters"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -390,6 +485,7 @@
                         label="Modify Raters"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                     <div class="perm-row two-col">
@@ -400,6 +496,7 @@
                         label="View Criteria"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                       <q-toggle
                         true-value="1"
@@ -408,6 +505,7 @@
                         label="Modify Criteria"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                     <div class="perm-row">
@@ -418,6 +516,7 @@
                         label="View Reports"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -436,6 +535,7 @@
                         label="User Management"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                     <div class="perm-row">
@@ -446,6 +546,7 @@
                         label="Activity Logs"
                         dense
                         color="primary"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -501,6 +602,39 @@
   import ButtonResetPassword from 'components/ButtonResetPassword.vue';
   import ButtonDelete from 'components/ButtonDelete.vue';
 
+  // ── All permission keys ───────────────────────────────────────────────
+  const ALL_PERMISSION_KEYS = [
+    'viewDashboardstat',
+    'viewPlantillaAccess',
+    'modifyPlantillaAccess',
+    'viewJobpostAccess',
+    'modifyJobpostAccess',
+    'viewSchedule',
+    'modifySchedule',
+    'viewExam',
+    'modifyExam',
+    'viewRater',
+    'modifyRater',
+    'viewCriteria',
+    'modifyCriteria',
+    'viewReport',
+    'userManagement',
+    'viewActivityLogs',
+  ];
+
+  // ── Badge color based on role name ───────────────────────────────────
+  // Administrator always gets deep-purple; everything else cycles through
+  // a palette so different custom roles look distinct.
+  const ROLE_COLORS = ['teal', 'blue', 'green', 'orange', 'pink', 'cyan', 'indigo', 'brown'];
+
+  function hashRoleColor(roleName) {
+    if (!roleName) return 'grey';
+    if (roleName.toLowerCase() === 'administrator') return 'deep-purple';
+    let hash = 0;
+    for (let i = 0; i < roleName.length; i++) hash = roleName.charCodeAt(i) + ((hash << 5) - hash);
+    return ROLE_COLORS[Math.abs(hash) % ROLE_COLORS.length];
+  }
+
   export default defineComponent({
     name: 'UserManagement',
     components: { ButtonResetPassword, ButtonDelete },
@@ -508,6 +642,7 @@
     setup() {
       const authStore = useAuthStore();
       const confirmUpdateDialog = ref(false);
+      const selectAll = ref(false);
 
       const filter = ref('');
       const pagination = ref({
@@ -521,6 +656,13 @@
         { name: 'name', align: 'left', label: 'Name', field: 'name', sortable: true },
         { name: 'username', align: 'left', label: 'Username', field: 'username', sortable: true },
         { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
+        {
+          name: 'user_role',
+          align: 'left',
+          label: 'User Role',
+          field: (row) => row.rsp_control?.user_role || '',
+          sortable: true,
+        },
         { name: 'active', align: 'left', label: 'Status', field: 'active', sortable: true },
         {
           name: 'created_at',
@@ -539,48 +681,97 @@
         { name: 'actions', align: 'center', label: 'Actions', field: 'actions', sortable: false },
       ];
 
-      const defaultPermissions = () => ({
-        viewDashboardstat: '0',
-        viewPlantillaAccess: '0',
-        modifyPlantillaAccess: '0',
-        viewJobpostAccess: '0',
-        modifyJobpostAccess: '0',
-        viewSchedule: '0',
-        modifySchedule: '0',
-        viewExam: '0',
-        modifyExam: '0',
-        viewRater: '0',
-        modifyRater: '0',
-        viewCriteria: '0',
-        modifyCriteria: '0',
-        viewReport: '0',
-        userManagement: '0',
-        viewActivityLogs: '0',
-      });
+      // ── Badge color helper (used in table) ───────────────────────────
+      function getRoleBadgeColor(roleName) {
+        return hashRoleColor(roleName);
+      }
 
+      // ── Permission helpers ───────────────────────────────────────────
+      const defaultPermissions = () => {
+        const p = {};
+        ALL_PERMISSION_KEYS.forEach((k) => (p[k] = '0'));
+        return p;
+      };
+
+      const allPermissionsOn = () => {
+        const p = {};
+        ALL_PERMISSION_KEYS.forEach((k) => (p[k] = '1'));
+        return p;
+      };
+
+      function checkAllOn(permissions) {
+        return ALL_PERMISSION_KEYS.every((k) => permissions[k] === '1');
+      }
+
+      // ── Form state ───────────────────────────────────────────────────
       const dialog = ref(false);
       const isEditing = ref(false);
       const form = ref({
         name: '',
         username: '',
         position: '',
+        user_role: '',
         password: '',
         active: true,
         permissions: defaultPermissions(),
       });
 
+      // ── Select All toggle ────────────────────────────────────────────
+      function onSelectAllToggle(val) {
+        const newVal = val ? '1' : '0';
+        ALL_PERMISSION_KEYS.forEach((k) => {
+          form.value.permissions[k] = newVal;
+        });
+      }
+
+      // Keep selectAll in sync when individual toggles change
+      function syncSelectAll() {
+        selectAll.value = checkAllOn(form.value.permissions);
+      }
+
+      // ── Role input handler ───────────────────────────────────────────
+      // When the user types "Administrator" (case-insensitive), auto-enable
+      // all permissions and set selectAll. For any other value, do nothing
+      // to the permissions — the user sets them manually.
+      function onRoleInput(val) {
+        if (val?.trim().toLowerCase() === 'administrator') {
+          form.value.permissions = allPermissionsOn();
+          selectAll.value = true;
+        } else {
+          // Typing anything else: sync the selectAll state only
+          selectAll.value = checkAllOn(form.value.permissions);
+        }
+      }
+
+      // Administrator preset chip click
+      function applyAdministrator() {
+        form.value.user_role = 'Administrator';
+        form.value.permissions = allPermissionsOn();
+        selectAll.value = true;
+      }
+
+      // Clear role field
+      function clearRole() {
+        form.value.user_role = '';
+        selectAll.value = checkAllOn(form.value.permissions);
+      }
+
+      // ── Reset ────────────────────────────────────────────────────────
       const resetForm = () => {
         form.value = {
           name: '',
           username: '',
           position: '',
+          user_role: '',
           password: '',
           active: true,
           permissions: defaultPermissions(),
         };
+        selectAll.value = false;
         authStore.errors = {};
       };
 
+      // ── Open dialogs ─────────────────────────────────────────────────
       const openAddDialog = () => {
         resetForm();
         isEditing.value = false;
@@ -596,36 +787,49 @@
         if (!user) return;
 
         const p = user.rsp_control ?? {};
+        const permissions = {
+          viewDashboardstat: p.viewDashboardstat || '0',
+          viewPlantillaAccess: p.viewPlantillaAccess || '0',
+          modifyPlantillaAccess: p.modifyPlantillaAccess || '0',
+          viewJobpostAccess: p.viewJobpostAccess || '0',
+          modifyJobpostAccess: p.modifyJobpostAccess || '0',
+          viewSchedule: p.viewSchedule || '0',
+          modifySchedule: p.modifySchedule || '0',
+          viewExam: p.viewExam || '0',
+          modifyExam: p.modifyExam || '0',
+          viewRater: p.viewRater || '0',
+          modifyRater: p.modifyRater || '0',
+          viewCriteria: p.viewCriteria || '0',
+          modifyCriteria: p.modifyCriteria || '0',
+          viewReport: p.viewReport || '0',
+          userManagement: p.userManagement || '0',
+          viewActivityLogs: p.viewActivityLogs || '0',
+        };
+
         form.value = {
           id: user.id,
           name: user.name,
           username: user.username,
           position: user.position,
+          user_role: p.user_role || '',
           password: '',
           active: user.active,
-          permissions: {
-            viewDashboardstat: p.viewDashboardstat || '0',
-            viewPlantillaAccess: p.viewPlantillaAccess || '0',
-            modifyPlantillaAccess: p.modifyPlantillaAccess || '0',
-            viewJobpostAccess: p.viewJobpostAccess || '0',
-            modifyJobpostAccess: p.modifyJobpostAccess || '0',
-            viewSchedule: p.viewSchedule || '0',
-            modifySchedule: p.modifySchedule || '0',
-            viewExam: p.viewExam || '0',
-            modifyExam: p.modifyExam || '0',
-            viewRater: p.viewRater || '0',
-            modifyRater: p.modifyRater || '0',
-            viewCriteria: p.viewCriteria || '0',
-            modifyCriteria: p.modifyCriteria || '0',
-            viewReport: p.viewReport || '0',
-            userManagement: p.userManagement || '0',
-            viewActivityLogs: p.viewActivityLogs || '0',
-          },
+          permissions,
         };
+
+        selectAll.value = checkAllOn(permissions);
       };
 
+      // ── Submit ───────────────────────────────────────────────────────
       const submitForm = async () => {
-        const userData = { ...form.value, permissions: { ...form.value.permissions } };
+        const userData = {
+          ...form.value,
+          permissions: {
+            ...form.value.permissions,
+            user_role: form.value.user_role || '',
+          },
+        };
+
         if (isEditing.value) {
           const result = await authStore.updateUser(form.value.id, userData);
           if (result) dialog.value = false;
@@ -643,12 +847,19 @@
       return {
         authStore,
         confirmUpdateDialog,
+        selectAll,
         filter,
         pagination,
         columns,
         dialog,
         isEditing,
         form,
+        getRoleBadgeColor,
+        onRoleInput,
+        applyAdministrator,
+        clearRole,
+        onSelectAllToggle,
+        syncSelectAll,
         openAddDialog,
         openEditDialog,
         submitForm,
@@ -658,14 +869,13 @@
 </script>
 
 <style scoped>
-  /* ── Table wrapper: horizontal scroll on small screens ── */
+  /* ── Table wrapper ── */
   .table-scroll-wrapper {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* ── "Add New User" button: hide label on xs screens ── */
   @media (max-width: 479px) {
     .add-user-btn :deep(.q-btn__content span) {
       display: none;
@@ -725,7 +935,7 @@
     min-height: 0;
   }
 
-  /* ── Panels container: row on desktop, column on mobile ── */
+  /* ── Panels ── */
   .dialog-panels {
     display: flex;
     flex-direction: row;
@@ -774,6 +984,41 @@
     }
   }
 
+  /* ── Role presets ── */
+  .role-presets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .preset-chip {
+    cursor: pointer;
+    font-size: 12px;
+    transition: opacity 0.2s;
+  }
+
+  .preset-chip:hover {
+    opacity: 0.85;
+  }
+
+  /* ── Select All Row ── */
+  .select-all-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: #f3e5f5;
+    border: 1px solid #ce93d8;
+    border-radius: 8px;
+  }
+
+  .select-all-left {
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── Permissions scroll ── */
   .permissions-scroll {
     flex: 1;
     overflow-y: auto;
@@ -844,7 +1089,6 @@
     gap: 0;
   }
 
-  /* Collapse two-col to single column on very small screens */
   @media (max-width: 479px) {
     .perm-row.two-col {
       grid-template-columns: 1fr;
@@ -855,5 +1099,11 @@
   .dialog-footer {
     flex-shrink: 0;
     background: #fafafa;
+  }
+
+  /* ── Role badge in table ── */
+  .role-badge {
+    font-size: 11px;
+    padding: 4px 8px;
   }
 </style>

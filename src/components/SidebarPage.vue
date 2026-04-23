@@ -2,7 +2,11 @@
   <q-drawer show-if-above v-model="drawer" side="left" :width="230" bordered>
     <!-- Logo Section -->
     <div class="logo-container">
-      <q-img src="/logo.png" width="130px" />
+      <q-img src="/logo.png" width="100px" />
+    </div>
+
+    <div class="header-container">
+      <div class="company-title">CITY OF HUMAN RESOURCE MANAGEMENT OFFICE</div>
     </div>
 
     <!-- Header Section -->
@@ -328,12 +332,12 @@
   /* Header Section */
   .header-container {
     text-align: center;
-    margin-bottom: 2px !important;
-    padding-bottom: 0 !important;
+    margin: 10px !important;
   }
 
   .company-title {
-    font-size: 16px;
+    font-size: 14px;
+    color: #156d2f;
     font-weight: bold;
     margin-bottom: 0 !important;
   }

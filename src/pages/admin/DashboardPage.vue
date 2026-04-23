@@ -2,7 +2,7 @@
   <q-page>
     <div v-if="authStore.user && hasViewDashboardAccess" class="column no-gap">
       <!-- Welcome Message -->
-      <q-img
+      <!-- <q-img
         src="tgch.png"
         class="q-pa-md column justify-center items-start"
         style="height: 100px; opacity: 1.5"
@@ -17,21 +17,105 @@
             background-color: rgba(0, 0, 0, 0.5);
           "
         >
-          <div class="text-h5 text-weight-bolder q-ma-none">
-            Welcome to RSP, {{ authStore.user.name }}!
-          </div>
-          <div class="text-body2 q-ma-none">
-            Let's take a look at the updated performance of the city hall.
-          </div>
+          <div class="text-h text-weight-bolder q-ma-none">WELCOME!</div>
         </div>
         <div v-else class="q-mb-xs q-gutter-xs">
           <h4 class="text-h5 text-weight-bolder q-my-none"><q-skeleton type="text" /></h4>
           <p class="text-body2"><q-skeleton type="text" /></p>
         </div>
-      </q-img>
+      </q-img> -->
+
+      <div class="text-h5 text-weight-bolder text-primary q-ma-md">DASHBOARD</div>
+
+      <div class="row q-col-gutter-sm q-mx-lg items-center">
+        <div class="col-4">
+          <q-card class="bg-white">
+            <q-card-section class="q-pa-md">
+              <!-- TOTAL -->
+              <div class="row items-center q-mb-xs">
+                <q-icon name="assessment" color="primary" size="md" class="q-mr-sm" />
+                <div class="text-body3 text-bold">
+                  Total Positions:
+                  <span class="text-primary text-weight-bold q-ml-xs">
+                    {{ Number(dashboardStore.fundedData?.total_positions).toLocaleString() }}
+                  </span>
+                </div>
+              </div>
+              <q-separator />
+
+              <!-- TWO COLUMNS UNDER TOTAL -->
+              <div class="row q-col-gutter-md items-stretch q-pa-xs">
+                <!-- LEFT: FUNDED -->
+                <div class="col-6">
+                  <div class="row items-center q-mb-xs">
+                    <q-icon name="account_balance" color="blue-6" size="xs" class="q-mr-sm" />
+                    <div class="text-subtitle1 text-bold">
+                      Funded:
+                      <span class="text-blue-6 text-weight-bold q-ml-xs">
+                        {{ Number(dashboardStore.fundedData?.funded).toLocaleString() }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="row items-center justify-between">
+                    <span class="text-subtitle2">
+                      Occupied:
+                      <span class="text-teal-6 text-weight-bold q-ml-xs">
+                        {{ Number(dashboardStore.fundedData?.occupied).toLocaleString() }}
+                      </span>
+                    </span>
+
+                    <span class="text-subtitle2">
+                      Vacant:
+                      <span class="text-deep-purple-4 text-weight-bold q-ml-xs">
+                        {{ Number(dashboardStore.fundedData?.unoccupied).toLocaleString() }}
+                      </span>
+                    </span>
+                  </div>
+
+                  <!-- PROGRESS (Occupied vs Vacant via track) -->
+                  <q-linear-progress
+                    size="6px"
+                    rounded
+                    :value="
+                      dashboardStore.fundedData?.funded
+                        ? (dashboardStore.fundedData?.occupied || 0) /
+                          dashboardStore.fundedData?.funded
+                        : 0
+                    "
+                    color="teal-3"
+                    track-color="purple-9"
+                    class="q-mt-xs"
+                  />
+                </div>
+
+                <!-- VERTICAL DIVIDER -->
+                <div class="col-auto flex flex-center">
+                  <q-separator vertical />
+                </div>
+
+                <!-- RIGHT: UNFUNDED -->
+                <div class="col">
+                  <div class="row items-center">
+                    <q-icon name="money_off" color="amber-6" size="xs" class="q-mr-sm" />
+                    <div class="text-subtitle1 text-bold">
+                      Unfunded:
+                      <span class="text-amber-6 text-weight-bold q-ml-xs">
+                        {{ Number(dashboardStore.fundedData?.unfunded).toLocaleString() }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <div class="col-8 flex flex-center"><StatusOverview class="full-width" /></div>
+      </div>
 
       <!-- STATISTICS HEADER -->
-      <div class="row justify-start items-start q-my-sm">
+      <!-- <div class="row justify-start items-start q-my-sm">
         <div class="q-pa-xs">
           <q-icon name="stacked_line_chart" size="40px" />
         </div>
@@ -40,113 +124,147 @@
           <div class="row justify-start items-center q-gutter-x-xs">
             <q-chip dense class="q-my-xs row justify-start">
               Total Positions:
-              <q-badge rounded dense class="text-bold q-ml-xs">
+              <span class="text-primary text-weight-bold q-ml-xs">
                 {{ Number(dashboardStore.fundedData?.total_positions || 0).toLocaleString() }}
-              </q-badge>
+              </span>
             </q-chip>
             <q-chip dense class="q-my-xs row justify-start">
               Funded:
-              <q-badge rounded dense color="blue" class="text-bold q-ml-xs">
+              <span class="text-blue-6 text-weight-bold q-ml-xs">
                 {{ Number(dashboardStore.fundedData?.funded || 0).toLocaleString() }}
-              </q-badge>
+              </span>
             </q-chip>
             <q-chip dense class="q-my-xs row justify-start">
               Unfunded:
-              <q-badge rounded dense color="orange" class="text-bold q-ml-xs">
+              <span class="text-amber-6 text-weight-bold q-ml-xs">
                 {{ Number(dashboardStore.fundedData?.unfunded || 0).toLocaleString() }}
-              </q-badge>
+              </span>
             </q-chip>
             <q-chip dense class="q-my-xs row justify-start">
               Occupied:
-              <q-badge rounded dense color="yellow-9" class="text-bold q-ml-xs">
+              <span class="text-teal-6 text-weight-bold q-ml-xs">
                 {{ Number(dashboardStore.fundedData?.occupied || 0).toLocaleString() }}
-              </q-badge>
+              </span>
             </q-chip>
             <q-chip dense class="q-my-xs row justify-start">
               Vacant Funded:
-              <q-badge rounded dense color="purple" class="text-bold q-ml-xs">
+              <span class="text-deep-purple-4 text-weight-bold q-ml-xs">
                 {{ Number(dashboardStore.fundedData?.unoccupied || 0).toLocaleString() }}
-              </q-badge>
+              </span>
             </q-chip>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- STATISTICS CARDS -->
-      <StatusOverview class="q-mx-auto" />
+      <!-- <StatusOverview class="q-mx-auto" /> -->
 
-      <!-- Jobpost HEADER -->
-      <div class="row justify-start items-start q-mt-sm q-mb-xs">
-        <div class="q-pa-xs">
-          <q-icon name="work_history" size="40px" />
-        </div>
+      <!-- Jobpost / Office Overview Tabs -->
+      <div class="row justify-start items-start q-mt-sm q-mb-xs q-mx-lg">
         <div class="column">
-          <h5 class="text-weight-bold q-ma-none">Jobs Overview</h5>
-          <q-chip dense class="q-my-xs row justify-start">
-            Total Active Job Posts:
-            <q-badge dense rounded color="green" class="text-bold q-ml-xs">
-              {{ jobs.length }}
-            </q-badge>
-          </q-chip>
+          <q-tabs v-model="activeOverviewTab" dense class="text-primary">
+            <q-tab name="office" icon-right="apartment" label="Office Overview" />
+            <q-tab name="jobs" icon-right="work_history" label="Jobs Overview" />
+          </q-tabs>
         </div>
       </div>
 
-      <!-- MAIN CONTENT -->
-      <div class="row justify-between">
-        <q-card class="q-mx-auto" style="width: 98%">
-          <q-table
-            class="applicants-table"
-            :rows="jobs"
-            :columns="columns"
-            row-key="job"
-            :loading="useJobPost.loading"
-            :pagination="{ rowsPerPage: 5 }"
-            dense
-          >
-            <template v-slot:body-cell-office="props">
-              <q-td :props="props">
-                <div class="text-body2" style="white-space: normal; width: 300px">
-                  {{ props.row.Office }}
-                </div>
-              </q-td>
-            </template>
+      <q-tab-panels v-model="activeOverviewTab" animated>
+        <!-- Office Overview (Default) -->
+        <q-tab-panel name="office">
+          <div class="row justify-start items-start q-ml-md">
+            <q-chip dense class="q-my-xs row justify-start">
+              Total Office:
 
-            <template v-slot:body-cell-jobs="props">
-              <q-td :props="props">
-                <div class="text-body2" style="white-space: normal; width: 300px">
-                  {{ props.row.Position }}
-                </div>
-              </q-td>
-            </template>
+              <q-badge dense rounded color="green" class="text-bold q-ml-xs">
+                {{ officeRows.length }}
+              </q-badge>
+            </q-chip>
+          </div>
 
-            <template v-slot:body-cell-status="props">
-              <q-td :props="props">
-                <q-badge
-                  :color="getStatusColor(props.row.status)"
-                  class="status-badge q-px-md q-py-xs"
-                >
-                  {{ props.row.status }}
-                </q-badge>
-              </q-td>
-            </template>
+          <div class="row justify-between">
+            <q-card class="q-mx-auto" style="width: 98%">
+              <q-table
+                class="applicants-table"
+                :rows="officeRows"
+                :columns="officeColumns"
+                row-key="Office"
+                :loading="dashboardStore.loading"
+                :pagination="{ rowsPerPage: 5 }"
+                dense
+              />
+            </q-card>
+          </div>
+        </q-tab-panel>
 
-            <template v-slot:body-cell-action="props">
-              <q-td :props="props">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  color="blue"
-                  icon="visibility"
-                  @click="viewJob(props.row)"
-                >
-                  <q-tooltip>View Job Details</q-tooltip>
-                </q-btn>
-              </q-td>
-            </template>
-          </q-table>
-        </q-card>
-      </div>
+        <!-- Jobs Overview -->
+        <q-tab-panel name="jobs">
+          <div class="row justify-start items-start q-ml-md">
+            <q-chip dense class="q-my-xs row justify-start">
+              Total Active Job Posts:
+              <q-badge dense rounded color="green" class="text-bold q-ml-xs">
+                {{ jobs.length }}
+              </q-badge>
+            </q-chip>
+          </div>
+
+          <div class="row justify-between">
+            <q-card class="q-mx-auto" style="width: 98%">
+              <q-table
+                class="applicants-table"
+                :rows="jobs"
+                :columns="columns"
+                row-key="job"
+                :loading="useJobPost.loading"
+                :pagination="{ rowsPerPage: 5 }"
+                dense
+              >
+                <template v-slot:body-cell-office="props">
+                  <q-td :props="props">
+                    <div class="text-body2" style="white-space: normal; width: 300px">
+                      {{ props.row.Office }}
+                    </div>
+                  </q-td>
+                </template>
+
+                <template v-slot:body-cell-jobs="props">
+                  <q-td :props="props">
+                    <div class="text-body2" style="white-space: normal; width: 300px">
+                      {{ props.row.Position }}
+                    </div>
+                  </q-td>
+                </template>
+
+                <template v-slot:body-cell-status="props">
+                  <q-td :props="props">
+                    <q-badge
+                      :color="getStatusColor(props.row.status)"
+                      class="status-badge q-px-md q-py-xs"
+                    >
+                      {{ props.row.status }}
+                    </q-badge>
+                  </q-td>
+                </template>
+
+                <template v-slot:body-cell-action="props">
+                  <q-td :props="props">
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      color="blue"
+                      icon="visibility"
+                      @click="viewJob(props.row)"
+                    >
+                      <q-tooltip>View Job Details</q-tooltip>
+                    </q-btn>
+                  </q-td>
+                </template>
+              </q-table>
+            </q-card>
+          </div>
+        </q-tab-panel>
+      </q-tab-panels>
     </div>
 
     <!-- Redesigned Minimalist Welcome with Background -->
@@ -180,8 +298,8 @@
               </div>
               <q-separator class="q-my-sm" />
               <div class="text-body2 text-grey-7">
-                Explore the portal to manage recruitment and access key features. Navigate
-                using the menu to get started.
+                Explore the portal to manage recruitment and access key features. Navigate using the
+                menu to get started.
               </div>
             </div>
             <div v-else>
@@ -208,9 +326,7 @@
         >
           <q-spinner size="60px" color="primary" class="q-mb-md" />
           <div class="text-h6 text-weight-bold q-mb-xs">Loading</div>
-          <div class="text-body2 text-grey-8">
-            Please wait while we load your dashboard...
-          </div>
+          <div class="text-body2 text-grey-8">Please wait while we load your dashboard...</div>
         </q-card>
       </div>
     </div>
@@ -218,208 +334,200 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from "vue";
-import { useAuthStore } from "src/stores/authStore";
-import StatusOverview from "src/components/Dashboard/StatusOverview.vue";
+  import { onMounted, computed, ref } from 'vue';
+  import { useAuthStore } from 'src/stores/authStore';
+  import StatusOverview from 'src/components/Dashboard/StatusOverview.vue';
 
-import { DashboardStore } from "src/stores/dashboardStore";
-import { useJobPostStore } from "src/stores/jobPostStore";
-import { useRouter } from "vue-router";
+  import { DashboardStore } from 'src/stores/dashboardStore';
+  import { useJobPostStore } from 'src/stores/jobPostStore';
+  import { useRouter } from 'vue-router';
 
-const router = useRouter();
+  const router = useRouter();
 
-const useJobPost = useJobPostStore();
-const dashboardStore = DashboardStore();
-const authStore = useAuthStore();
+  const useJobPost = useJobPostStore();
+  const dashboardStore = DashboardStore();
+  const authStore = useAuthStore();
 
-// Check if user has dashboard view permission
-const hasViewDashboardAccess = computed(() => {
-  return authStore.user?.permissions?.viewDashboardstat == "1";
-});
+  const activeOverviewTab = ref('office');
 
-// ✅ UPDATED: Use computed property instead of ref
-const jobs = computed(() => {
-  return useJobPost.jobPosts.filter((job) => {
-    return job.status && job.status.toLowerCase() !== "republished";
+  // Check if user has dashboard view permission
+  const hasViewDashboardAccess = computed(() => {
+    return authStore.user?.permissions?.viewDashboardstat == '1';
   });
-});
 
-const getStatusColor = (status) => {
-  switch (status?.toLowerCase()) {
-    case "not started":
-      return "grey";
-    case "pending":
-      return "orange";
-    case "assessed":
-      return "blue";
-    case "rated":
-      return "purple";
-    case "occupied":
-      return "green";
-    case "qualified":
-      return "green";
-    case "unqualified":
-      return "red";
-    case "unoccupied":
-      return "red-9";
-    case "republished":
-      return "yellow-8";
-    default:
-      return "grey";
-  }
-};
-
-const columns = [
-  { name: "office", label: "Office", align: "left", field: "Office", sortable: true },
-  { name: "jobs", label: "Position", align: "left", field: "Position", sortable: true },
-  // { name: "status", label: "Status", align: "left", field: "status", sortable: true },
-  {
-    name: "total_applicant",
-    label: "No. of Applicants",
-    align: "center",
-    field: "total_applicant",
-    sortable: true,
-  },
-  {
-    name: "pending_count",
-    label: "Pending",
-    align: "center",
-    field: "pending_count",
-    sortable: true,
-  },
-  {
-    name: "qualified_count",
-    label: "Qualified",
-    align: "center",
-    field: "qualified_count",
-    sortable: true,
-  },
-  {
-    name: "unqualified_count",
-    label: "Unqualified",
-    align: "center",
-    field: "unqualified_count",
-    sortable: true,
-  },
-  {
-    name: "action",
-    label: "Action",
-    align: "center",
-    field: "action",
-    sortable: false,
-  },
-];
-
-const viewJob = (row) => {
-  router.push({
-    name: "JobPost View",
-    params: { id: row.id },
+  const jobs = computed(() => {
+    return useJobPost.jobPosts.filter((job) => {
+      return job.status && job.status.toLowerCase() !== 'republished';
+    });
   });
-};
 
-onMounted(async () => {
-  await dashboardStore.status();
-  await useJobPost.job_post();
-});
+  const officeRows = computed(() => dashboardStore.summaryByOffice || []);
 
-// onMounted(async () => {
-//   const [statusResult, jobPostResult] = await Promise.allSettled([
-//     dashboardStore.status(),
-//     useJobPost.job_post(),
-//   ]);
+  const officeColumns = [
+    { name: 'Office', label: 'Office', align: 'left', field: 'Office', sortable: true },
+    {
+      name: 'Total_applicant',
+      label: 'No. of Applicants',
+      align: 'center',
+      field: 'Total_applicant',
+      sortable: true,
+    },
+    { name: 'Pending', label: 'Pending', align: 'center', field: 'Pending', sortable: true },
+    { name: 'Qualified', label: 'Qualified', align: 'center', field: 'Qualified', sortable: true },
+    {
+      name: 'Unqualified',
+      label: 'Unqualified',
+      align: 'center',
+      field: 'Unqualified',
+      sortable: true,
+    },
+  ];
 
-//   if (statusResult.status === 'rejected') {
-//     console.error('Dashboard status failed:', statusResult.reason);
-//   }
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'not started':
+        return 'grey';
+      case 'pending':
+        return 'orange';
+      case 'assessed':
+        return 'blue';
+      case 'rated':
+        return 'purple';
+      case 'occupied':
+        return 'green';
+      case 'qualified':
+        return 'green';
+      case 'unqualified':
+        return 'red';
+      case 'unoccupied':
+        return 'red-9';
+      case 'republished':
+        return 'yellow-8';
+      default:
+        return 'grey';
+    }
+  };
 
-//   if (jobPostResult.status === 'rejected') {
-//     console.error('Job posts failed:', jobPostResult.reason);
-//   }
-// });
-// onMounted(async () => {
-//   const [statusResult, jobPostResult] = await Promise.allSettled([
-//     dashboardStore.status(),
-//     useJobPost.job_post(),
-//   ]);
+  const columns = [
+    { name: 'office', label: 'Office', align: 'left', field: 'Office', sortable: true },
+    { name: 'jobs', label: 'Position', align: 'left', field: 'Position', sortable: true },
+    {
+      name: 'total_applicants',
+      label: 'No. of Applicants',
+      align: 'center',
+      field: 'total_applicants',
+      sortable: true,
+    },
+    {
+      name: 'pending_count',
+      label: 'Pending',
+      align: 'center',
+      field: 'pending_count',
+      sortable: true,
+    },
+    {
+      name: 'qualified_count',
+      label: 'Qualified',
+      align: 'center',
+      field: 'qualified_count',
+      sortable: true,
+    },
+    {
+      name: 'unqualified_count',
+      label: 'Unqualified',
+      align: 'center',
+      field: 'unqualified_count',
+      sortable: true,
+    },
+    {
+      name: 'action',
+      label: 'Action',
+      align: 'center',
+      field: 'action',
+      sortable: false,
+    },
+  ];
 
-//   // ✅ Check fulfilled
-//   if (statusResult.status === 'fulfilled') {
-//     console.log('Status data:', statusResult.value); // .value on success
-//   } else {
-//     console.error('Status failed:', statusResult.reason); // .reason on error
-//   }
+  const viewJob = (row) => {
+    router.push({
+      name: 'JobPost View',
+      params: { id: row.id },
+    });
+  };
 
-//   if (jobPostResult.status === 'fulfilled') {
-//     console.log('Job post data:', jobPostResult.value);
-//   } else {
-//     console.error('Job post failed:', jobPostResult.reason);
-//   }
-// });
+  onMounted(async () => {
+    await dashboardStore.status();
+    await dashboardStore.fetchSummaryByOffice();
+    await useJobPost.job_post();
+  });
 </script>
 
 <style scoped>
-.stat-card {
-  border-radius: 10px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+  .stat-card {
+    border-radius: 10px;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
-}
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+  }
 
-.date-filter {
-  max-width: 160px;
-}
+  .date-filter {
+    max-width: 160px;
+  }
 
-.table-container {
-  flex: 1;
-  min-width: 80%;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
+  .table-container {
+    flex: 1;
+    min-width: 80%;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
 
-.job-card-container {
-  width: 24%;
-  margin-left: 4px;
-}
+  .job-card-container {
+    width: 24%;
+    margin-left: 4px;
+  }
 
-.applicants-table {
-  width: 100%;
-}
+  .applicants-table {
+    width: 100%;
+  }
 
-.welcome-container {
-  position: relative;
-  height: 80vh;
-  overflow: hidden;
-}
+  .welcome-container {
+    position: relative;
+    height: 80vh;
+    overflow: hidden;
+  }
 
-.welcome-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+  .welcome-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-.welcome-card {
-  transition: transform 0.2s ease;
-}
+  .welcome-card {
+    transition: transform 0.2s ease;
+  }
 
-.welcome-card:hover {
-  transform: scale(1.01);
-}
+  .welcome-card:hover {
+    transform: scale(1.01);
+  }
 
-.access-denied-card {
-  transition: transform 0.2s ease;
-}
-/* Status badges */
-.status-badge {
-  font-size: 0.95rem !important;
-  padding: 4px 10px !important;
-  border-radius: 16px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px;
-}
+  .access-denied-card {
+    transition: transform 0.2s ease;
+  }
+
+  /* Status badges */
+  .status-badge {
+    font-size: 0.95rem !important;
+    padding: 4px 10px !important;
+    border-radius: 16px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+  }
 </style>

@@ -1,114 +1,326 @@
 <template>
   <div class="q-pa-md">
-    <div class="text-h6 text-bold">Education Background</div>
+    <!-- Header -->
+    <div class="row items-center justify-between q-mb-md">
+      <div class="text-h6 text-bold">Education Background</div>
+      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+        <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
+      </div>
+      <div class="row q-gutter-x-sm" v-else>
+        <q-btn
+          unelevated
+          rounded
+          label="Add Row"
+          icon="add"
+          color="primary"
+          size="sm"
+          @click="addRow"
+        />
+        <q-btn
+          unelevated
+          rounded
+          label="Save"
+          icon="save"
+          color="positive"
+          size="sm"
+          :loading="editStore.isSaving"
+          @click="save"
+        />
+        <q-btn flat rounded label="Cancel" icon="close" color="grey-7" size="sm" @click="cancel" />
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <q-banner
+      v-if="editStore.saveError && isEditMode"
+      class="bg-negative text-white q-mb-md"
+      rounded
+    >
+      {{ editStore.saveError }}
+      <template v-slot:action>
+        <q-btn flat label="Dismiss" @click="editStore.saveError = null" />
+      </template>
+    </q-banner>
+
+    <!-- VIEW MODE -->
     <q-table
+      v-if="!isEditMode"
       :rows="educationData"
       :columns="columns"
       row-key="id"
       :pagination="{ rowsPerPage: 10 }"
-    ></q-table>
+    >
+      <template v-slot:no-data>
+        <div class="full-width row flex-center q-pa-md text-grey">No Education Data Available</div>
+      </template>
+    </q-table>
+
+    <!-- EDIT MODE -->
+    <div v-else>
+      <!-- Existing rows -->
+      <q-card
+        v-for="(row, idx) in editStore.draftData.education"
+        :key="row.id ?? idx"
+        flat
+        bordered
+        class="q-mb-md"
+      >
+        <q-card-section>
+          <div class="row items-center justify-between q-mb-sm">
+            <div class="text-subtitle2 text-bold text-grey-7">Row #{{ idx + 1 }}</div>
+            <q-btn
+              flat
+              round
+              icon="delete"
+              color="negative"
+              size="sm"
+              @click="markForDelete(row.id)"
+              title="Remove"
+            />
+          </div>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-sm-6 col-md-4">
+              <q-select
+                v-model="row.level"
+                label="Level *"
+                :options="levelOptions"
+                outlined
+                dense
+                emit-value
+                map-options
+              />
+            </div>
+            <div class="col-12 col-sm-6 col-md-8">
+              <q-input v-model="row.school_name" label="School Name *" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-input v-model="row.degree" label="Degree / Course" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.attendance_from" label="From" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.attendance_to" label="To" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.highest_units" label="Highest Units Earned" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.year_graduated" label="Year Graduated" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-input v-model="row.scholarship" label="Scholarship / Honors" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select
+                v-model="row.graduated"
+                label="Graduated?"
+                :options="['Yes', 'No']"
+                outlined
+                dense
+              />
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Added (new) rows -->
+      <q-card
+        v-for="(row, idx) in editStore.addedRows.education"
+        :key="`new-${idx}`"
+        flat
+        bordered
+        class="q-mb-md bg-blue-1"
+      >
+        <q-card-section>
+          <div class="row items-center justify-between q-mb-sm">
+            <div class="text-subtitle2 text-bold text-blue-8">New Row #{{ idx + 1 }}</div>
+            <q-btn
+              flat
+              round
+              icon="delete"
+              color="negative"
+              size="sm"
+              @click="editStore.removeAddedRow('education', idx)"
+            />
+          </div>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-sm-6 col-md-4">
+              <q-select
+                v-model="row.level"
+                label="Level *"
+                :options="levelOptions"
+                outlined
+                dense
+                emit-value
+                map-options
+              />
+            </div>
+            <div class="col-12 col-sm-6 col-md-8">
+              <q-input v-model="row.school_name" label="School Name *" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-input v-model="row.degree" label="Degree / Course" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.attendance_from" label="From (MM/DD/YYYY)" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.attendance_to" label="To (MM/DD/YYYY)" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.highest_units" label="Highest Units Earned" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-input v-model="row.year_graduated" label="Year Graduated" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-input v-model="row.scholarship" label="Scholarship / Honors" outlined dense />
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select
+                v-model="row.graduated"
+                label="Graduated?"
+                :options="['Yes', 'No']"
+                outlined
+                dense
+              />
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <q-banner
+        v-if="!editStore.draftData.education.length && !editStore.addedRows.education.length"
+        class="text-grey-7"
+      >
+        No education records. Click "Add Row" to add one.
+      </q-banner>
+    </div>
   </div>
 </template>
 
 <script setup>
   import { computed } from 'vue';
+  import { usePdsEditStore } from 'stores/pdsEditStore';
+  import { useQuasar } from 'quasar';
+
+  const $q = useQuasar();
+  const editStore = usePdsEditStore();
 
   const props = defineProps({
-    educ: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
+    educ: { type: Array, required: false, default: () => [] },
+    personalInfoId: { type: [Number, String], default: null },
   });
 
-  // Transform the education data to match the expected format
-  const educationData = computed(() => {
-    if (!Array.isArray(props.educ)) {
-      return [];
-    }
+  const emit = defineEmits(['saved']);
 
-    // Sort education data by level priority
+  const isEditMode = computed(() => editStore.activeEditSection === 'education');
+
+  const levelOptions = [
+    'Elementary',
+    'Secondary',
+    'Vocational / Trade Course',
+    'College',
+    'Graduate Studies',
+  ];
+
+  const educationData = computed(() => {
+    if (!Array.isArray(props.educ)) return [];
     return [...props.educ].sort((a, b) => getLevelPriority(a.level) - getLevelPriority(b.level));
   });
 
-  // Helper function to determine level priority for sorting
   const getLevelPriority = (level) => {
     if (!level) return 999;
-    const levelLower = level.toLowerCase();
-    if (levelLower.includes('elementary')) return 1;
-    if (levelLower.includes('secondary')) return 2;
-    if (levelLower.includes('vocational')) return 3;
-    if (levelLower.includes('college')) return 4;
-    if (levelLower.includes('graduate')) return 5;
+    const l = level.toLowerCase();
+    if (l.includes('elementary')) return 1;
+    if (l.includes('secondary')) return 2;
+    if (l.includes('vocational')) return 3;
+    if (l.includes('college')) return 4;
+    if (l.includes('graduate')) return 5;
     return 999;
   };
 
   const columns = [
-    {
-      name: 'level',
-      required: true,
-      label: 'Level',
-      align: 'left',
-      field: (row) => row.level ,
-      sortable: true,
-    },
+    { name: 'level', label: 'Level', align: 'left', field: (r) => r.level, sortable: true },
     {
       name: 'schoolName',
-      required: true,
-      label: 'Name of School',
+      label: 'School Name',
       align: 'left',
-      field: (row) => row.school_name ,
+      field: (r) => r.school_name,
       sortable: true,
     },
     {
       name: 'course',
-      required: true,
-      label: 'Basic Education/Degree/Course',
+      label: 'Degree / Course',
       align: 'left',
-      field: (row) => row.degree ,
+      field: (r) => r.degree,
       sortable: true,
     },
     {
       name: 'fromYear',
-      required: true,
       label: 'From',
       align: 'left',
-      field: (row) => row.attendance_from ,
+      field: (r) => r.attendance_from,
       sortable: true,
     },
-    {
-      name: 'toYear',
-      required: true,
-      label: 'To',
-      align: 'left',
-      field: (row) => row.attendance_to ,
-      sortable: true,
-    },
+    { name: 'toYear', label: 'To', align: 'left', field: (r) => r.attendance_to, sortable: true },
     {
       name: 'highestLevel',
-      required: true,
-      label: 'Highest Level/Units Earned',
+      label: 'Highest Units',
       align: 'left',
-      field: (row) => row.highest_units ,
+      field: (r) => r.highest_units,
       sortable: true,
     },
     {
       name: 'yearGraduated',
-      required: true,
       label: 'Year Graduated',
       align: 'left',
-      field: (row) => row.year_graduated ,
+      field: (r) => r.year_graduated,
       sortable: true,
     },
     {
       name: 'honors',
-      required: true,
-      label: 'Scholarship/Academic Honors Received',
+      label: 'Scholarship / Honors',
       align: 'left',
-      field: (row) => row.scholarship ,
+      field: (r) => r.scholarship,
       sortable: true,
     },
   ];
+
+  function enterEdit() {
+    editStore.startEdit('education', props.educ, props.personalInfoId);
+  }
+
+  function addRow() {
+    editStore.addRow('education');
+  }
+
+  function markForDelete(id) {
+    if (!id) return;
+    $q.dialog({
+      title: 'Confirm Delete',
+      message: 'Remove this education record?',
+      cancel: true,
+      persistent: true,
+    }).onOk(() => {
+      editStore.markForDelete('education', id);
+    });
+  }
+
+  function cancel() {
+    editStore.cancelEdit('education');
+  }
+
+  async function save() {
+    const result = await editStore.saveSection('education');
+    if (result.success) {
+      $q.notify({ type: 'positive', message: 'Education records updated!' });
+      emit('saved', result.data);
+    } else {
+      $q.notify({ type: 'negative', message: result.error || 'Save failed.' });
+    }
+  }
 </script>
 
 <style scoped>
