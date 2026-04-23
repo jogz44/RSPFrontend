@@ -22,7 +22,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
   const pendingJobsCount = ref(0);
   const completionRate = ref('0%');
   const assignedJobs = ref([]);
-
+const enable = ref(false);
   // Helper functions
   function getToken() {
     return token.value || LocalStorage.getItem('rater_token');
@@ -63,6 +63,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
       username: data.username,
       position: data.position,
       active: data.active,
+      enable: data.enable,
       rspControl: data.rspControl,
       must_change_password: data.must_change_password,
     };
@@ -416,6 +417,7 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     errors,
     users,
     selectedUser,
+      enable,
 
     // Dashboard State
     assignedJobsCount,
@@ -436,5 +438,6 @@ export const useRaterAuthStore = defineStore('rater_auth', () => {
     fetch_assigned_jobs, // Alias for checkAuth_rater
     clearAuthState,
     changePassword,
+
   };
 });

@@ -342,7 +342,23 @@
               <span class="text-body1 q-ml-sm" :class="activeStatus ? 'text-green' : 'text-red'">
                 {{ activeStatus ? 'Active' : 'Inactive' }}
               </span>
+                   <q-toggle
+                v-model="enable"
+                :true-value="true"
+                :false-value="false"
+                color="green"
+                checked-icon="check"
+                unchecked-icon="block"
+              />
+              <span class="text-body1 q-ml-sm" :class="enable ? 'text-green' : 'text-red'">
+                {{ enable ? 'Enable' : 'Disable' }}
+              </span>
             </div>
+
+              <!-- enable Toggle (Add Mode) -->
+            <!-- <div class="q-mb-md">
+
+            </div> -->
           </template>
 
           <!-- ==================== EDIT MODE ==================== -->
@@ -367,6 +383,9 @@
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
+                      <template v-slot:after-options>
+
+              </template>
               </q-select>
             </div>
 
@@ -452,6 +471,21 @@
               />
               <span class="text-body1 q-ml-sm" :class="activeStatus ? 'text-green' : 'text-red'">
                 {{ activeStatus ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+
+                <!-- Enable Toggle (Edit Mode) -->
+            <div class="q-mb-md">
+              <q-toggle
+                v-model="enable"
+                :true-value="true"
+                :false-value="false"
+                color="green"
+                checked-icon="check"
+                unchecked-icon="block"
+              />
+              <span class="text-body1 q-ml-sm" :class="enable ? 'text-green' : 'text-red'">
+            {{ enable ? 'Enable' : 'Disable' }}
               </span>
             </div>
           </template>
@@ -727,8 +761,10 @@
   const selectedRater = ref(null); // REQUIRED in add mode
   const selectedOffice = ref(''); // REQUIRED
   const activeStatus = ref(true);
-  const representative = ref(''); // OPTIONAL
-  const selectedRole = ref(null); // REQUIRED
+  const enable = ref(true);
+  // FIX: renamed from 'representation' to 'representative' to match API field name
+  const representative = ref('');
+  const selectedRole = ref(null);
 
   // ==================== ROLE OPTIONS ====================
   const roleOptions = [
@@ -982,6 +1018,8 @@
     currentOfficeRaters.value = [];
     showError.value = false;
     activeStatus.value = true;
+    enable.value = false;
+    // FIX: reset 'representative' (not 'representation')
     representative.value = '';
     selectedRole.value = null;
   };
@@ -1002,6 +1040,7 @@
     showModal.value = true;
     resetForm();
     activeStatus.value = true;
+    enable.value = false;
   };
 
   // ==================== VIEW RATER ====================
@@ -1066,13 +1105,14 @@
 
   const editRater = async (rater) => {
     try {
-      isEditMode.value = true;
-      currentRaterId.value = rater.id;
-      currentRaterName.value = rater.name;
-      activeStatus.value = !!rater.active;
-      representative.value = rater.representative || rater.representation || '';
-      selectedRole.value = rater.role_type || rater.role || '';
-      selectedOffice.value = rater.office || '';
+        isEditMode.value = true;
+        currentRaterId.value = rater.id;
+        currentRaterName.value = rater.name;
+        activeStatus.value = !!rater.active;
+          enable.value = !!rater.enable;
+        representative.value = rater.representative || rater.representation || '';
+        selectedRole.value = rater.role_type || rater.role || '';
+        selectedOffice.value = rater.office || '';
 
       if (selectedOffice.value) {
         await fetchEmployeesByOffice(selectedOffice.value);
@@ -1117,7 +1157,9 @@
         job_batches_rsp_id: safePositions.filter((id) => id !== 'all'),
         Office: selectedOffice.value,
         active: activeStatus.value,
-        representative: representative.value || null,
+        enable: enable.value,
+        // FIX: key is 'representative' (not 'representation') to match API
+        representative: representative.value,
         role: selectedRole.value,
       };
 
@@ -1164,7 +1206,9 @@
         job_batches_rsp_id: jobBatchIds,
         Office: selectedOffice.value,
         active: activeStatus.value,
-        representative: representative.value || null,
+        enable: enable.value,
+        // FIX: key is 'representative' (not 'representation') to match API
+        representative: representative.value,
         role: selectedRole.value,
       };
 
@@ -1245,6 +1289,7 @@
   watch(showModal, (val) => {
     if (val && !isEditMode.value) {
       activeStatus.value = true;
+        enable.value = false;
     }
   });
 </script>
