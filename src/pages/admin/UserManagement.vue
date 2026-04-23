@@ -183,6 +183,33 @@
                   User Information
                 </div>
 
+                <!-- ── User Role ── -->
+                <div class="q-mb-md">
+                  <q-input
+                    v-model="form.user_role"
+                    label="User Role"
+                    outlined
+                    dense
+                    @update:model-value="onRoleInput"
+                  >
+                    <template #prepend>
+                      <q-icon name="admin_panel_settings" size="18px" />
+                    </template>
+                    <template #append>
+                      <q-btn
+                        v-if="form.user_role"
+                        flat
+                        round
+                        dense
+                        icon="close"
+                        size="xs"
+                        color="grey"
+                        @click="clearRole"
+                      />
+                    </template>
+                  </q-input>
+                </div>
+
                 <q-input
                   v-model="form.name"
                   label="Full Name"
@@ -218,53 +245,6 @@
                 >
                   <template #prepend><q-icon name="work" size="18px" /></template>
                 </q-input>
-
-                <!-- ── User Role: free-text with Administrator shortcut ── -->
-                <div class="q-mb-md">
-                  <q-input
-                    v-model="form.user_role"
-                    label="User Role"
-                    outlined
-                    dense
-                    hint="Type any role name (e.g. Supervisor, HR Staff)"
-                    @update:model-value="onRoleInput"
-                  >
-                    <template #prepend>
-                      <q-icon name="admin_panel_settings" size="18px" />
-                    </template>
-                    <template #append>
-                      <q-btn
-                        v-if="form.user_role"
-                        flat
-                        round
-                        dense
-                        icon="close"
-                        size="xs"
-                        color="grey"
-                        @click="clearRole"
-                      />
-                    </template>
-                  </q-input>
-
-                  <!-- Administrator preset chip -->
-                  <div class="role-presets q-mt-sm">
-                    <div class="text-caption text-grey-6 q-mb-xs">Quick preset:</div>
-                    <q-chip
-                      clickable
-                      dense
-                      icon="shield"
-                      color="deep-purple"
-                      text-color="white"
-                      class="preset-chip"
-                      @click="applyAdministrator"
-                    >
-                      Administrator
-                      <q-tooltip>
-                        Sets role name to "Administrator" and enables all permissions
-                      </q-tooltip>
-                    </q-chip>
-                  </div>
-                </div>
 
                 <q-input
                   v-model="form.password"
@@ -316,13 +296,13 @@
                   </div>
                   <q-toggle
                     v-model="selectAll"
-                    color="deep-purple"
+                    color="green"
                     dense
                     keep-color
                     @update:model-value="onSelectAllToggle"
                   >
                     <span
-                      :class="selectAll ? 'text-deep-purple' : 'text-grey-6'"
+                      :class="selectAll ? 'text-green' : 'text-grey-6'"
                       class="text-caption text-weight-medium"
                     >
                       {{ selectAll ? 'All On' : 'All Off' }}
@@ -623,13 +603,11 @@
   ];
 
   // ── Badge color based on role name ───────────────────────────────────
-  // Administrator always gets deep-purple; everything else cycles through
-  // a palette so different custom roles look distinct.
   const ROLE_COLORS = ['teal', 'blue', 'green', 'orange', 'pink', 'cyan', 'indigo', 'brown'];
 
   function hashRoleColor(roleName) {
     if (!roleName) return 'grey';
-    if (roleName.toLowerCase() === 'administrator') return 'deep-purple';
+    if (roleName.toLowerCase() === 'administrator') return 'green';
     let hash = 0;
     for (let i = 0; i < roleName.length; i++) hash = roleName.charCodeAt(i) + ((hash << 5) - hash);
     return ROLE_COLORS[Math.abs(hash) % ROLE_COLORS.length];
@@ -693,12 +671,6 @@
         return p;
       };
 
-      const allPermissionsOn = () => {
-        const p = {};
-        ALL_PERMISSION_KEYS.forEach((k) => (p[k] = '1'));
-        return p;
-      };
-
       function checkAllOn(permissions) {
         return ALL_PERMISSION_KEYS.every((k) => permissions[k] === '1');
       }
@@ -717,37 +689,29 @@
       });
 
       // ── Select All toggle ────────────────────────────────────────────
+      // Turning ON sets all permissions to '1' and sets user_role to 'Administrator'
+      // Turning OFF sets all permissions to '0' and clears user_role
       function onSelectAllToggle(val) {
         const newVal = val ? '1' : '0';
         ALL_PERMISSION_KEYS.forEach((k) => {
           form.value.permissions[k] = newVal;
         });
+        form.value.user_role = val ? 'Administrator' : '';
       }
 
       // Keep selectAll in sync when individual toggles change
       function syncSelectAll() {
         selectAll.value = checkAllOn(form.value.permissions);
-      }
-
-      // ── Role input handler ───────────────────────────────────────────
-      // When the user types "Administrator" (case-insensitive), auto-enable
-      // all permissions and set selectAll. For any other value, do nothing
-      // to the permissions — the user sets them manually.
-      function onRoleInput(val) {
-        if (val?.trim().toLowerCase() === 'administrator') {
-          form.value.permissions = allPermissionsOn();
-          selectAll.value = true;
-        } else {
-          // Typing anything else: sync the selectAll state only
-          selectAll.value = checkAllOn(form.value.permissions);
+        if (selectAll.value) {
+          form.value.user_role = 'Administrator';
+        } else if (form.value.user_role === 'Administrator') {
+          form.value.user_role = '';
         }
       }
 
-      // Administrator preset chip click
-      function applyAdministrator() {
-        form.value.user_role = 'Administrator';
-        form.value.permissions = allPermissionsOn();
-        selectAll.value = true;
+      // ── Role input handler ───────────────────────────────────────────
+      function onRoleInput() {
+        selectAll.value = checkAllOn(form.value.permissions);
       }
 
       // Clear role field
@@ -806,18 +770,23 @@
           viewActivityLogs: p.viewActivityLogs || '0',
         };
 
+        // ── Derive selectAll first, then set user_role accordingly ──
+        // If all permissions are ON, always show 'Administrator' regardless of what was stored.
+        // If not all ON, fall back to the stored role value.
+        const allOn = checkAllOn(permissions);
+
         form.value = {
           id: user.id,
           name: user.name,
           username: user.username,
           position: user.position,
-          user_role: p.user_role || '',
+          user_role: allOn ? 'Administrator' : p.user_role || '',
           password: '',
           active: user.active,
           permissions,
         };
 
-        selectAll.value = checkAllOn(permissions);
+        selectAll.value = allOn;
       };
 
       // ── Submit ───────────────────────────────────────────────────────
@@ -856,7 +825,6 @@
         form,
         getRoleBadgeColor,
         onRoleInput,
-        applyAdministrator,
         clearRole,
         onSelectAllToggle,
         syncSelectAll,
@@ -984,32 +952,14 @@
     }
   }
 
-  /* ── Role presets ── */
-  .role-presets {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .preset-chip {
-    cursor: pointer;
-    font-size: 12px;
-    transition: opacity 0.2s;
-  }
-
-  .preset-chip:hover {
-    opacity: 0.85;
-  }
-
   /* ── Select All Row ── */
   .select-all-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 14px;
-    background: #f3e5f5;
-    border: 1px solid #ce93d8;
+    background: #e5f5e9;
+    border: 1px solid #93d8ac;
     border-radius: 8px;
   }
 
