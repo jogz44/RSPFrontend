@@ -30,6 +30,19 @@
           <q-chip v-else class="posted-chip text-white bg-blue" :size="chipSize">
             <q-linear-progress rounded color="white" query class="loading-progress" />
           </q-chip>
+          <q-chip
+            v-if="!jobPostStore.loading"
+            class="ended-chip text-white bg-red"
+            :size="chipSize"
+          >
+            <q-icon name="event" size="xs" class="q-mr-xs gt-xs" />
+            <span class="chip-text">
+              {{ formatEndDate(selectedJob?.end_date) }}
+            </span>
+          </q-chip>
+          <q-chip v-else class="ended-chip text-white bg-red" :size="chipSize">
+            <q-linear-progress rounded color="white" query class="loading-progress" />
+          </q-chip>
         </div>
       </div>
     </div>
@@ -46,6 +59,36 @@
             <div class="job-info q-ml-md">
               <div class="job-position text-green text-weight-bold">
                 {{ selectedJob?.Position || 'No Position' }}
+              </div>
+              <div class="chips-row q-mb-md">
+                <q-chip class="chip-padding salary-chip" dense>
+                  <q-icon name="layers" class="q-mr-xs" />
+                  <span class="chip-label">
+                    Salary Grade:
+                    <b>{{ selectedJob?.SalaryGrade || '-' }}</b>
+                  </span>
+                </q-chip>
+                <q-chip class="chip-padding level-chip" dense>
+                  <q-icon name="work" class="q-mr-xs" />
+                  <span class="chip-label">
+                    Level:
+                    <b>{{ selectedJob?.level || '-' }}</b>
+                  </span>
+                </q-chip>
+                <q-chip class="chip-padding page-chip" dense>
+                  <q-icon name="layers" class="q-mr-xs" />
+                  <span class="chip-label">
+                    Page No:
+                    <b>{{ selectedJob?.PageNo || '-' }}</b>
+                  </span>
+                </q-chip>
+                <q-chip class="chip-padding item-chip" dense>
+                  <q-icon name="apps" class="q-mr-xs" />
+                  <span class="chip-label">
+                    Item No:
+                    <b>{{ selectedJob?.ItemNo || '-' }}</b>
+                  </span>
+                </q-chip>
               </div>
               <div class="job-details-list">
                 <div class="job-detail-item" v-if="selectedJob?.Office">
@@ -117,12 +160,12 @@
         <q-separator />
 
         <!-- Position section -->
-        <q-card-section class="position-section">
+        <!-- <q-card-section class="position-section">
           <div class="section-title text-green">Position</div>
           <div class="section-content">{{ selectedJob?.Position || 'No Position' }}</div>
         </q-card-section>
 
-        <q-separator />
+        <q-separator /> -->
 
         <!-- Application Process -->
         <q-card-section class="application-process-section bg-grey-1">
@@ -688,6 +731,18 @@
     );
   }
 
+  function formatEndDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if ($q.screen.xs) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+    }
+    return (
+      'Ended ' +
+      date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    );
+  }
+
   function startConfirmationCountdown() {
     if (confirmationCountdownInterval) {
       clearInterval(confirmationCountdownInterval);
@@ -1202,6 +1257,53 @@
     align-items: center;
     color: #666;
     font-size: 0.95rem;
+  }
+
+  /* Chips */
+  .chips-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .chip-padding {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .level-chip {
+    background: #a8d5a4;
+    color: #161616;
+  }
+  .page-chip {
+    background: #e3f0fc;
+    color: #2156a4;
+  }
+  .item-chip {
+    background: #fff6df;
+    color: #ff9800;
+  }
+  .salary-chip {
+    background: #f3eafd;
+    color: #6626a6;
+  }
+  .chip-label {
+    font-size: 1rem;
+    font-weight: 400;
+    font-family: 'Montserrat', 'Roboto', Arial, sans-serif;
+  }
+  @media (max-width: 479px) {
+    .chips-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .chip-label {
+      font-size: 0.8rem !important;
+    }
+    .job-title {
+      font-size: 1.05rem;
+      line-height: 1.25rem;
+    }
   }
 
   /* ==================== SECTIONS ====================*/

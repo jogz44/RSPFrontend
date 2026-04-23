@@ -5,13 +5,13 @@
       <!-- Centered content -->
       <div class="centered-content text-center row justify-center items-center q-gutter-sm">
         <!-- Logo (replace with your actual logo) -->
-        <img src="logo.png" alt="Logo" class="logo" />
+        <!-- <img src="logo.png" alt="Logo" class="logo" /> -->
         <!-- Text content -->
-        <div class="text-white grid justify-start items-start hero-text">
+        <div class="text-white grid justify-start items-start hero-text q-mt-xl">
           <div class="row justify-start items-start welcome-text">Welcome to</div>
           <div class="text-weight-bold main-title">Recruitment, Selection and Placement Sytem</div>
           <div class="row justify-start items-start subtitle-text">
-            City of Tagum Human Resource Management Office
+            Human Resource Management Office
           </div>
         </div>
       </div>
@@ -62,6 +62,14 @@
             </div>
           </q-td>
         </template>
+        <template v-slot:body-cell-SalaryGrade="props">
+          <q-td :props="props" align="center">
+            <q-chip class="text-body2 text-weight-bold salary-grade-chip" dense>
+              <q-icon name="layers" size="xs" class="q-mr-xs" />
+              SG {{ props.row.SalaryGrade || '-' }}
+            </q-chip>
+          </q-td>
+        </template>
         <template v-slot:body-cell-post_date="props">
           <q-td :props="props">
             <div class="date-cell">
@@ -106,8 +114,16 @@
             <div class="text-h6 text-weight-bold q-mb-sm line-clamp-2">
               {{ job.Position }}
             </div>
-            <div class="text-body2 text-grey-7 q-mb-md">
+            <div class="text-body2 text-grey-7 q-mb-sm">
               {{ job.Office }}
+            </div>
+
+            <!-- Salary Grade Badge -->
+            <div class="q-mb-md">
+              <q-chip class="text-body2 text-weight-bold salary-grade-chip" dense>
+                <q-icon name="layers" size="xs" class="q-mr-xs" />
+                SG {{ job.SalaryGrade || '-' }}
+              </q-chip>
             </div>
 
             <div class="row q-gutter-sm q-mb-md">
@@ -176,6 +192,7 @@
   const columns = ref([
     { name: 'Position', label: 'Position', align: 'left', field: 'Position' },
     { name: 'Office', label: 'Office', align: 'left', field: 'Office' },
+    { name: 'SalaryGrade', label: 'Salary Grade', align: 'center', field: 'SalaryGrade' },
     {
       name: 'post_date',
       label: 'Posted Date',
@@ -281,6 +298,12 @@
   .office-cell {
     width: 180px;
     white-space: normal;
+  }
+
+  .salary-grade-chip {
+    background: #f3eafd;
+    color: #6626a6;
+    font-weight: 600;
   }
 
   .date-cell {

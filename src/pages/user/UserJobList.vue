@@ -68,6 +68,7 @@
               </div>
             </q-td>
           </template>
+
           <template v-slot:body-cell-Office="props">
             <q-td :props="props">
               <div class="office-cell">
@@ -77,6 +78,17 @@
               </div>
             </q-td>
           </template>
+
+          <!-- Salary Grade Column -->
+          <template v-slot:body-cell-SalaryGrade="props">
+            <q-td :props="props" align="center">
+              <q-chip class="text-body2 text-weight-bold salary-grade-chip" dense>
+                <q-icon name="layers" size="xs" class="q-mr-xs" />
+                SG {{ props.row.SalaryGrade || '-' }}
+              </q-chip>
+            </q-td>
+          </template>
+
           <template v-slot:body-cell-post_date="props">
             <q-td :props="props">
               <div class="date-cell">
@@ -86,6 +98,7 @@
               </div>
             </q-td>
           </template>
+
           <template v-slot:body-cell-end_date="props">
             <q-td :props="props">
               <div class="date-cell">
@@ -95,6 +108,7 @@
               </div>
             </q-td>
           </template>
+
           <template #body-cell-actions="props">
             <q-td align="center">
               <q-btn
@@ -122,9 +136,17 @@
             <div class="text-h6 text-weight-bold q-mb-xs line-clamp-2">
               {{ job.Position }}
             </div>
-            <div class="text-body2 text-grey-7 q-mb-md">
+            <div class="text-body2 text-grey-7 q-mb-sm">
               <q-icon name="business" size="xs" class="q-mr-xs" />
               {{ job.Office }}
+            </div>
+
+            <!-- Salary Grade Badge -->
+            <div class="q-mb-md">
+              <q-chip class="text-body2 text-weight-bold salary-grade-chip" dense>
+                <q-icon name="layers" size="xs" class="q-mr-xs" />
+                SG {{ job.SalaryGrade || '-' }}
+              </q-chip>
             </div>
 
             <div class="dates-section q-mb-md">
@@ -240,7 +262,6 @@
     </q-dialog>
   </q-page>
 </template>
-
 <script setup>
   import { ref, reactive, onMounted, computed } from 'vue';
   import { useRouter } from 'vue-router';
@@ -275,6 +296,7 @@
   const columns = ref([
     { name: 'Position', label: 'Position', align: 'left', field: 'Position' },
     { name: 'Office', label: 'Office', align: 'left', field: 'Office' },
+    { name: 'SalaryGrade', label: 'Salary Grade', align: 'center', field: 'SalaryGrade' },
     {
       name: 'post_date',
       label: 'Posted Date',
@@ -400,6 +422,12 @@
     font-size: 1rem;
     line-height: 1.6;
     margin: 0;
+  }
+
+  .salary-grade-chip {
+    background: #f3eafd;
+    color: #6626a6;
+    font-weight: 600;
   }
 
   .content-section {
