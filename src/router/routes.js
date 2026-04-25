@@ -129,6 +129,26 @@ const routes = [
     },
   },
 
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: () => import('pages/user/TermsPage.vue'),
+    meta: {
+      guest: true,
+      role: 'user',
+    },
+  },
+
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('pages/user/PrivacyPolicyPage.vue'),
+    meta: {
+      guest: true,
+      role: 'user',
+    },
+  },
+
   // User Routes (Protected) - FIXED PATHS
   {
     path: '/home',

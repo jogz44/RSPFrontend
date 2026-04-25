@@ -56,6 +56,54 @@
               :size="captchaSize"
             />
 
+            <!-- ==================== TERMS & PRIVACY AGREEMENT ==================== -->
+            <div class="agreement-wrapper">
+              <div class="agreement-card" :class="{ 'agreement-card--error': showAgreementError }">
+                <q-checkbox
+                  v-model="agreedToTerms"
+                  color="primary"
+                  dense
+                  keep-color
+                  class="agreement-checkbox"
+                  @update:model-value="showAgreementError = false"
+                >
+                  <template v-slot:default>
+                    <span class="agreement-label">
+                      I have read and agree to the
+                      <router-link to="/terms" class="agreement-link terms-link" @click.stop>
+                        Terms and Conditions
+                      </router-link>
+                      and
+                      <router-link to="/privacy" class="agreement-link privacy-link" @click.stop>
+                        Privacy Policy.
+                      </router-link>
+                    </span>
+                  </template>
+                </q-checkbox>
+
+                <transition name="err-fade">
+                  <div v-if="showAgreementError" class="agreement-error-msg">
+                    <q-icon name="error_outline" size="13px" class="q-mr-xs" />
+                    Please agree to the Terms and Privacy Policy to continue.
+                  </div>
+                </transition>
+              </div>
+
+              <!-- Quick links -->
+              <!-- <div class="quick-links-row">
+                <router-link to="/terms" class="quick-link">
+                  <q-icon name="open_in_new" size="10px" class="q-mr-xs" />
+                  Terms &amp; Conditions
+                </router-link>
+                <span class="quick-link-sep">•</span>
+                <router-link to="/privacy" class="quick-link">
+                  <q-icon name="open_in_new" size="10px" class="q-mr-xs" />
+                  Privacy Policy
+                </router-link>
+              </div> -->
+            </div>
+            <!-- ==================== END AGREEMENT ==================== -->
+
             <q-btn
               label="Send Verification Code"
               color="primary"
@@ -159,13 +207,15 @@
             <q-icon name="help_outline" :size="footerIconSize" />
             <span class="help-content">
               Need assistance? Contact us at
-              <a href="mailto:support@tagumcity.gov.ph" class="help-link">
-                <span class="gt-xs">support@tagumcity.gov.ph</span>
+              <a href="mailto:lgutagumhrmo.recruitment@gmail.com" class="help-link">
+                <span class="gt-xs">lgutagumhrmo.recruitment@gmail.com</span>
                 <span class="lt-sm">Email Support</span>
               </a>
             </span>
           </div>
-          <div class="copyright">© 2025 Tagum City Hall. All rights reserved.</div>
+          <div class="copyright">
+            © 2025 City Government of Tagum. All rights reserved. Developed by [Your Team Name].
+          </div>
         </div>
       </div>
     </div>
@@ -179,11 +229,11 @@
   import { useEmailStore } from 'src/stores/emailStore';
   import RecaptchaComponent from 'src/pages/user/RecaptchaComponent.vue';
 
-  // Router and utilities
   const router = useRouter();
   const $q = useQuasar();
   const emailStore = useEmailStore();
-  const redirecting = ref(false); // ← add this
+  const redirecting = ref(false);
+
   // Form inputs
   const emailInput = ref('');
   const otpInput = ref('');
@@ -194,14 +244,16 @@
   // CAPTCHA responses
   const emailCaptchaResponse = ref('');
 
+  // ==================== AGREEMENT STATE ====================
+  const agreedToTerms = ref(false);
+  const showAgreementError = ref(false);
+
   // Constants
   const recaptchaSiteKey =
     process.env.RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
 
   // Responsive computed properties
-  const captchaSize = computed(() => {
-    return 'normal';
-  });
+  const captchaSize = computed(() => 'normal');
 
   const buttonSize = computed(() => {
     if ($q.screen.xs) return 'md';
@@ -264,6 +316,7 @@
       emailInput.value &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value) &&
       emailCaptchaResponse.value &&
+      agreedToTerms.value && // ← agreement required
       !emailStore.loading
     );
   });
@@ -279,12 +332,10 @@
 
   // CAPTCHA handlers
   const onEmailCaptchaVerified = (response) => {
-    console.log('✅ reCAPTCHA verified:', response);
     emailCaptchaResponse.value = response;
   };
 
   const onEmailCaptchaExpired = () => {
-    console.warn('⚠️ reCAPTCHA expired');
     emailCaptchaResponse.value = '';
     $q.notify({
       type: 'warning',
@@ -293,8 +344,7 @@
     });
   };
 
-  const onCaptchaError = (error) => {
-    console.error('❌ reCAPTCHA error:', error);
+  const onCaptchaError = () => {
     emailCaptchaResponse.value = '';
     $q.notify({
       type: 'negative',
@@ -305,6 +355,21 @@
 
   // Action handlers
   const handleSendOtp = async () => {
+    // ==================== AGREEMENT VALIDATION ====================
+    if (!agreedToTerms.value) {
+      showAgreementError.value = true;
+      setTimeout(() => {
+        showAgreementError.value = false;
+      }, 4000);
+      $q.notify({
+        type: 'warning',
+        message: 'Please agree to the Terms and Conditions and Privacy Policy.',
+        position: 'top',
+        icon: 'gavel',
+      });
+      return;
+    }
+
     if (!canSendOtp.value) {
       if (!emailInput.value) {
         $q.notify({
@@ -345,18 +410,7 @@
   };
 
   const handleResendOtp = async () => {
-    if (!emailStore.canResend) {
-      return;
-    }
-
-    // if (!emailCaptchaResponse.value) {
-    //   $q.notify({
-    //     type: 'negative',
-    //     message: 'Please complete the CAPTCHA verification before resending.',
-    //     position: 'top',
-    //   });
-    //   return;
-    // }
+    if (!emailStore.canResend) return;
 
     try {
       await emailStore.resendOtp();
@@ -397,7 +451,7 @@
     try {
       await emailStore.verifyOtp(otpInput.value);
 
-       redirecting.value = true; // ← lock the button immediately after success
+      redirecting.value = true;
       $q.notify({
         type: 'positive',
         message: 'Verification successful! Redirecting...',
@@ -410,7 +464,7 @@
         router.push('/page');
       }, 2000);
     } catch (error) {
-          redirecting.value = false; // ← only reset on error
+      redirecting.value = false;
       $q.notify({
         type: 'negative',
         message: error.message || 'Invalid verification code.',
@@ -427,7 +481,6 @@
     resetEmailCaptcha();
   };
 
-  // Helper functions
   const resetEmailCaptcha = () => {
     if (emailCaptchaRef.value) {
       emailCaptchaRef.value.reset();
@@ -435,7 +488,6 @@
     emailCaptchaResponse.value = '';
   };
 
-  // Cleanup on component unmount
   onUnmounted(() => {
     emailStore.resetState();
   });
@@ -581,9 +633,9 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    min-height: 90px; /* Increased to accommodate the full widget */
-    overflow: visible; /* Changed from hidden */
-    padding: 0.5rem 0; /* Add some padding */
+    min-height: 90px;
+    overflow: visible;
+    padding: 0.5rem 0;
   }
 
   .submit-btn {
@@ -678,6 +730,154 @@
     font-size: 0.875rem;
     text-transform: none;
   }
+
+  /* ==================== AGREEMENT STYLES ==================== */
+  .agreement-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .agreement-card {
+    background: linear-gradient(135deg, #f0faf4 0%, #e8f5ec 100%);
+    border: 1px solid #a5d6b0;
+    border-radius: 12px;
+    padding: 14px 16px 10px 16px;
+    transition:
+      border-color 0.25s,
+      box-shadow 0.25s;
+  }
+
+  .agreement-card:hover {
+    border-color: #2e7d32;
+    box-shadow: 0 2px 10px rgba(46, 125, 50, 0.1);
+  }
+
+  .agreement-card--error {
+    border-color: #ef9a9a !important;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffecec 100%) !important;
+    animation: shake 0.35s ease;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-4px);
+    }
+    40% {
+      transform: translateX(4px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(3px);
+    }
+  }
+
+  .agreement-checkbox {
+    align-items: flex-start !important;
+    width: 100%;
+  }
+
+  .agreement-label {
+    font-size: 0.82rem;
+    color: #333;
+    line-height: 1.6;
+    margin-left: 4px;
+  }
+
+  .agreement-link {
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 1.5px solid transparent;
+    transition:
+      border-color 0.2s,
+      opacity 0.2s;
+  }
+
+  .agreement-link:hover {
+    opacity: 0.75;
+    border-bottom-color: currentColor;
+  }
+
+  .terms-link {
+    color: #1a7e44;
+  }
+
+  .privacy-link {
+    color: #1565c0;
+  }
+
+  .agreement-meta {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #a5d6b0;
+  }
+
+  .last-updated-text {
+    font-size: 0.7rem;
+    color: #999;
+    font-style: italic;
+    letter-spacing: 0.01em;
+  }
+
+  .agreement-error-msg {
+    display: flex;
+    align-items: center;
+    color: #c62828;
+    font-size: 0.76rem;
+    background: #ffebee;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin-top: 6px;
+  }
+
+  /* Quick links */
+  .quick-links-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  .quick-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    color: #888;
+    text-decoration: none;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+
+  .quick-link:hover {
+    color: #1a7e44;
+  }
+
+  .quick-link-sep {
+    font-size: 0.7rem;
+    color: #ccc;
+  }
+
+  /* Transition */
+  .err-fade-enter-active,
+  .err-fade-leave-active {
+    transition: all 0.3s ease;
+  }
+
+  .err-fade-enter-from,
+  .err-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  /* ==================== END AGREEMENT STYLES ==================== */
 
   .footer-info {
     margin-top: 2rem;
@@ -873,6 +1073,26 @@
     .footer-info {
       margin-top: 1.5rem;
     }
+
+    .agreement-card {
+      padding: 12px 12px 8px 12px;
+    }
+
+    .agreement-label {
+      font-size: 0.78rem;
+    }
+
+    .last-updated-text {
+      font-size: 0.66rem;
+    }
+
+    .quick-link {
+      font-size: 0.66rem;
+    }
+
+    .agreement-error-msg {
+      font-size: 0.73rem;
+    }
   }
 
   /* Extra Small (<360px) */
@@ -960,6 +1180,23 @@
 
     .copyright {
       font-size: 0.65rem;
+    }
+
+    .agreement-card {
+      padding: 10px 10px 8px 10px;
+    }
+
+    .agreement-label {
+      font-size: 0.74rem;
+    }
+
+    .quick-links-row {
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .quick-link-sep {
+      display: none;
     }
   }
 
