@@ -191,13 +191,15 @@
             <q-icon name="help_outline" :size="footerIconSize" />
             <span class="help-content">
               Need assistance? Contact us at
-              <a href="mailto:support@tagumcity.gov.ph" class="help-link">
-                <span class="gt-xs">support@tagumcity.gov.ph</span>
+              <a href="mailto:lgutagumhrmo.recruitment@gmail.com" class="help-link">
+                <span class="gt-xs">lgutagumhrmo.recruitment@gmail.com</span>
                 <span class="lt-sm">Email Support</span>
               </a>
             </span>
           </div>
-          <div class="copyright">© 2025 Tagum City Hall. All rights reserved.</div>
+          <div class="copyright">
+            © 2025 City Government of Tagum. All rights reserved. Developed by SPM Section.
+          </div>
         </div>
       </div>
     </div>
