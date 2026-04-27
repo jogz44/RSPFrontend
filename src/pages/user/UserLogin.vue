@@ -56,53 +56,37 @@
               :size="captchaSize"
             />
 
-            <!-- ==================== TERMS & PRIVACY AGREEMENT ==================== -->
-            <div class="agreement-wrapper">
-              <div class="agreement-card" :class="{ 'agreement-card--error': showAgreementError }">
-                <q-checkbox
-                  v-model="agreedToTerms"
-                  color="primary"
-                  dense
-                  keep-color
-                  class="agreement-checkbox"
-                  @update:model-value="showAgreementError = false"
-                >
-                  <template v-slot:default>
-                    <span class="agreement-label">
-                      I have read and agree to the
-                      <router-link to="/terms" class="agreement-link terms-link" @click.stop>
-                        Terms and Conditions
-                      </router-link>
-                      and
-                      <router-link to="/privacy" class="agreement-link privacy-link" @click.stop>
-                        Privacy Policy.
-                      </router-link>
-                    </span>
-                  </template>
-                </q-checkbox>
+            <!-- Terms & Agreement -->
+            <div class="agreement-card" :class="{ 'agreement-card--error': showAgreementError }">
+              <q-checkbox
+                v-model="agreedToTerms"
+                color="primary"
+                dense
+                keep-color
+                class="agreement-checkbox"
+                @update:model-value="showAgreementError = false"
+              >
+                <template v-slot:default>
+                  <span class="agreement-label">
+                    I have read and agree to the
+                    <router-link to="/terms" class="agreement-link terms-link" @click.stop>
+                      Terms and Conditions
+                    </router-link>
+                    and
+                    <router-link to="/privacy" class="agreement-link privacy-link" @click.stop>
+                      Privacy Policy.
+                    </router-link>
+                  </span>
+                </template>
+              </q-checkbox>
 
-                <transition name="err-fade">
-                  <div v-if="showAgreementError" class="agreement-error-msg">
-                    <q-icon name="error_outline" size="13px" class="q-mr-xs" />
-                    Please agree to the Terms and Privacy Policy to continue.
-                  </div>
-                </transition>
-              </div>
-
-              <!-- Quick links -->
-              <!-- <div class="quick-links-row">
-                <router-link to="/terms" class="quick-link">
-                  <q-icon name="open_in_new" size="10px" class="q-mr-xs" />
-                  Terms &amp; Conditions
-                </router-link>
-                <span class="quick-link-sep">•</span>
-                <router-link to="/privacy" class="quick-link">
-                  <q-icon name="open_in_new" size="10px" class="q-mr-xs" />
-                  Privacy Policy
-                </router-link>
-              </div> -->
+              <transition name="err-fade">
+                <div v-if="showAgreementError" class="agreement-error-msg">
+                  <q-icon name="error_outline" size="13px" class="q-mr-xs" />
+                  Please agree to the Terms and Privacy Policy to continue.
+                </div>
+              </transition>
             </div>
-            <!-- ==================== END AGREEMENT ==================== -->
 
             <q-btn
               label="Send Verification Code"
@@ -207,15 +191,13 @@
             <q-icon name="help_outline" :size="footerIconSize" />
             <span class="help-content">
               Need assistance? Contact us at
-              <a href="mailto:lgutagumhrmo.recruitment@gmail.com" class="help-link">
-                <span class="gt-xs">lgutagumhrmo.recruitment@gmail.com</span>
+              <a href="mailto:support@tagumcity.gov.ph" class="help-link">
+                <span class="gt-xs">support@tagumcity.gov.ph</span>
                 <span class="lt-sm">Email Support</span>
               </a>
             </span>
           </div>
-          <div class="copyright">
-            © 2025 City Government of Tagum. All rights reserved. Developed by [Your Team Name].
-          </div>
+          <div class="copyright">© 2025 Tagum City Hall. All rights reserved.</div>
         </div>
       </div>
     </div>
@@ -244,7 +226,7 @@
   // CAPTCHA responses
   const emailCaptchaResponse = ref('');
 
-  // ==================== AGREEMENT STATE ====================
+  // Agreement state (only used to gate the button, never sent to backend)
   const agreedToTerms = ref(false);
   const showAgreementError = ref(false);
 
@@ -316,7 +298,7 @@
       emailInput.value &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value) &&
       emailCaptchaResponse.value &&
-      agreedToTerms.value && // ← agreement required
+      agreedToTerms.value && // gates the button only, not sent to backend
       !emailStore.loading
     );
   });
@@ -355,23 +337,13 @@
 
   // Action handlers
   const handleSendOtp = async () => {
-    // ==================== AGREEMENT VALIDATION ====================
-    if (!agreedToTerms.value) {
-      showAgreementError.value = true;
-      setTimeout(() => {
-        showAgreementError.value = false;
-      }, 4000);
-      $q.notify({
-        type: 'warning',
-        message: 'Please agree to the Terms and Conditions and Privacy Policy.',
-        position: 'top',
-        icon: 'gavel',
-      });
-      return;
-    }
-
     if (!canSendOtp.value) {
-      if (!emailInput.value) {
+      if (!agreedToTerms.value) {
+        showAgreementError.value = true;
+        setTimeout(() => {
+          showAgreementError.value = false;
+        }, 4000);
+      } else if (!emailInput.value) {
         $q.notify({
           type: 'negative',
           message: 'Please enter your email address.',
@@ -388,6 +360,7 @@
     }
 
     try {
+      // agreedToTerms is intentionally NOT passed to sendOtp
       await emailStore.sendOtp(emailInput.value, emailCaptchaResponse.value);
 
       $q.notify({
@@ -404,7 +377,6 @@
         position: 'top',
         timeout: 4000,
       });
-
       resetEmailCaptcha();
     }
   };
@@ -414,16 +386,13 @@
 
     try {
       await emailStore.resendOtp();
-
       otpInput.value = '';
-
       $q.notify({
         type: 'positive',
         message: 'New verification code sent to your email.',
         position: 'top',
         icon: 'check_circle',
       });
-
       resetEmailCaptcha();
     } catch (error) {
       $q.notify({
@@ -431,7 +400,6 @@
         message: error.message || 'Failed to resend verification code.',
         position: 'top',
       });
-
       resetEmailCaptcha();
     }
   };
@@ -731,13 +699,7 @@
     text-transform: none;
   }
 
-  /* ==================== AGREEMENT STYLES ==================== */
-  .agreement-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
+  /* ── Agreement ── */
   .agreement-card {
     background: linear-gradient(135deg, #f0faf4 0%, #e8f5ec 100%);
     border: 1px solid #a5d6b0;
@@ -807,24 +769,8 @@
   .terms-link {
     color: #1a7e44;
   }
-
   .privacy-link {
     color: #1565c0;
-  }
-
-  .agreement-meta {
-    display: flex;
-    align-items: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed #a5d6b0;
-  }
-
-  .last-updated-text {
-    font-size: 0.7rem;
-    color: #999;
-    font-style: italic;
-    letter-spacing: 0.01em;
   }
 
   .agreement-error-msg {
@@ -838,46 +784,16 @@
     margin-top: 6px;
   }
 
-  /* Quick links */
-  .quick-links-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding-top: 2px;
-  }
-
-  .quick-link {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.7rem;
-    color: #888;
-    text-decoration: none;
-    transition: color 0.2s;
-    white-space: nowrap;
-  }
-
-  .quick-link:hover {
-    color: #1a7e44;
-  }
-
-  .quick-link-sep {
-    font-size: 0.7rem;
-    color: #ccc;
-  }
-
-  /* Transition */
   .err-fade-enter-active,
   .err-fade-leave-active {
     transition: all 0.3s ease;
   }
-
   .err-fade-enter-from,
   .err-fade-leave-to {
     opacity: 0;
     transform: translateY(-4px);
   }
-  /* ==================== END AGREEMENT STYLES ==================== */
+  /* ── End Agreement ── */
 
   .footer-info {
     margin-top: 2rem;
@@ -951,23 +867,18 @@
     .login-section {
       padding: 1.5rem 1rem;
     }
-
     .login-card {
       padding: 2.5rem 2rem;
     }
-
     .main-title {
       font-size: 1.5rem;
     }
-
     .login-title {
       font-size: 1.15rem;
     }
-
     .login-subtitle {
       font-size: 0.95rem;
     }
-
     .form-container {
       gap: 1.5rem;
     }
@@ -979,117 +890,84 @@
       padding: 1rem 0.75rem;
       background-attachment: scroll;
     }
-
     .login-overlay {
       background-attachment: scroll;
     }
-
     .login-card {
       padding: 2rem 1.5rem;
       border-radius: 16px;
     }
-
     .login-header {
       margin-bottom: 2rem;
     }
-
     .login-logo {
       max-width: 80px;
       margin-bottom: 1.25rem;
     }
-
     .main-title {
       font-size: 1.25rem;
     }
-
     .login-title {
       font-size: 1rem;
     }
-
     .login-subtitle {
       font-size: 0.875rem;
     }
-
     .form-container {
       gap: 1.5rem;
     }
-
     .input-label {
       font-size: 0.95rem;
     }
-
     .custom-input :deep(.q-field__control) {
       min-height: 44px;
     }
-
     .custom-input :deep(.q-field__native) {
       font-size: 0.95rem;
     }
-
     .submit-btn {
       font-size: 0.95rem;
       min-height: 44px;
       padding: 0.625rem 1rem;
     }
-
     .info-text {
       font-size: 0.8rem;
     }
-
     .email-display-card {
       padding: 1rem;
       flex-wrap: wrap;
     }
-
     .email-info {
       flex-wrap: wrap;
     }
-
     .email-text .email-value {
       font-size: 0.9rem;
     }
-
     .edit-btn {
       margin-left: auto;
     }
-
     .otp-input :deep(input) {
       letter-spacing: 0.5rem;
       font-size: 1.25rem;
     }
-
     .resend-text {
       font-size: 0.8rem;
     }
-
     .help-text {
       font-size: 0.8rem;
     }
-
     .copyright {
       font-size: 0.7rem;
     }
-
     .footer-info {
       margin-top: 1.5rem;
     }
-
     .agreement-card {
       padding: 12px 12px 8px 12px;
     }
-
     .agreement-label {
       font-size: 0.78rem;
     }
-
-    .last-updated-text {
-      font-size: 0.66rem;
-    }
-
-    .quick-link {
-      font-size: 0.66rem;
-    }
-
     .agreement-error-msg {
       font-size: 0.73rem;
     }
@@ -1100,103 +978,73 @@
     .login-section {
       padding: 0.75rem 0.5rem;
     }
-
     .login-card {
       padding: 1.5rem 1rem;
       border-radius: 12px;
     }
-
     .login-logo {
       max-width: 70px;
       margin-bottom: 1rem;
     }
-
     .main-title {
       font-size: 1.1rem;
     }
-
     .login-title {
       font-size: 0.95rem;
     }
-
     .login-subtitle {
       font-size: 0.8rem;
     }
-
     .form-container {
       gap: 1.25rem;
     }
-
     .input-label {
       font-size: 0.875rem;
     }
-
     .custom-input :deep(.q-field__control) {
       min-height: 40px;
     }
-
     .custom-input :deep(.q-field__native) {
       font-size: 0.875rem;
     }
-
     .submit-btn {
       font-size: 0.875rem;
       min-height: 40px;
       padding: 0.5rem 0.75rem;
     }
-
     .info-box {
       padding: 0.75rem;
     }
-
     .info-text {
       font-size: 0.75rem;
     }
-
     .email-display-card {
       padding: 0.875rem;
     }
-
     .email-text .label {
       font-size: 0.7rem;
     }
-
     .email-text .email-value {
       font-size: 0.85rem;
     }
-
     .otp-input :deep(input) {
       letter-spacing: 0.4rem;
       font-size: 1.1rem;
     }
-
     .resend-text {
       font-size: 0.75rem;
     }
-
     .help-text {
       font-size: 0.75rem;
     }
-
     .copyright {
       font-size: 0.65rem;
     }
-
     .agreement-card {
       padding: 10px 10px 8px 10px;
     }
-
     .agreement-label {
       font-size: 0.74rem;
-    }
-
-    .quick-links-row {
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .quick-link-sep {
-      display: none;
     }
   }
 
@@ -1205,19 +1053,15 @@
     .login-content {
       max-width: 550px;
     }
-
     .login-card {
       padding: 3.5rem 3rem;
     }
-
     .main-title {
       font-size: 2rem;
     }
-
     .login-title {
       font-size: 1.35rem;
     }
-
     .login-subtitle {
       font-size: 1.1rem;
     }
