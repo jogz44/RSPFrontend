@@ -198,7 +198,7 @@
             </span>
           </div>
           <div class="copyright">
-            © 2025 City Government of Tagum. All rights reserved. Developed by SPM Section.
+            © 2025 City Government of Tagum. All rights reserved. Developed by CICTMO.
           </div>
         </div>
       </div>
