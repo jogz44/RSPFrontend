@@ -1,11 +1,12 @@
 <template>
   <div class="q-pa-md">
+    <!-- Header -->
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h6 text-bold">Civil Service Eligibility</div>
-      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+      <div class="row q-gutter-x-sm" v-if="!isEditMode && !isReadOnly">
         <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
       </div>
-      <div class="row q-gutter-x-sm" v-else>
+      <div class="row q-gutter-x-sm" v-else-if="isEditMode">
         <q-btn
           unelevated
           rounded
@@ -29,6 +30,15 @@
       </div>
     </div>
 
+    <!-- Read-only notice for ControlNo applicants -->
+    <q-banner v-if="isReadOnly && !isEditMode" class="bg-grey-2 text-grey-8 q-mb-md" rounded>
+      <div class="row items-center">
+        <q-icon name="info" size="sm" class="q-mr-sm" />
+        <span>Civil service eligibility records are read-only for this applicant.</span>
+      </div>
+    </q-banner>
+
+    <!-- Error banner -->
     <q-banner
       v-if="editStore.saveError && isEditMode"
       class="bg-negative text-white q-mb-md"
@@ -63,6 +73,7 @@
 
     <!-- EDIT MODE -->
     <div v-else>
+      <!-- Existing rows -->
       <q-card
         v-for="(row, idx) in editStore.draftData.civilService"
         :key="row.id ?? idx"
@@ -97,9 +108,10 @@
             <div class="col-12 col-sm-6 col-md-3">
               <q-input
                 v-model="row.date_of_examination"
-                label="Date of Exam (MM/DD/YYYY)"
+                label="Date of Exam"
                 outlined
                 dense
+                hint="MM/DD/YYYY"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -116,15 +128,17 @@
             <div class="col-12 col-sm-6 col-md-4">
               <q-input
                 v-model="row.date_of_validity"
-                label="Date of Validity (MM/DD/YYYY)"
+                label="Date of Validity"
                 outlined
                 dense
+                hint="MM/DD/YYYY"
               />
             </div>
           </div>
         </q-card-section>
       </q-card>
 
+      <!-- Added (new) rows -->
       <q-card
         v-for="(row, idx) in editStore.addedRows.civilService"
         :key="`new-${idx}`"
@@ -159,9 +173,10 @@
             <div class="col-12 col-sm-6 col-md-3">
               <q-input
                 v-model="row.date_of_examination"
-                label="Date of Exam (MM/DD/YYYY)"
+                label="Date of Exam"
                 outlined
                 dense
+                hint="MM/DD/YYYY"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -178,9 +193,10 @@
             <div class="col-12 col-sm-6 col-md-4">
               <q-input
                 v-model="row.date_of_validity"
-                label="Date of Validity (MM/DD/YYYY)"
+                label="Date of Validity"
                 outlined
                 dense
+                hint="MM/DD/YYYY"
               />
             </div>
           </div>
@@ -206,16 +222,80 @@
   const editStore = usePdsEditStore();
 
   const props = defineProps({
-    eligibility: { type: Array, required: false, default: () => [] },
+    eligibility: { type: [Array, Object], required: false, default: () => [] },
     personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
+
   const emit = defineEmits(['saved']);
 
   const isEditMode = computed(() => editStore.activeEditSection === 'civilService');
 
+  // Compute if we should hide edit button (has ControlNo)
+  const isReadOnly = computed(() => {
+    return props.hasControlNo || !!props.controlNo;
+  });
+
+  // Helper function to normalize eligibility data from either structure
+  const normalizeEligibilityData = (data) => {
+    if (!data) return [];
+
+    let eligibilityArray = [];
+    if (Array.isArray(data)) {
+      eligibilityArray = data;
+    } else if (data.eligibility && Array.isArray(data.eligibility)) {
+      eligibilityArray = data.eligibility;
+    } else if (data.eligibity && Array.isArray(data.eligibity)) {
+      eligibilityArray = data.eligibity;
+    } else {
+      return [];
+    }
+
+    return eligibilityArray.map((item) => {
+      // Check if it's the second structure (has CivilServe, Rates, Dates, Place fields)
+      const isSecondStructure =
+        'CivilServe' in item || 'Rates' in item || 'Dates' in item || 'Place' in item;
+
+      if (isSecondStructure) {
+        // Helper to format date from DD/MM/YYYY to YYYY-MM-DD
+        const formatDateFromDMY = (dateStr) => {
+          if (!dateStr || typeof dateStr !== 'string') return '';
+          const parts = dateStr.split('/');
+          if (parts.length === 3) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+          return dateStr;
+        };
+
+        // Second structure format (from the JSON with ControlNo)
+        return {
+          id: item.id || null,
+          eligibility: item.CivilServe || item.eligibility || '',
+          rating: item.Rates || item.rating || '',
+          date_of_examination: formatDateFromDMY(item.Dates) || item.date_of_examination || '',
+          place_of_examination: item.Place || item.place_of_examination || '',
+          license_number: item.LNumber || item.license_number || '',
+          date_of_validity: item.LDate || item.date_of_validity || '',
+        };
+      } else {
+        // First structure format
+        return {
+          id: item.id || null,
+          eligibility: item.eligibility || '',
+          rating: item.rating || '',
+          date_of_examination: item.date_of_examination || '',
+          place_of_examination: item.place_of_examination || '',
+          license_number: item.license_number || '',
+          date_of_validity: item.date_of_validity || '',
+        };
+      }
+    });
+  };
+
   const eligibilityData = computed(() => {
-    if (!Array.isArray(props.eligibility)) return [];
-    return props.eligibility.map((item) => ({ ...item }));
+    const normalized = normalizeEligibilityData(props.eligibility);
+    return [...normalized];
   });
 
   const formatDate = (dateString) => {
@@ -269,11 +349,15 @@
   ];
 
   function enterEdit() {
-    editStore.startEdit('civilService', props.eligibility, props.personalInfoId);
+    // Pass normalized eligibility data to the store
+    const normalizedData = normalizeEligibilityData(props.eligibility);
+    editStore.startEdit('civilService', normalizedData, props.personalInfoId);
   }
+
   function addRow() {
     editStore.addRow('civilService');
   }
+
   function markForDelete(id) {
     if (!id) return;
     $q.dialog({
@@ -283,9 +367,11 @@
       persistent: true,
     }).onOk(() => editStore.markForDelete('civilService', id));
   }
+
   function cancel() {
     editStore.cancelEdit('civilService');
   }
+
   async function save() {
     const result = await editStore.saveSection('civilService');
     if (result.success) {
@@ -296,3 +382,9 @@
     }
   }
 </script>
+
+<style scoped>
+  .q-table {
+    background: white;
+  }
+</style>

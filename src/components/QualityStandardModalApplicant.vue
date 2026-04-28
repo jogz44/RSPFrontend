@@ -3,7 +3,7 @@
     <q-card
       class="qualification-modal"
       style="
-        width: 1500px;
+        width: 1800px;
         max-width: 95vw;
         height: 90vh;
         max-height: 95vh;
@@ -199,6 +199,8 @@
                       :bg-color="
                         !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
                       "
+                      :error="isUnqualified && remarksTouched && !xData.education_remark?.trim()"
+                      error-message="Education remark is required when Unqualified"
                     />
                   </q-scroll-area>
                 </div>
@@ -277,6 +279,19 @@
                             />
                           </q-td>
                         </template>
+                        <template v-slot:body-cell-work_date_to="props">
+                          <q-td :props="props">
+                            <span
+                              v-if="
+                                props.row.work_date_to &&
+                                props.row.work_date_to.toLowerCase() === 'present'
+                              "
+                            >
+                              <q-badge color="primary">Present</q-badge>
+                            </span>
+                            <span v-else>{{ props.row.work_date_to || '' }}</span>
+                          </q-td>
+                        </template>
                         <template v-slot:body-cell-monthlySalary="props">
                           <q-td :props="props">
                             {{ formatSalary(props.row.monthly_salary) }}
@@ -341,6 +356,8 @@
                       :bg-color="
                         !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
                       "
+                      :error="isUnqualified && remarksTouched && !xData.experience_remark?.trim()"
+                      error-message="Experience remark is required when Unqualified"
                     />
                   </q-scroll-area>
                 </div>
@@ -480,6 +497,8 @@
                       :bg-color="
                         !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
                       "
+                      :error="isUnqualified && remarksTouched && !xData.training_remark?.trim()"
+                      error-message="Training remark is required when Unqualified"
                     />
                   </q-scroll-area>
                 </div>
@@ -560,6 +579,8 @@
                       :bg-color="
                         !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
                       "
+                      :error="isUnqualified && remarksTouched && !xData.eligibility_remark?.trim()"
+                      error-message="Eligibility remark is required when Unqualified"
                     />
                   </q-scroll-area>
                 </div>
@@ -639,7 +660,7 @@
               label="SUBMIT EVALUATION"
               color="positive"
               @click="onSubmit"
-              :disable="!qualificationStatus"
+              :disable="!qualificationStatus || !isRemarksValid"
               class="q-mx-sm"
             />
           </div>
@@ -676,6 +697,9 @@
   const selectedExperienceIds = ref([]);
   const selectedTrainingIds = ref([]);
   const selectedEligibilityIds = ref([]);
+
+  // Tracks whether the user has attempted to submit (triggers inline error messages)
+  const remarksTouched = ref(false);
 
   const showPDSModal = ref(false);
   const showSupportingDocsModal = ref(false);
@@ -971,23 +995,40 @@
     return isNaN(date.getTime()) ? null : date;
   };
 
-  const calculateMonthsDifference = (startDate, endDate) => {
-    if (!startDate || !endDate) {
-      console.log('Missing date:', { startDate, endDate });
+  const calculateMonthsDifference = (startDate, endDate, applicationDate = null) => {
+    if (!startDate) {
+      console.log('Missing start date');
       return 0;
     }
 
     const start = parseDate(startDate);
-    const end = parseDate(endDate);
-
-    if (!start || !end) {
-      console.log('Invalid date parsing:', {
-        startDate,
-        endDate,
-        startParsed: start,
-        endParsed: end,
-      });
+    if (!start) {
+      console.log('Invalid start date parsing:', { startDate });
       return 0;
+    }
+
+    let end;
+
+    // Check if endDate is "Present" (case-insensitive)
+    if (endDate && typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present') {
+      // Use application date if provided, otherwise use current date
+      if (applicationDate) {
+        end = parseDate(applicationDate);
+        console.log('Using application date for Present:', applicationDate);
+      } else {
+        end = new Date(); // Fallback to current date
+        console.log('Using current date for Present');
+      }
+
+      if (!end) {
+        end = new Date(); // Fallback to current date if parsing fails
+      }
+    } else {
+      end = parseDate(endDate);
+      if (!end) {
+        console.log('Invalid end date parsing:', { endDate });
+        return 0;
+      }
     }
 
     console.log('Calculating months between:', {
@@ -995,6 +1036,7 @@
       end: end.toISOString(),
       startRaw: startDate,
       endRaw: endDate,
+      isPresent: endDate && endDate.trim().toLowerCase() === 'present',
     });
 
     // Calculate total months difference
@@ -1034,6 +1076,16 @@
 
   const formatDateRange = (startDate, endDate) => {
     const start = parseDate(startDate);
+
+    // Check if endDate is "Present" (case-insensitive)
+    const isPresent =
+      endDate && typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present';
+
+    if (isPresent) {
+      if (!start) return 'Present';
+      return `${start.toLocaleDateString()} - Present`;
+    }
+
     const end = parseDate(endDate);
 
     if (!start && !end) return 'Date not specified';
@@ -1048,7 +1100,6 @@
     return `Total:  ${formatDuration(totalMonths)}`;
   };
 
-  // Add this computed property near your other computed properties
   const applicantFullName = computed(() => {
     // First try to get from the fetched PDS data
     const pdsData = jobPostStore.applicantPDS;
@@ -1078,13 +1129,53 @@
     return 'Please wait';
   });
 
+  // Convenience boolean — true only when "Unqualified" is selected
+  const isUnqualified = computed(() => qualificationStatus.value === 'Unqualified');
+
+  // isRemarksValid:
+  //   • Not "Unqualified" → always valid (no remarks required)
+  //   • "Unqualified"     → ALL four remark fields must have content
+  const isRemarksValid = computed(() => {
+    if (!isUnqualified.value) return true;
+    return !!(
+      xData.value.education_remark?.trim() &&
+      xData.value.experience_remark?.trim() &&
+      xData.value.training_remark?.trim() &&
+      xData.value.eligibility_remark?.trim()
+    );
+  });
+
+  const remarksError = computed(() => {
+    if (isUnqualified.value && !isRemarksValid.value) {
+      return 'All remarks fields (Education, Experience, Training, Eligibility) must be filled in when marking as Unqualified.';
+    }
+    return '';
+  });
+
+  // Reset touched state when qualification status changes so stale
+  // error highlights disappear when switching back to "Qualified"
+  watch(qualificationStatus, () => {
+    remarksTouched.value = false;
+  });
+
   const experienceWithDuration = computed(() => {
     if (!xExperience.value || xExperience.value.length === 0) {
       return [];
     }
 
+    // Get application date from applicant data
+    const applicationDate =
+      props.applicantData?.appliedDate ||
+      props.applicantData?.application_date ||
+      props.applicantData?.date_applied ||
+      null;
+
     return xExperience.value.map((exp) => {
-      const durationMonths = calculateMonthsDifference(exp.work_date_from, exp.work_date_to);
+      const durationMonths = calculateMonthsDifference(
+        exp.work_date_from,
+        exp.work_date_to,
+        applicationDate,
+      );
       const durationText = formatDuration(durationMonths);
 
       return {
@@ -1487,6 +1578,7 @@
     selectedTrainingIds.value = [];
     selectedEducationIds.value = [];
     selectedEligibilityIds.value = [];
+    remarksTouched.value = false;
     isLoadingPDS.value = true;
 
     try {
@@ -1661,6 +1753,7 @@
     xExperience.value = [];
     xTraining.value = [];
     qualificationStatus.value = '';
+    remarksTouched.value = false;
     selectedEducationIds.value = [];
     selectedExperienceIds.value = [];
     selectedTrainingIds.value = [];
@@ -1710,6 +1803,24 @@
   };
 
   const onSubmit = () => {
+    // Mark as touched so inline field errors appear across all tabs
+    remarksTouched.value = true;
+
+    // Validation check
+    if (!isRemarksValid.value) {
+      // Show error notification
+      if (window.Quasar) {
+        window.Quasar.notify({
+          type: 'negative',
+          message: remarksError.value,
+          position: 'top',
+          timeout: 3000,
+        });
+      } else {
+        alert(remarksError.value);
+      }
+      return;
+    }
     if (
       !evaluationLocked.value &&
       qualificationStatus.value &&

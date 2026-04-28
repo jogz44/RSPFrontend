@@ -2,10 +2,10 @@
   <div class="q-pa-md">
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h6 text-bold">Voluntary Work</div>
-      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+      <div class="row q-gutter-x-sm" v-if="!isEditMode && !isReadOnly">
         <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
       </div>
-      <div class="row q-gutter-x-sm" v-else>
+      <div class="row q-gutter-x-sm" v-else-if="isEditMode">
         <q-btn
           unelevated
           rounded
@@ -28,6 +28,14 @@
         <q-btn flat rounded label="Cancel" icon="close" color="grey-7" size="sm" @click="cancel" />
       </div>
     </div>
+
+    <!-- Read-only notice for ControlNo applicants -->
+    <q-banner v-if="isReadOnly && !isEditMode" class="bg-grey-2 text-grey-8 q-mb-md" rounded>
+      <div class="row items-center">
+        <q-icon name="info" size="sm" class="q-mr-sm" />
+        <span>Voluntary work records are read-only for this applicant.</span>
+      </div>
+    </q-banner>
 
     <q-banner
       v-if="editStore.saveError && isEditMode"
@@ -61,6 +69,7 @@
 
     <!-- EDIT MODE -->
     <div v-else>
+      <!-- Existing rows -->
       <q-card
         v-for="(row, idx) in editStore.draftData.voluntary"
         :key="row.id ?? idx"
@@ -111,6 +120,7 @@
         </q-card-section>
       </q-card>
 
+      <!-- New rows -->
       <q-card
         v-for="(row, idx) in editStore.addedRows.voluntary"
         :key="`new-${idx}`"
@@ -180,16 +190,80 @@
   const editStore = usePdsEditStore();
 
   const props = defineProps({
-    voluntary: { type: Array, required: false, default: () => [] },
+    voluntary: { type: [Array, Object], required: false, default: () => [] },
     personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
+
   const emit = defineEmits(['saved']);
 
   const isEditMode = computed(() => editStore.activeEditSection === 'voluntary');
 
+  // Compute if we should hide edit button (has ControlNo)
+  const isReadOnly = computed(() => {
+    return props.hasControlNo || !!props.controlNo;
+  });
+
+  // Helper function to format date from DD/MM/YYYY to YYYY-MM-DD
+  const formatDateFromDMY = (dateStr) => {
+    if (!dateStr || typeof dateStr !== 'string') return '';
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  // Helper function to normalize voluntary work data from either structure
+  const normalizeVoluntaryData = (data) => {
+    if (!data) return [];
+
+    let voluntaryArray = [];
+    if (Array.isArray(data)) {
+      voluntaryArray = data;
+    } else if (data.voluntary_work && Array.isArray(data.voluntary_work)) {
+      voluntaryArray = data.voluntary_work;
+    } else {
+      return [];
+    }
+
+    return voluntaryArray.map((item) => {
+      // Check if it's the second structure (has different field names)
+      // Second structure from the JSON has fields like: organization_name, inclusive_date_from, etc.
+      // But they might be in different format
+      const isSecondStructure =
+        'organization_name' in item && typeof item.organization_name === 'string';
+
+      if (isSecondStructure) {
+        // First structure format (the one we already have)
+        return {
+          id: item.id || null,
+          organization_name: item.organization_name || '',
+          inclusive_date_from: item.inclusive_date_from || '',
+          inclusive_date_to: item.inclusive_date_to || '',
+          number_of_hours: item.number_of_hours || '',
+          position: item.position || '',
+          _original: item,
+        };
+      } else {
+        // Alternative format (just in case)
+        return {
+          id: item.id || null,
+          organization_name: item.organization_name || item.organization || item.name || '',
+          inclusive_date_from: item.inclusive_date_from || formatDateFromDMY(item.date_from) || '',
+          inclusive_date_to: item.inclusive_date_to || formatDateFromDMY(item.date_to) || '',
+          number_of_hours: item.number_of_hours || item.hours || '',
+          position: item.position || item.role || '',
+          _original: item,
+        };
+      }
+    });
+  };
+
   const voluntaryData = computed(() => {
-    if (!Array.isArray(props.voluntary)) return [];
-    return [...props.voluntary].sort(
+    const normalized = normalizeVoluntaryData(props.voluntary);
+    return [...normalized].sort(
       (a, b) => new Date(b.inclusive_date_from || 0) - new Date(a.inclusive_date_from || 0),
     );
   });
@@ -227,11 +301,15 @@
   ];
 
   function enterEdit() {
-    editStore.startEdit('voluntary', props.voluntary, props.personalInfoId);
+    // Pass normalized voluntary data to the store
+    const normalizedData = normalizeVoluntaryData(props.voluntary);
+    editStore.startEdit('voluntary', normalizedData, props.personalInfoId);
   }
+
   function addRow() {
     editStore.addRow('voluntary');
   }
+
   function markForDelete(id) {
     if (!id) return;
     $q.dialog({
@@ -241,9 +319,11 @@
       persistent: true,
     }).onOk(() => editStore.markForDelete('voluntary', id));
   }
+
   function cancel() {
     editStore.cancelEdit('voluntary');
   }
+
   async function save() {
     const result = await editStore.saveSection('voluntary');
     if (result.success) {
@@ -254,3 +334,9 @@
     }
   }
 </script>
+
+<style scoped>
+  .q-table {
+    background: white;
+  }
+</style>

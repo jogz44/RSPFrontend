@@ -3,10 +3,10 @@
     <!-- Header -->
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h6 text-bold">Education Background</div>
-      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+      <div class="row q-gutter-x-sm" v-if="!isEditMode && !hasControlNo">
         <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
       </div>
-      <div class="row q-gutter-x-sm" v-else>
+      <div class="row q-gutter-x-sm" v-else-if="isEditMode">
         <q-btn
           unelevated
           rounded
@@ -29,6 +29,14 @@
         <q-btn flat rounded label="Cancel" icon="close" color="grey-7" size="sm" @click="cancel" />
       </div>
     </div>
+
+    <!-- Read-only notice for ControlNo applicants -->
+    <q-banner v-if="hasControlNo" class="bg-grey-2 text-grey-8 q-mb-md" rounded>
+      <div class="row items-center">
+        <q-icon name="info" size="sm" class="q-mr-sm" />
+        <span>Education records are read-only for this applicant.</span>
+      </div>
+    </q-banner>
 
     <!-- Error banner -->
     <q-banner
@@ -163,10 +171,10 @@
               <q-input v-model="row.degree" label="Degree / Course" outlined dense />
             </div>
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input v-model="row.attendance_from" label="From (MM/DD/YYYY)" outlined dense />
+              <q-input v-model="row.attendance_from" label="From" outlined dense />
             </div>
             <div class="col-12 col-sm-6 col-md-3">
-              <q-input v-model="row.attendance_to" label="To (MM/DD/YYYY)" outlined dense />
+              <q-input v-model="row.attendance_to" label="To" outlined dense />
             </div>
             <div class="col-12 col-sm-6 col-md-3">
               <q-input v-model="row.highest_units" label="Highest Units Earned" outlined dense />
@@ -209,8 +217,10 @@
   const editStore = usePdsEditStore();
 
   const props = defineProps({
-    educ: { type: Array, required: false, default: () => [] },
+    educ: { type: [Array, Object], required: false, default: () => [] },
     personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
 
   const emit = defineEmits(['saved']);
@@ -225,10 +235,67 @@
     'Graduate Studies',
   ];
 
-  const educationData = computed(() => {
-    if (!Array.isArray(props.educ)) return [];
-    return [...props.educ].sort((a, b) => getLevelPriority(a.level) - getLevelPriority(b.level));
-  });
+  // Helper to normalize education data from either structure
+  const normalizeEducationData = (data) => {
+    if (!data) return [];
+
+    let educationArray = [];
+    if (Array.isArray(data)) {
+      educationArray = data;
+    } else if (data.education && Array.isArray(data.education)) {
+      educationArray = data.education;
+    } else {
+      return [];
+    }
+
+    return educationArray.map((item) => {
+      // Check if it's the second structure (has Education, School, Degree fields)
+      const isSecondStructure = 'Education' in item || 'School' in item || 'DateAttend' in item;
+
+      if (isSecondStructure) {
+        // Helper to extract from year from "1996 - 2002" format
+        const extractFromYear = (dateAttend) => {
+          if (!dateAttend || typeof dateAttend !== 'string') return '';
+          const match = dateAttend.match(/^(\d{4})/);
+          return match ? match[1] : '';
+        };
+
+        const extractToYear = (dateAttend) => {
+          if (!dateAttend || typeof dateAttend !== 'string') return '';
+          const match = dateAttend.match(/(\d{4})$/);
+          return match ? match[1] : '';
+        };
+
+        // Second structure format
+        return {
+          id: item.id || null,
+          level: item.Education || '',
+          school_name: item.School || '',
+          degree: item.Degree || '',
+          attendance_from: extractFromYear(item.DateAttend) || '',
+          attendance_to: extractToYear(item.DateAttend) || '',
+          highest_units: item.NumUnits || '',
+          year_graduated: item.year_graduated || '',
+          scholarship: item.Honors || '',
+          graduated: item.Graduated || '',
+        };
+      } else {
+        // First structure format
+        return {
+          id: item.id || null,
+          level: item.level || '',
+          school_name: item.school_name || '',
+          degree: item.degree || '',
+          attendance_from: item.attendance_from || '',
+          attendance_to: item.attendance_to || '',
+          highest_units: item.highest_units || '',
+          year_graduated: item.year_graduated || '',
+          scholarship: item.scholarship || '',
+          graduated: item.graduated || '',
+        };
+      }
+    });
+  };
 
   const getLevelPriority = (level) => {
     if (!level) return 999;
@@ -240,6 +307,11 @@
     if (l.includes('graduate')) return 5;
     return 999;
   };
+
+  const educationData = computed(() => {
+    const normalized = normalizeEducationData(props.educ);
+    return [...normalized].sort((a, b) => getLevelPriority(a.level) - getLevelPriority(b.level));
+  });
 
   const columns = [
     { name: 'level', label: 'Level', align: 'left', field: (r) => r.level, sortable: true },
@@ -289,7 +361,9 @@
   ];
 
   function enterEdit() {
-    editStore.startEdit('education', props.educ, props.personalInfoId);
+    // Pass normalized education data to the store
+    const normalizedData = normalizeEducationData(props.educ);
+    editStore.startEdit('education', normalizedData, props.personalInfoId);
   }
 
   function addRow() {

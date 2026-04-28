@@ -2,10 +2,10 @@
   <div class="q-pa-md">
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h6 text-bold">References</div>
-      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+      <div class="row q-gutter-x-sm" v-if="!isEditMode && !isReadOnly">
         <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
       </div>
-      <div class="row q-gutter-x-sm" v-else>
+      <div class="row q-gutter-x-sm" v-else-if="isEditMode">
         <q-btn
           unelevated
           rounded
@@ -28,6 +28,14 @@
         <q-btn flat rounded label="Cancel" icon="close" color="grey-7" size="sm" @click="cancel" />
       </div>
     </div>
+
+    <!-- Read-only notice for ControlNo applicants -->
+    <q-banner v-if="isReadOnly && !isEditMode" class="bg-grey-2 text-grey-8 q-mb-md" rounded>
+      <div class="row items-center">
+        <q-icon name="info" size="sm" class="q-mr-sm" />
+        <span>References are read-only for this applicant.</span>
+      </div>
+    </q-banner>
 
     <q-banner
       v-if="editStore.saveError && isEditMode"
@@ -56,6 +64,7 @@
 
     <!-- EDIT MODE -->
     <div v-else>
+      <!-- Existing rows -->
       <q-card
         v-for="(row, idx) in editStore.draftData.references"
         :key="row.id ?? idx"
@@ -85,6 +94,7 @@
         </q-card-section>
       </q-card>
 
+      <!-- New rows -->
       <q-card
         v-for="(row, idx) in editStore.addedRows.references"
         :key="`new-${idx}`"
@@ -133,21 +143,65 @@
   const editStore = usePdsEditStore();
 
   const props = defineProps({
-    references: { type: Array, required: false, default: () => [] },
+    references: { type: [Array, Object], required: false, default: () => [] },
     personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
+
   const emit = defineEmits(['saved']);
 
   const isEditMode = computed(() => editStore.activeEditSection === 'references');
 
+  // Compute if we should hide edit button (has ControlNo)
+  const isReadOnly = computed(() => {
+    return props.hasControlNo || !!props.controlNo;
+  });
+
+  // Helper function to normalize references data from either structure
+  const normalizeReferencesData = (data) => {
+    if (!data) return [];
+
+    let referencesArray = [];
+    if (Array.isArray(data)) {
+      referencesArray = data;
+    } else if (data.reference && Array.isArray(data.reference)) {
+      referencesArray = data.reference;
+    } else if (data.references && Array.isArray(data.references)) {
+      referencesArray = data.references;
+    } else {
+      return [];
+    }
+
+    return referencesArray.map((item) => {
+      // Check if it's the second structure (has Names, Address, TelNo fields)
+      const isSecondStructure = 'Names' in item || 'TelNo' in item;
+
+      if (isSecondStructure) {
+        // Second structure format (from the JSON with ControlNo)
+        return {
+          id: item.id || item.PMID || null,
+          full_name: item.Names || '',
+          address: item.Address || '',
+          contact_number: item.TelNo || '',
+          _original: item,
+        };
+      } else {
+        // First structure format
+        return {
+          id: item.id || null,
+          full_name: item.full_name || item.fullName || '',
+          address: item.address || '',
+          contact_number: item.contact_number || item.contactNumber || item.contactNo || '',
+          _original: item,
+        };
+      }
+    });
+  };
+
   const referencesData = computed(() => {
-    if (!Array.isArray(props.references)) return [];
-    return props.references.map((item) => ({
-      id: item.id,
-      full_name: item.full_name,
-      address: item.address,
-      contact_number: item.contact_number,
-    }));
+    const normalized = normalizeReferencesData(props.references);
+    return normalized;
   });
 
   const columns = [
@@ -170,11 +224,15 @@
   ];
 
   function enterEdit() {
-    editStore.startEdit('references', props.references, props.personalInfoId);
+    // Pass normalized references data to the store
+    const normalizedData = normalizeReferencesData(props.references);
+    editStore.startEdit('references', normalizedData, props.personalInfoId);
   }
+
   function addRow() {
     editStore.addRow('references');
   }
+
   function markForDelete(id) {
     if (!id) return;
     $q.dialog({
@@ -184,9 +242,11 @@
       persistent: true,
     }).onOk(() => editStore.markForDelete('references', id));
   }
+
   function cancel() {
     editStore.cancelEdit('references');
   }
+
   async function save() {
     const result = await editStore.saveSection('references');
     if (result.success) {

@@ -4,8 +4,17 @@
       <q-card flat bordered class="q-mb-lg">
         <q-card-section class="bg-primary text-white">
           <div class="text-h6">Personal Background Questionnaire</div>
-          <div class="text-subtitle2">View Only</div>
+          <div class="text-subtitle2" v-if="isReadOnly">View Only</div>
+          <div class="text-subtitle2" v-else>View Only</div>
         </q-card-section>
+
+        <!-- Read-only notice for ControlNo applicants -->
+        <q-banner v-if="isReadOnly" class="bg-grey-2 text-grey-8" rounded>
+          <div class="row items-center">
+            <q-icon name="info" size="sm" class="q-mr-sm" />
+            <span>This information is read-only for this applicant.</span>
+          </div>
+        </q-banner>
 
         <div class="q-gutter-md q-pa-md">
           <!-- Questions 34 -->
@@ -27,8 +36,8 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.relationThirdDegree" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.relationThirdDegree" val="No" label="No" disable />
+                <q-radio v-model="formData.question_34a" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_34a" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
 
@@ -40,10 +49,23 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.relationFourthDegree" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.relationFourthDegree" val="No" label="No" disable />
+                <q-radio v-model="formData.question_34b" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_34b" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
+
+            <!-- Details for 34a if Yes -->
+            <div v-if="formData.question_34a === '1'" class="q-pl-md q-mt-sm">
+              <q-input
+                v-model="formData.response_34"
+                label="Please provide details"
+                outlined
+                dense
+                disable
+                type="textarea"
+                rows="2"
+              />
+            </div>
           </div>
 
           <!-- Questions 35 -->
@@ -58,10 +80,23 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.administrativeOffense" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.administrativeOffense" val="No" label="No" disable />
+                <q-radio v-model="formData.question_35a" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_35a" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
+
+            <!-- Details for 35a if Yes -->
+            <div v-if="formData.question_35a === '1'" class="q-pl-md q-mt-sm">
+              <q-input
+                v-model="formData.response_35a"
+                label="Please provide details (offense, date, penalty)"
+                outlined
+                dense
+                disable
+                type="textarea"
+                rows="2"
+              />
+            </div>
 
             <q-item tag="label">
               <q-item-section>
@@ -71,12 +106,33 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.criminallyCharged" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.criminallyCharged" val="No" label="No" disable />
+                <q-radio v-model="formData.question_35b" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_35b" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
+
+            <!-- Details for 35b if Yes -->
+            <div v-if="formData.question_35b === '1'" class="q-pl-md q-mt-sm">
+              <q-input
+                v-model="formData.response_35b_date"
+                label="Date of filing"
+                outlined
+                dense
+                disable
+              />
+              <q-input
+                v-model="formData.response_35b_status"
+                label="Status of case"
+                outlined
+                dense
+                disable
+                class="q-mt-sm"
+              />
+            </div>
           </div>
+
           <q-separator class="q-mb-md" />
+
           <!-- Question 36 -->
           <q-item tag="label">
             <q-item-section>
@@ -87,11 +143,26 @@
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-radio v-model="formData.convicted" val="Yes" label="Yes" disable />
-              <q-radio v-model="formData.convicted" val="No" label="No" disable />
+              <q-radio v-model="formData.question_36" :val="'1'" label="Yes" disable />
+              <q-radio v-model="formData.question_36" :val="'0'" label="No" disable />
             </q-item-section>
           </q-item>
+
+          <!-- Details for 36 if Yes -->
+          <div v-if="formData.question_36 === '1'" class="q-pl-md q-mt-sm">
+            <q-input
+              v-model="formData.response_36"
+              label="Please provide details (crime, date, court, penalty)"
+              outlined
+              dense
+              disable
+              type="textarea"
+              rows="2"
+            />
+          </div>
+
           <q-separator class="q-mb-md" />
+
           <!-- Question 37 -->
           <q-item tag="label">
             <q-item-section>
@@ -103,11 +174,26 @@
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-radio v-model="formData.separatedFromService" val="Yes" label="Yes" disable />
-              <q-radio v-model="formData.separatedFromService" val="No" label="No" disable />
+              <q-radio v-model="formData.question_37" :val="'1'" label="Yes" disable />
+              <q-radio v-model="formData.question_37" :val="'0'" label="No" disable />
             </q-item-section>
           </q-item>
+
+          <!-- Details for 37 if Yes -->
+          <div v-if="formData.question_37 === '1'" class="q-pl-md q-mt-sm">
+            <q-input
+              v-model="formData.response_37"
+              label="Please provide details"
+              outlined
+              dense
+              disable
+              type="textarea"
+              rows="2"
+            />
+          </div>
+
           <q-separator class="q-mb-md" />
+
           <!-- Question 38 -->
           <div class="text-bold q-mb-md">38.</div>
           <q-item tag="label">
@@ -119,10 +205,23 @@
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-radio v-model="formData.electionCandidate" val="Yes" label="Yes" disable />
-              <q-radio v-model="formData.electionCandidate" val="No" label="No" disable />
+              <q-radio v-model="formData.question_38a" :val="'1'" label="Yes" disable />
+              <q-radio v-model="formData.question_38a" :val="'0'" label="No" disable />
             </q-item-section>
           </q-item>
+
+          <!-- Details for 38a if Yes -->
+          <div v-if="formData.question_38a === '1'" class="q-pl-md q-mt-sm">
+            <q-input
+              v-model="formData.response_38a"
+              label="Please provide details (election, position, date)"
+              outlined
+              dense
+              disable
+              type="textarea"
+              rows="2"
+            />
+          </div>
 
           <q-item tag="label" class="q-pl-md">
             <q-item-section>
@@ -134,11 +233,26 @@
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-radio v-model="formData.resignedForCampaign" val="Yes" label="Yes" disable />
-              <q-radio v-model="formData.resignedForCampaign" val="No" label="No" disable />
+              <q-radio v-model="formData.question_38b" :val="'1'" label="Yes" disable />
+              <q-radio v-model="formData.question_38b" :val="'0'" label="No" disable />
             </q-item-section>
           </q-item>
+
+          <!-- Details for 38b if Yes -->
+          <div v-if="formData.question_38b === '1'" class="q-pl-md q-mt-sm">
+            <q-input
+              v-model="formData.response_38b"
+              label="Please provide details"
+              outlined
+              dense
+              disable
+              type="textarea"
+              rows="2"
+            />
+          </div>
+
           <q-separator class="q-mb-md" />
+
           <!-- Question 39 -->
           <q-item tag="label">
             <q-item-section>
@@ -149,10 +263,23 @@
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-radio v-model="formData.immigrant" val="Yes" label="Yes" disable />
-              <q-radio v-model="formData.immigrant" val="No" label="No" disable />
+              <q-radio v-model="formData.question_39" :val="'1'" label="Yes" disable />
+              <q-radio v-model="formData.question_39" :val="'0'" label="No" disable />
             </q-item-section>
           </q-item>
+
+          <!-- Details for 39 if Yes -->
+          <div v-if="formData.question_39 === '1'" class="q-pl-md q-mt-sm">
+            <q-input
+              v-model="formData.response_39"
+              label="Please provide details (country, date acquired)"
+              outlined
+              dense
+              disable
+              type="textarea"
+              rows="2"
+            />
+          </div>
 
           <!-- Question 40 -->
           <q-separator class="q-mb-md" />
@@ -173,8 +300,8 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.indigenous" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.indigenous" val="No" label="No" disable />
+                <q-radio v-model="formData.question_40a" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_40a" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
 
@@ -186,8 +313,8 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.pwd" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.pwd" val="No" label="No" disable />
+                <q-radio v-model="formData.question_40b" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_40b" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
 
@@ -199,8 +326,8 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-radio v-model="formData.soloParent" val="Yes" label="Yes" disable />
-                <q-radio v-model="formData.soloParent" val="No" label="No" disable />
+                <q-radio v-model="formData.question_40c" :val="'1'" label="Yes" disable />
+                <q-radio v-model="formData.question_40c" :val="'0'" label="No" disable />
               </q-item-section>
             </q-item>
           </div>
@@ -211,58 +338,122 @@
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useQuasar } from 'quasar';
 
   const $q = useQuasar();
 
-  // Form data setup with example data
-  const formData = ref({
-    relationThirdDegree: 'No',
-    relationFourthDegree: 'No',
-    administrativeOffense: 'No',
-    criminallyCharged: 'No',
-    convicted: 'No',
-    separatedFromService: 'Yes', // Example of a "Yes" answer
-    electionCandidate: 'No',
-    resignedForCampaign: 'No',
-    immigrant: 'No',
-    indigenous: 'Yes', // Example of a "Yes" answer
-    pwd: 'No',
-    soloParent: 'No',
+  const props = defineProps({
+    personalDeclarations: {
+      type: [Array, Object],
+      required: false,
+      default: () => [],
+    },
+    personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
 
-  // Simulating data fetching from an API
+  // Compute if we should show read-only (has ControlNo)
+  const isReadOnly = computed(() => {
+    return props.hasControlNo || !!props.controlNo;
+  });
+
+  // Helper function to normalize personal declarations data from either structure
+  const normalizeDeclarationsData = (data) => {
+    if (!data) return {};
+
+    let declarationsObj = {};
+
+    if (Array.isArray(data) && data.length > 0) {
+      declarationsObj = data[0];
+    } else if (
+      data.personal_declarations &&
+      Array.isArray(data.personal_declarations) &&
+      data.personal_declarations.length > 0
+    ) {
+      declarationsObj = data.personal_declarations[0];
+    } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+      declarationsObj = data;
+    }
+
+    // Return normalized object with default values
+    return {
+      question_34a: declarationsObj.question_34a || '0',
+      question_34b: declarationsObj.question_34b || '0',
+      response_34: declarationsObj.response_34 || '',
+      question_35a: declarationsObj.question_35a || '0',
+      response_35a: declarationsObj.response_35a || '',
+      question_35b: declarationsObj.question_35b || '0',
+      response_35b_date: declarationsObj.response_35b_date || '',
+      response_35b_status: declarationsObj.response_35b_status || '',
+      question_36: declarationsObj.question_36 || '0',
+      response_36: declarationsObj.response_36 || '',
+      question_37: declarationsObj.question_37 || '0',
+      response_37: declarationsObj.response_37 || '',
+      question_38a: declarationsObj.question_38a || '0',
+      response_38a: declarationsObj.response_38a || '',
+      question_38b: declarationsObj.question_38b || '0',
+      response_38b: declarationsObj.response_38b || '',
+      question_39: declarationsObj.question_39 || '0',
+      response_39: declarationsObj.response_39 || '',
+      question_40a: declarationsObj.question_40a || '0',
+      question_40b: declarationsObj.question_40b || '0',
+      question_40c: declarationsObj.question_40c || '0',
+    };
+  };
+
+  // Form data
+  const formData = ref({
+    question_34a: '0',
+    question_34b: '0',
+    response_34: '',
+    question_35a: '0',
+    response_35a: '',
+    question_35b: '0',
+    response_35b_date: '',
+    response_35b_status: '',
+    question_36: '0',
+    response_36: '',
+    question_37: '0',
+    response_37: '',
+    question_38a: '0',
+    response_38a: '',
+    question_38b: '0',
+    response_38b: '',
+    question_39: '0',
+    response_39: '',
+    question_40a: '0',
+    question_40b: '0',
+    question_40c: '0',
+  });
+
+  // Load data on mount
   onMounted(async () => {
     try {
-      $q.loading.show({ message: 'Loading application data...' });
+      $q.loading.show({ message: 'Loading declarations data...' });
 
       // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // In a real application, you would fetch data from your API here
-      // const response = await fetch('/api/application/12345');
-      // const data = await response.json();
-      // formData.value = data;
-
-      // For demo purposes, we're using the pre-filled example data
+      // Normalize and set the data
+      const normalizedData = normalizeDeclarationsData(props.personalDeclarations);
+      formData.value = normalizedData;
 
       $q.loading.hide();
     } catch (error) {
       $q.loading.hide();
       $q.notify({
         color: 'negative',
-        message: 'Failed to load application data',
+        message: 'Failed to load declarations data',
         icon: 'error',
       });
       console.error('Data loading error:', error);
     }
   });
-
-  // Print function
 </script>
 
-<style>
+<style scoped>
   /* Print styles */
   @media print {
     .q-footer,

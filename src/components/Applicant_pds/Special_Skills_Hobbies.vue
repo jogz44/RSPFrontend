@@ -2,10 +2,10 @@
   <div class="q-pa-md">
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h6 text-bold">Special Skills &amp; Hobbies</div>
-      <div class="row q-gutter-x-sm" v-if="!isEditMode">
+      <div class="row q-gutter-x-sm" v-if="!isEditMode && !isReadOnly">
         <q-btn flat round icon="edit" color="primary" size="sm" @click="enterEdit" title="Edit" />
       </div>
-      <div class="row q-gutter-x-sm" v-else>
+      <div class="row q-gutter-x-sm" v-else-if="isEditMode">
         <q-btn
           unelevated
           rounded
@@ -29,6 +29,14 @@
       </div>
     </div>
 
+    <!-- Read-only notice for ControlNo applicants -->
+    <q-banner v-if="isReadOnly && !isEditMode" class="bg-grey-2 text-grey-8 q-mb-md" rounded>
+      <div class="row items-center">
+        <q-icon name="info" size="sm" class="q-mr-sm" />
+        <span>Skills records are read-only for this applicant.</span>
+      </div>
+    </q-banner>
+
     <q-banner
       v-if="editStore.saveError && isEditMode"
       class="bg-negative text-white q-mb-md"
@@ -43,7 +51,11 @@
     <!-- VIEW MODE -->
     <template v-if="!isEditMode">
       <div v-if="skillsData.length > 0" class="row q-col-gutter-md">
-        <div v-for="(skill, index) in skillsData" :key="skill.id" class="col-12 col-sm-6 col-md-4">
+        <div
+          v-for="(skill, index) in skillsData"
+          :key="skill.id || index"
+          class="col-12 col-sm-6 col-md-4"
+        >
           <q-card class="skill-card" flat bordered>
             <q-card-section>
               <div class="text-subtitle1 text-wrap" style="word-break: break-word">
@@ -127,10 +139,6 @@
       >
         No skills. Click "Add Skill" to add one.
       </q-banner>
-
-      <div class="text-caption text-grey-6 q-mt-sm">
-        Note: Each row also stores Non-Academic Distinctions and Membership Association data.
-      </div>
     </div>
   </div>
 </template>
@@ -144,24 +152,74 @@
   const editStore = usePdsEditStore();
 
   const props = defineProps({
-    skills: { type: Array, required: false, default: () => [] },
+    skills: { type: [Array, Object], required: false, default: () => [] },
     personalInfoId: { type: [Number, String], default: null },
+    controlNo: { type: [String, Number], default: null },
+    hasControlNo: { type: Boolean, required: false, default: false },
   });
+
   const emit = defineEmits(['saved']);
 
   const isEditMode = computed(() => editStore.activeEditSection === 'skills');
 
+  // Compute if we should hide edit button (has ControlNo)
+  const isReadOnly = computed(() => {
+    return props.hasControlNo || !!props.controlNo;
+  });
+
+  // Helper function to normalize skills data from either structure
+  const normalizeSkillsData = (data) => {
+    if (!data) return [];
+
+    let skillsArray = [];
+    if (Array.isArray(data)) {
+      skillsArray = data;
+    } else if (data.skills && Array.isArray(data.skills)) {
+      skillsArray = data.skills;
+    } else {
+      return [];
+    }
+
+    return skillsArray.map((item) => {
+      // Check if it's the second structure with 'Skills' field
+      const isSecondStructure = 'Skills' in item;
+
+      if (isSecondStructure) {
+        // Second structure format (from ControlNo response)
+        return {
+          id: item.ID || item.id || null,
+          skill: item.Skills || '',
+          non_academic: item.non_academic || '',
+          organization: item.organization || '',
+          _original: item,
+        };
+      } else {
+        // First structure format
+        return {
+          id: item.id || null,
+          skill: item.skill || item.name || '',
+          non_academic: item.non_academic || '',
+          organization: item.organization || '',
+          _original: item,
+        };
+      }
+    });
+  };
+
   const skillsData = computed(() => {
-    if (!Array.isArray(props.skills)) return [];
-    return props.skills;
+    return normalizeSkillsData(props.skills);
   });
 
   function enterEdit() {
-    editStore.startEdit('skills', props.skills, props.personalInfoId);
+    // Pass normalized skills data to the store
+    const normalizedData = normalizeSkillsData(props.skills);
+    editStore.startEdit('skills', normalizedData, props.personalInfoId);
   }
+
   function addRow() {
     editStore.addRow('skills');
   }
+
   function markForDelete(id) {
     if (!id) return;
     $q.dialog({
@@ -171,9 +229,11 @@
       persistent: true,
     }).onOk(() => editStore.markForDelete('skills', id));
   }
+
   function cancel() {
     editStore.cancelEdit('skills');
   }
+
   async function save() {
     const result = await editStore.saveSection('skills');
     if (result.success) {

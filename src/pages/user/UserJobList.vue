@@ -49,11 +49,10 @@
       <!-- Desktop/Tablet Table View -->
       <div class="table-wrapper gt-xs">
         <q-table
-          :rows="jobs"
+          :rows="filteredJobsTable"
           :columns="columns"
           row-key="id"
           :loading="jobPostStore.loading"
-          :filter="search"
           :pagination="{ rowsPerPage: 10, sortBy: 'post_date', descending: true }"
           flat
           bordered
@@ -201,7 +200,7 @@
         >
           <q-pagination
             v-model="mobilePage"
-            :max="Math.ceil(filteredJobs.length / mobileRowsPerPage)"
+            :max="Math.ceil(filteredJobsAll.length / mobileRowsPerPage)"
             :max-pages="5"
             direction-links
             boundary-links
@@ -222,46 +221,68 @@
         </q-card-section>
 
         <q-card-section>
-          <q-input
+          <q-select
             v-model="filters.position"
+            :options="positionOptions"
             label="Position"
             outlined
             dense
             class="q-mb-md"
             clearable
+            use-input
+            input-debounce="0"
+            @filter="filterPositionOptions"
+            :display-value="filters.position || ''"
           >
             <template v-slot:prepend>
               <q-icon name="work" />
             </template>
-          </q-input>
-          <q-input v-model="filters.office" label="Office" outlined dense class="q-mb-md" clearable>
-            <template v-slot:prepend>
-              <q-icon name="business" />
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">No results</q-item-section>
+              </q-item>
             </template>
-          </q-input>
+          </q-select>
+
           <q-select
-            v-model="filters.type"
-            :options="['Full-time', 'Part-time', 'Contract', 'Internship']"
-            label="Type"
+            v-model="filters.office"
+            :options="officeOptions"
+            label="Office"
             outlined
             dense
             class="q-mb-md"
             clearable
+            use-input
+            input-debounce="0"
+            @filter="filterOfficeOptions"
+            :display-value="filters.office || ''"
           >
             <template v-slot:prepend>
-              <q-icon name="category" />
+              <q-icon name="business" />
+            </template>
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">No results</q-item-section>
+              </q-item>
             </template>
           </q-select>
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary q-px-md q-pb-md">
           <q-btn flat label="Clear All" @click="clearFilters" />
-          <q-btn unelevated color="primary" label="Apply Filters" v-close-popup />
+          <q-btn
+            unelevated
+            color="primary"
+            label="Apply Filters"
+            @click="applyFilters"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
   </q-page>
 </template>
+
 <script setup>
   import { ref, reactive, onMounted, computed } from 'vue';
   import { useRouter } from 'vue-router';
@@ -324,13 +345,64 @@
   const filters = reactive({
     position: '',
     office: '',
-    type: '',
   });
+
+  // Holds the actively applied filter values
+  const appliedFilters = reactive({
+    position: '',
+    office: '',
+  });
+
+  // Dropdown option lists (filtered by search input inside the select)
+  const positionOptions = ref([]);
+  const officeOptions = ref([]);
+
+  // Unique sorted lists derived from the full job list
+  const allPositions = computed(() => {
+    const unique = [...new Set(jobs.value.map((j) => j.Position).filter(Boolean))];
+    return unique.sort();
+  });
+
+  const allOffices = computed(() => {
+    const unique = [...new Set(jobs.value.map((j) => j.Office).filter(Boolean))];
+    return unique.sort();
+  });
+
+  // q-select filter callbacks for searchable dropdowns
+  const filterPositionOptions = (val, update) => {
+    update(() => {
+      if (val === '') {
+        positionOptions.value = allPositions.value;
+      } else {
+        const needle = val.toLowerCase();
+        positionOptions.value = allPositions.value.filter((p) => p.toLowerCase().includes(needle));
+      }
+    });
+  };
+
+  const filterOfficeOptions = (val, update) => {
+    update(() => {
+      if (val === '') {
+        officeOptions.value = allOffices.value;
+      } else {
+        const needle = val.toLowerCase();
+        officeOptions.value = allOffices.value.filter((o) => o.toLowerCase().includes(needle));
+      }
+    });
+  };
+
+  const applyFilters = () => {
+    appliedFilters.position = filters.position;
+    appliedFilters.office = filters.office;
+    mobilePage.value = 1;
+  };
 
   const clearFilters = () => {
     filters.position = '';
     filters.office = '';
-    filters.type = '';
+    appliedFilters.position = '';
+    appliedFilters.office = '';
+    mobilePage.value = 1;
   };
 
   const search = ref('');
@@ -338,8 +410,8 @@
   const mobilePage = ref(1);
   const mobileRowsPerPage = ref(10);
 
-  // Filtered jobs for mobile view
-  const filteredJobs = computed(() => {
+  // Base filtered list applying both search bar and dialog filters
+  const baseFilteredJobs = computed(() => {
     let filtered = jobs.value;
 
     if (search.value) {
@@ -351,7 +423,26 @@
       );
     }
 
-    return filtered.slice(
+    if (appliedFilters.position) {
+      filtered = filtered.filter((job) => job.Position === appliedFilters.position);
+    }
+
+    if (appliedFilters.office) {
+      filtered = filtered.filter((job) => job.Office === appliedFilters.office);
+    }
+
+    return filtered;
+  });
+
+  // For the desktop table
+  const filteredJobsTable = computed(() => baseFilteredJobs.value);
+
+  // Full filtered list for mobile pagination max calculation
+  const filteredJobsAll = computed(() => baseFilteredJobs.value);
+
+  // Paginated slice for mobile cards
+  const filteredJobs = computed(() => {
+    return baseFilteredJobs.value.slice(
       (mobilePage.value - 1) * mobileRowsPerPage.value,
       mobilePage.value * mobileRowsPerPage.value,
     );
@@ -364,6 +455,9 @@
   onMounted(async () => {
     await jobPostStore.fetchJobPosts();
     jobs.value = jobPostStore.jobPosts;
+    // Initialise dropdown options after data loads
+    positionOptions.value = allPositions.value;
+    officeOptions.value = allOffices.value;
   });
 </script>
 

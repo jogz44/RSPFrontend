@@ -70,17 +70,20 @@
                   />
                 </div>
                 <div v-else-if="currentTab === 'education'" class="q-pa-md">
-                  <!-- ✅ Pass personalInfoId + listen for saved -->
                   <Educational_Background
                     :educ="applicantData?.education || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('education', $event)"
                   />
                 </div>
                 <div v-else-if="currentTab === 'civilService'" class="q-pa-md">
                   <Civil_Service_Eligibility
-                    :eligibility="applicantData?.eligibity || []"
+                    :eligibility="applicantData?.eligibity || applicantData?.eligibility || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('civilService', $event)"
                   />
                 </div>
@@ -88,6 +91,8 @@
                   <Work_Experience
                     :experience="applicantData?.work_experience || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('work', $event)"
                   />
                 </div>
@@ -95,6 +100,8 @@
                   <Voluntary_Work
                     :voluntary="applicantData?.voluntary_work || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('voluntary', $event)"
                   />
                 </div>
@@ -102,6 +109,8 @@
                   <Training_Interventions
                     :ld-data="applicantData?.training || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('training', $event)"
                   />
                 </div>
@@ -109,22 +118,44 @@
                   <Special_Skills_Hobbies
                     :skills="applicantData?.skills || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('skills', $event)"
                   />
                 </div>
                 <div v-else-if="currentTab === 'nonAcademic'" class="q-pa-md">
-                  <Non_Academic :distinctions="applicantData?.skills || []" />
+                  <Non_Academic
+                    :distinctions="applicantData?.skills || []"
+                    :academic="applicantData?.Academic || []"
+                    :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
+                    @saved="onSectionSaved('nonAcademic', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'membership'" class="q-pa-md">
-                  <Membership_Association :memberships="applicantData?.skills || []" />
+                  <Membership_Association
+                    :memberships="applicantData?.Organization || applicantData?.skills || []"
+                    :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
+                    @saved="onSectionSaved('membership', $event)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'other'" class="q-pa-md">
-                  <Other_Information />
+                  <Other_Information
+                    :personal-declarations="applicantData?.personal_declarations || []"
+                    :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
+                  />
                 </div>
                 <div v-else-if="currentTab === 'references'" class="q-pa-md">
                   <References
-                    :references="applicantData?.reference || []"
+                    :references="applicantData?.reference || applicantData?.references || []"
                     :personal-info-id="personalInfoId"
+                    :control-no="applicantData?.ControlNo || applicantData?.controlno"
+                    :has-control-no="!!(applicantData?.ControlNo || applicantData?.controlno)"
                     @saved="onSectionSaved('references', $event)"
                   />
                 </div>
@@ -175,6 +206,7 @@
       default: () => ({
         nPersonalInfo_id: '',
         submission_id: null,
+        ControlNo: null,
         controlno: null,
         id: null,
         name: '',
