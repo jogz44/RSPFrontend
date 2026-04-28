@@ -56,13 +56,22 @@
       :rows="experienceData"
       :columns="columns"
       row-key="id"
+      wrap-cells
+      dense
+      flat
+      bordered
       :pagination="{ rowsPerPage: 10 }"
     >
       <template v-slot:body-cell-fromDate="props">
         <q-td :props="props">{{ formatDate(props.row.work_date_from) }}</q-td>
       </template>
       <template v-slot:body-cell-toDate="props">
-        <q-td :props="props">{{ formatDate(props.row.work_date_to) }}</q-td>
+        <q-td :props="props">
+          <span v-if="props.row.work_date_to && props.row.work_date_to.toLowerCase() === 'present'">
+            <q-badge color="primary">PRESENT</q-badge>
+          </span>
+          <span v-else>{{ formatDate(props.row.work_date_to) }}</span>
+        </q-td>
       </template>
       <template v-slot:body-cell-monthlySalary="props">
         <q-td :props="props">{{ formatCurrency(props.row.monthly_salary) }}</q-td>
@@ -104,7 +113,7 @@
                 label="To (MM/DD/YYYY)"
                 outlined
                 dense
-                hint="Leave blank if present"
+                hint="Type 'PRESENT' for current job"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -177,7 +186,7 @@
                 label="To (MM/DD/YYYY)"
                 outlined
                 dense
-                hint="Leave blank if present"
+                hint="Type 'PRESENT' for current job"
               />
             </div>
             <div class="col-12 col-sm-6">
@@ -304,10 +313,20 @@
 
       if (isSecondStructure) {
         // Second structure format (from the JSON with ControlNo)
+        let workDateTo = '';
+        if (item.WTo) {
+          const wToUpper = item.WTo.toString().toUpperCase();
+          if (wToUpper === 'PRESENT') {
+            workDateTo = 'PRESENT';
+          } else {
+            workDateTo = formatDateFromDMY(item.WTo) || '';
+          }
+        }
+
         return {
           id: item.id || null,
           work_date_from: formatDateFromDMY(item.WFrom) || '',
-          work_date_to: item.WTo === 'PRESENT' ? '' : formatDateFromDMY(item.WTo) || '',
+          work_date_to: workDateTo,
           position_title: item.WPosition || '',
           department: item.WCompany || '',
           monthly_salary: extractSalaryAmount(item.WSalary) || '',
@@ -318,10 +337,15 @@
         };
       } else {
         // First structure format
+        let workDateTo = item.work_date_to || '';
+        if (workDateTo && workDateTo.toString().toUpperCase() === 'PRESENT') {
+          workDateTo = 'PRESENT';
+        }
+
         return {
           id: item.id || null,
           work_date_from: item.work_date_from || '',
-          work_date_to: item.work_date_to || '',
+          work_date_to: workDateTo,
           position_title: item.position_title || '',
           department: item.department || '',
           monthly_salary: item.monthly_salary || '',
@@ -337,12 +361,17 @@
   const experienceData = computed(() => {
     const normalized = normalizeWorkData(props.experience);
     return [...normalized].sort((a, b) => {
-      return new Date(b.work_date_from || 0) - new Date(a.work_date_from || 0);
+      const dateA =
+        a.work_date_from && a.work_date_from !== 'PRESENT' ? new Date(a.work_date_from || 0) : 0;
+      const dateB =
+        b.work_date_from && b.work_date_from !== 'PRESENT' ? new Date(b.work_date_from || 0) : 0;
+      return dateB - dateA;
     });
   });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
+    if (dateString.toString().toUpperCase() === 'PRESENT') return 'PRESENT';
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;

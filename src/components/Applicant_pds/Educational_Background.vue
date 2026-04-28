@@ -56,6 +56,7 @@
       :rows="educationData"
       :columns="columns"
       row-key="id"
+      wrap-cells
       :pagination="{ rowsPerPage: 10 }"
     >
       <template v-slot:no-data>

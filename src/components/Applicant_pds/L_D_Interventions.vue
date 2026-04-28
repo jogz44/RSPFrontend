@@ -54,6 +54,7 @@
       :rows="trainingData"
       :columns="columns"
       row-key="id"
+      wrap-cells
       :pagination="{ rowsPerPage: 10 }"
     >
       <template v-slot:body-cell-fromDate="props">

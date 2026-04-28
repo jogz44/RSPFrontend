@@ -113,14 +113,14 @@
                         </div>
                       </template>
                     </q-img>
-                    <q-card-section class="q-pa-sm">
+                    <!-- <q-card-section class="q-pa-sm">
                       <div class="text-caption text-weight-bold q-mb-xs">
                         Document {{ index + 1 }}
                       </div>
                       <div class="filename-text text-caption text-grey-6">
                         {{ getFileName(image) }}
                       </div>
-                    </q-card-section>
+                    </q-card-section> -->
                     <q-card-actions class="q-pa-sm">
                       <q-btn
                         flat
@@ -162,14 +162,14 @@
                         </div>
                       </template>
                     </q-img>
-                    <div class="q-ml-md flex-grow">
+                    <!-- <div class="q-ml-md flex-grow">
                       <div class="text-body2 text-weight-bold q-mb-xs">
                         Document {{ index + 1 }}
                       </div>
                       <div class="filename-text-list text-caption text-grey-6">
                         {{ getFileName(image) }}
                       </div>
-                    </div>
+                    </div> -->
                     <div class="row q-gutter-sm">
                       <q-btn
                         flat
@@ -270,19 +270,19 @@
     return category ? category.label : 'Documents';
   };
 
-  const getFileName = (url) => {
-    if (!url || typeof url !== 'string') return 'Unknown';
+  // const getFileName = (url) => {
+  //   if (!url || typeof url !== 'string') return 'Unknown';
 
-    try {
-      const parts = url.split('/');
-      const filename = parts[parts.length - 1];
-      return decodeURIComponent(filename);
-    } catch (error) {
-      console.warn('Error decoding filename:', error);
-      const parts = url.split('/');
-      return parts[parts.length - 1] || 'Unknown';
-    }
-  };
+  //   try {
+  //     const parts = url.split('/');
+  //     const filename = parts[parts.length - 1];
+  //     return decodeURIComponent(filename);
+  //   } catch (error) {
+  //     console.warn('Error decoding filename:', error);
+  //     const parts = url.split('/');
+  //     return parts[parts.length - 1] || 'Unknown';
+  //   }
+  // };
 
   const selectCategory = (categoryKey) => {
     selectedCategory.value = categoryKey;

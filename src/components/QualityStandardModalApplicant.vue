@@ -118,26 +118,56 @@
 
             <q-tab-panels v-model="tab" class="q-pa-none" style="flex: 1; overflow: auto">
               <!-- Education Panel -->
-              <q-tab-panel name="education" class="row q-pa-none" style="display: flex">
-                <div class="col-9 q-pa-sm" style="border-right: 1px solid #e0e0e0">
-                  <q-scroll-area style="height: 100%">
-                    <div class="row items-center justify-between q-mb-md">
-                      <div class="text-subtitle3">Applicant Education</div>
-                      <div class="row items-center q-gutter-sm">
-                        <q-badge
-                          color="primary"
-                          class="q-px-sm q-py-xs"
-                          :label="`${selectedEducationIds.length} selected`"
-                        />
+              <q-tab-panel
+                name="education"
+                class="column q-pa-sm no-wrap full-height"
+                style="display: flex; flex-direction: column; gap: 8px"
+              >
+                <!-- Row 1: Position QS (~15% height) -->
+                <div style="flex: 0 0 20%; min-height: 80px">
+                  <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
+                  <q-table
+                    :columns="educationCol"
+                    :rows="positionQS"
+                    hide-bottom
+                    wrap-cells
+                    bordered
+                    :loading="usePlantilla.qsLoad"
+                    style="max-height: 100%"
+                  >
+                    <template v-slot:body-cell-Education="props">
+                      <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                        {{ props.row.Education }}
+                      </q-td>
+                    </template>
+                    <template v-slot:no-data>
+                      <div class="full-width row flex-center q-pa-sm text-grey">
+                        <q-icon name="info" size="20px" class="q-mr-sm" />
+                        No qualification standards available
                       </div>
-                    </div>
+                    </template>
+                  </q-table>
+                </div>
 
-                    <q-card class="q-ma-sm">
+                <!-- Row 2: Applicant Education table (fills remaining space) -->
+                <div style="flex: 1; overflow: hidden">
+                  <div class="row items-center justify-between q-mb-xs">
+                    <div class="text-subtitle3">Applicant Education</div>
+                    <q-badge
+                      color="primary"
+                      class="q-px-sm q-py-xs"
+                      :label="`${selectedEducationIds.length} selected`"
+                    />
+                  </div>
+                  <q-scroll-area style="height: calc(100% - 28px)">
+                    <q-card>
                       <q-table
                         :rows="formattedEducation"
                         :columns="xEduCol"
                         row-key="uniqueId"
                         wrap-cells
+                        flat
+                        bordered
                       >
                         <template v-slot:body-cell-select="props">
                           <q-td :props="props" class="text-center">
@@ -148,7 +178,6 @@
                             />
                           </q-td>
                         </template>
-
                         <template v-slot:no-data>
                           <div class="full-width row flex-center q-pa-md text-grey">
                             <q-icon name="info" size="24px" class="q-mr-sm" />
@@ -160,109 +189,114 @@
                   </q-scroll-area>
                 </div>
 
-                <div class="col-3 q-pa-sm">
-                  <q-scroll-area style="height: 100%">
-                    <div class="text-subtitle3 q-mb-md">Position Qualification Standard</div>
-                    <q-card class="q-ma-sm">
-                      <q-table
-                        :columns="educationCol"
-                        :rows="positionQS"
-                        hide-bottom
-                        :loading="usePlantilla.qsLoad"
-                      >
-                        <template v-slot:body-cell-Education="props">
-                          <q-td
-                            :props="props"
-                            style="width: 300px; white-space: normal; word-wrap: break-word"
-                          >
-                            {{ props.row.Education }}
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No qualification standards available
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
-                    <!-- Remarks -->
-
-                    <q-input
-                      v-model="xData.education_remark"
-                      label="Remarks"
-                      autogrow
-                      outlined
-                      dense
-                      class="q-mt-md modern-input"
-                      :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                      :bg-color="
-                        !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                      "
-                      :error="isUnqualified && remarksTouched && !xData.education_remark?.trim()"
-                      error-message="Education remark is required when Unqualified"
-                    />
-                  </q-scroll-area>
+                <!-- Row 3: Remarks -->
+                <div style="flex: 0 0 auto">
+                  <q-input
+                    v-model="xData.education_remark"
+                    label="Remarks"
+                    autogrow
+                    outlined
+                    dense
+                    class="modern-input"
+                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
+                    :bg-color="
+                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
+                    "
+                    :error="isUnqualified && remarksTouched && !xData.education_remark?.trim()"
+                    error-message="Education remark is required when Unqualified"
+                  />
                 </div>
               </q-tab-panel>
 
               <!-- Experience Panel -->
-              <q-tab-panel name="experience" class="row q-pa-none" style="display: flex">
-                <div class="col-9 q-pa-sm" style="border-right: 1px solid #e0e0e0">
-                  <q-scroll-area style="height: 100%">
-                    <div class="row items-center justify-between q-mb-md">
-                      <div class="text-subtitle3">Applicant Experience</div>
-                      <div class="row items-center q-gutter-sm">
-                        <q-badge
-                          color="green"
-                          class="q-px-sm q-py-xs"
-                          :label="formatTotalExperience(totalSelectedExperienceMonths)"
-                        />
-                        <q-tooltip class="bg-white text-dark shadow-4">
-                          <div class="q-pa-sm">
-                            <div class="text-weight-bold q-mb-xs">
-                              Experience Breakdown (Selected Only):
-                            </div>
-                            <div v-if="experienceWithDuration.length === 0" class="text-grey-6">
-                              No experience records found
-                            </div>
-                            <div v-else>
+              <q-tab-panel
+                name="experience"
+                class="column q-pa-sm no-wrap full-height"
+                style="display: flex; flex-direction: column; gap: 8px"
+              >
+                <!-- Row 1: Position QS (~15% height) -->
+                <div style="flex: 0 0 15%; min-height: 80px">
+                  <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
+                  <q-card>
+                    <q-table
+                      :columns="ExperienceCol"
+                      :rows="positionQS"
+                      hide-bottom
+                      wrap-cells
+                      bordered
+                      style="max-height: 100%"
+                    >
+                      <template v-slot:body-cell-Experience="props">
+                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                          {{ props.row.Experience }}
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-sm text-grey">
+                          <q-icon name="info" size="20px" class="q-mr-sm" />
+                          No qualification standards available
+                        </div>
+                      </template>
+                    </q-table>
+                  </q-card>
+                </div>
+
+                <!-- Row 2: Applicant Experience table (fills remaining space) -->
+                <div style="flex: 1; overflow: hidden">
+                  <div class="row items-center justify-between q-mb-xs">
+                    <div class="text-subtitle3">Applicant Experience</div>
+                    <div class="row items-center q-gutter-sm">
+                      <q-badge
+                        color="green"
+                        class="q-px-sm q-py-xs"
+                        :label="formatTotalExperience(totalSelectedExperienceMonths)"
+                      />
+                      <q-tooltip class="bg-white text-dark shadow-4">
+                        <div class="q-pa-sm">
+                          <div class="text-weight-bold q-mb-xs">
+                            Experience Breakdown (Selected Only):
+                          </div>
+                          <div v-if="experienceWithDuration.length === 0" class="text-grey-6">
+                            No experience records found
+                          </div>
+                          <div v-else>
+                            <div
+                              v-for="exp in experienceWithDuration"
+                              :key="exp.uniqueId"
+                              class="text-caption q-mb-xs"
+                            >
+                              <q-checkbox
+                                :model-value="selectedExperienceIds.includes(exp.uniqueId)"
+                                @update:model-value="toggleExperienceSelection(exp.uniqueId)"
+                                dense
+                                size="sm"
+                                class="q-mr-xs"
+                              />
+                              <span class="text-weight-medium">
+                                {{ exp.position_title || 'Untitled Position' }}
+                              </span>
+                              <div class="text-grey-7">
+                                {{ formatDateRange(exp.work_date_from, exp.work_date_to) }}
+                              </div>
                               <div
-                                v-for="exp in experienceWithDuration"
-                                :key="exp.uniqueId"
-                                class="text-caption q-mb-xs"
+                                v-if="selectedExperienceIds.includes(exp.uniqueId)"
+                                class="text-primary"
                               >
-                                <q-checkbox
-                                  :model-value="selectedExperienceIds.includes(exp.uniqueId)"
-                                  @update:model-value="toggleExperienceSelection(exp.uniqueId)"
-                                  dense
-                                  size="sm"
-                                  class="q-mr-xs"
-                                />
-                                <span class="text-weight-medium">
-                                  {{ exp.position_title || 'Untitled Position' }}
-                                </span>
-                                <div class="text-grey-7">
-                                  {{ formatDateRange(exp.work_date_from, exp.work_date_to) }}
-                                </div>
-                                <div
-                                  v-if="selectedExperienceIds.includes(exp.uniqueId)"
-                                  class="text-primary"
-                                >
-                                  Duration: {{ exp.durationText }}
-                                </div>
-                                <q-separator class="q-my-xs" />
+                                Duration: {{ exp.durationText }}
                               </div>
-                              <div class="text-weight-bold q-mt-sm">
-                                Total Experience (Selected):
-                                {{ formatTotalExperience(totalSelectedExperienceMonths) }}
-                              </div>
+                              <q-separator class="q-my-xs" />
+                            </div>
+                            <div class="text-weight-bold q-mt-sm">
+                              Total Experience (Selected):
+                              {{ formatTotalExperience(totalSelectedExperienceMonths) }}
                             </div>
                           </div>
-                        </q-tooltip>
-                      </div>
+                        </div>
+                      </q-tooltip>
                     </div>
-                    <q-card class="q-ma-sm">
+                  </div>
+                  <q-scroll-area style="height: calc(100% - 28px)">
+                    <q-card>
                       <q-table
                         :rows="experienceWithDuration"
                         :columns="xExperienceCol"
@@ -293,9 +327,7 @@
                           </q-td>
                         </template>
                         <template v-slot:body-cell-monthlySalary="props">
-                          <q-td :props="props">
-                            {{ formatSalary(props.row.monthly_salary) }}
-                          </q-td>
+                          <q-td :props="props">{{ formatSalary(props.row.monthly_salary) }}</q-td>
                         </template>
                         <template v-slot:body-cell-duration="props">
                           <q-td :props="props" class="text-center">
@@ -324,101 +356,112 @@
                   </q-scroll-area>
                 </div>
 
-                <div class="col-3 q-pa-sm">
-                  <q-scroll-area style="height: 100%">
-                    <div class="text-subtitle3 q-mb-md">Position Qualification Standard</div>
-                    <q-card class="q-ma-sm">
-                      <q-table :columns="ExperienceCol" :rows="positionQS" hide-bottom>
-                        <template v-slot:body-cell-Experience="props">
-                          <q-td
-                            :props="props"
-                            style="width: 300px; white-space: normal; word-wrap: break-word"
-                          >
-                            {{ props.row.Experience }}
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No qualification standards available
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
-                    <q-input
-                      v-model="xData.experience_remark"
-                      label="Remarks"
-                      autogrow
-                      outlined
-                      dense
-                      class="q-mt-md modern-input"
-                      :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                      :bg-color="
-                        !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                      "
-                      :error="isUnqualified && remarksTouched && !xData.experience_remark?.trim()"
-                      error-message="Experience remark is required when Unqualified"
-                    />
-                  </q-scroll-area>
+                <!-- Row 3: Remarks -->
+                <div style="flex: 0 0 auto">
+                  <q-input
+                    v-model="xData.experience_remark"
+                    label="Remarks"
+                    autogrow
+                    outlined
+                    dense
+                    class="modern-input"
+                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
+                    :bg-color="
+                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
+                    "
+                    :error="isUnqualified && remarksTouched && !xData.experience_remark?.trim()"
+                    error-message="Experience remark is required when Unqualified"
+                  />
                 </div>
               </q-tab-panel>
 
               <!-- Training Panel -->
-              <q-tab-panel name="training" class="row q-pa-none" style="display: flex">
-                <div class="col-9 q-pa-sm" style="border-right: 1px solid #e0e0e0">
-                  <q-scroll-area style="height: 100%">
-                    <div class="row items-center justify-between q-mb-md">
-                      <div class="text-subtitle3">Applicant Training</div>
-                      <div class="row items-center q-gutter-sm">
-                        <q-badge
-                          color="primary"
-                          class="q-px-sm q-py-xs"
-                          :label="`Total Hours: ${totalSelectedTrainingHours}`"
-                        />
-                        <q-tooltip class="bg-white text-dark shadow-4">
-                          <div class="q-pa-sm">
-                            <div class="text-weight-bold q-mb-xs">
-                              Training Hours Breakdown (Selected Only):
-                            </div>
-                            <div v-if="xTraining.length === 0" class="text-grey-6">
-                              No training records found
-                            </div>
-                            <div v-else>
-                              <div
-                                v-for="training in xTraining"
-                                :key="training.uniqueId"
-                                class="text-caption q-mb-xs"
+              <q-tab-panel
+                name="training"
+                class="column q-pa-sm no-wrap full-height"
+                style="display: flex; flex-direction: column; gap: 8px"
+              >
+                <!-- Row 1: Position QS (~15% height) -->
+                <div style="flex: 0 0 15%; min-height: 80px">
+                  <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
+                  <q-card>
+                    <q-table
+                      :columns="trainingCol"
+                      :rows="positionQS"
+                      hide-bottom
+                      wrap-cells
+                      bordered
+                    >
+                      <template v-slot:body-cell-Training="props">
+                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                          {{ props.row.Training }}
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-sm text-grey">
+                          <q-icon name="info" size="20px" class="q-mr-sm" />
+                          No qualification standards available
+                        </div>
+                      </template>
+                    </q-table>
+                  </q-card>
+                </div>
+
+                <!-- Row 2: Applicant Training table (fills remaining space) -->
+                <div style="flex: 1; overflow: hidden">
+                  <div class="row items-center justify-between q-mb-xs">
+                    <div class="text-subtitle3">Applicant Training</div>
+                    <div class="row items-center q-gutter-sm">
+                      <q-badge
+                        color="primary"
+                        class="q-px-sm q-py-xs"
+                        :label="`Total Hours: ${totalSelectedTrainingHours}`"
+                      />
+                      <q-tooltip class="bg-white text-dark shadow-4">
+                        <div class="q-pa-sm">
+                          <div class="text-weight-bold q-mb-xs">
+                            Training Hours Breakdown (Selected Only):
+                          </div>
+                          <div v-if="xTraining.length === 0" class="text-grey-6">
+                            No training records found
+                          </div>
+                          <div v-else>
+                            <div
+                              v-for="training in xTraining"
+                              :key="training.uniqueId"
+                              class="text-caption q-mb-xs"
+                            >
+                              <q-checkbox
+                                :model-value="selectedTrainingIds.includes(training.uniqueId)"
+                                @update:model-value="toggleTrainingSelection(training.uniqueId)"
+                                dense
+                                size="sm"
+                                class="q-mr-xs"
+                              />
+                              <span class="text-weight-medium">
+                                {{ training.training_title || 'Untitled Training' }}:
+                              </span>
+                              <span
+                                v-if="selectedTrainingIds.includes(training.uniqueId)"
+                                class="text-primary"
                               >
-                                <q-checkbox
-                                  :model-value="selectedTrainingIds.includes(training.uniqueId)"
-                                  @update:model-value="toggleTrainingSelection(training.uniqueId)"
-                                  dense
-                                  size="sm"
-                                  class="q-mr-xs"
-                                />
-                                <span class="text-weight-medium">
-                                  {{ training.training_title || 'Untitled Training' }}:
-                                </span>
-                                <span
-                                  v-if="selectedTrainingIds.includes(training.uniqueId)"
-                                  class="text-primary"
-                                >
-                                  {{ parseTrainingHours(training.number_of_hours) }} hours
-                                </span>
-                                <span v-else class="text-grey-6">
-                                  {{ parseTrainingHours(training.number_of_hours) }}
-                                </span>
-                              </div>
-                              <q-separator class="q-my-xs" />
-                              <div class="text-weight-bold">
-                                Total (Selected): {{ totalSelectedTrainingHours }} hours
-                              </div>
+                                {{ parseTrainingHours(training.number_of_hours) }} hours
+                              </span>
+                              <span v-else class="text-grey-6">
+                                {{ parseTrainingHours(training.number_of_hours) }}
+                              </span>
+                            </div>
+                            <q-separator class="q-my-xs" />
+                            <div class="text-weight-bold">
+                              Total (Selected): {{ totalSelectedTrainingHours }} hours
                             </div>
                           </div>
-                        </q-tooltip>
-                      </div>
+                        </div>
+                      </q-tooltip>
                     </div>
-                    <q-card class="q-ma-sm">
+                  </div>
+                  <q-scroll-area style="height: calc(100% - 28px)">
+                    <q-card>
                       <q-table
                         :rows="xTraining"
                         :columns="xTrainingCol"
@@ -465,60 +508,70 @@
                   </q-scroll-area>
                 </div>
 
-                <div class="col-3 q-pa-sm">
-                  <q-scroll-area style="height: 100%">
-                    <div class="text-subtitle3 q-mb-md">Position Qualification Standard</div>
-                    <q-card class="q-ma-sm">
-                      <q-table :columns="trainingCol" :rows="positionQS" hide-bottom>
-                        <template v-slot:body-cell-Training="props">
-                          <q-td
-                            :props="props"
-                            style="width: 300px; white-space: normal; word-wrap: break-word"
-                          >
-                            {{ props.row.Training }}
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No qualification standards available
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
-                    <q-input
-                      v-model="xData.training_remark"
-                      label="Remarks"
-                      autogrow
-                      outlined
-                      dense
-                      class="q-mt-md modern-input"
-                      :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                      :bg-color="
-                        !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                      "
-                      :error="isUnqualified && remarksTouched && !xData.training_remark?.trim()"
-                      error-message="Training remark is required when Unqualified"
-                    />
-                  </q-scroll-area>
+                <!-- Row 3: Remarks -->
+                <div style="flex: 0 0 auto">
+                  <q-input
+                    v-model="xData.training_remark"
+                    label="Remarks"
+                    autogrow
+                    outlined
+                    dense
+                    class="modern-input"
+                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
+                    :bg-color="
+                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
+                    "
+                    :error="isUnqualified && remarksTouched && !xData.training_remark?.trim()"
+                    error-message="Training remark is required when Unqualified"
+                  />
                 </div>
               </q-tab-panel>
 
               <!-- Eligibility Panel -->
-              <q-tab-panel name="eligibility" class="row q-pa-none" style="display: flex">
-                <div class="col-9 q-pa-sm" style="border-right: 1px solid #e0e0e0">
-                  <q-scroll-area style="height: 100%">
-                    <div class="row items-center justify-between q-mb-md">
-                      <div class="text-subtitle3">Applicant Eligibility</div>
-                      <div class="row items-center q-gutter-sm">
-                        <q-badge
-                          color="primary"
-                          class="q-px-sm q-py-xs"
-                          :label="`${selectedEligibilityIds.length} selected`"
-                        />
-                      </div>
-                    </div>
-                    <q-card class="q-ma-sm">
+              <q-tab-panel
+                name="eligibility"
+                class="column q-pa-sm no-wrap full-height"
+                style="display: flex; flex-direction: column; gap: 8px"
+              >
+                <!-- Row 1: Position QS (~15% height) -->
+                <div style="flex: 0 0 15%; min-height: 80px">
+                  <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
+                  <q-card>
+                    <q-table
+                      :columns="eligibilityCol"
+                      :rows="positionQS"
+                      hide-bottom
+                      wrap-cells
+                      bordered
+                      style="max-height: 100%"
+                    >
+                      <template v-slot:body-cell-Eligibility="props">
+                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                          {{ props.row.Eligibility }}
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-sm text-grey">
+                          <q-icon name="info" size="20px" class="q-mr-sm" />
+                          No qualification standards available
+                        </div>
+                      </template>
+                    </q-table>
+                  </q-card>
+                </div>
+
+                <!-- Row 2: Applicant Eligibility table (fills remaining space) -->
+                <div style="flex: 1; overflow: hidden">
+                  <div class="row items-center justify-between q-mb-xs">
+                    <div class="text-subtitle3">Applicant Eligibility</div>
+                    <q-badge
+                      color="primary"
+                      class="q-px-sm q-py-xs"
+                      :label="`${selectedEligibilityIds.length} selected`"
+                    />
+                  </div>
+                  <q-scroll-area style="height: calc(100% - 28px)">
+                    <q-card>
                       <q-table
                         :rows="xEligibility"
                         :columns="xEligibilityCol"
@@ -535,7 +588,6 @@
                             />
                           </q-td>
                         </template>
-
                         <template v-slot:no-data>
                           <div class="full-width row flex-center q-pa-md text-grey">
                             <q-icon name="info" size="24px" class="q-mr-sm" />
@@ -547,42 +599,22 @@
                   </q-scroll-area>
                 </div>
 
-                <div class="col-3 q-pa-sm">
-                  <q-scroll-area style="height: 100%">
-                    <div class="text-subtitle3 q-mb-md">Position Qualification Standard</div>
-                    <q-card class="q-ma-sm">
-                      <q-table :columns="eligibilityCol" :rows="positionQS" hide-bottom>
-                        <template v-slot:body-cell-Eligibility="props">
-                          <q-td
-                            :props="props"
-                            style="width: 300px; white-space: normal; word-wrap: break-word"
-                          >
-                            {{ props.row.Eligibility }}
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No qualification standards available
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
-                    <q-input
-                      v-model="xData.eligibility_remark"
-                      label="Remarks"
-                      autogrow
-                      outlined
-                      dense
-                      class="q-mt-md modern-input"
-                      :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                      :bg-color="
-                        !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                      "
-                      :error="isUnqualified && remarksTouched && !xData.eligibility_remark?.trim()"
-                      error-message="Eligibility remark is required when Unqualified"
-                    />
-                  </q-scroll-area>
+                <!-- Row 3: Remarks -->
+                <div style="flex: 0 0 auto">
+                  <q-input
+                    v-model="xData.eligibility_remark"
+                    label="Remarks"
+                    autogrow
+                    outlined
+                    dense
+                    class="modern-input"
+                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
+                    :bg-color="
+                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
+                    "
+                    :error="isUnqualified && remarksTouched && !xData.eligibility_remark?.trim()"
+                    error-message="Eligibility remark is required when Unqualified"
+                  />
                 </div>
               </q-tab-panel>
             </q-tab-panels>
