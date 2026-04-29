@@ -56,7 +56,7 @@
     <q-table
       :rows="applicantStore.applicants"
       :columns="columns"
-      row-key="nPersonal_id"
+      row-key="id"
       v-model:pagination="pagination"
       :rows-number="applicantStore.total"
       :loading="applicantStore.loading"
@@ -66,8 +66,15 @@
     >
       <template #body-cell-name="p">
         <q-td :props="p">
-          {{ p.row.n_personal_info?.firstname || p.row.firstname || '' }}
-          {{ p.row.n_personal_info?.lastname || p.row.lastname || '' }}
+          {{
+            p.row.n_personal_info?.firstname ||
+            p.row.personal_info?.firstname ||
+            p.row.firstname ||
+            ''
+          }}
+          {{
+            p.row.n_personal_info?.lastname || p.row.personal_info?.lastname || p.row.lastname || ''
+          }}
         </q-td>
       </template>
 
@@ -140,6 +147,7 @@
                   <div class="info-value">
                     {{
                       selectedApplicant.n_personal_info?.firstname ||
+                      selectedApplicant.personal_info?.firstname ||
                       selectedApplicant.firstname ||
                       'N/A'
                     }}
@@ -152,6 +160,7 @@
                   <div class="info-value">
                     {{
                       selectedApplicant.n_personal_info?.lastname ||
+                      selectedApplicant.personal_info?.lastname ||
                       selectedApplicant.lastname ||
                       'N/A'
                     }}
@@ -164,6 +173,7 @@
                   <div class="info-value">
                     {{
                       selectedApplicant.n_personal_info?.date_of_birth ||
+                      selectedApplicant.personal_info?.date_of_birth ||
                       selectedApplicant.date_of_birth ||
                       'N/A'
                     }}
@@ -228,8 +238,9 @@
           <q-table
             :rows="applicantJobRows"
             :columns="jobColumns"
-            row-key="id"
+            row-key="submission_id"
             flat
+            wrap-cells
             bordered
             hide-bottom
             no-data-label="No job applications found"
@@ -242,6 +253,30 @@
                 />
               </q-td>
             </template>
+
+            <!-- Delete Action Column -->
+            <template #body-cell-action="p">
+              <q-td :props="p">
+                <q-btn
+                  flat
+                  round
+                  dense
+                  color="negative"
+                  icon="delete"
+                  @click="confirmDeleteApplication(p.row)"
+                  :loading="deletingSubmissionId === p.row.submission_id"
+                  :disable="p.row.status?.toLowerCase() === 'hired'"
+                >
+                  <q-tooltip>
+                    {{
+                      p.row.status?.toLowerCase() === 'hired'
+                        ? 'Cannot delete hired application'
+                        : 'Delete Application'
+                    }}
+                  </q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
           </q-table>
         </q-card-section>
 
@@ -249,6 +284,53 @@
         <div class="dialog-footer row justify-end items-center q-pa-md">
           <q-btn rounded flat label="Close" color="grey-7" v-close-popup />
         </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <q-dialog v-model="showDeleteConfirmDialog" persistent>
+      <q-card>
+        <q-card-section class="row items-center q-pb-none">
+          <q-icon name="warning" color="negative" size="24px" class="q-mr-sm" />
+          <div class="text-h6">Confirm Delete</div>
+        </q-card-section>
+        <q-card-section>
+          <p class="q-mb-sm">Are you sure you want to delete this application?</p>
+          <div v-if="deletingApplicationInfo" class="bg-grey-2 rounded-borders q-pa-md">
+            <div class="text-caption text-grey-7">Submission Details:</div>
+            <div class="q-mt-xs">
+              <strong>Submission ID:</strong>
+              {{ deletingApplicationInfo.submission_id }}
+            </div>
+            <div>
+              <strong>Position:</strong>
+              {{ deletingApplicationInfo.position }}
+            </div>
+            <div>
+              <strong>Office:</strong>
+              {{ deletingApplicationInfo.office }}
+            </div>
+            <div>
+              <strong>Status:</strong>
+              <q-badge
+                :color="getJobStatusColor(deletingApplicationInfo.status)"
+                :label="deletingApplicationInfo.status?.toUpperCase()"
+                class="q-ml-sm"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right" class="q-gutter-sm">
+          <q-btn flat label="Cancel" color="grey-7" v-close-popup />
+          <q-btn
+            unelevated
+            label="Delete"
+            color="negative"
+            icon="delete"
+            @click="deleteApplication"
+            :loading="summaryReportStore.loading"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
@@ -409,7 +491,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- Report sub-dialogs (unchanged) -->
+    <!-- Report sub-dialogs -->
     <q-dialog v-model="showQualifiedReportDialog" persistent>
       <QualifiedReport :publicationDate="selectedQualifiedPublicationDate" />
     </q-dialog>
@@ -433,27 +515,21 @@
   import QualifiedReport from 'src/components/Reports/QualifiedReport.vue';
   import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
   import { useApplicantStore } from 'stores/applicantStore';
-  // import { useReportStore } from 'stores/reportStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import { useQuasar } from 'quasar';
 
   let searchTimeout = null;
   const applicantStore = useApplicantStore();
-  // const reportStore = useReportStore();
   const summaryReportStore = useSummaryReportStore();
   const $q = useQuasar();
 
   const globalSearch = ref('');
-  // const showReportModal = ref(false);
   const showDetailDialog = ref(false);
   const selectedApplicant = ref(null);
   const loadingApplicantDetails = ref(false);
   const dateFilterType = ref('single');
   const singleDate = ref('');
   const dateRange = ref({ from: '', to: '' });
-  // const showDatePicker = ref(false);
-  // const showFromPicker = ref(false);
-  // const showToPicker = ref(false);
   const selectedPositions = ref([]);
   const showPrintDialog = ref(false);
 
@@ -470,6 +546,11 @@
   const loadingPublicationDates = ref(false);
   const publicationDateOptions = ref([]);
 
+  // Delete related refs
+  const showDeleteConfirmDialog = ref(false);
+  const deletingApplicationInfo = ref(null);
+  const deletingSubmissionId = ref(null);
+
   const pagination = ref({
     sortBy: 'name',
     descending: false,
@@ -485,20 +566,16 @@
     return 0;
   };
 
-  const getApplicantJobPosts = (applicant) => {
-    if (!applicant) return [];
-    if (Array.isArray(applicant.job_post)) return applicant.job_post;
-    if (applicant.job_post) return [applicant.job_post];
-    return [];
-  };
-
   const getJobStatusColor = (status) => {
     if (!status) return 'grey';
     const s = status.toLowerCase();
+    if (s === 'unqualified') return 'deep-orange';
+    if (s === 'qualified') return 'green';
+    if (s === 'hired') return 'blue';
     if (s === 'not started') return 'grey';
-    if (s === 'ongoing') return 'blue';
-    if (s === 'completed' || s === 'finished') return 'green';
-    return 'orange';
+    if (s === 'ongoing') return 'orange';
+    if (s === 'completed' || s === 'finished') return 'teal';
+    return 'grey';
   };
 
   const columns = computed(() => [
@@ -514,20 +591,41 @@
   ]);
 
   const jobColumns = [
-    { name: 'id', label: 'ID', field: 'id', align: 'left' },
-    { name: 'office', label: 'Office', field: 'office', align: 'left' },
+    { name: 'submission_id', label: 'Submission ID', field: 'submission_id', align: 'left' },
     { name: 'position', label: 'Position', field: 'position', align: 'left' },
-    { name: 'status', label: 'Status', field: 'status', align: 'left' },
+    { name: 'office', label: 'Office', field: 'office', align: 'left' },
+    { name: 'status', label: 'Status', field: 'status', align: 'center' },
+    { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
   ];
 
   const applicantJobRows = computed(() => {
     if (!selectedApplicant.value) return [];
-    return getApplicantJobPosts(selectedApplicant.value).map((job, idx) => ({
-      id: job.id ?? job.jobpost_id ?? idx + 1,
-      office: job.Office || job.office || 'N/A',
-      position: job.Position || job.position || 'N/A',
-      status: job.status || selectedApplicant.value.status || 'N/A',
-    }));
+
+    // Use job_post array from the store response
+    const jobPosts = selectedApplicant.value.job_post;
+
+    if (Array.isArray(jobPosts) && jobPosts.length > 0) {
+      return jobPosts.map((job, idx) => ({
+        submission_id: job.id || idx + 1,
+        position: job.Position || 'N/A',
+        office: job.Office || 'N/A',
+        status: job.status || 'N/A',
+      }));
+    }
+
+    // Fallback to single job_post
+    if (jobPosts && typeof jobPosts === 'object' && !Array.isArray(jobPosts)) {
+      return [
+        {
+          submission_id: jobPosts.id || 1,
+          position: jobPosts.Position || 'N/A',
+          office: jobPosts.Office || 'N/A',
+          status: jobPosts.status || selectedApplicant.value.status || 'N/A',
+        },
+      ];
+    }
+
+    return [];
   });
 
   const onRequest = async (props) => {
@@ -554,35 +652,6 @@
       pagination.value.rowsNumber = applicantStore.total;
     }, 500);
   });
-
-  // const filteredPositions = computed(() => {
-  //   let positions = reportStore.report || [];
-  //   if (dateFilterType.value === 'single' && singleDate.value) {
-  //     positions = positions.filter((pos) => {
-  //       const p = pos.post_date?.slice(0, 10),
-  //         e = pos.end_date?.slice(0, 10);
-  //       return singleDate.value >= p && singleDate.value <= e;
-  //     });
-  //   } else if (dateFilterType.value === 'range' && dateRange.value.from && dateRange.value.to) {
-  //     positions = positions.filter((pos) => {
-  //       const p = pos.post_date?.slice(0, 10),
-  //         e = pos.end_date?.slice(0, 10);
-  //       return !(dateRange.value.to < p || dateRange.value.from > e);
-  //     });
-  //   }
-  //   return positions.map((pos) => ({ value: pos.id, label: pos.Position }));
-  // });
-
-  // const positionOptions = computed(() =>
-  //   filteredPositions.value.length
-  //     ? [{ value: 'select_all', label: 'Select All' }, ...filteredPositions.value]
-  //     : [],
-  // );
-
-  // const allSelected = computed(() => {
-  //   const ids = filteredPositions.value.map((o) => o.value);
-  //   return ids.length > 0 && ids.every((id) => selectedPositions.value.includes(id));
-  // });
 
   const openQualifiedReportDialog = async () => {
     showQualifiedModal.value = true;
@@ -654,34 +723,108 @@
     showDetailDialog.value = true;
     loadingApplicantDetails.value = true;
     try {
-      const firstname = applicant.n_personal_info?.firstname || applicant.firstname;
-      const lastname = applicant.n_personal_info?.lastname || applicant.lastname;
-      const dob = applicant.n_personal_info?.date_of_birth || applicant.date_of_birth;
+      const firstname =
+        applicant.n_personal_info?.firstname ||
+        applicant.personal_info?.firstname ||
+        applicant.firstname;
+      const lastname =
+        applicant.n_personal_info?.lastname ||
+        applicant.personal_info?.lastname ||
+        applicant.lastname;
+      const dob =
+        applicant.n_personal_info?.date_of_birth ||
+        applicant.personal_info?.date_of_birth ||
+        applicant.date_of_birth;
+
       const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
-      selectedApplicant.value = { ...applicant, ...details };
-    } catch {
+
+      if (details) {
+        selectedApplicant.value = {
+          ...selectedApplicant.value,
+          ...details,
+          job_post: details.job_post || selectedApplicant.value.job_post,
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching applicant details:', error);
       $q.notify({ type: 'negative', message: 'Failed to load applicant details' });
     } finally {
       loadingApplicantDetails.value = false;
     }
   };
 
-  // const toggleSelectAll = () => {
-  //   const ids = filteredPositions.value.map((o) => o.value);
-  //   selectedPositions.value = allSelected.value ? [] : ids.slice();
-  // };
+  // Delete Application Functions
+  const confirmDeleteApplication = (jobRow) => {
+    deletingApplicationInfo.value = jobRow;
+    showDeleteConfirmDialog.value = true;
+  };
 
-  // const togglePosition = (val) => {
-  //   if (val === 'select_all') return;
-  //   selectedPositions.value = selectedPositions.value.includes(val)
-  //     ? selectedPositions.value.filter((x) => x !== val)
-  //     : [...selectedPositions.value, val];
-  // };
+  const deleteApplication = async () => {
+    if (!deletingApplicationInfo.value) return;
 
-  // const generateReport = () => {
-  //   showReportModal.value = false;
-  //   showPrintDialog.value = true;
-  // };
+    const submissionId = deletingApplicationInfo.value.submission_id;
+
+    if (!submissionId) {
+      $q.notify({ type: 'negative', message: 'Invalid submission ID', position: 'top' });
+      return;
+    }
+
+    deletingSubmissionId.value = submissionId;
+
+    try {
+      await summaryReportStore.deleteApplication({ id: submissionId });
+
+      $q.notify({
+        type: 'positive',
+        message: `Application #${submissionId} deleted successfully`,
+        position: 'top',
+      });
+
+      showDeleteConfirmDialog.value = false;
+      deletingApplicationInfo.value = null;
+
+      // Refresh the view by re-fetching applicant details
+      if (selectedApplicant.value) {
+        const firstname =
+          selectedApplicant.value.n_personal_info?.firstname ||
+          selectedApplicant.value.personal_info?.firstname ||
+          selectedApplicant.value.firstname;
+        const lastname =
+          selectedApplicant.value.n_personal_info?.lastname ||
+          selectedApplicant.value.personal_info?.lastname ||
+          selectedApplicant.value.lastname;
+        const dob =
+          selectedApplicant.value.n_personal_info?.date_of_birth ||
+          selectedApplicant.value.personal_info?.date_of_birth ||
+          selectedApplicant.value.date_of_birth;
+
+        const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
+
+        if (details) {
+          selectedApplicant.value = {
+            ...selectedApplicant.value,
+            ...details,
+            job_post: details.job_post || selectedApplicant.value.job_post,
+          };
+        }
+      }
+
+      // Refresh main table
+      await applicantStore.fetchApplicants({
+        page: pagination.value.page,
+        perPage: pagination.value.rowsPerPage,
+        search: globalSearch.value,
+      });
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Failed to delete application',
+        position: 'top',
+      });
+    } finally {
+      deletingSubmissionId.value = null;
+    }
+  };
 
   onMounted(async () => {
     await applicantStore.fetchApplicants({
@@ -698,7 +841,7 @@
   .detail-dialog-card,
   .report-select-card {
     width: 90vw;
-    max-width: 860px;
+    max-width: 960px;
     display: flex;
     flex-direction: column;
     max-height: 90vh;

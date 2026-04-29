@@ -76,6 +76,22 @@ export const useSummaryReportStore = defineStore('summaryReport', {
     async fetchPublicationDateList() {
       try {
         this.loading = true;
+        const response = await adminApi.get('/report/list-date/publication');
+        this.publicationDates = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.message;
+        console.error('Error fetching publication dates:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchPostingPublicationDateList() {
+      try {
+        this.loading = true;
         const response = await adminApi.get('/job-batches-rsp/postdate');
         this.publicationDates = response.data;
         this.error = null;
@@ -140,6 +156,24 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async fetchListPositionReport(publicationDate) {
+      try {
+        this.loading = true;
+        const response = await adminApi.post('/report/publication-job', {
+          post_date: publicationDate,
+        });
+        this.positionDetails = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error fetching new employee report:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchQualifiedReport(date) {
       try {
         this.loading = true;
@@ -186,7 +220,23 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // ✅ NEW: Fetch image with auth token via adminApi and return base64
+    // Delete application by submission ID
+    async deleteApplication({ id }) {
+      this.loading = true;
+      try {
+        await adminApi.delete(`/applicant/delete/submission/${id}`);
+        this.error = null;
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error deleting application:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Fetch image with auth token via adminApi and return base64
     async fetchImageBase64(imageUrl) {
       try {
         const response = await adminApi.get(imageUrl, { responseType: 'blob' });
