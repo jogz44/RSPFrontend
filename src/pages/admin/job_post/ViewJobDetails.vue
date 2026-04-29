@@ -556,15 +556,15 @@
           >
             <q-list separator dense>
               <q-item
-                v-for="(applicant, index) in unqualifiedApplicants"
+                v-for="applicant in unqualifiedApplicants"
                 :key="applicant.id"
                 class="q-py-sm"
               >
-                <q-item-section avatar>
+                <!-- <q-item-section avatar>
                   <q-avatar size="30px" color="red-1" text-color="red-8" font-size="0.8em">
                     {{ index + 1 }}
                   </q-avatar>
-                </q-item-section>
+                </q-item-section> -->
                 <q-item-section>
                   <q-item-label class="text-body2 text-bold">
                     {{ applicant.firstname }} {{ applicant.lastname }}
@@ -1273,7 +1273,9 @@
     };
   });
 
-  const goBack = () => router.push('/job-post');
+  const goBack = () => {
+    router.back();
+  };
 
   const onApplicantHired = async () => {
     try {

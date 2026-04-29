@@ -15,7 +15,6 @@
       <q-card-section class="row justify-between header text-black q-px-md q-py-sm">
         <div>
           <div class="text-h5 text-bold">Qualification Standard (QS)</div>
-          <!-- Applicant Outside -->
           <div class="text-subtitle1">Application Information</div>
         </div>
         <q-btn icon="close" flat round dense @click="onClose" />
@@ -34,12 +33,6 @@
           <!-- Left Card (Applicant Info) -->
           <q-card class="col-2 q-mr-md">
             <q-card-section class="column justify-between items-center q-pa-md">
-              <!-- <q-img
-                :src="applicantData?.image_url || 'https://placehold.co/100'"
-                class="bg-grey-4 q-mb-md"
-                style="width: 100px; height: 100px; border-radius: 10px"
-                alt="Applicant Photo"
-              /> -->
               <q-img
                 :src="applicantImageUrl || applicantData?.image_url || 'https://placehold.co/100'"
                 class="bg-grey-4 q-mb-md"
@@ -81,7 +74,6 @@
                   </div>
                 </div>
               </div>
-              <!-- View PDS button -->
               <q-btn class="q-mt-md" label="View PDS" color="primary" rounded @click="onViewPDS" />
             </q-card-section>
           </q-card>
@@ -104,7 +96,6 @@
                 <q-tab name="eligibility" label="ELIGIBILITY" class="text-weight-medium" />
               </q-tabs>
 
-              <!-- View Supporting Docs button -->
               <q-btn
                 label="View Supporting Docs"
                 color="orange-9"
@@ -123,7 +114,6 @@
                 class="column q-pa-sm no-wrap full-height"
                 style="display: flex; flex-direction: column; gap: 8px"
               >
-                <!-- Row 1: Position QS (~15% height) -->
                 <div style="flex: 0 0 20%; min-height: 80px">
                   <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
                   <q-table
@@ -149,7 +139,6 @@
                   </q-table>
                 </div>
 
-                <!-- Row 2: Applicant Education table (fills remaining space) -->
                 <div style="flex: 1; overflow: hidden">
                   <div class="row items-center justify-between q-mb-xs">
                     <div class="text-subtitle3">Applicant Education</div>
@@ -160,36 +149,43 @@
                     />
                   </div>
                   <q-scroll-area style="height: calc(100% - 28px)">
-                    <q-card>
-                      <q-table
-                        :rows="formattedEducation"
-                        :columns="xEduCol"
-                        row-key="uniqueId"
-                        wrap-cells
-                        flat
-                        bordered
-                      >
-                        <template v-slot:body-cell-select="props">
-                          <q-td :props="props" class="text-center">
-                            <q-checkbox
-                              :model-value="selectedEducationIds.includes(props.row.uniqueId)"
-                              @update:model-value="toggleEducationSelection(props.row.uniqueId)"
-                              dense
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No education records found
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
+                    <q-table
+                      :rows="formattedEducation"
+                      :columns="xEduCol"
+                      row-key="uniqueId"
+                      wrap-cells
+                      flat
+                      bordered
+                    >
+                      <template v-slot:header-cell-select="props">
+                        <q-th :props="props">
+                          <q-checkbox
+                            :model-value="isAllEducationSelected"
+                            @update:model-value="toggleSelectAllEducation"
+                            dense
+                            indeterminate-value="some"
+                          />
+                        </q-th>
+                      </template>
+                      <template v-slot:body-cell-select="props">
+                        <q-td :props="props" class="text-center">
+                          <q-checkbox
+                            :model-value="selectedEducationIds.includes(props.row.uniqueId)"
+                            @update:model-value="toggleEducationSelection(props.row.uniqueId)"
+                            dense
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-md text-grey">
+                          <q-icon name="info" size="24px" class="q-mr-sm" />
+                          No education records found
+                        </div>
+                      </template>
+                    </q-table>
                   </q-scroll-area>
                 </div>
 
-                <!-- Row 3: Remarks -->
                 <div style="flex: 0 0 auto">
                   <q-input
                     v-model="xData.education_remark"
@@ -214,34 +210,30 @@
                 class="column q-pa-sm no-wrap full-height"
                 style="display: flex; flex-direction: column; gap: 8px"
               >
-                <!-- Row 1: Position QS (~15% height) -->
-                <div style="flex: 0 0 15%; min-height: 80px">
+                <div style="flex: 0 0 20%; min-height: 80px">
                   <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
-                  <q-card>
-                    <q-table
-                      :columns="ExperienceCol"
-                      :rows="positionQS"
-                      hide-bottom
-                      wrap-cells
-                      bordered
-                      style="max-height: 100%"
-                    >
-                      <template v-slot:body-cell-Experience="props">
-                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
-                          {{ props.row.Experience }}
-                        </q-td>
-                      </template>
-                      <template v-slot:no-data>
-                        <div class="full-width row flex-center q-pa-sm text-grey">
-                          <q-icon name="info" size="20px" class="q-mr-sm" />
-                          No qualification standards available
-                        </div>
-                      </template>
-                    </q-table>
-                  </q-card>
+                  <q-table
+                    :columns="ExperienceCol"
+                    :rows="positionQS"
+                    hide-bottom
+                    wrap-cells
+                    bordered
+                    style="max-height: 100%"
+                  >
+                    <template v-slot:body-cell-Experience="props">
+                      <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                        {{ props.row.Experience }}
+                      </q-td>
+                    </template>
+                    <template v-slot:no-data>
+                      <div class="full-width row flex-center q-pa-sm text-grey">
+                        <q-icon name="info" size="20px" class="q-mr-sm" />
+                        No qualification standards available
+                      </div>
+                    </template>
+                  </q-table>
                 </div>
 
-                <!-- Row 2: Applicant Experience table (fills remaining space) -->
                 <div style="flex: 1; overflow: hidden">
                   <div class="row items-center justify-between q-mb-xs">
                     <div class="text-subtitle3">Applicant Experience</div>
@@ -296,67 +288,74 @@
                     </div>
                   </div>
                   <q-scroll-area style="height: calc(100% - 28px)">
-                    <q-card>
-                      <q-table
-                        :rows="experienceWithDuration"
-                        :columns="xExperienceCol"
-                        row-key="uniqueId"
-                        :pagination="{ rowsPerPage: 5 }"
-                        wrap-cells
-                      >
-                        <template v-slot:body-cell-select="props">
-                          <q-td :props="props">
-                            <q-checkbox
-                              :model-value="selectedExperienceIds.includes(props.row.uniqueId)"
-                              @update:model-value="toggleExperienceSelection(props.row.uniqueId)"
-                              dense
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:body-cell-work_date_to="props">
-                          <q-td :props="props">
-                            <span
-                              v-if="
-                                props.row.work_date_to &&
-                                props.row.work_date_to.toLowerCase() === 'present'
-                              "
-                            >
-                              <q-badge color="primary">Present</q-badge>
-                            </span>
-                            <span v-else>{{ props.row.work_date_to || '' }}</span>
-                          </q-td>
-                        </template>
-                        <template v-slot:body-cell-monthlySalary="props">
-                          <q-td :props="props">{{ formatSalary(props.row.monthly_salary) }}</q-td>
-                        </template>
-                        <template v-slot:body-cell-duration="props">
-                          <q-td :props="props" class="text-center">
-                            <q-badge
-                              v-if="selectedExperienceIds.includes(props.row.uniqueId)"
-                              :color="props.row.durationMonths > 0 ? 'positive' : 'grey'"
-                              :label="props.row.durationText"
-                              class="q-px-xs"
-                            />
-                            <q-badge
-                              v-else
-                              color="grey-7"
-                              :label="props.row.durationText"
-                              class="q-px-xs"
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No experience records found
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
+                    <q-table
+                      :rows="experienceWithDuration"
+                      :columns="xExperienceCol"
+                      row-key="uniqueId"
+                      :pagination="{ rowsPerPage: 5 }"
+                      wrap-cells
+                    >
+                      <template v-slot:header-cell-select="props">
+                        <q-th :props="props">
+                          <q-checkbox
+                            :model-value="isAllExperienceSelected"
+                            @update:model-value="toggleSelectAllExperience"
+                            dense
+                            indeterminate-value="some"
+                          />
+                        </q-th>
+                      </template>
+                      <template v-slot:body-cell-select="props">
+                        <q-td :props="props">
+                          <q-checkbox
+                            :model-value="selectedExperienceIds.includes(props.row.uniqueId)"
+                            @update:model-value="toggleExperienceSelection(props.row.uniqueId)"
+                            dense
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:body-cell-work_date_to="props">
+                        <q-td :props="props">
+                          <span
+                            v-if="
+                              props.row.work_date_to &&
+                              props.row.work_date_to.toLowerCase() === 'present'
+                            "
+                          >
+                            <q-badge color="primary">Present</q-badge>
+                          </span>
+                          <span v-else>{{ props.row.work_date_to || '' }}</span>
+                        </q-td>
+                      </template>
+                      <template v-slot:body-cell-monthlySalary="props">
+                        <q-td :props="props">{{ formatSalary(props.row.monthly_salary) }}</q-td>
+                      </template>
+                      <template v-slot:body-cell-duration="props">
+                        <q-td :props="props" class="text-center">
+                          <q-badge
+                            v-if="selectedExperienceIds.includes(props.row.uniqueId)"
+                            :color="props.row.durationMonths > 0 ? 'positive' : 'grey'"
+                            :label="props.row.durationText"
+                            class="q-px-xs"
+                          />
+                          <q-badge
+                            v-else
+                            color="grey-7"
+                            :label="props.row.durationText"
+                            class="q-px-xs"
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-md text-grey">
+                          <q-icon name="info" size="24px" class="q-mr-sm" />
+                          No experience records found
+                        </div>
+                      </template>
+                    </q-table>
                   </q-scroll-area>
                 </div>
 
-                <!-- Row 3: Remarks -->
                 <div style="flex: 0 0 auto">
                   <q-input
                     v-model="xData.experience_remark"
@@ -381,33 +380,29 @@
                 class="column q-pa-sm no-wrap full-height"
                 style="display: flex; flex-direction: column; gap: 8px"
               >
-                <!-- Row 1: Position QS (~15% height) -->
-                <div style="flex: 0 0 15%; min-height: 80px">
+                <div style="flex: 0 0 20%; min-height: 80px">
                   <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
-                  <q-card>
-                    <q-table
-                      :columns="trainingCol"
-                      :rows="positionQS"
-                      hide-bottom
-                      wrap-cells
-                      bordered
-                    >
-                      <template v-slot:body-cell-Training="props">
-                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
-                          {{ props.row.Training }}
-                        </q-td>
-                      </template>
-                      <template v-slot:no-data>
-                        <div class="full-width row flex-center q-pa-sm text-grey">
-                          <q-icon name="info" size="20px" class="q-mr-sm" />
-                          No qualification standards available
-                        </div>
-                      </template>
-                    </q-table>
-                  </q-card>
+                  <q-table
+                    :columns="trainingCol"
+                    :rows="positionQS"
+                    hide-bottom
+                    wrap-cells
+                    bordered
+                  >
+                    <template v-slot:body-cell-Training="props">
+                      <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                        {{ props.row.Training }}
+                      </q-td>
+                    </template>
+                    <template v-slot:no-data>
+                      <div class="full-width row flex-center q-pa-sm text-grey">
+                        <q-icon name="info" size="20px" class="q-mr-sm" />
+                        No qualification standards available
+                      </div>
+                    </template>
+                  </q-table>
                 </div>
 
-                <!-- Row 2: Applicant Training table (fills remaining space) -->
                 <div style="flex: 1; overflow: hidden">
                   <div class="row items-center justify-between q-mb-xs">
                     <div class="text-subtitle3">Applicant Training</div>
@@ -461,54 +456,61 @@
                     </div>
                   </div>
                   <q-scroll-area style="height: calc(100% - 28px)">
-                    <q-card>
-                      <q-table
-                        :rows="xTraining"
-                        :columns="xTrainingCol"
-                        row-key="uniqueId"
-                        :pagination="{ rowsPerPage: 5 }"
-                        wrap-cells
-                      >
-                        <template v-slot:body-cell-select="props">
-                          <q-td :props="props">
-                            <q-checkbox
-                              :model-value="selectedTrainingIds.includes(props.row.uniqueId)"
-                              @update:model-value="toggleTrainingSelection(props.row.uniqueId)"
-                              dense
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:body-cell-hours="props">
-                          <q-td :props="props" class="text-center">
-                            <q-badge
-                              v-if="selectedTrainingIds.includes(props.row.uniqueId)"
-                              :color="
-                                parseTrainingHours(props.row.number_of_hours) > 0
-                                  ? 'positive'
-                                  : 'grey'
-                              "
-                              :label="parseTrainingHours(props.row.number_of_hours)"
-                            />
-                            <q-badge
-                              v-else
-                              color="grey-7"
-                              :label="parseTrainingHours(props.row.number_of_hours)"
-                              class="q-px-xs"
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No training records found
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
+                    <q-table
+                      :rows="xTraining"
+                      :columns="xTrainingCol"
+                      row-key="uniqueId"
+                      :pagination="{ rowsPerPage: 5 }"
+                      wrap-cells
+                    >
+                      <template v-slot:header-cell-select="props">
+                        <q-th :props="props">
+                          <q-checkbox
+                            :model-value="isAllTrainingSelected"
+                            @update:model-value="toggleSelectAllTraining"
+                            dense
+                            indeterminate-value="some"
+                          />
+                        </q-th>
+                      </template>
+                      <template v-slot:body-cell-select="props">
+                        <q-td :props="props">
+                          <q-checkbox
+                            :model-value="selectedTrainingIds.includes(props.row.uniqueId)"
+                            @update:model-value="toggleTrainingSelection(props.row.uniqueId)"
+                            dense
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:body-cell-hours="props">
+                        <q-td :props="props" class="text-center">
+                          <q-badge
+                            v-if="selectedTrainingIds.includes(props.row.uniqueId)"
+                            :color="
+                              parseTrainingHours(props.row.number_of_hours) > 0
+                                ? 'positive'
+                                : 'grey'
+                            "
+                            :label="parseTrainingHours(props.row.number_of_hours)"
+                          />
+                          <q-badge
+                            v-else
+                            color="grey-7"
+                            :label="parseTrainingHours(props.row.number_of_hours)"
+                            class="q-px-xs"
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-md text-grey">
+                          <q-icon name="info" size="24px" class="q-mr-sm" />
+                          No training records found
+                        </div>
+                      </template>
+                    </q-table>
                   </q-scroll-area>
                 </div>
 
-                <!-- Row 3: Remarks -->
                 <div style="flex: 0 0 auto">
                   <q-input
                     v-model="xData.training_remark"
@@ -533,34 +535,30 @@
                 class="column q-pa-sm no-wrap full-height"
                 style="display: flex; flex-direction: column; gap: 8px"
               >
-                <!-- Row 1: Position QS (~15% height) -->
-                <div style="flex: 0 0 15%; min-height: 80px">
+                <div style="flex: 0 0 20%; min-height: 80px">
                   <div class="text-subtitle3 q-mb-xs">Position Qualification Standard</div>
-                  <q-card>
-                    <q-table
-                      :columns="eligibilityCol"
-                      :rows="positionQS"
-                      hide-bottom
-                      wrap-cells
-                      bordered
-                      style="max-height: 100%"
-                    >
-                      <template v-slot:body-cell-Eligibility="props">
-                        <q-td :props="props" style="white-space: normal; word-wrap: break-word">
-                          {{ props.row.Eligibility }}
-                        </q-td>
-                      </template>
-                      <template v-slot:no-data>
-                        <div class="full-width row flex-center q-pa-sm text-grey">
-                          <q-icon name="info" size="20px" class="q-mr-sm" />
-                          No qualification standards available
-                        </div>
-                      </template>
-                    </q-table>
-                  </q-card>
+                  <q-table
+                    :columns="eligibilityCol"
+                    :rows="positionQS"
+                    hide-bottom
+                    wrap-cells
+                    bordered
+                    style="max-height: 100%"
+                  >
+                    <template v-slot:body-cell-Eligibility="props">
+                      <q-td :props="props" style="white-space: normal; word-wrap: break-word">
+                        {{ props.row.Eligibility }}
+                      </q-td>
+                    </template>
+                    <template v-slot:no-data>
+                      <div class="full-width row flex-center q-pa-sm text-grey">
+                        <q-icon name="info" size="20px" class="q-mr-sm" />
+                        No qualification standards available
+                      </div>
+                    </template>
+                  </q-table>
                 </div>
 
-                <!-- Row 2: Applicant Eligibility table (fills remaining space) -->
                 <div style="flex: 1; overflow: hidden">
                   <div class="row items-center justify-between q-mb-xs">
                     <div class="text-subtitle3">Applicant Eligibility</div>
@@ -571,35 +569,42 @@
                     />
                   </div>
                   <q-scroll-area style="height: calc(100% - 28px)">
-                    <q-card>
-                      <q-table
-                        :rows="xEligibility"
-                        :columns="xEligibilityCol"
-                        row-key="uniqueId"
-                        :pagination="{ rowsPerPage: 5 }"
-                        wrap-cells
-                      >
-                        <template v-slot:body-cell-select="props">
-                          <q-td :props="props">
-                            <q-checkbox
-                              :model-value="selectedEligibilityIds.includes(props.row.uniqueId)"
-                              @update:model-value="toggleEligibilitySelection(props.row.uniqueId)"
-                              dense
-                            />
-                          </q-td>
-                        </template>
-                        <template v-slot:no-data>
-                          <div class="full-width row flex-center q-pa-md text-grey">
-                            <q-icon name="info" size="24px" class="q-mr-sm" />
-                            No eligibility records found
-                          </div>
-                        </template>
-                      </q-table>
-                    </q-card>
+                    <q-table
+                      :rows="xEligibility"
+                      :columns="xEligibilityCol"
+                      row-key="uniqueId"
+                      :pagination="{ rowsPerPage: 5 }"
+                      wrap-cells
+                    >
+                      <template v-slot:header-cell-select="props">
+                        <q-th :props="props">
+                          <q-checkbox
+                            :model-value="isAllEligibilitySelected"
+                            @update:model-value="toggleSelectAllEligibility"
+                            dense
+                            indeterminate-value="some"
+                          />
+                        </q-th>
+                      </template>
+                      <template v-slot:body-cell-select="props">
+                        <q-td :props="props">
+                          <q-checkbox
+                            :model-value="selectedEligibilityIds.includes(props.row.uniqueId)"
+                            @update:model-value="toggleEligibilitySelection(props.row.uniqueId)"
+                            dense
+                          />
+                        </q-td>
+                      </template>
+                      <template v-slot:no-data>
+                        <div class="full-width row flex-center q-pa-md text-grey">
+                          <q-icon name="info" size="24px" class="q-mr-sm" />
+                          No eligibility records found
+                        </div>
+                      </template>
+                    </q-table>
                   </q-scroll-area>
                 </div>
 
-                <!-- Row 3: Remarks -->
                 <div style="flex: 0 0 auto">
                   <q-input
                     v-model="xData.eligibility_remark"
@@ -772,7 +777,6 @@
 
   const tab = ref('education');
   const qualificationStatus = ref('');
-  // Add this ref near the top with your other refs
   const applicantImageUrl = ref('');
 
   const readSelectionFrom = (source, variants = []) => {
@@ -807,12 +811,11 @@
     const seen = new Set();
 
     for (const r of rows) {
-      // Check both id and uniqueId
       const idStr = String(r.id || r.uniqueId).trim();
       const uidStr = String(r.uniqueId || r.id).trim();
 
       if ((serverSet.has(idStr) || serverSet.has(uidStr)) && !seen.has(uidStr)) {
-        result.push(r.uniqueId); // Use uniqueId for internal selection tracking
+        result.push(r.uniqueId);
         seen.add(uidStr);
       }
     }
@@ -820,39 +823,22 @@
     return result.length ? result : null;
   };
 
-  // Updated mapping functions to store both id and uniqueId
   const mapEducationData = (eduArray) => {
     if (!eduArray || !Array.isArray(eduArray)) return [];
 
     return eduArray.map((e, index) => {
       const id = e.id || e.uniqueId || `education_${index}`;
-
-      if (e.level || e.school_name) {
-        return {
-          id: id,
-          uniqueId: id,
-          level: e.level || e.Education || '',
-          school_name: e.school_name || e.School || '',
-          degree: e.degree || e.Degree || '',
-          attendance_from: e.attendance_from || e.DateAttend?.split('-')[0]?.trim() || '',
-          attendance_to: e.attendance_to || e.DateAttend?.split('-')[1]?.trim() || '',
-          highest_units: e.highest_units || e.NumUnits || '',
-          year_graduated: e.year_graduated || e.DateAttend?.split('-')[1]?.trim() || '',
-          scholarship: e.scholarship || e.Honors || '',
-        };
-      }
-
       return {
         id: id,
         uniqueId: id,
-        level: e.Education || '',
-        school_name: e.School || '',
-        degree: e.Degree || '',
-        attendance_from: e.DateAttend?.split('-')[0]?.trim() || '',
-        attendance_to: e.DateAttend?.split('-')[1]?.trim() || '',
-        highest_units: e.NumUnits || '',
-        year_graduated: e.DateAttend?.split('-')[1]?.trim() || '',
-        scholarship: e.Honors || '',
+        level: e.level || e.Education || '',
+        school_name: e.school_name || e.School || '',
+        degree: e.degree || e.Degree || '',
+        attendance_from: e.attendance_from || e.DateAttend?.split('-')[0]?.trim() || '',
+        attendance_to: e.attendance_to || e.DateAttend?.split('-')[1]?.trim() || '',
+        highest_units: e.highest_units || e.NumUnits || '',
+        year_graduated: e.year_graduated || e.DateAttend?.split('-')[1]?.trim() || '',
+        scholarship: e.scholarship || e.Honors || '',
       };
     });
   };
@@ -862,29 +848,15 @@
 
     return eligArray.map((e, index) => {
       const id = e.id || e.uniqueId || `eligibility_${index}`;
-
-      if (e.eligibility || e.rating) {
-        return {
-          id: id,
-          uniqueId: id,
-          eligibility: e.eligibility || e.CivilServe || '',
-          rating: e.rating || e.Rates || '',
-          date_of_examination: e.date_of_examination || e.Dates || '',
-          place_of_examination: e.place_of_examination || e.Place || '',
-          license_number: e.license_number || e.LNumber || '',
-          date_of_validity: e.date_of_validity || e.LDate || '',
-        };
-      }
-
       return {
         id: id,
         uniqueId: id,
-        eligibility: e.CivilServe || '',
-        rating: e.Rates || '',
-        date_of_examination: e.Dates || '',
-        place_of_examination: e.Place || '',
-        license_number: e.LNumber || '',
-        date_of_validity: e.LDate || '',
+        eligibility: e.eligibility || e.CivilServe || '',
+        rating: e.rating || e.Rates || '',
+        date_of_examination: e.date_of_examination || e.Dates || '',
+        place_of_examination: e.place_of_examination || e.Place || '',
+        license_number: e.license_number || e.LNumber || '',
+        date_of_validity: e.date_of_validity || e.LDate || '',
       };
     });
   };
@@ -894,33 +866,17 @@
 
     return expArray.map((e, index) => {
       const id = e.id || e.uniqueId || `experience_${index}`;
-
-      if (e.position_title || e.work_date_from) {
-        return {
-          id: id,
-          uniqueId: id,
-          work_date_from: e.work_date_from || e.WFrom || '',
-          work_date_to: e.work_date_to || e.WTo || '',
-          position_title: e.position_title || e.WPosition || '',
-          department: e.department || e.WCompany || '',
-          monthly_salary: e.monthly_salary || e.WSalary || '0',
-          salary_grade: e.salary_grade || e.WGrade || '',
-          status_of_appointment: e.status_of_appointment || e.Status || '',
-          government_service: e.government_service || e.WGov || '',
-        };
-      }
-
       return {
         id: id,
         uniqueId: id,
-        work_date_from: e.WFrom || '',
-        work_date_to: e.WTo || '',
-        position_title: e.WPosition || '',
-        department: e.WCompany || '',
-        monthly_salary: e.WSalary || '0',
-        salary_grade: e.WGrade || '',
-        status_of_appointment: e.Status || '',
-        government_service: e.WGov || '',
+        work_date_from: e.work_date_from || e.WFrom || '',
+        work_date_to: e.work_date_to || e.WTo || '',
+        position_title: e.position_title || e.WPosition || '',
+        department: e.department || e.WCompany || '',
+        monthly_salary: e.monthly_salary || e.WSalary || '0',
+        salary_grade: e.salary_grade || e.WGrade || '',
+        status_of_appointment: e.status_of_appointment || e.Status || '',
+        government_service: e.government_service || e.WGov || '',
       };
     });
   };
@@ -930,31 +886,80 @@
 
     return trainArray.map((t, index) => {
       const id = t.id || t.uniqueId || `training_${index}_${Date.now()}`;
-
-      if (t.training_title || t.inclusive_date_from) {
-        return {
-          id: id,
-          uniqueId: id,
-          training_title: t.training_title || t.Training || '',
-          inclusive_date_from: t.inclusive_date_from || t.DateFrom || '',
-          inclusive_date_to: t.inclusive_date_to || t.DateTo || '',
-          number_of_hours: t.number_of_hours || t.NumHours || '0',
-          type: t.type || '',
-          conducted_by: t.conducted_by || t.Conductor || '',
-        };
-      }
-
       return {
         id: id,
         uniqueId: id,
-        training_title: t.Training || '',
-        inclusive_date_from: t.DateFrom || '',
-        inclusive_date_to: t.DateTo || '',
-        number_of_hours: t.NumHours || '0',
+        training_title: t.training_title || t.Training || '',
+        inclusive_date_from: t.inclusive_date_from || t.DateFrom || '',
+        inclusive_date_to: t.inclusive_date_to || t.DateTo || '',
+        number_of_hours: t.number_of_hours || t.NumHours || '0',
         type: t.type || '',
-        conducted_by: t.Conductor || '',
+        conducted_by: t.conducted_by || t.Conductor || '',
       };
     });
+  };
+
+  // Education Select All
+  const isAllEducationSelected = computed(() => {
+    return (
+      formattedEducation.value.length > 0 &&
+      selectedEducationIds.value.length === formattedEducation.value.length
+    );
+  });
+
+  const toggleSelectAllEducation = (val) => {
+    if (val) {
+      selectedEducationIds.value = formattedEducation.value.map((item) => item.uniqueId);
+    } else {
+      selectedEducationIds.value = [];
+    }
+  };
+
+  // Experience Select All
+  const isAllExperienceSelected = computed(() => {
+    return (
+      experienceWithDuration.value.length > 0 &&
+      selectedExperienceIds.value.length === experienceWithDuration.value.length
+    );
+  });
+
+  const toggleSelectAllExperience = (val) => {
+    if (val) {
+      selectedExperienceIds.value = experienceWithDuration.value.map((item) => item.uniqueId);
+    } else {
+      selectedExperienceIds.value = [];
+    }
+  };
+
+  // Training Select All
+  const isAllTrainingSelected = computed(() => {
+    return (
+      xTraining.value.length > 0 && selectedTrainingIds.value.length === xTraining.value.length
+    );
+  });
+
+  const toggleSelectAllTraining = (val) => {
+    if (val) {
+      selectedTrainingIds.value = xTraining.value.map((item) => item.uniqueId);
+    } else {
+      selectedTrainingIds.value = [];
+    }
+  };
+
+  // Eligibility Select All
+  const isAllEligibilitySelected = computed(() => {
+    return (
+      xEligibility.value.length > 0 &&
+      selectedEligibilityIds.value.length === xEligibility.value.length
+    );
+  });
+
+  const toggleSelectAllEligibility = (val) => {
+    if (val) {
+      selectedEligibilityIds.value = xEligibility.value.map((item) => item.uniqueId);
+    } else {
+      selectedEligibilityIds.value = [];
+    }
   };
 
   const toggleEducationSelection = (uniqueId) => {
@@ -995,155 +1000,86 @@
 
   const parseDate = (dateString) => {
     if (!dateString) return null;
-
-    // Check if date is in DD/MM/YYYY format (has two slashes)
     const parts = dateString.split('/');
     if (parts.length === 3) {
-      // Try DD/MM/YYYY format first
       const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+      const month = parseInt(parts[1], 10) - 1;
       const year = parseInt(parts[2], 10);
-
-      // Create date with DD/MM/YYYY interpretation
       let date = new Date(year, month, day);
-
-      // Validate if the date is valid (day matches, month matches)
       if (!isNaN(date.getTime()) && date.getDate() === day && date.getMonth() === month) {
         return date;
       }
-
-      // If DD/MM/YYYY fails, try MM/DD/YYYY as fallback
       const monthAlt = parseInt(parts[0], 10) - 1;
       const dayAlt = parseInt(parts[1], 10);
       date = new Date(year, monthAlt, dayAlt);
-
       if (!isNaN(date.getTime()) && date.getDate() === dayAlt && date.getMonth() === monthAlt) {
         return date;
       }
     }
-
-    // Fallback to default parsing
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
   };
 
   const calculateMonthsDifference = (startDate, endDate, applicationDate = null) => {
-    if (!startDate) {
-      console.log('Missing start date');
-      return 0;
-    }
-
+    if (!startDate) return 0;
     const start = parseDate(startDate);
-    if (!start) {
-      console.log('Invalid start date parsing:', { startDate });
-      return 0;
-    }
-
+    if (!start) return 0;
     let end;
-
-    // Check if endDate is "Present" (case-insensitive)
     if (endDate && typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present') {
-      // Use application date if provided, otherwise use current date
       if (applicationDate) {
         end = parseDate(applicationDate);
-        console.log('Using application date for Present:', applicationDate);
       } else {
-        end = new Date(); // Fallback to current date
-        console.log('Using current date for Present');
+        end = new Date();
       }
-
-      if (!end) {
-        end = new Date(); // Fallback to current date if parsing fails
-      }
+      if (!end) end = new Date();
     } else {
       end = parseDate(endDate);
-      if (!end) {
-        console.log('Invalid end date parsing:', { endDate });
-        return 0;
-      }
+      if (!end) return 0;
     }
-
-    console.log('Calculating months between:', {
-      start: start.toISOString(),
-      end: end.toISOString(),
-      startRaw: startDate,
-      endRaw: endDate,
-      isPresent: endDate && endDate.trim().toLowerCase() === 'present',
-    });
-
-    // Calculate total months difference
     let totalMonths =
       (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-
-    // Adjust for day difference
     const dayDiff = end.getDate() - start.getDate();
-
-    // If end day is before start day, subtract one month
-    if (dayDiff < 0) {
-      totalMonths -= 1;
-    }
-
-    const result = Math.max(0, totalMonths);
-    console.log('Calculated months:', result);
-
-    return result;
+    if (dayDiff < 0) totalMonths -= 1;
+    return Math.max(0, totalMonths);
   };
 
   const formatDuration = (months) => {
     if (months === 0) return '0 months';
-
     const years = Math.floor(months / 12);
     const remainingMonths = months % 12;
-
-    if (years === 0) {
-      return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-    } else if (remainingMonths === 0) {
-      return `${years} year${years !== 1 ? 's' : ''}`;
-    } else {
-      return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${
-        remainingMonths !== 1 ? 's' : ''
-      }`;
-    }
+    if (years === 0) return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+    if (remainingMonths === 0) return `${years} year${years !== 1 ? 's' : ''}`;
+    return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
   };
 
   const formatDateRange = (startDate, endDate) => {
     const start = parseDate(startDate);
-
-    // Check if endDate is "Present" (case-insensitive)
     const isPresent =
       endDate && typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present';
-
     if (isPresent) {
       if (!start) return 'Present';
       return `${start.toLocaleDateString()} - Present`;
     }
-
     const end = parseDate(endDate);
-
     if (!start && !end) return 'Date not specified';
     if (!start) return `Until ${end.toLocaleDateString()}`;
     if (!end) return `From ${start.toLocaleDateString()}`;
-
     return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
   };
 
   const formatTotalExperience = (totalMonths) => {
     if (totalMonths === 0) return 'No Experience';
-    return `Total:  ${formatDuration(totalMonths)}`;
+    return `Total: ${formatDuration(totalMonths)}`;
   };
 
   const applicantFullName = computed(() => {
-    // First try to get from the fetched PDS data
     const pdsData = jobPostStore.applicantPDS;
-
     if (pdsData && (pdsData.firstname || pdsData.lastname)) {
       const firstname = pdsData.firstname || '';
       const lastname = pdsData.lastname || '';
       const nameExtension = pdsData.name_extension ? ` ${pdsData.name_extension}` : '';
       return `${firstname} ${lastname}${nameExtension}`.trim();
     }
-
-    // Fallback to props.applicantData
     if (props.applicantData?.firstname || props.applicantData?.lastname) {
       const firstname = props.applicantData.firstname || '';
       const lastname = props.applicantData.lastname || '';
@@ -1152,21 +1088,12 @@
         : '';
       return `${firstname} ${lastname}${nameExtension}`.trim();
     }
-
-    // If applicantData has a name property (from parent component)
-    if (props.applicantData?.name) {
-      return props.applicantData.name;
-    }
-
+    if (props.applicantData?.name) return props.applicantData.name;
     return 'Please wait';
   });
 
-  // Convenience boolean — true only when "Unqualified" is selected
   const isUnqualified = computed(() => qualificationStatus.value === 'Unqualified');
 
-  // isRemarksValid:
-  //   • Not "Unqualified" → always valid (no remarks required)
-  //   • "Unqualified"     → ALL four remark fields must have content
   const isRemarksValid = computed(() => {
     if (!isUnqualified.value) return true;
     return !!(
@@ -1179,29 +1106,22 @@
 
   const remarksError = computed(() => {
     if (isUnqualified.value && !isRemarksValid.value) {
-      return 'All remarks fields (Education, Experience, Training, Eligibility) must be filled in when marking as Unqualified.';
+      return 'All remarks fields must be filled in when marking as Unqualified.';
     }
     return '';
   });
 
-  // Reset touched state when qualification status changes so stale
-  // error highlights disappear when switching back to "Qualified"
   watch(qualificationStatus, () => {
     remarksTouched.value = false;
   });
 
   const experienceWithDuration = computed(() => {
-    if (!xExperience.value || xExperience.value.length === 0) {
-      return [];
-    }
-
-    // Get application date from applicant data
+    if (!xExperience.value || xExperience.value.length === 0) return [];
     const applicationDate =
       props.applicantData?.appliedDate ||
       props.applicantData?.application_date ||
       props.applicantData?.date_applied ||
       null;
-
     return xExperience.value.map((exp) => {
       const durationMonths = calculateMonthsDifference(
         exp.work_date_from,
@@ -1209,51 +1129,32 @@
         applicationDate,
       );
       const durationText = formatDuration(durationMonths);
-
-      return {
-        ...exp,
-        durationMonths,
-        durationText,
-      };
+      return { ...exp, durationMonths, durationText };
     });
   });
 
   const totalSelectedExperienceMonths = computed(() => {
     return experienceWithDuration.value.reduce((total, exp) => {
-      if (selectedExperienceIds.value.includes(exp.uniqueId)) {
+      if (selectedExperienceIds.value.includes(exp.uniqueId))
         return total + (exp.durationMonths || 0);
-      }
       return total;
     }, 0);
   });
 
   const parseTrainingHours = (hours) => {
     if (!hours) return 0;
-
     const hoursStr = hours.toString().trim();
-
-    if (!isNaN(hoursStr) && hoursStr !== '') {
-      return parseInt(hoursStr) || 0;
-    }
-
+    if (!isNaN(hoursStr) && hoursStr !== '') return parseInt(hoursStr) || 0;
     const match = hoursStr.match(/(\d+(?:\.\d+)?)/);
-    if (match) {
-      return parseInt(match[1]) || 0;
-    }
-
+    if (match) return parseInt(match[1]) || 0;
     return 0;
   };
 
   const totalSelectedTrainingHours = computed(() => {
-    if (!xTraining.value || xTraining.value.length === 0) {
-      return 0;
-    }
-
+    if (!xTraining.value || xTraining.value.length === 0) return 0;
     return xTraining.value.reduce((total, training) => {
-      if (selectedTrainingIds.value.includes(training.uniqueId)) {
-        const hours = parseTrainingHours(training.number_of_hours);
-        return total + hours;
-      }
+      if (selectedTrainingIds.value.includes(training.uniqueId))
+        return total + parseTrainingHours(training.number_of_hours);
       return total;
     }, 0);
   });
@@ -1262,36 +1163,19 @@
     return (
       props.applicantData?.Jobstatus === 'Occupied' ||
       props.applicantData?.Jobstatus === 'occupied' ||
-      props.applicantData?.Jobstatus === 'rated' ||
-      props.applicantData?.Jobstatus === 'Unoccupied' ||
-      props.applicantData?.Jobstatus === 'unoccupied'
+      props.applicantData?.Jobstatus === 'rated'
     );
   });
 
   const getPersonalInfo = (applicantData) => {
     if (!applicantData) return {};
-
-    const personalInfo =
+    return (
       applicantData.n_personal_info ||
       applicantData.nPersonalInfo ||
       (applicantData.firstname ? applicantData : null) ||
-      {};
-
-    return personalInfo;
+      {}
+    );
   };
-
-  // const imageSrc = computed(() => {
-  //   const pds = jobPostStore.applicantPDS;
-  //   const base = props.applicantData;
-
-  //   return (
-  //     pds?.image_url ||
-  //     pds?.image_path ||
-  //     base?.image_url ||
-  //     base?.image_path ||
-  //     'https://placehold.co/100'
-  //   );
-  // });
 
   const getStatusClass = (status) => {
     if (!status) return 'grey';
@@ -1319,43 +1203,23 @@
   };
 
   const formattedEducation = computed(() => xEdu.value || []);
-
-  const formatSalary = (val) => {
-    if (!val) return '';
-    return parseFloat(val).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
-  };
+  const formatSalary = (val) =>
+    val ? parseFloat(val).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : '';
 
   const xEduCol = [
-    {
-      name: 'select',
-      label: 'Select',
-      field: 'select',
-      align: 'center',
-      style: 'width: 50px',
-    },
+    { name: 'select', label: '', field: 'select', align: 'center', style: 'width: 50px' },
     { name: 'level', label: 'Level', align: 'left', field: 'level', sortable: true },
     { name: 'school_name', label: 'Name of School', align: 'left', field: 'school_name' },
     { name: 'course', label: 'Degree/Course', align: 'left', field: 'degree' },
     { name: 'fromYear', label: 'From', align: 'left', field: 'attendance_from' },
     { name: 'toYear', label: 'To', align: 'left', field: 'attendance_to' },
     { name: 'highestLevel', label: 'Units Earned', align: 'left', field: 'highest_units' },
-    {
-      name: 'yearGraduated',
-      label: 'Year Graduated',
-      align: 'left',
-      field: 'year_graduated',
-    },
+    { name: 'yearGraduated', label: 'Year Graduated', align: 'left', field: 'year_graduated' },
     { name: 'honors', label: 'Honors', align: 'left', field: 'scholarship' },
   ];
 
   const xEligibilityCol = [
-    {
-      name: 'select',
-      label: 'Select',
-      field: 'select',
-      align: 'center',
-      style: 'width: 50px',
-    },
+    { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
     {
       name: 'eligibility',
       label: 'Eligibility',
@@ -1395,58 +1259,26 @@
   ];
 
   const xExperienceCol = [
-    {
-      name: 'select',
-      label: 'Select',
-      field: 'select',
-      align: 'center',
-      style: 'width: 50px',
-    },
+    { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
     { name: 'fromDate', label: 'From', field: 'work_date_from', align: 'center' },
     { name: 'toDate', label: 'To', field: 'work_date_to', align: 'center' },
-    {
-      name: 'positionTitle',
-      label: 'Position Title',
-      field: 'position_title',
-      align: 'left',
-    },
+    { name: 'positionTitle', label: 'Position Title', field: 'position_title', align: 'left' },
     { name: 'department', label: 'Department', field: 'department', align: 'left' },
-    {
-      name: 'monthlySalary',
-      label: 'Monthly Salary',
-      field: 'monthly_salary',
-      align: 'right',
-    },
+    { name: 'monthlySalary', label: 'Monthly Salary', field: 'monthly_salary', align: 'right' },
     { name: 'salaryGrade', label: 'SG', field: 'salary_grade', align: 'center' },
-    {
-      name: 'appointmentStatus',
-      label: 'Status',
-      field: 'status_of_appointment',
-      align: 'left',
-    },
+    { name: 'appointmentStatus', label: 'Status', field: 'status_of_appointment', align: 'left' },
     { name: 'govtService', label: "Gov't", field: 'government_service', align: 'center' },
     { name: 'duration', label: 'Duration', field: 'durationText', align: 'center' },
   ];
 
   const xTrainingCol = [
-    {
-      name: 'select',
-      label: 'Select',
-      field: 'select',
-      align: 'center',
-      style: 'width: 50px',
-    },
+    { name: 'select', label: 'Select', field: 'select', align: 'center', style: 'width: 50px' },
     { name: 'title', label: 'Title', field: 'training_title', align: 'left' },
     { name: 'fromDate', label: 'From', field: 'inclusive_date_from', align: 'center' },
     { name: 'toDate', label: 'To', field: 'inclusive_date_to', align: 'center' },
     { name: 'hours', label: 'Hours', field: 'number_of_hours', align: 'center' },
     { name: 'type', label: 'Type', field: 'type', align: 'left' },
-    {
-      name: 'conductor',
-      label: 'Conducted/Sponsored By',
-      field: 'conducted_by',
-      align: 'left',
-    },
+    { name: 'conductor', label: 'Conducted/Sponsored By', field: 'conducted_by', align: 'left' },
   ];
 
   const positionQS = ref([]);
@@ -1493,7 +1325,6 @@
       localShow.value = newVal;
     },
   );
-
   watch(localShow, (newVal) => {
     emit('update:show', newVal);
   });
@@ -1501,64 +1332,44 @@
   const showSupportingDocs = () => {
     showSupportingDocsModal.value = true;
   };
+
   const loadApplicantImage = async (imageUrl) => {
     if (!imageUrl) {
       applicantImageUrl.value = '';
       return;
     }
-
-    // External applicant — direct MinIO/storage URL, no auth needed
     if (imageUrl.includes('/storage/')) {
       applicantImageUrl.value = imageUrl;
       return;
     }
-
-    // Internal employee — proxy URL needs auth token, fetch as blob
     try {
       const token = authStore.token || authStore.user?.token || localStorage.getItem('token');
-
       const response = await fetch(imageUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'image/*',
-        },
+        headers: { Authorization: `Bearer ${token}`, Accept: 'image/*' },
       });
-
       if (response.ok) {
         const blob = await response.blob();
-        if (applicantImageUrl.value?.startsWith('blob:')) {
+        if (applicantImageUrl.value?.startsWith('blob:'))
           URL.revokeObjectURL(applicantImageUrl.value);
-        }
         applicantImageUrl.value = URL.createObjectURL(blob);
       } else {
-        console.warn('Proxy image fetch failed:', response.status);
         applicantImageUrl.value = '';
       }
-    } catch (err) {
-      console.error('Error loading proxy image:', err);
+    } catch {
       applicantImageUrl.value = '';
     }
   };
 
-  // Add this function near your other function definitions (e.g., near onModalShow)
   const refreshQSData = async () => {
     try {
-      // Refresh PDS data first
-      if (props.applicantData?.submission_id) {
+      if (props.applicantData?.submission_id)
         await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
-      }
-
-      // Refresh QS data if position exists
       if (props.applicantData?.PositionID) {
         await usePlantilla.fetchQsData(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
-
-      // Get the fresh PDS data
       const pdsData = jobPostStore.applicantPDS;
       const source = pdsData || props.applicantData || {};
-
-      // Update all the data arrays with fresh data
       xEdu.value = mapEducationData(
         (pdsData && pdsData.education) ||
           props.education ||
@@ -1579,8 +1390,6 @@
       xTraining.value = mapTrainingData(
         (pdsData && pdsData.training) || getPersonalInfo(props.applicantData)?.training || [],
       );
-
-      // Update supporting documents
       supportingDocuments.value = {
         training_images:
           (pdsData && pdsData.training_images) || props.applicantData?.training_images || [],
@@ -1591,14 +1400,10 @@
         experience_images:
           (pdsData && pdsData.experience_images) || props.applicantData?.experience_images || [],
       };
-
-      // Update remarks
       xData.value.education_remark = source.education_remark || source.educationRemark || '';
       xData.value.experience_remark = source.experience_remark || source.experienceRemark || '';
       xData.value.training_remark = source.training_remark || source.trainingRemark || '';
       xData.value.eligibility_remark = source.eligibility_remark || source.eligibilityRemark || '';
-
-      console.log('QS data refreshed successfully');
     } catch (error) {
       console.error('Error refreshing QS data:', error);
     }
@@ -1612,39 +1417,21 @@
     selectedEligibilityIds.value = [];
     remarksTouched.value = false;
     isLoadingPDS.value = true;
-
     try {
       let pdsData = null;
-      if (props.applicantData?.submission_id) {
+      if (props.applicantData?.submission_id)
         pdsData = await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
-      }
-
       if (props.applicantData?.PositionID) {
         await usePlantilla.fetchQsData(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
-
-      // ✅ Clean call — loadApplicantImage is already defined above
-      if (pdsData?.image_url) {
-        await loadApplicantImage(pdsData.image_url);
-      } else {
-        applicantImageUrl.value = '';
-      }
-
+      if (pdsData?.image_url) await loadApplicantImage(pdsData.image_url);
+      else applicantImageUrl.value = '';
       const source = pdsData || props.applicantData || {};
-
-      xData.value.education_remark =
-        source.education_remark || source.educationRemark || xData.value.education_remark || '';
-      xData.value.experience_remark =
-        source.experience_remark || source.experienceRemark || xData.value.experience_remark || '';
-      xData.value.training_remark =
-        source.training_remark || source.trainingRemark || xData.value.training_remark || '';
-      xData.value.eligibility_remark =
-        source.eligibility_remark ||
-        source.eligibilityRemark ||
-        xData.value.eligibility_remark ||
-        '';
-
+      xData.value.education_remark = source.education_remark || source.educationRemark || '';
+      xData.value.experience_remark = source.experience_remark || source.experienceRemark || '';
+      xData.value.training_remark = source.training_remark || source.trainingRemark || '';
+      xData.value.eligibility_remark = source.eligibility_remark || source.eligibilityRemark || '';
       xEdu.value = mapEducationData(
         (pdsData && pdsData.education) ||
           props.education ||
@@ -1665,7 +1452,6 @@
       xTraining.value = mapTrainingData(
         (pdsData && pdsData.training) || getPersonalInfo(props.applicantData)?.training || [],
       );
-
       supportingDocuments.value = {
         training_images:
           (pdsData && pdsData.training_images) || props.applicantData?.training_images || [],
@@ -1676,7 +1462,6 @@
         experience_images:
           (pdsData && pdsData.experience_images) || props.applicantData?.experience_images || [],
       };
-
       const candidateSources = [
         xData.value,
         pdsData,
@@ -1684,7 +1469,6 @@
         jobPostStore.applicantPDS,
         source,
       ];
-
       const tryReadFirst = (variants) => {
         for (const s of candidateSources) {
           if (!s) continue;
@@ -1693,42 +1477,22 @@
         }
         return undefined;
       };
-
       const educationSelectionRaw = tryReadFirst([
         'education_qualification',
         'educationQualification',
-        'education qualification',
-        'educationQualificationIds',
-        'education_quals',
-        'educationqualification',
-        'education_qualification_ids',
-        'selectedEducationIds',
       ]);
-
       const experienceSelectionRaw = tryReadFirst([
         'experience_qualification',
         'experienceQualification',
-        'experience qualification',
-        'experienceQualificationIds',
-        'selectedExperienceIds',
       ]);
-
       const trainingSelectionRaw = tryReadFirst([
         'training_qualification',
         'trainingQualification',
-        'training qualification',
-        'trainingQualificationIds',
-        'selectedTrainingIds',
       ]);
-
       const eligibilitySelectionRaw = tryReadFirst([
         'eligibility_qualification',
         'eligibilityQualification',
-        'eligibility qualification',
-        'eligibilityQualificationIds',
-        'selectedEligibilityIds',
       ]);
-
       const educationSelection = mapServerSelectionToRowIds(educationSelectionRaw, xEdu.value);
       const experienceSelection = mapServerSelectionToRowIds(
         experienceSelectionRaw,
@@ -1739,19 +1503,10 @@
         eligibilitySelectionRaw,
         xEligibility.value,
       );
-
       selectedEducationIds.value = educationSelection ?? [];
       selectedExperienceIds.value = experienceSelection ?? [];
       selectedTrainingIds.value = trainingSelection ?? [];
       selectedEligibilityIds.value = eligibilitySelection ?? [];
-
-      console.debug(
-        'onModalShow:  xEdu items ->',
-        (xEdu.value || []).map((r) => ({ id: r.id, uniqueId: r.uniqueId })),
-      );
-      console.debug('onModalShow: education_qualification/raw ->', educationSelectionRaw);
-      console.debug('onModalShow: selectedEducationIds ->', selectedEducationIds.value);
-
       if (
         props.applicantData?.status === 'Qualified' ||
         props.applicantData?.status === 'Unqualified'
@@ -1768,9 +1523,7 @@
   };
 
   const onClose = () => {
-    if (applicantImageUrl.value?.startsWith('blob:')) {
-      URL.revokeObjectURL(applicantImageUrl.value);
-    }
+    if (applicantImageUrl.value?.startsWith('blob:')) URL.revokeObjectURL(applicantImageUrl.value);
     applicantImageUrl.value = '';
     emit('close');
     positionQS.value = [];
@@ -1795,52 +1548,38 @@
 
   const onViewPDS = async () => {
     try {
-      if (props.applicantData?.submission_id) {
+      if (props.applicantData?.submission_id)
         await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
-      }
       showPDSModal.value = true;
       emit('view-pds');
-    } catch (error) {
-      console.error('Error loading PDS:', error);
+    } catch {
       showPDSModal.value = true;
       emit('view-pds');
     }
   };
 
-  // Add this watch outside of any function - place it after all your other watch statements
   watch(showPDSModal, (newVal, oldVal) => {
-    // When PDS modal was open and now is closed
-    if (oldVal === true && newVal === false) {
-      console.log('PDS modal closed, refreshing QS data...');
-      refreshQSData();
-    }
+    if (oldVal === true && newVal === false) refreshQSData();
   });
 
   watch(qualificationStatus, (newStatus) => {
     emit('toggle-qualification', newStatus);
   });
 
-  // Helper function to convert selected uniqueIds to actual IDs for the payload
   const convertToIds = (selectedUniqueIds, dataArray) => {
     const dedupe = (arr) => Array.from(new Set(arr));
-
     const ids = selectedUniqueIds
       .map((uniqueId) => {
         const item = dataArray.find((d) => d.uniqueId === uniqueId);
-        return item?.id || uniqueId; // Fallback to uniqueId if id not found
+        return item?.id || uniqueId;
       })
       .filter(Boolean);
-
     return dedupe(ids);
   };
 
   const onSubmit = () => {
-    // Mark as touched so inline field errors appear across all tabs
     remarksTouched.value = true;
-
-    // Validation check
     if (!isRemarksValid.value) {
-      // Show error notification
       if (window.Quasar) {
         window.Quasar.notify({
           type: 'negative',
@@ -1860,11 +1599,7 @@
       canModifyJobPost.value
     ) {
       const applicantId = props.applicantData?.submission_id || props.applicantData?.id;
-      if (!applicantId) {
-        console.error('Applicant data:', props.applicantData);
-        return;
-      }
-
+      if (!applicantId) return;
       const payload = {
         status: qualificationStatus.value,
         id: applicantId,
@@ -1880,13 +1615,7 @@
         training_qualification: convertToIds(selectedTrainingIds.value, xTraining.value),
         eligibility_qualification: convertToIds(selectedEligibilityIds.value, xEligibility.value),
       };
-
-      console.debug('Submitting evaluation payload:', payload);
-
       emit('submit', payload);
-
-      // ✅ Close modal immediately after submission
-      // The parent will handle the refresh
       localShow.value = false;
     }
   };
@@ -1911,21 +1640,18 @@
 
   :deep(.q-table) {
     font-size: 9pt !important;
-
-    .q-table__top,
-    .q-table__bottom,
-    .q-td,
-    .q-th {
-      font-size: 8pt !important;
-    }
-
-    tbody tr td {
-      font-size: 8pt !important;
-    }
-
-    thead tr th {
-      font-size: 8pt !important;
-    }
+  }
+  :deep(.q-table .q-table__top),
+  :deep(.q-table .q-table__bottom),
+  :deep(.q-table .q-td),
+  :deep(.q-table .q-th) {
+    font-size: 8pt !important;
+  }
+  :deep(.q-table tbody tr td) {
+    font-size: 8pt !important;
+  }
+  :deep(.q-table thead tr th) {
+    font-size: 8pt !important;
   }
 
   .footer-actions {
@@ -1956,30 +1682,24 @@
     letter-spacing: 0.5px;
   }
 
-  .modern-input {
-    :deep(.q-field__control) {
-      background-color: #f9f9f9;
-    }
+  .modern-input :deep(.q-field__control) {
+    background-color: #f9f9f9;
   }
 
-  .modern-input[readonly] {
-    :deep(.q-field__control) {
-      background-color: #e0e0e0;
-    }
+  .modern-input[readonly] :deep(.q-field__control) {
+    background-color: #e0e0e0;
   }
 
   .radio-button {
     padding: 8px 12px;
     border-radius: 4px;
     transition: all 0.3s ease;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .q-radio__label {
-      margin-left: 8px;
-      font-weight: 500;
-    }
+  }
+  .radio-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  .radio-button .q-radio__label {
+    margin-left: 8px;
+    font-weight: 500;
   }
 </style>
