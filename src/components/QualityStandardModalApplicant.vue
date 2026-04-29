@@ -866,6 +866,18 @@
 
     return expArray.map((e, index) => {
       const id = e.id || e.uniqueId || `experience_${index}`;
+
+      // Extract salary value from WSalary (e.g., "₱ 7,436.00" -> 7436)
+      let salaryValue = '';
+      if (e.WSalary) {
+        // Remove currency symbol, commas, and convert to number
+        const salaryStr = e.WSalary.toString();
+        const numericValue = salaryStr.replace(/[₱,]/g, '').trim();
+        salaryValue = parseFloat(numericValue) || '';
+      } else if (e.monthly_salary) {
+        salaryValue = e.monthly_salary;
+      }
+
       return {
         id: id,
         uniqueId: id,
@@ -873,7 +885,7 @@
         work_date_to: e.work_date_to || e.WTo || '',
         position_title: e.position_title || e.WPosition || '',
         department: e.department || e.WCompany || '',
-        monthly_salary: e.monthly_salary || e.WSalary || '0',
+        monthly_salary: salaryValue, // Use the extracted numeric value
         salary_grade: e.salary_grade || e.WGrade || '',
         status_of_appointment: e.status_of_appointment || e.Status || '',
         government_service: e.government_service || e.WGov || '',
@@ -1203,8 +1215,12 @@
   };
 
   const formattedEducation = computed(() => xEdu.value || []);
-  const formatSalary = (val) =>
-    val ? parseFloat(val).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : '';
+  const formatSalary = (val) => {
+    if (!val || val === '0' || val === 0) return '';
+    const num = parseFloat(val);
+    if (isNaN(num) || num === 0) return '';
+    return num.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+  };
 
   const xEduCol = [
     { name: 'select', label: '', field: 'select', align: 'center', style: 'width: 50px' },
