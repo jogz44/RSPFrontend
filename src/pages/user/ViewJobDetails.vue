@@ -174,8 +174,8 @@
 
             <div class="text-grey-7 text-caption q-mt-xs">
               Please do not modify the structure of the Excel data sheet. Only enter data in the
-              designated or allowed cells. Any changes to the format, formulas, or layout may result
-              in the file being invalid or rejected.
+              designated cells. Any changes to the format, formulas, or layout may result in missing
+              or invalid data.
             </div>
           </q-banner>
 
