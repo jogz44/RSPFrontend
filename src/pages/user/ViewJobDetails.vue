@@ -165,6 +165,20 @@
             Application Process
           </div>
 
+          <q-banner class="admin-notice q-mb-lg" rounded inline-actions>
+            <template v-slot:avatar>
+              <q-icon name="warning" color="orange" size="sm" />
+            </template>
+
+            <div class="text-weight-medium text-orange">Data Sheet Notice</div>
+
+            <div class="text-grey-7 text-caption q-mt-xs">
+              Please do not modify the structure of the Excel data sheet. Only enter data in the
+              designated or allowed cells. Any changes to the format, formulas, or layout may result
+              in the file being invalid or rejected.
+            </div>
+          </q-banner>
+
           <div class="process-steps">
             <!-- Step 1: Download Form -->
             <div class="process-step-wrapper">
@@ -327,7 +341,7 @@
         </q-card-section>
       </q-card>
     </div>
- 
+
     <q-dialog v-model="confirmDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-green">
@@ -1545,6 +1559,12 @@
     flex-shrink: 0;
   }
 
+  .admin-notice {
+    background: #fff8e1;
+    border: 1px solid #f2c94c;
+    color: #8a6d3b;
+  }
+
   .dialog-main-title {
     font-size: 1.5rem;
   }
@@ -1595,7 +1615,6 @@
     gap: 12px;
     flex-wrap: wrap;
   }
-
 
   .dialog-actions-sticky {
     flex-shrink: 0;
