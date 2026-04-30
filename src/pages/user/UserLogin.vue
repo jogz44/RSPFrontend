@@ -152,6 +152,21 @@
                   <q-icon name="lock" color="primary" />
                 </template>
               </q-input>
+
+              <!-- ── Email Delivery Notice ── -->
+
+              <div class="otp-notice-box">
+                <div class="otp-notice-header">
+                  <q-icon name="campaign" size="15px" class="otp-notice-icon" />
+                  <span class="otp-notice-title">Important Notice</span>
+                </div>
+                <p class="otp-notice-body">
+                  Due to the high volume of applicants, email delivery may be delayed. If you do not
+                  receive your code, please try again after a few hours or the following day.
+                </p>
+              </div>
+              <!-- ── End Email Delivery Notice ── -->
+              <!-- ── End Email Delivery Notice ── -->
             </div>
 
             <q-btn
@@ -701,6 +716,53 @@
     text-transform: none;
   }
 
+  /* ── OTP Notice Box ── */
+  .otp-notice-box {
+    margin-top: 0.5rem;
+    padding: 0.875rem 1rem;
+    background: #fffde7;
+    border: 1px solid #f9a825;
+    border-left: 4px solid #f9a825;
+    border-radius: 10px;
+  }
+
+  .otp-notice-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .otp-notice-icon {
+    color: #f57f17;
+    flex-shrink: 0;
+  }
+
+  .otp-notice-title {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #e65100;
+  }
+
+  .otp-notice-body {
+    font-size: 0.8rem;
+    color: #5d4037;
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  .otp-notice-body strong {
+    color: #bf360c;
+    font-weight: 700;
+  }
+
+  .otp-notice-body em {
+    font-style: normal;
+    font-weight: 600;
+    color: #1565c0;
+  }
+  /* ── End OTP Notice Box ── */
+
   /* ── Agreement ── */
   .agreement-card {
     background: linear-gradient(135deg, #f0faf4 0%, #e8f5ec 100%);
@@ -973,6 +1035,15 @@
     .agreement-error-msg {
       font-size: 0.73rem;
     }
+    .otp-notice-box {
+      padding: 0.75rem 0.875rem;
+    }
+    .otp-notice-title {
+      font-size: 0.78rem;
+    }
+    .otp-notice-body {
+      font-size: 0.75rem;
+    }
   }
 
   /* Extra Small (<360px) */
@@ -1047,6 +1118,15 @@
     }
     .agreement-label {
       font-size: 0.74rem;
+    }
+    .otp-notice-box {
+      padding: 0.625rem 0.75rem;
+    }
+    .otp-notice-title {
+      font-size: 0.74rem;
+    }
+    .otp-notice-body {
+      font-size: 0.72rem;
     }
   }
 

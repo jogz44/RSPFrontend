@@ -20,6 +20,8 @@ export const DashboardStore = defineStore('dashboard', {
     total: 0,
     total_applicant: 0,
     total_positions: 0,
+    internal: 0,
+    external: 0,
   }),
 
   actions: {
@@ -38,12 +40,15 @@ export const DashboardStore = defineStore('dashboard', {
           unfunded: data.unfunded,
           occupied: data.occupied,
           unoccupied: data.unoccupied,
+          internal: data.internal,
+          external: data.external,
         };
 
         this.qualified = data.qualified;
         this.unqualified = data.unqualified;
         this.pending = data.pending;
-        this.total_applicant = data.total_applicant;
+        this.external = data.external;
+        this.internal = data.internal;
 
         return data;
       } catch (error) {

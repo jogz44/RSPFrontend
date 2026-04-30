@@ -217,7 +217,6 @@
                   :error-message="authStore.errors?.name?.[0]"
                   outlined
                   dense
-                  class="q-mb-md"
                 >
                   <template #prepend><q-icon name="badge" size="18px" /></template>
                 </q-input>
@@ -229,7 +228,6 @@
                   :error-message="authStore.errors?.username?.[0]"
                   outlined
                   dense
-                  class="q-mb-md"
                 >
                   <template #prepend><q-icon name="alternate_email" size="18px" /></template>
                 </q-input>
@@ -241,7 +239,6 @@
                   :error-message="authStore.errors?.position?.[0]"
                   outlined
                   dense
-                  class="q-mb-md"
                 >
                   <template #prepend><q-icon name="work" size="18px" /></template>
                 </q-input>
@@ -257,7 +254,6 @@
                   :error-message="authStore.errors?.password?.[0]"
                   outlined
                   dense
-                  class="q-mb-md"
                 >
                   <template #prepend><q-icon name="lock" size="18px" /></template>
                 </q-input>
@@ -356,6 +352,26 @@
                         @update:model-value="syncSelectAll"
                       />
                     </div>
+                    <div class="perm-row two-col">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.requestPublication"
+                        label="Publication"
+                        dense
+                        color="primary"
+                        @update:model-value="syncSelectAll"
+                      />
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.reportPlantillaAccess"
+                        label="Report"
+                        dense
+                        color="primary"
+                        @update:model-value="syncSelectAll"
+                      />
+                    </div>
                   </div>
 
                   <!-- Job Post -->
@@ -379,6 +395,45 @@
                         false-value="0"
                         v-model="form.permissions.modifyJobpostAccess"
                         label="Modify"
+                        dense
+                        color="primary"
+                        @update:model-value="syncSelectAll"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Applicant -->
+                  <div class="perm-group">
+                    <div class="perm-group-title">
+                      <q-icon name="people" size="14px" class="q-mr-xs" />
+                      Applicant
+                    </div>
+                    <div class="perm-row two-col">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.viewApplicantAccess"
+                        label="View"
+                        dense
+                        color="primary"
+                        @update:model-value="syncSelectAll"
+                      />
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.modifyApplicantAccess"
+                        label="Modify"
+                        dense
+                        color="primary"
+                        @update:model-value="syncSelectAll"
+                      />
+                    </div>
+                    <div class="perm-row">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.reportApplicantAccess"
+                        label="Report"
                         dense
                         color="primary"
                         @update:model-value="syncSelectAll"
@@ -587,8 +642,13 @@
     'viewDashboardstat',
     'viewPlantillaAccess',
     'modifyPlantillaAccess',
+    'requestPublication',
+    'reportPlantillaAccess',
     'viewJobpostAccess',
     'modifyJobpostAccess',
+    'viewApplicantAccess',
+    'modifyApplicantAccess',
+    'reportApplicantAccess',
     'viewSchedule',
     'modifySchedule',
     'viewExam',
@@ -689,8 +749,6 @@
       });
 
       // ── Select All toggle ────────────────────────────────────────────
-      // Turning ON sets all permissions to '1' and sets user_role to 'Administrator'
-      // Turning OFF sets all permissions to '0' and clears user_role
       function onSelectAllToggle(val) {
         const newVal = val ? '1' : '0';
         ALL_PERMISSION_KEYS.forEach((k) => {
@@ -755,8 +813,13 @@
           viewDashboardstat: p.viewDashboardstat || '0',
           viewPlantillaAccess: p.viewPlantillaAccess || '0',
           modifyPlantillaAccess: p.modifyPlantillaAccess || '0',
+          requestPublication: p.requestPublication || '0',
+          reportPlantillaAccess: p.reportPlantillaAccess || '0',
           viewJobpostAccess: p.viewJobpostAccess || '0',
           modifyJobpostAccess: p.modifyJobpostAccess || '0',
+          viewApplicantAccess: p.viewApplicantAccess || '0',
+          modifyApplicantAccess: p.modifyApplicantAccess || '0',
+          reportApplicantAccess: p.reportApplicantAccess || '0',
           viewSchedule: p.viewSchedule || '0',
           modifySchedule: p.modifySchedule || '0',
           viewExam: p.viewExam || '0',
@@ -770,9 +833,6 @@
           viewActivityLogs: p.viewActivityLogs || '0',
         };
 
-        // ── Derive selectAll first, then set user_role accordingly ──
-        // If all permissions are ON, always show 'Administrator' regardless of what was stored.
-        // If not all ON, fall back to the stored role value.
         const allOn = checkAllOn(permissions);
 
         form.value = {

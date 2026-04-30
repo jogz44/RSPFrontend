@@ -36,7 +36,7 @@
       <!-- ================================================================ -->
       <!-- EXAM SCORE — standalone, guarded by viewExam / modifyExam        -->
       <!-- ================================================================ -->
-      <!-- <q-item
+      <q-item
         v-if="hasExamAccess"
         dense
         class="q-mx-xs q-my-xs"
@@ -50,9 +50,9 @@
           <q-icon name="grading" size="sm" />
         </q-item-section>
         <q-item-section>Exam Score</q-item-section>
-      </q-item> -->
+      </q-item>
 
-      <q-item
+      <!-- <q-item
         dense
         class="q-mx-xs q-my-xs"
         style="border-radius: 17px; padding: 8px 11px"
@@ -65,12 +65,12 @@
           <q-icon name="grading" size="sm" />
         </q-item-section>
         <q-item-section>Exam Score</q-item-section>
-      </q-item>
+      </q-item> -->
 
       <!-- ================================================================ -->
       <!-- SCHEDULE — standalone, guarded by viewSchedule / modifySchedule  -->
       <!-- ================================================================ -->
-      <!-- <q-item
+      <q-item
         v-if="hasScheduleAccess"
         dense
         class="q-mx-xs q-my-xs"
@@ -84,9 +84,9 @@
           <q-icon name="event" size="sm" />
         </q-item-section>
         <q-item-section>Schedule</q-item-section>
-      </q-item> -->
+      </q-item>
 
-      <q-item
+      <!-- <q-item
         dense
         class="q-mx-xs q-my-xs"
         style="border-radius: 17px; padding: 8px 11px"
@@ -99,7 +99,7 @@
           <q-icon name="event" size="sm" />
         </q-item-section>
         <q-item-section>Schedule</q-item-section>
-      </q-item>
+      </q-item> -->
 
       <!-- ================================================================ -->
       <!-- RATER MANAGEMENT — expandable, if permitted                      -->

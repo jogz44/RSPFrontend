@@ -27,6 +27,33 @@
 
       <div class="text-h5 text-weight-bolder text-primary q-ma-md">DASHBOARD</div>
 
+      <!-- INTERNAL/EXTERNAL BADGES - Simplified -->
+      <div class="row q-col-gutter-sm q-mx-lg q-mb-md">
+        <div class="col-12">
+          <div class="row justify-start items-center q-gutter-sm">
+            <q-badge
+              outline
+              color="blue"
+              class="badge-simple"
+              style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
+            >
+              <q-icon name="people" size="xs" class="q-mr-xs" />
+              Internal: {{ Number(dashboardStore.fundedData?.internal).toLocaleString() }}
+            </q-badge>
+
+            <q-badge
+              outline
+              color="primary"
+              class="badge-simple"
+              style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
+            >
+              <q-icon name="people" size="xs" class="q-mr-xs" />
+              External: {{ Number(dashboardStore.fundedData?.external).toLocaleString() }}
+            </q-badge>
+          </div>
+        </div>
+      </div>
+
       <div class="row q-col-gutter-sm q-mx-lg items-center">
         <div class="col-4">
           <q-card class="bg-white">
