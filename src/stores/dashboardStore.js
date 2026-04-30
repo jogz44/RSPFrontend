@@ -36,6 +36,7 @@ export const DashboardStore = defineStore('dashboard', {
 
         this.fundedData = {
           total_positions: data.total_positions,
+          total_applicant: data.total_applicant,
           funded: data.funded,
           unfunded: data.unfunded,
           occupied: data.occupied,
@@ -44,6 +45,7 @@ export const DashboardStore = defineStore('dashboard', {
           external: data.external,
         };
 
+        this.total_applicant = data.total_applicant;
         this.qualified = data.qualified;
         this.unqualified = data.unqualified;
         this.pending = data.pending;
