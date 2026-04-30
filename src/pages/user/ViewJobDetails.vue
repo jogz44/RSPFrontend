@@ -159,14 +159,6 @@
 
         <q-separator />
 
-        <!-- Position section -->
-        <!-- <q-card-section class="position-section">
-          <div class="section-title text-green">Position</div>
-          <div class="section-content">{{ selectedJob?.Position || 'No Position' }}</div>
-        </q-card-section>
-
-        <q-separator /> -->
-
         <!-- Application Process -->
         <q-card-section class="application-process-section bg-grey-1">
           <div class="process-main-title text-center text-weight-bold q-mb-lg">
@@ -335,8 +327,7 @@
         </q-card-section>
       </q-card>
     </div>
-
-    <!-- Confirmation Dialog for Initial Submission -->
+ 
     <q-dialog v-model="confirmDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-green">
@@ -356,51 +347,54 @@
 
         <q-separator />
 
-        <div class="dialog-content">
-          <div class="row items-center q-mb-md flex-wrap">
-            <q-icon name="work" size="16px" class="text-green" />
-            <div class="q-ml-sm">Position:</div>
-            <div class="text-green text-weight-bold q-ml-sm position-text">
-              {{ selectedJob?.Position || 'Computer Programmer II' }}
-            </div>
-          </div>
-
-          <div class="row items-start q-mb-md">
-            <q-icon name="description" size="16px" class="text-green q-mt-xs" />
-            <div class="q-ml-sm q-mt-xs">Application Form:</div>
-          </div>
-
-          <div class="file-card q-mb-md">
-            <div class="row no-wrap">
-              <q-icon name="description" size="18px" class="text-blue q-mt-xs" />
-              <div class="file-details">
-                <div class="file-name">{{ uploadedFile?.name }}</div>
-                <div class="file-size">{{ formatFileSize(uploadedFile?.size || 0) }}</div>
+        <div class="dialog-scrollable-body">
+          <div class="dialog-content">
+            <div class="row items-center q-mb-md flex-wrap">
+              <q-icon name="work" size="16px" class="text-green" />
+              <div class="q-ml-sm">Position:</div>
+              <div class="text-green text-weight-bold q-ml-sm position-text">
+                {{ selectedJob?.Position || 'Computer Programmer II' }}
               </div>
             </div>
-          </div>
 
-          <div class="row items-start">
-            <q-icon name="folder_zip" size="16px" class="text-green q-mt-xs" />
-            <div class="q-ml-sm q-mt-xs">Supporting Documents:</div>
-          </div>
+            <div class="row items-start q-mb-md">
+              <q-icon name="description" size="16px" class="text-green q-mt-xs" />
+              <div class="q-ml-sm q-mt-xs">Application Form:</div>
+            </div>
 
-          <div class="file-card">
-            <div class="row no-wrap">
-              <q-icon name="folder_zip" size="18px" class="text-orange q-mt-xs" />
-              <div class="file-details">
-                <div class="file-name">{{ uploadedZipFile?.name }}</div>
-                <div class="file-size">{{ formatFileSize(uploadedZipFile?.size || 0) }}</div>
+            <div class="file-card q-mb-md">
+              <div class="row no-wrap">
+                <q-icon name="description" size="18px" class="text-blue q-mt-xs" />
+                <div class="file-details">
+                  <div class="file-name">{{ uploadedFile?.name }}</div>
+                  <div class="file-size">{{ formatFileSize(uploadedFile?.size || 0) }}</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="text-center text-grey-7 q-mt-lg confirmation-note">
-            By clicking Submit, you confirm that all information provided is accurate and complete.
+            <div class="row items-start">
+              <q-icon name="folder_zip" size="16px" class="text-green q-mt-xs" />
+              <div class="q-ml-sm q-mt-xs">Supporting Documents:</div>
+            </div>
+
+            <div class="file-card">
+              <div class="row no-wrap">
+                <q-icon name="folder_zip" size="18px" class="text-orange q-mt-xs" />
+                <div class="file-details">
+                  <div class="file-name">{{ uploadedZipFile?.name }}</div>
+                  <div class="file-size">{{ formatFileSize(uploadedZipFile?.size || 0) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center text-grey-7 q-mt-lg confirmation-note">
+              By clicking Submit, you confirm that all information provided is accurate and
+              complete.
+            </div>
           </div>
         </div>
 
-        <div class="dialog-actions">
+        <div class="dialog-actions dialog-actions-sticky">
           <q-btn flat label="CANCEL" color="grey-7" v-close-popup class="q-px-md" />
           <q-btn
             unelevated
@@ -422,7 +416,9 @@
       </q-card>
     </q-dialog>
 
-    <!-- Success Dialog -->
+    <!-- =====================================================
+         Success Dialog
+         ===================================================== -->
     <q-dialog v-model="successDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-green">
@@ -450,45 +446,47 @@
 
         <q-separator />
 
-        <div class="dialog-content text-center">
-          <template v-if="successType === 'new'">
-            <div class="q-mb-md success-message">
-              Thank you for applying to the
-              <span class="text-green text-weight-bold">
-                {{ selectedJob?.Position || 'Computer Programmer II' }}
-              </span>
-              position.
-            </div>
+        <div class="dialog-scrollable-body">
+          <div class="dialog-content text-center">
+            <template v-if="successType === 'new'">
+              <div class="q-mb-md success-message">
+                Thank you for applying to the
+                <span class="text-green text-weight-bold">
+                  {{ selectedJob?.Position || 'Computer Programmer II' }}
+                </span>
+                position.
+              </div>
 
-            <div class="q-my-md success-message">
-              We have received your application and will contact you via sms or email for updates.
-            </div>
+              <div class="q-my-md success-message">
+                We have received your application and will contact you via sms or email for updates.
+              </div>
 
-            <div class="text-grey-7 q-mt-lg reference-number">
-              Reference #: APP-{{ generateReferenceNumber() }}
-            </div>
-          </template>
+              <div class="text-grey-7 q-mt-lg reference-number">
+                Reference #: APP-{{ generateReferenceNumber() }}
+              </div>
+            </template>
 
-          <template v-else-if="successType === 'updated'">
-            <div class="q-mb-md success-message">
-              Your application for the
-              <span class="text-green text-weight-bold">
-                {{ selectedJob?.Position || 'Computer Programmer II' }}
-              </span>
-              position has been updated with your new files.
-            </div>
+            <template v-else-if="successType === 'updated'">
+              <div class="q-mb-md success-message">
+                Your application for the
+                <span class="text-green text-weight-bold">
+                  {{ selectedJob?.Position || 'Computer Programmer II' }}
+                </span>
+                position has been updated with your new files.
+              </div>
 
-            <div class="q-my-md success-message">
-              The updated documents have been received and will be reviewed for next steps.
-            </div>
+              <div class="q-my-md success-message">
+                The updated documents have been received and will be reviewed for next steps.
+              </div>
 
-            <div class="text-grey-7 q-mt-lg reference-number">
-              Updated on: {{ getCurrentDateTime() }}
-            </div>
-          </template>
+              <div class="text-grey-7 q-mt-lg reference-number">
+                Updated on: {{ getCurrentDateTime() }}
+              </div>
+            </template>
+          </div>
         </div>
 
-        <div class="dialog-actions">
+        <div class="dialog-actions dialog-actions-sticky">
           <q-btn
             unelevated
             label="CLOSE"
@@ -500,7 +498,9 @@
       </q-card>
     </q-dialog>
 
-    <!-- Update Cancelled Dialog -->
+    <!-- =====================================================
+         Update Cancelled Dialog
+         ===================================================== -->
     <q-dialog v-model="updateCancelledDialog" persistent>
       <q-card class="confirmation-dialog">
         <div class="header-blue">
@@ -520,35 +520,39 @@
 
         <q-separator />
 
-        <div class="dialog-content text-center">
-          <div class="q-mb-md">
-            <q-icon name="check_circle" size="48px" color="blue" class="q-mb-md" />
-            <div class="cancelled-message">
-              Application update cancelled. Your previous application for
-              <span class="text-blue text-weight-bold">
-                {{ selectedJob?.Position || 'Computer Programmer II' }}
-              </span>
-              will remain unchanged.
+        <div class="dialog-scrollable-body">
+          <div class="dialog-content text-center">
+            <div class="q-mb-md">
+              <q-icon name="check_circle" size="48px" color="blue" class="q-mb-md" />
+              <div class="cancelled-message">
+                Application update cancelled. Your previous application for
+                <span class="text-blue text-weight-bold">
+                  {{ selectedJob?.Position || 'Computer Programmer II' }}
+                </span>
+                will remain unchanged.
+              </div>
             </div>
-          </div>
 
-          <div class="q-my-md cancelled-note text-grey-7">
-            Temporary data has been removed. You can apply to other positions or update later if
-            needed.
-          </div>
+            <div class="q-my-md cancelled-note text-grey-7">
+              Temporary data has been removed. You can apply to other positions or update later if
+              needed.
+            </div>
 
-          <div class="text-caption text-grey-7 q-mt-lg">
-            Cancelled at: {{ getCurrentDateTime() }}
+            <div class="text-caption text-grey-7 q-mt-lg">
+              Cancelled at: {{ getCurrentDateTime() }}
+            </div>
           </div>
         </div>
 
-        <div class="dialog-actions">
+        <div class="dialog-actions dialog-actions-sticky">
           <q-btn unelevated label="OK" color="blue" @click="closeCancelledDialog" class="q-px-xl" />
         </div>
       </q-card>
     </q-dialog>
 
-    <!-- Update Confirmation Modal -->
+    <!-- =====================================================
+         Update Confirmation Modal
+         ===================================================== -->
     <q-dialog v-model="updateConfirmationDialog" persistent @hide="stopConfirmationCountdown">
       <q-card class="confirmation-dialog">
         <div class="header-orange">
@@ -566,31 +570,33 @@
 
         <q-separator />
 
-        <div class="dialog-content">
-          <div class="q-mb-md update-message">
-            {{ confirmationMessage }}
-          </div>
-
-          <div class="row items-center q-pa-md bg-orange-1 rounded-borders q-mb-md">
-            <q-icon name="schedule" size="20px" color="orange" class="q-mr-sm" />
-            <div class="timer-text">
-              <span class="text-weight-bold">Expires in:</span>
-              <span :class="isConfirmationExpired ? 'text-red' : 'text-orange'" class="q-ml-sm">
-                {{
-                  isConfirmationExpired
-                    ? 'Expired'
-                    : `${Math.floor(confirmationCountdown / 60000)}m ${Math.floor((confirmationCountdown % 60000) / 1000)}s`
-                }}
-              </span>
+        <div class="dialog-scrollable-body">
+          <div class="dialog-content">
+            <div class="q-mb-md update-message">
+              {{ confirmationMessage }}
             </div>
-          </div>
 
-          <div class="text-center text-grey-7 update-note">
-            Your previous application will be updated with the newly submitted files.
+            <div class="row items-center q-pa-md bg-orange-1 rounded-borders q-mb-md">
+              <q-icon name="schedule" size="20px" color="orange" class="q-mr-sm" />
+              <div class="timer-text">
+                <span class="text-weight-bold">Expires in:</span>
+                <span :class="isConfirmationExpired ? 'text-red' : 'text-orange'" class="q-ml-sm">
+                  {{
+                    isConfirmationExpired
+                      ? 'Expired'
+                      : `${Math.floor(confirmationCountdown / 60000)}m ${Math.floor((confirmationCountdown % 60000) / 1000)}s`
+                  }}
+                </span>
+              </div>
+            </div>
+
+            <div class="text-center text-grey-7 update-note">
+              Your previous application will be updated with the newly submitted files.
+            </div>
           </div>
         </div>
 
-        <div class="dialog-actions">
+        <div class="dialog-actions dialog-actions-sticky">
           <q-btn
             flat
             label="NO, KEEP PREVIOUS"
@@ -1478,6 +1484,16 @@
     overflow: hidden;
     width: 460px;
     max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+  }
+
+  .dialog-scrollable-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
   }
 
   .header-green {
@@ -1487,6 +1503,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .header-blue {
@@ -1496,6 +1513,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .header-orange {
@@ -1505,6 +1523,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .icon-container {
@@ -1523,6 +1542,7 @@
   .dialog-title {
     margin-top: 36px;
     padding: 0 24px 16px 24px;
+    flex-shrink: 0;
   }
 
   .dialog-main-title {
@@ -1574,6 +1594,13 @@
     justify-content: flex-end;
     gap: 12px;
     flex-wrap: wrap;
+  }
+
+
+  .dialog-actions-sticky {
+    flex-shrink: 0;
+    border-top: 1px solid #eeeeee;
+    background: #ffffff;
   }
 
   .position-text {
