@@ -173,6 +173,7 @@
 
         <template v-slot:body-cell-action="props">
           <q-td :props="props" class="action-column q-gutter-x-xs">
+            <!-- Manual Application - requires modify permission -->
             <q-btn
               v-if="canModifyJobPost"
               round
@@ -185,6 +186,7 @@
               <q-tooltip>Manual Application</q-tooltip>
             </q-btn>
 
+            <!-- View Job Details - always visible -->
             <q-btn
               round
               flat
@@ -196,6 +198,7 @@
               <q-tooltip>View Job Details</q-tooltip>
             </q-btn>
 
+            <!-- Edit Job Post - requires modify permission -->
             <q-btn
               v-if="canModifyJobPost"
               round
@@ -208,6 +211,7 @@
               <q-tooltip>Edit Job Post</q-tooltip>
             </q-btn>
 
+            <!-- Republish Job Post - requires modify permission AND status is Unoccupied -->
             <q-btn
               v-if="canModifyJobPost && props.row.status == 'Unoccupied'"
               round
@@ -220,6 +224,7 @@
               <q-tooltip>Republish Job Post</q-tooltip>
             </q-btn>
 
+            <!-- Delete Job Post - requires modify permission AND no applicants -->
             <q-btn
               v-if="canModifyJobPost && props.row.total_applicants == 0"
               round
@@ -241,8 +246,8 @@
       </q-table>
     </div>
 
-    <!-- Edit Job Post Modal -->
-    <q-dialog v-model="showEditModal">
+    <!-- Edit Job Post Modal - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyJobPost" v-model="showEditModal">
       <q-card
         class="q-pa-none"
         style="
@@ -507,8 +512,8 @@
       </q-card>
     </q-dialog>
 
-    <!-- Republish Job Post Modal -->
-    <q-dialog v-model="showRepublishModal">
+    <!-- Republish Job Post Modal - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyJobPost" v-model="showRepublishModal">
       <q-card
         class="q-pa-none"
         style="
@@ -777,7 +782,7 @@
     </q-dialog>
 
     <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="showDeleteConfirmation" persistent>
+    <q-dialog v-if="canModifyJobPost" v-model="showDeleteConfirmation" persistent>
       <q-card style="min-width: 350px; border-radius: 6px">
         <q-card-section class="row items-center q-pb-md">
           <q-icon name="warning" color="negative" size="sm" class="q-mr-sm" />
@@ -908,9 +913,9 @@
 
   const { formatDate } = date;
 
-  // Permission check
+  // Permission check - modify job post access
   const canModifyJobPost = computed(() => {
-    return authStore.user?.permissions?.modifyJobpostAccess == '1';
+    return authStore.user?.permissions?.modifyJobpostAccess === '1';
   });
 
   // Page State
@@ -1167,6 +1172,16 @@
 
   // Edit job post functions
   const editJobPost = async (job) => {
+    // Only allow if user has modify permission
+    if (!canModifyJobPost.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to edit job posts',
+        position: 'top',
+      });
+      return;
+    }
+
     try {
       showEditModal.value = true;
 
@@ -1220,6 +1235,16 @@
 
   // republish job post functions
   const republishJobPost = async (job) => {
+    // Only allow if user has modify permission
+    if (!canModifyJobPost.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to republish job posts',
+        position: 'top',
+      });
+      return;
+    }
+
     try {
       showRepublishModal.value = true;
 
@@ -1371,6 +1396,17 @@
   };
 
   const updateJobPost = async () => {
+    // Only allow if user has modify permission
+    if (!canModifyJobPost.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to update job posts',
+        position: 'top',
+      });
+      closeEditModal();
+      return;
+    }
+
     try {
       if (!editJobDetails.value.end_date) {
         $q.notify({
@@ -1439,6 +1475,17 @@
   };
 
   const republishJobPostAction = async () => {
+    // Only allow if user has modify permission
+    if (!canModifyJobPost.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to republish job posts',
+        position: 'top',
+      });
+      closeRepublishModal();
+      return;
+    }
+
     try {
       if (!editJobDetails.value.end_date) {
         $q.notify({
@@ -1525,6 +1572,16 @@
   };
 
   const confirmDeleteJob = (job) => {
+    // Only allow if user has modify permission
+    if (!canModifyJobPost.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to delete job posts',
+        position: 'top',
+      });
+      return;
+    }
+
     jobToDelete.value = job;
     showDeleteConfirmation.value = true;
   };

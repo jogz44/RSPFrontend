@@ -38,7 +38,8 @@
             </template>
           </q-input>
         </div>
-        <div v-if="authStore.user?.permissions?.modifyRater === '1'">
+        <!-- Add Rater Button - Only show if user has modify permission -->
+        <div v-if="canModifyRater">
           <q-btn
             rounded
             color="primary"
@@ -100,6 +101,7 @@
           <!-- Actions column -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
+              <!-- View Button - Always visible -->
               <q-btn
                 flat
                 round
@@ -112,7 +114,8 @@
               >
                 <q-tooltip>View</q-tooltip>
               </q-btn>
-              <template v-if="authStore.user?.permissions?.modifyRater === '1'">
+              <!-- Edit Button - Only show if user has modify permission -->
+              <template v-if="canModifyRater">
                 <q-btn
                   flat
                   round
@@ -125,8 +128,9 @@
                 >
                   <q-tooltip>Edit</q-tooltip>
                 </q-btn>
+                <!-- Reset Password Button - Only show if user has modify permission and not self -->
                 <ButtonResetPassword
-                  v-if="props.row.id !== authStore.user.id"
+                  v-if="props.row.id !== authStore.user?.id"
                   :user-id="props.row.id"
                 />
               </template>
@@ -147,8 +151,8 @@
       </q-card-section>
     </q-card>
 
-    <!-- Add/Edit Rater Modal -->
-    <q-dialog v-model="showModal" persistent>
+    <!-- Add/Edit Rater Modal - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyRater" v-model="showModal" persistent>
       <q-card style="width: 500px; max-width: 90vw">
         <q-card-section class="row items-center justify-between bg-primary text-white">
           <div class="text-h4">
@@ -342,23 +346,19 @@
               <span class="text-body1 q-ml-sm" :class="activeStatus ? 'text-green' : 'text-red'">
                 {{ activeStatus ? 'Active' : 'Inactive' }}
               </span>
-                   <q-toggle
+              <q-toggle
                 v-model="enable"
                 :true-value="true"
                 :false-value="false"
                 color="green"
                 checked-icon="check"
                 unchecked-icon="block"
+                class="q-ml-md"
               />
               <span class="text-body1 q-ml-sm" :class="enable ? 'text-green' : 'text-red'">
                 {{ enable ? 'Enable' : 'Disable' }}
               </span>
             </div>
-
-              <!-- enable Toggle (Add Mode) -->
-            <!-- <div class="q-mb-md">
-
-            </div> -->
           </template>
 
           <!-- ==================== EDIT MODE ==================== -->
@@ -383,9 +383,6 @@
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
-                      <template v-slot:after-options>
-
-              </template>
               </q-select>
             </div>
 
@@ -472,10 +469,6 @@
               <span class="text-body1 q-ml-sm" :class="activeStatus ? 'text-green' : 'text-red'">
                 {{ activeStatus ? 'Active' : 'Inactive' }}
               </span>
-            </div>
-
-                <!-- Enable Toggle (Edit Mode) -->
-            <div class="q-mb-md">
               <q-toggle
                 v-model="enable"
                 :true-value="true"
@@ -483,9 +476,10 @@
                 color="green"
                 checked-icon="check"
                 unchecked-icon="block"
+                class="q-ml-md"
               />
               <span class="text-body1 q-ml-sm" :class="enable ? 'text-green' : 'text-red'">
-            {{ enable ? 'Enable' : 'Disable' }}
+                {{ enable ? 'Enable' : 'Disable' }}
               </span>
             </div>
           </template>
@@ -505,8 +499,8 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="showDeleteDialog">
+    <!-- Delete Confirmation Dialog - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyRater" v-model="showDeleteDialog">
       <q-card>
         <q-card-section>
           <div class="text-h6">Confirm Delete</div>
@@ -519,7 +513,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- View Rater Dialog -->
+    <!-- View Rater Dialog - Always visible -->
     <q-dialog v-model="showViewDialog" persistent>
       <q-card style="width: 800px; max-width: 95vw; display: flex; flex-direction: column">
         <q-card-section class="bg-grey-2 q-px-lg q-py-md sticky-header">
@@ -710,6 +704,13 @@
   const authStore = useAuthStore();
   const plantillaStore = usePlantillaStore();
 
+  // ============================================================================
+  // PERMISSION CHECK
+  // ============================================================================
+  const canModifyRater = computed(() => {
+    return authStore.user?.permissions?.modifyRater === '1';
+  });
+
   // ==================== SEARCH ====================
   const globalSearch = ref('');
   const jobSearch = ref('');
@@ -757,12 +758,11 @@
   const raterToDelete = ref(null);
 
   // ==================== FORM STATE ====================
-  const selectedPositions = ref([]); // OPTIONAL (must always be array, never null)
-  const selectedRater = ref(null); // REQUIRED in add mode
-  const selectedOffice = ref(''); // REQUIRED
+  const selectedPositions = ref([]);
+  const selectedRater = ref(null);
+  const selectedOffice = ref('');
   const activeStatus = ref(true);
   const enable = ref(true);
-  // FIX: renamed from 'representation' to 'representative' to match API field name
   const representative = ref('');
   const selectedRole = ref(null);
 
@@ -802,55 +802,68 @@
     positionSelect.value?.hidePopup();
   };
 
-  // ==================== COLUMNS ====================
-  const columns = [
-    {
-      name: 'name',
-      label: 'Rater Name',
-      field: 'name',
-      align: 'left',
-      style: 'width: 15%; word-wrap: break-word; white-space: normal;',
-    },
-    {
-      name: 'job_batches_rsp',
-      label: 'Jobs Position to Rate',
-      field: 'job_batches_rsp',
-      align: 'left',
-      style: 'width: 25%',
-    },
-    {
-      name: 'office',
-      label: 'Office',
-      field: 'office',
-      align: 'left',
-      style: 'width: 20%; word-wrap: break-word; white-space: normal;',
-    },
-    {
-      name: 'pending',
-      label: 'Pending',
-      field: 'pending',
-      align: 'center',
-      sortable: false,
-      style: 'width: 10%',
-    },
-    {
-      name: 'completed',
-      label: 'Completed',
-      field: 'completed',
-      align: 'center',
-      sortable: false,
-      style: 'width: 10%',
-    },
-    {
-      name: 'active',
-      align: 'left',
-      label: 'Status',
-      field: 'active',
-      sortable: true,
-      style: 'width: 10%',
-    },
-    { name: 'actions', label: 'Actions', align: 'center', style: 'width: 5%' },
-  ];
+  // ==================== COLUMNS (COMPUTED - includes action column conditionally) ====================
+  const columns = computed(() => {
+    const baseColumns = [
+      {
+        name: 'name',
+        label: 'Rater Name',
+        field: 'name',
+        align: 'left',
+        style: 'width: 15%; word-wrap: break-word; white-space: normal;',
+      },
+      {
+        name: 'job_batches_rsp',
+        label: 'Jobs Position to Rate',
+        field: 'job_batches_rsp',
+        align: 'left',
+        style: 'width: 25%',
+      },
+      {
+        name: 'office',
+        label: 'Office',
+        field: 'office',
+        align: 'left',
+        style: 'width: 20%; word-wrap: break-word; white-space: normal;',
+      },
+      {
+        name: 'pending',
+        label: 'Pending',
+        field: 'pending',
+        align: 'center',
+        sortable: false,
+        style: 'width: 10%',
+      },
+      {
+        name: 'completed',
+        label: 'Completed',
+        field: 'completed',
+        align: 'center',
+        sortable: false,
+        style: 'width: 10%',
+      },
+      {
+        name: 'active',
+        align: 'left',
+        label: 'Status',
+        field: 'active',
+        sortable: true,
+        style: 'width: 10%',
+      },
+    ];
+
+    // Only add actions column if user has modify permission
+    if (canModifyRater.value) {
+      baseColumns.push({
+        name: 'actions',
+        label: 'Actions',
+        align: 'center',
+        style: 'width: 5%',
+      });
+    }
+
+    return baseColumns;
+  });
 
   const jobColumns = [
     { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 35%' },
@@ -917,7 +930,7 @@
     return raterJobs.value.reduce((total, job) => total + parseInt(job.applicant || 0), 0);
   });
 
-  // ==================== POSITION SELECTION METHODS (NULL SAFE) ====================
+  // ==================== POSITION SELECTION METHODS ====================
 
   const isPositionSelected = (id) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
@@ -945,7 +958,6 @@
   };
 
   const handlePositionSelection = (newSelection) => {
-    // Quasar can emit null when clearable -> make it always an array
     const safeSelection = Array.isArray(newSelection) ? newSelection : [];
     const filtered = safeSelection.filter((id) => id !== 'all');
     selectedPositions.value = [...new Set(filtered)];
@@ -1007,7 +1019,7 @@
   // ==================== FORM HELPERS ====================
 
   const resetForm = () => {
-    selectedPositions.value = []; // important: never null
+    selectedPositions.value = [];
     selectedRater.value = null;
     selectedOffice.value = '';
     filteredRatersByOffice.value = [];
@@ -1019,7 +1031,6 @@
     showError.value = false;
     activeStatus.value = true;
     enable.value = false;
-    // FIX: reset 'representative' (not 'representation')
     representative.value = '';
     selectedRole.value = null;
   };
@@ -1036,6 +1047,10 @@
   };
 
   const showAddModal = () => {
+    if (!canModifyRater.value) {
+      toast.warning('You do not have permission to add raters');
+      return;
+    }
     isEditMode.value = false;
     showModal.value = true;
     resetForm();
@@ -1104,15 +1119,20 @@
   // ==================== EDIT RATER ====================
 
   const editRater = async (rater) => {
+    if (!canModifyRater.value) {
+      toast.warning('You do not have permission to edit raters');
+      return;
+    }
+
     try {
-        isEditMode.value = true;
-        currentRaterId.value = rater.id;
-        currentRaterName.value = rater.name;
-        activeStatus.value = !!rater.active;
-          enable.value = !!rater.enable;
-        representative.value = rater.representative || rater.representation || '';
-        selectedRole.value = rater.role_type || rater.role || '';
-        selectedOffice.value = rater.office || '';
+      isEditMode.value = true;
+      currentRaterId.value = rater.id;
+      currentRaterName.value = rater.name;
+      activeStatus.value = !!rater.active;
+      enable.value = !!rater.enable;
+      representative.value = rater.representative || rater.representation || '';
+      selectedRole.value = rater.role_type || rater.role || '';
+      selectedOffice.value = rater.office || '';
 
       if (selectedOffice.value) {
         await fetchEmployeesByOffice(selectedOffice.value);
@@ -1136,7 +1156,7 @@
     }
   };
 
-  // ==================== UPDATE RATER (NULL SAFE) ====================
+  // ==================== UPDATE RATER ====================
 
   const updateRater = async () => {
     if (!selectedOffice.value || !selectedRole.value) {
@@ -1158,7 +1178,6 @@
         Office: selectedOffice.value,
         active: activeStatus.value,
         enable: enable.value,
-        // FIX: key is 'representative' (not 'representation') to match API
         representative: representative.value,
         role: selectedRole.value,
       };
@@ -1180,7 +1199,7 @@
     }
   };
 
-  // ==================== ADD RATER (NULL SAFE) ====================
+  // ==================== ADD RATER ====================
 
   const addRater = async () => {
     if (!selectedOffice.value || !selectedRater.value || !selectedRole.value) {
@@ -1207,7 +1226,6 @@
         Office: selectedOffice.value,
         active: activeStatus.value,
         enable: enable.value,
-        // FIX: key is 'representative' (not 'representation') to match API
         representative: representative.value,
         role: selectedRole.value,
       };
@@ -1289,7 +1307,7 @@
   watch(showModal, (val) => {
     if (val && !isEditMode.value) {
       activeStatus.value = true;
-        enable.value = false;
+      enable.value = false;
     }
   });
 </script>

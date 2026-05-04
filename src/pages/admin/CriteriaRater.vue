@@ -26,51 +26,6 @@
 
     <!-- Filters -->
     <div class="row justify-between items-center q-mb-md">
-      <!-- Date Range Picker -->
-      <!-- <q-input
-        v-model="dateRangeText"
-        outlined
-        dense
-        readonly
-        placeholder="Select Date Range"
-        class="col-auto"
-        style="max-width: 280px"
-        @click="showDatePicker = true"
-      >
-        <template v-slot:prepend>
-          <q-icon name="event" color="primary" class="cursor-pointer" />
-        </template>
-        <template v-slot:append>
-          <q-icon name="arrow_drop_down" color="primary" class="cursor-pointer" />
-        </template>
-      </q-input> -->
-
-      <!-- Date Picker Popup -->
-      <!-- <q-popup-proxy v-model="showDatePicker" cover transition-show="scale" transition-hide="scale">
-        <q-date
-          v-model="dateRange"
-          range
-          landscape
-          today-btn
-          mask="YYYY-MM-DD"
-          color="primary"
-          @update:model-value="onDateRangeChange"
-        >
-          <div class="row items-center justify-end q-gutter-x-sm">
-            <q-btn
-              label="Clear"
-              class="bg-negative text-white"
-              rounded
-              flat
-              dense
-              @click="clearDateRange"
-              v-if="dateRange.from || dateRange.to"
-            />
-            <q-btn label="Okay" class="bg-primary text-white" rounded flat dense v-close-popup />
-          </div>
-        </q-date>
-      </q-popup-proxy> -->
-
       <!-- Search Input -->
       <div class="row items-center">
         <q-input
@@ -151,7 +106,7 @@
         <template v-slot:body-cell-action="props">
           <q-td class="col-action">
             <div class="cell-content action-cell">
-              <!-- View Button -->
+              <!-- View Button - Always visible -->
               <q-btn
                 v-if="hasCriteria(props.row)"
                 flat
@@ -167,9 +122,9 @@
                 <q-tooltip>View Criteria</q-tooltip>
               </q-btn>
 
-              <!-- Create Button -->
+              <!-- Create Button - Only show if user has modify permission -->
               <q-btn
-                v-if="!hasCriteria(props.row) && canModify"
+                v-if="!hasCriteria(props.row) && canModifyCriteria"
                 flat
                 round
                 dense
@@ -183,9 +138,9 @@
                 <q-tooltip>Create Criteria</q-tooltip>
               </q-btn>
 
-              <!-- Edit Button -->
+              <!-- Edit Button - Only show if user has modify permission -->
               <q-btn
-                v-if="hasCriteria(props.row) && canModify"
+                v-if="hasCriteria(props.row) && canModifyCriteria"
                 flat
                 round
                 dense
@@ -214,12 +169,12 @@
       </q-table>
     </q-card>
 
-    <!-- Criteria Modal -->
+    <!-- Criteria Modal - Only pass permission, modal handles internal restrictions -->
     <criteria-rater-modal
       v-model="showCriteriaModal"
       :job-id="selectedJobId"
       :mode="modalMode"
-      :has-permission="canModify"
+      :has-permission="canModifyCriteria"
       @saved="onCriteriaSaved"
       @switch-to-edit="handleSwitchToEdit"
     />
@@ -247,7 +202,6 @@
   const jobs = ref([]);
   const globalSearch = ref('');
   const dateRange = ref({ from: '', to: '' });
-  // const showDatePicker = ref(false);
 
   // Modal State
   const showCriteriaModal = ref(false);
@@ -260,6 +214,18 @@
     descending: true,
     page: 1,
     rowsPerPage: 10,
+  });
+
+  // ============================================================================
+  // PERMISSION CHECK
+  // ============================================================================
+
+  /**
+   * Check if user has permission to modify criteria
+   * This controls visibility of Create/Edit buttons
+   */
+  const canModifyCriteria = computed(() => {
+    return authStore.user?.permissions?.modifyCriteria === '1';
   });
 
   // ============================================================================
@@ -312,24 +278,6 @@
   // ============================================================================
   // COMPUTED PROPERTIES
   // ============================================================================
-
-  /**
-   * Check if user has permission to modify criteria
-   */
-  const canModify = computed(() => {
-    return authStore.user?.permissions?.modifyCriteria === '1';
-  });
-
-  /**
-   * Format date range for display
-   */
-  // const dateRangeText = computed(() => {
-  //   if (!dateRange.value.from && !dateRange.value.to) return '';
-  //   if (!dateRange.value.to) {
-  //     return formatDate(dateRange.value.from, 'MMM D, YYYY');
-  //   }
-  //   return `${formatDate(dateRange.value.from, 'MMM D, YYYY')} - ${formatDate(dateRange.value.to, 'MMM D, YYYY')}`;
-  // });
 
   /**
    * Filter jobs by date range and search term
@@ -387,20 +335,6 @@
   }
 
   /**
-   * Clear date range
-   */
-  // function clearDateRange() {
-  //   dateRange.value = { from: '', to: '' };
-  // }
-
-  /**
-   * Handle date range change
-   */
-  // function onDateRangeChange() {
-  //   showDatePicker.value = false;
-  // }
-
-  /**
    * Format status for display
    */
   function formatStatus(status) {
@@ -441,8 +375,8 @@
    * Open criteria modal
    */
   async function openModal(job, mode) {
-    // Permission check
-    if ((mode === 'create' || mode === 'edit') && !canModify.value) {
+    // Permission check for create/edit modes
+    if ((mode === 'create' || mode === 'edit') && !canModifyCriteria.value) {
       console.warn(`User does not have permission to ${mode} criteria`);
       return;
     }
@@ -465,7 +399,8 @@
    * Switch from view to edit mode
    */
   function handleSwitchToEdit(jobId) {
-    if (!canModify.value) {
+    // Permission check for edit mode
+    if (!canModifyCriteria.value) {
       console.warn('User does not have permission to edit criteria');
       return;
     }

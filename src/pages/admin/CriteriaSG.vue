@@ -10,10 +10,11 @@
           </p>
         </div>
 
-        <!-- Back Button -->
+        <!-- Action Buttons -->
         <div class="row q-gutter-sm">
+          <!-- Create Button - Only show if user has modify permission -->
           <q-btn
-            v-if="canModify"
+            v-if="canModifyCriteria"
             unelevated
             color="positive"
             icon="add"
@@ -24,6 +25,7 @@
             <q-tooltip>Create New Salary Grade Criteria</q-tooltip>
           </q-btn>
 
+          <!-- Back Button - Always visible -->
           <q-btn
             unelevated
             color="primary"
@@ -157,7 +159,7 @@
         <template v-slot:body-cell-action="props">
           <q-td class="col-action">
             <div class="cell-content action-cell">
-              <!-- View Button -->
+              <!-- View Button - Always visible -->
               <q-btn
                 flat
                 round
@@ -172,9 +174,9 @@
                 <q-tooltip>View Criteria</q-tooltip>
               </q-btn>
 
-              <!-- Edit Button -->
+              <!-- Edit Button - Only show if user has modify permission -->
               <q-btn
-                v-if="canModify"
+                v-if="canModifyCriteria"
                 flat
                 round
                 dense
@@ -188,9 +190,9 @@
                 <q-tooltip>Edit Criteria</q-tooltip>
               </q-btn>
 
-              <!-- Delete Button -->
+              <!-- Delete Button - Only show if user has modify permission -->
               <q-btn
-                v-if="canModify"
+                v-if="canModifyCriteria"
                 flat
                 round
                 dense
@@ -213,8 +215,9 @@
             <div class="text-center">
               <q-icon name="inbox" size="2rem" class="q-mb-sm" />
               <div>No salary grade criteria found</div>
+              <!-- Create First Criteria Button - Only show if user has modify permission -->
               <q-btn
-                v-if="canModify"
+                v-if="canModifyCriteria"
                 color="primary"
                 label="Create First Criteria"
                 unelevated
@@ -234,13 +237,13 @@
       :sg-min="selectedSgMin"
       :sg-max="selectedSgMax"
       :mode="modalMode"
-      :has-permission="canModify"
+      :has-permission="canModifyCriteria"
       @saved="onCriteriaSaved"
       @switch-to-edit="handleSwitchToEdit"
     />
 
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="showDeleteDialog" persistent>
+    <!-- Delete Confirmation Dialog - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyCriteria" v-model="showDeleteDialog" persistent>
       <q-card style="min-width: 400px">
         <q-card-section class="row items-center bg-negative text-white">
           <q-icon name="warning" size="md" class="q-mr-sm" />
@@ -318,6 +321,18 @@
   });
 
   // ============================================================================
+  // PERMISSION CHECK
+  // ============================================================================
+
+  /**
+   * Check if user has permission to modify criteria
+   * This controls visibility of Create/Edit/Delete buttons
+   */
+  const canModifyCriteria = computed(() => {
+    return authStore.user?.permissions?.modifyCriteria === '1';
+  });
+
+  // ============================================================================
   // TABLE COLUMNS
   // ============================================================================
 
@@ -359,13 +374,6 @@
   // ============================================================================
   // COMPUTED PROPERTIES
   // ============================================================================
-
-  /**
-   * Check if user has permission to modify criteria
-   */
-  const canModify = computed(() => {
-    return authStore.user?.permissions?.modifyCriteria === '1';
-  });
 
   /**
    * Format date range for display
@@ -457,7 +465,7 @@
    * Open create modal
    */
   function openCreateModal() {
-    if (!canModify.value) {
+    if (!canModifyCriteria.value) {
       $q.notify({
         type: 'warning',
         message: 'You do not have permission to create criteria',
@@ -487,7 +495,7 @@
    * Open edit modal
    */
   function openEditModal(criteria) {
-    if (!canModify.value) {
+    if (!canModifyCriteria.value) {
       $q.notify({
         type: 'warning',
         message: 'You do not have permission to edit criteria',
@@ -506,7 +514,7 @@
    * Confirm delete
    */
   function confirmDelete(criteria) {
-    if (!canModify.value) {
+    if (!canModifyCriteria.value) {
       $q.notify({
         type: 'warning',
         message: 'You do not have permission to delete criteria',
@@ -562,7 +570,7 @@
    * Switch from view to edit mode
    */
   function handleSwitchToEdit() {
-    if (!canModify.value) {
+    if (!canModifyCriteria.value) {
       $q.notify({
         type: 'warning',
         message: 'You do not have permission to edit criteria',

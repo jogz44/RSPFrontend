@@ -131,15 +131,6 @@
     return formatNumber(edu + exp + train + perf);
   };
 
-  const calculateTotal = (applicant) => {
-    if (!applicant) return '-';
-    const qs = calculateQS(applicant);
-    if (qs === '-') return '-';
-    const bei = parseFloat(applicant.behavioral) || 0;
-    const exam = parseFloat(applicant.exam) || 0;
-    return formatNumber(parseFloat(qs) + bei + exam);
-  };
-
   async function getImageBase64(url) {
     try {
       const response = await fetch(url);
@@ -178,51 +169,146 @@
 
       const qs = reportData.value.qs || {};
       const criteria = reportData.value.criteria || {};
-      const criteriaOrder = [
-        'education',
-        'experience',
-        'training',
-        'performance',
-        'behavioral',
-        'exams',
-      ];
+
+      // Define criteria that should have two columns (percentage and description)
+      const twoColumnCriteria = ['education', 'experience', 'training', 'performance'];
+
+      // IMPORTANT: We will render BEI + Exam AFTER QS Total
+      const trailingCriteriaKeys = ['behavioral', 'exams'];
+
+      // Main criteria order (WITHOUT behavioral/exams here)
+      const criteriaOrder = ['education', 'experience', 'training', 'performance'];
 
       const hasBehavioral = Array.isArray(criteria.behavioral) && criteria.behavioral.length > 0;
       const hasExam = Array.isArray(criteria.exams) && criteria.exams.length > 0;
 
-      const criteriaColumns = criteriaOrder
-        .filter((key) => Array.isArray(criteria[key]) && criteria[key].length > 0)
-        .map((key) => {
-          let weight = criteria[key]?.[0]?.weight || '';
-          if (key === 'behavioral' && hasBehavioral && hasExam) weight = '10';
-          if (key === 'exams' && hasBehavioral && hasExam) weight = '7';
+      // Build main columns (education/experience/training/performance only)
+      const criteriaColumns = [];
 
-          const label = key === 'exams' ? 'Exam' : key.charAt(0).toUpperCase() + key.slice(1);
-          return {
-            key: key === 'exams' ? 'exam' : key,
-            label,
+      criteriaOrder.forEach((key) => {
+        if (!Array.isArray(criteria[key]) || criteria[key].length === 0) return;
+
+        const weight = criteria[key]?.[0]?.weight || '';
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+
+        // two-column criteria
+        if (twoColumnCriteria.includes(key)) {
+          criteriaColumns.push({
+            key: key,
+            subKey: 'percentage',
+            label: `${label} (%)`,
             weight,
             qsText: qs[key] || '',
             items: criteria[key],
-          };
-        });
+            isTwoColumn: true,
+            columnType: 'percentage',
+            customWidth: '3%',
+          });
 
+          criteriaColumns.push({
+            key: key,
+            subKey: 'description',
+            label: `${label} Desc.`,
+            weight,
+            qsText: qs[key] || '',
+            items: criteria[key],
+            isTwoColumn: true,
+            columnType: 'description',
+            customWidth:
+              key === 'education'
+                ? '10%'
+                : key === 'experience'
+                  ? '22%'
+                  : key === 'training'
+                    ? '16%'
+                    : '10%',
+          });
+        }
+      });
+
+      // Build trailing columns (BEI / Exam) that will appear AFTER QS Total
+      const trailingColumns = [];
+
+      trailingCriteriaKeys.forEach((key) => {
+        if (!Array.isArray(criteria[key]) || criteria[key].length === 0) return;
+
+        let weight = criteria[key]?.[0]?.weight || '';
+        // keep your special weights when both exist
+        if (key === 'behavioral' && hasBehavioral && hasExam) weight = '10';
+        if (key === 'exams' && hasBehavioral && hasExam) weight = '7';
+
+        const label = key === 'behavioral' ? 'BEI' : 'Exam';
+
+        trailingColumns.push({
+          key: key === 'exams' ? 'exam' : 'behavioral',
+          label,
+          weight,
+          qsText: qs[key] || '',
+          items: criteria[key],
+          isTwoColumn: false,
+          customWidth: '8%',
+        });
+      });
+
+      const customLayout = {
+        hLineWidth: function () {
+          return 0.5;
+        },
+        vLineWidth: function () {
+          return 0.5;
+        },
+        hLineColor: function () {
+          return '#000';
+        },
+        vLineColor: function () {
+          return '#000';
+        },
+        paddingLeft: function () {
+          return 4;
+        },
+        paddingRight: function () {
+          return 4;
+        },
+        paddingTop: function () {
+          return 2;
+        },
+        paddingBottom: function () {
+          return 2;
+        },
+        fillColor: function () {
+          return null;
+        },
+      };
+
+      // Header Row 1 - Main headers
       const headerRow1 = [
+        {
+          text: 'No.',
+          style: 'tableHeader',
+          alignment: 'center',
+          rowSpan: 3,
+          border: [true, true, true, true],
+        },
         {
           text: 'Applicant',
           style: 'tableHeader',
           alignment: 'center',
-          colSpan: 2,
           rowSpan: 3,
           border: [true, true, true, true],
         },
-        {},
+
+        // MAIN columns
         ...criteriaColumns.map((c) => ({
-          text: `${c.label} (${c.weight}%)`,
+          text: c.isTwoColumn
+            ? `${c.label.split(' ')[0]} (${c.weight}%)`
+            : `${c.label} (${c.weight}%)`,
           style: 'tableHeader',
           alignment: 'center',
+          colSpan: c.isTwoColumn && c.columnType === 'percentage' ? 2 : 1,
           border: [true, true, true, true],
         })),
+
+        // QS Total
         {
           text: 'QS Total',
           style: 'tableHeader',
@@ -230,65 +316,219 @@
           rowSpan: 3,
           border: [true, true, true, true],
         },
-        {
-          text: 'Grand Total',
+
+        // TRAILING columns (BEI/Exam) AFTER QS Total
+        ...trailingColumns.map((c) => ({
+          text: `${c.label} (${c.weight}%)`,
           style: 'tableHeader',
           alignment: 'center',
           rowSpan: 3,
           border: [true, true, true, true],
-        },
-        {
-          text: 'Rank',
-          style: 'tableHeader',
-          alignment: 'center',
-          rowSpan: 3,
-          border: [true, true, true, true],
-        },
+        })),
       ];
 
+      // Header Row 2 - QS values
       const headerRow2 = [
         {},
         {},
+
         ...criteriaColumns.map((c) => ({
           text: c.qsText || '-',
           fontSize: 8,
           alignment: 'left',
           border: [true, true, true, false],
+          colSpan: c.isTwoColumn && c.columnType === 'percentage' ? 2 : 1,
         })),
-        {},
-        {},
-        {},
+
+        {}, // QS Total col (rowSpan)
+
+        // trailing columns rowSpan, so empty placeholders
+        ...trailingColumns.map(() => ({})),
       ];
 
+      // Header Row 3 - Percentage/Description details (nested borderless table for two-col criteria)
       const headerRow3 = [
         {},
         {},
-        ...criteriaColumns.map((c) => ({
-          text: c.items.map((i) => `${i.percentage}% - ${i.description}`).join('\n'),
-          fontSize: 7,
-          alignment: 'left',
-          border: [true, true, true, false],
-        })),
-        {},
-        {},
-        {},
+
+        ...criteriaColumns.map((c, idx) => {
+          if (c.isTwoColumn) {
+            if (c.columnType === 'percentage') {
+              const nextCol = criteriaColumns[idx + 1];
+              const isPaired =
+                nextCol &&
+                nextCol.isTwoColumn &&
+                nextCol.columnType === 'description' &&
+                nextCol.key === c.key;
+
+              if (!isPaired) {
+                return {
+                  text: c.items.map((i) => `${i.percentage}%`).join('\n'),
+                  fontSize: 7,
+                  alignment: 'left',
+                  border: [true, true, true, true],
+                };
+              }
+
+              return {
+                colSpan: 2,
+                border: [true, true, true, true], // only outer border
+                table: {
+                  widths: ['20%', '80%'],
+                  body: c.items.map((i) => [
+                    {
+                      text: `${i.percentage}%`,
+                      fontSize: 7,
+                      alignment: 'center',
+                      margin: [0, 0, 0, 0],
+                    },
+                    {
+                      text: i.description || '',
+                      fontSize: 7,
+                      alignment: 'left',
+                      margin: [0, 0, 0, 0],
+                    },
+                  ]),
+                },
+                layout: {
+                  hLineWidth: () => 0,
+                  vLineWidth: () => 0,
+                  paddingLeft: () => 0,
+                  paddingRight: () => 0,
+                  paddingTop: () => 0,
+                  paddingBottom: () => 0,
+                },
+              };
+            }
+
+            return {};
+          }
+
+          return {
+            text: c.items.map((i) => `${i.percentage}% - ${i.description}`).join('\n'),
+            fontSize: 7,
+            alignment: 'left',
+            border: [true, true, true, true],
+          };
+        }),
+
+        {}, // QS Total col (rowSpan)
+
+        // trailing columns rowSpan, so empty placeholders
+        ...trailingColumns.map(() => ({})),
       ];
 
-      const rows = [
-        headerRow1,
-        headerRow2,
-        headerRow3,
-        ...applicants.map((a, index) => [
-          { text: String(index + 1), alignment: 'center' },
-          toUpper(`${a.firstname ?? ''} ${a.lastname ?? ''}`.trim()),
-          ...criteriaColumns.map((c) => formatNumber(a[c.key] ?? '')),
-          calculateQS(a),
-          calculateTotal(a),
-          formatNumber(a.ranking ?? ''),
-        ]),
-      ];
+      // Prepare data rows for applicants
+      const dataRows = applicants.map((a, index) => {
+        const row = [
+          { text: String(index + 1), alignment: 'center', border: [true, true, true, true] },
+          {
+            text: toUpper(`${a.firstname ?? ''} ${a.lastname ?? ''}`.trim()),
+            border: [true, true, true, true],
+          },
+        ];
 
-      const colWidths = ['3%', '15%', ...criteriaColumns.map(() => '*'), '5%', '5%', '5%'];
+        // MAIN criteria values
+        criteriaColumns.forEach((c, idx) => {
+          if (c.isTwoColumn) {
+            if (c.columnType === 'percentage') {
+              const nextCol = criteriaColumns[idx + 1];
+              const shouldSpan =
+                nextCol &&
+                nextCol.isTwoColumn &&
+                nextCol.columnType === 'description' &&
+                nextCol.key === c.key;
+
+              if (shouldSpan) {
+                row.push({
+                  text: formatNumber(a[c.key] ?? ''),
+                  alignment: 'center',
+                  colSpan: 2,
+                  border: [true, true, true, true],
+                });
+                row.push({});
+              } else {
+                row.push({
+                  text: formatNumber(a[c.key] ?? ''),
+                  alignment: 'center',
+                  border: [true, true, true, true],
+                });
+              }
+            } else {
+              const prevCol = criteriaColumns[idx - 1];
+              const isSpanned =
+                prevCol &&
+                prevCol.isTwoColumn &&
+                prevCol.columnType === 'percentage' &&
+                prevCol.key === c.key;
+
+              if (!isSpanned) {
+                row.push({ text: '', alignment: 'center', border: [true, true, true, true] });
+              }
+            }
+          } else {
+            row.push({
+              text: formatNumber(a[c.key] ?? ''),
+              alignment: 'center',
+              border: [true, true, true, true],
+            });
+          }
+        });
+
+        // QS total
+        row.push({
+          text: calculateQS(a),
+          alignment: 'center',
+          border: [true, true, true, true],
+        });
+
+        // TRAILING values (BEI/Exam) after QS Total
+        trailingColumns.forEach((c) => {
+          row.push({
+            text: formatNumber(a[c.key] ?? ''),
+            alignment: 'center',
+            border: [true, true, true, true],
+          });
+        });
+
+        return row;
+      });
+
+      const rows = [headerRow1, headerRow2, headerRow3, ...dataRows];
+
+      // Column widths
+      const colWidths = ['3%', '15%'];
+
+      // MAIN widths
+      criteriaColumns.forEach((c, idx) => {
+        if (c.isTwoColumn && c.columnType === 'percentage') {
+          const nextCol = criteriaColumns[idx + 1];
+          if (
+            nextCol &&
+            nextCol.isTwoColumn &&
+            nextCol.columnType === 'description' &&
+            nextCol.key === c.key
+          ) {
+            colWidths.push(c.customWidth || '3%');
+            colWidths.push(nextCol.customWidth || '12%');
+          } else {
+            colWidths.push(c.customWidth || '3%');
+            colWidths.push('12%');
+          }
+        } else if (c.isTwoColumn && c.columnType === 'description') {
+          return;
+        } else {
+          colWidths.push(c.customWidth || '8%');
+        }
+      });
+
+      // QS Total width
+      colWidths.push('6%');
+
+      // trailing widths
+      trailingColumns.forEach((c) => {
+        colWidths.push(c.customWidth || '8%');
+      });
 
       const docDefinition = {
         pageSize: 'LEGAL',
@@ -309,7 +549,6 @@
                   },
                 ],
               },
-
               {
                 margin: [72, -65, 72, 0],
                 columns: [
@@ -317,18 +556,8 @@
                     width: 65,
                     stack: [
                       {
-                        canvas: [
-                          {
-                            type: 'rect',
-                            x: 0,
-                            y: 0,
-                            w: 75,
-                            h: 80,
-                            color: '#ffffff',
-                          },
-                        ],
+                        canvas: [{ type: 'rect', x: 0, y: 0, w: 75, h: 80, color: '#ffffff' }],
                       },
-
                       ...(logoBase64
                         ? [
                             {
@@ -438,51 +667,22 @@
           },
           {
             table: {
-              headerRows: 0,
+              headerRows: 3,
               widths: colWidths,
               body: rows,
             },
-            layout: {
-              hLineWidth: () => 0.5,
-              vLineWidth: () => 0.5,
-              hLineColor: () => '#000',
-              vLineColor: () => '#000',
-              paddingLeft: () => 4,
-              paddingRight: () => 4,
-              paddingTop: () => 2,
-              paddingBottom: () => 2,
-              fillColor: () => null,
-              hLineWhenSplit: false,
-            },
+            layout: customLayout,
           },
           {
             unbreakable: true,
             margin: [0, 20, 0, 0],
             stack: [
+              { text: signatoryName.value || '', alignment: 'center', bold: true, fontSize: 9 },
               {
-                text: signatoryName.value || '',
-                alignment: 'center',
-                bold: true,
-                fontSize: 9,
-              },
-              {
-                canvas: [
-                  {
-                    type: 'line',
-                    x1: 345,
-                    y1: 0,
-                    x2: 520,
-                    y2: 0,
-                    lineWidth: 1,
-                  },
-                ],
+                canvas: [{ type: 'line', x1: 345, y1: 0, x2: 520, y2: 0, lineWidth: 1 }],
                 margin: [0, 4, 0, 4],
               },
-              {
-                text: signatoryPosition.value || '',
-                alignment: 'center',
-                fontSize: 8,
-              },
+              { text: signatoryPosition.value || '', alignment: 'center', fontSize: 8 },
               {
                 text: signatoryRepresentative.value || '',
                 alignment: 'center',

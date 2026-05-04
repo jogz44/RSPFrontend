@@ -108,8 +108,10 @@
                     </q-td>
                   </template>
 
+                  <!-- Funded Column with Permission Restriction -->
                   <template v-slot:body-cell-fd="props">
                     <q-td :props="props">
+                      <!-- Show toggle only if user has modify permission -->
                       <template v-if="canModifyPlantilla">
                         <template v-if="props.row.Name1 && props.row.Name1 !== ''">
                           <q-toggle
@@ -148,6 +150,7 @@
                           </q-toggle>
                         </template>
                       </template>
+                      <!-- Read-only view for users without modify permission -->
                       <template v-else>
                         <q-badge
                           rounded
@@ -159,6 +162,7 @@
                     </q-td>
                   </template>
 
+                  <!-- Status Column -->
                   <template v-slot:body-cell-Status="props">
                     <q-td :props="props" style="width: 70px; white-space: normal">
                       <q-badge
@@ -190,48 +194,60 @@
                     </q-td>
                   </template>
 
-                  <!-- Action Buttons -->
+                  <!-- Action Buttons with Permission Restrictions -->
                   <template v-slot:body-cell-action="props">
                     <q-td :props="props" class="q-gutter-x-sm">
-                      <!-- Show job post button only if Funded==1, Name1 is null, and there is no existing job post for this funded position -->
-                      <q-btn
-                        v-if="
-                          canModifyPlantilla &&
-                          props.row.Funded == '1' &&
-                          !props.row.Name1 &&
-                          !hasJobPost(props.row)
-                        "
-                        flat
-                        dense
-                        round
-                        color="green"
-                        class="bg-green-1"
-                        icon="post_add"
-                        @click="viewPosition(props.row)"
-                      >
-                        <q-tooltip>Create Job Post</q-tooltip>
-                      </q-btn>
+                      <!-- Modify Actions - only if user has modify permission -->
+                      <template v-if="canModifyPlantilla">
+                        <!-- Create Job Post button -->
+                        <q-btn
+                          v-if="
+                            props.row.Funded == '1' && !props.row.Name1 && !hasJobPost(props.row)
+                          "
+                          flat
+                          dense
+                          round
+                          color="green"
+                          class="bg-green-1"
+                          icon="post_add"
+                          @click="viewPosition(props.row)"
+                        >
+                          <q-tooltip>Create Job Post</q-tooltip>
+                        </q-btn>
 
-                      <!-- Add Employee button - show only if Funded==1, Name1 is empty, and user has permission -->
-                      <q-btn
-                        v-if="
-                          canModifyPlantilla &&
-                          props.row.Funded == '1' &&
-                          !props.row.Name1 &&
-                          !hasJobPost(props.row)
-                        "
-                        flat
-                        dense
-                        round
-                        color="purple"
-                        class="bg-purple-1"
-                        icon="person_add"
-                        @click="openAddEmployeeModal(props.row)"
-                      >
-                        <q-tooltip>Add Employee</q-tooltip>
-                      </q-btn>
+                        <!-- Add Employee button -->
+                        <q-btn
+                          v-if="
+                            props.row.Funded == '1' && !props.row.Name1 && !hasJobPost(props.row)
+                          "
+                          flat
+                          dense
+                          round
+                          color="purple"
+                          class="bg-purple-1"
+                          icon="person_add"
+                          @click="openAddEmployeeModal(props.row)"
+                        >
+                          <q-tooltip>Add Employee</q-tooltip>
+                        </q-btn>
 
-                      <!-- Show view job post icon if job post exists -->
+                        <!-- Edit Reports button -->
+                        <q-btn
+                          v-if="props.row.Name1"
+                          flat
+                          dense
+                          round
+                          color="orange"
+                          class="bg-orange-1"
+                          icon="edit"
+                          @click="editPosition(props.row)"
+                        >
+                          <q-tooltip>Edit Reports</q-tooltip>
+                        </q-btn>
+                      </template>
+
+                      <!-- View Actions - visible to all with view permission -->
+                      <!-- View Job Post button -->
                       <q-btn
                         v-if="hasJobPost(props.row)"
                         flat
@@ -245,9 +261,9 @@
                         <q-tooltip>View Job Post</q-tooltip>
                       </q-btn>
 
-                      <!-- Show qualification/view if Funded==1 and Name1 exists -->
+                      <!-- View Qualification Standard button -->
                       <q-btn
-                        v-if="canModifyPlantilla && props.row.Funded == '1' && props.row.Name1"
+                        v-if="props.row.Funded == '1' && props.row.Name1"
                         flat
                         dense
                         round
@@ -259,9 +275,9 @@
                         <q-tooltip>View Qualification Standard</q-tooltip>
                       </q-btn>
 
-                      <!-- Print PDS button - only if modify permission -->
+                      <!-- Print Reports button - only if user has report permission -->
                       <q-btn
-                        v-if="canModifyPlantilla && props.row.Name1"
+                        v-if="props.row.Name1 && canReportPlantilla"
                         flat
                         dense
                         round
@@ -271,19 +287,6 @@
                         @click="printPosition(props.row)"
                       >
                         <q-tooltip>Print Reports</q-tooltip>
-                      </q-btn>
-
-                      <q-btn
-                        v-if="canModifyPlantilla && props.row.Name1"
-                        flat
-                        dense
-                        round
-                        color="orange"
-                        class="bg-orange-1"
-                        icon="edit"
-                        @click="editPosition(props.row)"
-                      >
-                        <q-tooltip>Edit Reports</q-tooltip>
                       </q-btn>
                     </q-td>
                   </template>
@@ -662,21 +665,23 @@
   import { useJobPostStore } from 'stores/jobPostStore';
   import { toast } from 'src/boot/toast';
   import axios from 'axios';
-  // import { useLogsStore } from 'stores/logsStore';
   import { useQuasar } from 'quasar';
   import { LocalStorage } from 'quasar';
 
   const router = useRouter();
   const authStore = useAuthStore();
   const usePlantilla = usePlantillaStore();
-  // const logStore = useLogsStore();
   const jobPostStore = useJobPostStore();
   const isLoading = ref(false);
   const $q = useQuasar();
 
   // Permission checks
   const canModifyPlantilla = computed(() => {
-    return authStore.user?.permissions?.modifyPlantillaAccess == '1';
+    return authStore.user?.permissions?.modifyPlantillaAccess === '1';
+  });
+
+  const canReportPlantilla = computed(() => {
+    return authStore.user?.permissions?.reportPlantillaAccess === '1';
   });
 
   const showReportModal = ref(false);
@@ -763,7 +768,7 @@
 
   const tableKey = ref(0);
 
-  // Check if job post exists for a position by comparing with jobPostStore.jobPosts
+  // Check if job post exists for a position
   const hasJobPost = (row) => {
     if (!row || !jobPostStore.jobPosts || jobPostStore.jobPosts.length === 0) {
       return false;
@@ -898,46 +903,28 @@
     });
   });
 
-  // const handleStructureSelection = (selectedData) => {
-  //   currentStructure.value = selectedData;
-  //   clearSearchFilters();
-  // };
-//   const handleStructureSelection = async (selectedData) => {
-//   currentStructure.value = selectedData;
-//   clearSearchFilters();
+  const handleStructureSelection = async (selectedData) => {
+    clearSearchFilters();
 
-//   if (selectedData?.office) {
-//     await usePlantilla.fetchPlantilla(selectedData.office); // ✅ fetch on selection
-//     positions.value = usePlantilla.plantilla.map((item) => ({
-//       ...item,
-//       Status: item.designationStatus || 'VACANT',
-//     }));
-//     tableKey.value++;
-//   }
-// };
-const handleStructureSelection = async (selectedData) => {
-  clearSearchFilters();
+    if (!selectedData) {
+      currentStructure.value = null;
+      positions.value = [];
+      return;
+    }
 
-  if (!selectedData) {
-    currentStructure.value = null;
-    positions.value = [];
-    return;
-  }
+    const isNewOffice = currentStructure.value?.office !== selectedData.office;
+    currentStructure.value = selectedData;
 
-  const isNewOffice = currentStructure.value?.office !== selectedData.office;
-
-  currentStructure.value = selectedData;
-
-  // ✅ Only fetch from API when office changes, not on division/section/unit clicks
-  if (isNewOffice && selectedData.office) {
-    await usePlantilla.fetchPlantilla(selectedData.office);
-    positions.value = usePlantilla.plantilla.map((item) => ({
-      ...item,
-      Status: item.designationStatus || 'VACANT',
-    }));
-    tableKey.value++;
-  }
-};
+    // Only fetch from API when office changes
+    if (isNewOffice && selectedData.office) {
+      await usePlantilla.fetchPlantilla(selectedData.office);
+      positions.value = usePlantilla.plantilla.map((item) => ({
+        ...item,
+        Status: item.designationStatus || 'VACANT',
+      }));
+      tableKey.value++;
+    }
+  };
 
   const getStructureTitle = () => {
     if (!currentStructure.value) return '';
@@ -995,33 +982,19 @@ const handleStructureSelection = async (selectedData) => {
     showAddEmployeeModal.value = true;
   };
 
-  // const handleEmployeeAdded = async () => {
-  //   // Refresh plantilla data
-  //   await usePlantilla.fetchPlantilla();
-  //   positions.value = usePlantilla.plantilla.map((item) => ({
-  //     ...item,
-  //     Status: item.designationStatus || 'VACANT',
-  //   }));
+  const handleEmployeeAdded = async () => {
+    const currentOffice = currentStructure.value?.office;
+    if (currentOffice) {
+      await usePlantilla.fetchPlantilla(currentOffice);
+    }
+    positions.value = usePlantilla.plantilla.map((item) => ({
+      ...item,
+      Status: item.designationStatus || 'VACANT',
+    }));
+    await jobPostStore.job_post();
+    tableKey.value++;
+  };
 
-  //   // Refresh job posts
-  //   await jobPostStore.job_post();
-
-  //   // Force table re-render
-  //   tableKey.value++;
-  // };
-// handleEmployeeAdded - pass the current office
-const handleEmployeeAdded = async () => {
-  const currentOffice = currentStructure.value?.office;
-  if (currentOffice) {
-    await usePlantilla.fetchPlantilla(currentOffice); // ✅ pass office
-  }
-  positions.value = usePlantilla.plantilla.map((item) => ({
-    ...item,
-    Status: item.designationStatus || 'VACANT',
-  }));
-  await jobPostStore.job_post();
-  tableKey.value++;
-};
   const printPosition = async (row) => {
     try {
       const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
@@ -1105,30 +1078,14 @@ const handleEmployeeAdded = async () => {
         Training: qsCriteria.value.Training,
       };
 
-      // Create the job post
       await jobPostStore.insertJobPost({
         jobBatch: jobBatch,
         jobCriteria,
       });
 
-
-      // Close modal first
-      // showVacantPositionModal.value = false;
-
-      // // Add small delay to ensure modal closes
-      // await new Promise((resolve) => setTimeout(resolve, 300));
-      // await usePlantilla.fetchPlantilla();
-      // positions.value = usePlantilla.plantilla.map((item) => ({
-      //   ...item,
-      //   Status: item.designationStatus || 'VACANT',
-      // }));
-
       showVacantPositionModal.value = false;
-
-      // Add small delay to ensure modal closes
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // pass the current selected office instead of calling without argument
       const currentOffice = currentStructure.value?.office;
       if (currentOffice) {
         await usePlantilla.fetchPlantilla(currentOffice);
@@ -1138,13 +1095,9 @@ const handleEmployeeAdded = async () => {
         }));
       }
 
-      // Refresh job posts from API
       await jobPostStore.job_post();
-
-      // Force table re-render
       tableKey.value++;
 
-      // Show success notification
       $q.notify({
         type: 'positive',
         message: 'Job post created successfully!',
@@ -1153,7 +1106,6 @@ const handleEmployeeAdded = async () => {
       });
     } catch (error) {
       console.error('Error creating job post:', error);
-
       $q.notify({
         type: 'negative',
         message: error.response?.data?.message || 'Failed to create job post. Please try again.',
@@ -1173,11 +1125,7 @@ const handleEmployeeAdded = async () => {
         return reject(new Error(errorMessage));
       }
 
-      // const token = document.cookie
-      //   .split('; ')
-      //   .find((row) => row.startsWith('admin_token='))
-      //   ?.split('=')[1];
-    const token = LocalStorage.getItem('admin_token');
+      const token = LocalStorage.getItem('admin_token');
       const requestConfig = {
         headers: {
           'Content-Type': 'application/json',
@@ -1189,7 +1137,7 @@ const handleEmployeeAdded = async () => {
         PositionID: positionId,
         Funded: !!isFunded,
         ItemNo: itemNo,
-        ID: id, // Include ID in payload
+        ID: id,
       };
 
       axios
@@ -1257,11 +1205,10 @@ const handleEmployeeAdded = async () => {
           fundedToggleRow.value.PositionID,
           fundedToggleValue.value === '1',
           fundedToggleRow.value.ItemNo,
-          fundedToggleRow.value.ID, // Include ID parameter
+          fundedToggleRow.value.ID,
         );
 
         fundedToggleRow.value.Funded = fundedToggleValue.value;
-
         await jobPostStore.job_post();
         tableKey.value++;
 
@@ -1286,12 +1233,6 @@ const handleEmployeeAdded = async () => {
     postJobDetails.value.endedDate = today;
 
     try {
-      // await usePlantilla.fetchPlantilla();
-      // positions.value = usePlantilla.plantilla.map((item) => ({
-      //   ...item,
-      //   Status: item.designationStatus || 'VACANT',
-      // }));
-
       await jobPostStore.job_post();
     } catch (error) {
       console.error('Error initializing component:', error);

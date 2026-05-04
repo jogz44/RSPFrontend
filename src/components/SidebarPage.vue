@@ -202,25 +202,32 @@
       authStore.user?.permissions?.modifyJobpostAccess == '1',
   );
 
+  const hasApplicantAccess = computed(
+    () =>
+      authStore.user?.permissions?.viewApplicantAccess == '1' ||
+      authStore.user?.permissions?.modifyApplicantAccess == '1' ||
+      authStore.user?.permissions?.reportApplicantAccess === '1',
+  );
+
   // ============================================================================
   // EXAM SCORE PERMISSIONS
   // ============================================================================
 
-  // const hasExamAccess = computed(
-  //   () =>
-  //     authStore.user?.permissions?.viewExam === '1' ||
-  //     authStore.user?.permissions?.modifyExam === '1',
-  // );
+  const hasExamAccess = computed(
+    () =>
+      authStore.user?.permissions?.viewExam === '1' ||
+      authStore.user?.permissions?.modifyExam === '1',
+  );
 
   // ============================================================================
   // SCHEDULE PERMISSIONS
   // ============================================================================
 
-  // const hasScheduleAccess = computed(
-  //   () =>
-  //     authStore.user?.permissions?.viewSchedule === '1' ||
-  //     authStore.user?.permissions?.modifySchedule === '1',
-  // );
+  const hasScheduleAccess = computed(
+    () =>
+      authStore.user?.permissions?.viewSchedule === '1' ||
+      authStore.user?.permissions?.modifySchedule === '1',
+  );
 
   // ============================================================================
   // RATER MANAGEMENT PERMISSIONS
@@ -276,7 +283,9 @@
     ...(hasJobPostAccess.value
       ? [{ label: 'Job Posts', route: '/job-post', icon: 'post_add' }]
       : []),
-    { label: 'Applicant', route: '/applicant', icon: 'group' },
+    ...(hasApplicantAccess.value
+      ? [{ label: 'Applicant', route: '/applicant', icon: 'group' }]
+      : []),
   ]);
 
   // ============================================================================

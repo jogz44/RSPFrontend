@@ -38,7 +38,9 @@
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
+            <!-- Schedule Interview Button - Only show if user has modify permission -->
             <q-btn
+              v-if="canModifySchedule"
               color="primary"
               label="Schedule Interview"
               icon="event"
@@ -105,12 +107,14 @@
                   >
                     <q-tooltip>View Details</q-tooltip>
                   </q-btn>
-                     <q-btn
+                  <!-- Cancel Interview Button - Only show if user has modify permission -->
+                  <q-btn
+                    v-if="canModifySchedule"
                     round
                     flat
                     color="red"
                     size="sm"
-                    class="bg-blue-1"
+                    class="bg-red-1"
                     icon="cancel"
                     @click="cancelInterview(props.row.schedule_id)"
                   >
@@ -147,7 +151,9 @@
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
+            <!-- Schedule Exam Button - Only show if user has modify permission -->
             <q-btn
+              v-if="canModifySchedule"
               color="primary"
               label="Schedule Exam"
               icon="assignment"
@@ -212,8 +218,9 @@
                   >
                     <q-tooltip>View Details</q-tooltip>
                   </q-btn>
-
-                        <q-btn
+                  <!-- Cancel Exam Button - Only show if user has modify permission -->
+                  <q-btn
+                    v-if="canModifySchedule"
                     round
                     flat
                     color="red"
@@ -241,8 +248,8 @@
       </q-tab-panels>
     </div>
 
-    <!-- ======================== INTERVIEW: Schedule Dialog ======================== -->
-    <q-dialog v-model="showScheduleDialog" persistent>
+    <!-- ======================== INTERVIEW: Schedule Dialog - Only show if user has modify permission ======================== -->
+    <q-dialog v-if="canModifySchedule" v-model="showScheduleDialog" persistent>
       <q-card style="min-width: 700px; max-width: 90vw">
         <q-card-section class="q-pa-md">
           <div class="row justify-between items-center">
@@ -384,8 +391,8 @@
       </q-card>
     </q-dialog>
 
-    <!-- ======================== EXAM: Schedule Dialog ======================== -->
-    <q-dialog v-model="showExamScheduleDialog" persistent>
+    <!-- ======================== EXAM: Schedule Dialog - Only show if user has modify permission ======================== -->
+    <q-dialog v-if="canModifySchedule" v-model="showExamScheduleDialog" persistent>
       <q-card style="min-width: 700px; max-width: 90vw">
         <q-card-section class="q-pa-md">
           <div class="row justify-between items-center">
@@ -404,7 +411,7 @@
             placeholder="e.g., Civil Service Exam - Batch 1"
           />
           <q-input
-            v-model="examScheduleForm.venue_interview"
+            v-model="examScheduleForm.venue_exam"
             label="Venue (Optional)"
             outlined
             dense
@@ -412,7 +419,7 @@
             placeholder="e.g., City Hall Of Tagum - Conference Room"
           />
           <q-input
-            v-model="examScheduleForm.date_interview"
+            v-model="examScheduleForm.date_exam"
             label="Exam Date *"
             outlined
             dense
@@ -424,7 +431,7 @@
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                   <q-date
-                    v-model="examScheduleForm.date_interview"
+                    v-model="examScheduleForm.date_exam"
                     :options="dateOptions"
                     mask="YYYY-MM-DD"
                   >
@@ -437,7 +444,7 @@
             </template>
           </q-input>
           <q-input
-            v-model="examScheduleForm.time_interview"
+            v-model="examScheduleForm.time_exam"
             label="Exam Time (Optional)"
             outlined
             dense
@@ -448,7 +455,7 @@
             <template v-slot:append>
               <q-icon name="access_time" class="cursor-pointer">
                 <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-time v-model="examScheduleForm.time_interview" format24h :mask="'HH:mm'">
+                  <q-time v-model="examScheduleForm.time_exam" format24h :mask="'HH:mm'">
                     <div class="row items-center justify-end">
                       <q-btn v-close-popup label="Close" color="primary" flat />
                     </div>
@@ -666,7 +673,7 @@
               class="q-mb-sm"
             />
             <q-input
-              :model-value="examViewData.venue || examViewData.venue_exam || 'Not specified'"
+              :model-value="examViewData.venue_exam || 'Not specified'"
               label="Venue"
               outlined
               dense
@@ -676,7 +683,7 @@
             <div class="row q-col-gutter-sm">
               <div class="col-12 col-sm-6">
                 <q-input
-                  :model-value="formatDate(examViewData.date || examViewData.date_exam)"
+                  :model-value="formatDate(examViewData.date_exam)"
                   label="Exam Date"
                   outlined
                   dense
@@ -685,7 +692,7 @@
               </div>
               <div class="col-12 col-sm-6">
                 <q-input
-                  :model-value="formatTime(examViewData.time || examViewData.time_exam)"
+                  :model-value="formatTime(examViewData.time_exam)"
                   label="Exam Time"
                   outlined
                   dense
@@ -748,8 +755,7 @@
   import { useQuasar, date } from 'quasar';
   import { useInterviewStore } from 'stores/interviewStore';
   import { useExamScheduleStore } from 'stores/examScheduleStore';
-
-
+  import { useAuthStore } from 'stores/authStore';
 
   let searchTimeout = null;
   let examSearchTimeout = null;
@@ -757,7 +763,15 @@
   const $q = useQuasar();
   const interviewStore = useInterviewStore();
   const examStore = useExamScheduleStore();
+  const authStore = useAuthStore();
   const { formatDate: qFormatDate } = date;
+
+  // ============================================================================
+  // PERMISSION CHECK
+  // ============================================================================
+  const canModifySchedule = computed(() => {
+    return authStore.user?.permissions?.modifySchedule === '1';
+  });
 
   // ─── Tab ─────────────────────────────────────────────────────────────────────
   const activeTab = ref('interview');
@@ -797,14 +811,14 @@
 
   const examScheduleForm = ref({
     batch_name: '',
-    venue_interview: '',
-    date_interview: '',
-    time_interview: '',
+    venue_exam: '',
+    date_exam: '',
+    time_exam: '',
     selected_applicants: [],
   });
 
   const examPagination = ref({
-    sortBy: 'date_interview',
+    sortBy: 'date_exam',
     descending: false,
     page: 1,
     rowsPerPage: 10,
@@ -816,107 +830,119 @@
   const viewPagination = ref({ page: 1, rowsPerPage: 10 });
 
   // ─── Columns ──────────────────────────────────────────────────────────────────
-  const columns = [
-    {
-      name: 'batch_name',
-      label: 'Batch Name',
-      align: 'left',
-      field: 'batch_name',
-      sortable: true,
-      style: 'width: 25%',
-    },
-    {
-      name: 'applicant_no',
-      label: 'No. of Applicants',
-      align: 'center',
-      field: 'applicant_no',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'venue_interview',
-      label: 'Venue',
-      align: 'left',
-      field: 'venue_interview',
-      sortable: true,
-      style: 'width: 20%',
-    },
-    {
-      name: 'date_interview',
-      label: 'Interview Date',
-      align: 'center',
-      field: 'date_interview',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'time_interview',
-      label: 'Time',
-      align: 'center',
-      field: 'time_interview',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'action',
-      label: 'Action',
-      align: 'center',
-      field: 'action',
-      sortable: false,
-      style: 'width: 10%',
-    },
-  ];
+  const columns = computed(() => {
+    const baseColumns = [
+      {
+        name: 'batch_name',
+        label: 'Batch Name',
+        align: 'left',
+        field: 'batch_name',
+        sortable: true,
+        style: 'width: 25%',
+      },
+      {
+        name: 'applicant_no',
+        label: 'No. of Applicants',
+        align: 'center',
+        field: 'applicant_no',
+        sortable: true,
+        style: 'width: 15%',
+      },
+      {
+        name: 'venue_interview',
+        label: 'Venue',
+        align: 'left',
+        field: 'venue_interview',
+        sortable: true,
+        style: 'width: 20%',
+      },
+      {
+        name: 'date_interview',
+        label: 'Interview Date',
+        align: 'center',
+        field: 'date_interview',
+        sortable: true,
+        style: 'width: 15%',
+      },
+      {
+        name: 'time_interview',
+        label: 'Time',
+        align: 'center',
+        field: 'time_interview',
+        sortable: true,
+        style: 'width: 15%',
+      },
+    ];
+    // Only add action column if user has modify permission
+    if (canModifySchedule.value) {
+      baseColumns.push({
+        name: 'action',
+        label: 'Action',
+        align: 'center',
+        field: 'action',
+        sortable: false,
+        style: 'width: 10%',
+      });
+    }
+    return baseColumns;
+  });
 
-  const examColumns = [
-    {
-      name: 'batch_name',
-      label: 'Batch Name',
-      align: 'left',
-      field: 'batch_name',
-      sortable: true,
-      style: 'width: 25%',
-    },
-    {
-      name: 'applicant_no',
-      label: 'No. of Applicants',
-      align: 'center',
-      field: 'applicant_no',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'venue_exam',
-      label: 'Venue',
-      align: 'left',
-      field: 'venue_exam',
-      sortable: true,
-      style: 'width: 20%',
-    },
-    {
-      name: 'date_exam',
-      label: 'Exam Date',
-      align: 'center',
-      field: 'date_exam',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'time_exam',
-      label: 'Time',
-      align: 'center',
-      field: 'time_exam',
-      sortable: true,
-      style: 'width: 15%',
-    },
-    {
-      name: 'action',
-      label: 'Action',
-      align: 'center',
-      field: 'action',
-      sortable: false,
-      style: 'width: 10%',
-    },
-  ];
+  const examColumns = computed(() => {
+    const cols = [
+      {
+        name: 'batch_name',
+        label: 'Batch Name',
+        align: 'left',
+        field: 'batch_name',
+        sortable: true,
+        style: 'width: 25%',
+      },
+      {
+        name: 'applicant_no',
+        label: 'No. of Applicants',
+        align: 'center',
+        field: 'applicant_no',
+        sortable: true,
+        style: 'width: 15%',
+      },
+      {
+        name: 'venue_exam',
+        label: 'Venue',
+        align: 'left',
+        field: 'venue_exam',
+        sortable: true,
+        style: 'width: 20%',
+      },
+      {
+        name: 'date_exam',
+        label: 'Exam Date',
+        align: 'center',
+        field: 'date_exam',
+        sortable: true,
+        style: 'width: 15%',
+      },
+      {
+        name: 'time_exam',
+        label: 'Time',
+        align: 'center',
+        field: 'time_exam',
+        sortable: true,
+        style: 'width: 15%',
+      },
+    ];
+    // Only add action column if user has modify permission
+    if (canModifySchedule.value) {
+      cols.push({
+        name: 'action',
+        label: 'Action',
+        align: 'center',
+        field: 'action',
+        sortable: false,
+        style: 'width: 10%',
+      });
+    }
+    return cols;
+  });
 
   const applicantColumns = [
     {
@@ -1080,9 +1106,7 @@
   );
 
   const isExamFormValid = computed(
-    () =>
-      examScheduleForm.value.date_interview &&
-      examScheduleForm.value.selected_applicants.length > 0,
+    () => examScheduleForm.value.date_exam && examScheduleForm.value.selected_applicants.length > 0,
   );
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1143,6 +1167,15 @@
   };
 
   const openScheduleDialog = async () => {
+    // Only allow if user has modify permission
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to schedule interviews',
+        position: 'top',
+      });
+      return;
+    }
     showScheduleDialog.value = true;
     loadingInterviewApplicants.value = true;
     try {
@@ -1246,15 +1279,24 @@
   const resetExamScheduleForm = () => {
     examScheduleForm.value = {
       batch_name: '',
-      venue_interview: '',
-      date_interview: '',
-      time_interview: '',
+      venue_exam: '',
+      date_exam: '',
+      time_exam: '',
       selected_applicants: [],
     };
     examApplicantSearch.value = '';
   };
 
   const openExamScheduleDialog = async () => {
+    // Only allow if user has modify permission
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to schedule exams',
+        position: 'top',
+      });
+      return;
+    }
     showExamScheduleDialog.value = true;
     try {
       await examStore.fetchAvailableApplicants();
@@ -1283,9 +1325,9 @@
     try {
       const payload = {
         batch_name: examScheduleForm.value.batch_name || null,
-        venue_exam: examScheduleForm.value.venue_interview || null,
-        date_exam: examScheduleForm.value.date_interview,
-        time_exam: formatTimeForApi(examScheduleForm.value.time_interview),
+        venue_exam: examScheduleForm.value.venue_exam || null,
+        date_exam: examScheduleForm.value.date_exam,
+        time_exam: formatTimeForApi(examScheduleForm.value.time_exam),
         applicants: examScheduleForm.value.selected_applicants.map((a) => ({
           submission_id: a.submission_id,
           job_batches_rsp: parseInt(a.job_batches_rsp_id),
@@ -1338,98 +1380,105 @@
     }
   };
 
-      // ─── Cancel Interview ─────────────────────────────────────────────────────────
-    const cancelInterview = (scheduleId) => {
-      $q.dialog({
-        title: 'Cancel Interview',
-        message: 'Are you sure you want to cancel this interview schedule?',
-        // cancel: true,
-        persistent: true,
-        ok: {
-          label: 'Yes, Cancel It',
-          color: 'negative',
-          flat: true,
-        },
-
-        cancel: {
-          label: 'No',
-          color: 'primary',
-          flat: true,
-        },
-      }).onOk(async () => {
-        try {
-          await interviewStore.cancelInterview(scheduleId);
-          $q.notify({
-            type: 'positive',
-            message: 'Interview schedule cancelled successfully.',
-            position: 'top',
-          });
-          await interviewStore.fetchInterviews({
-            page: pagination.value.page,
-            perPage: pagination.value.rowsPerPage,
-            search: globalSearch.value,
-          });
-          pagination.value.rowsNumber = interviewStore.total;
-        } catch (e) {
-          $q.notify({
-            type: 'negative',
-            message: e?.response?.data?.message || e?.message || 'Failed to cancel interview.',
-            position: 'top',
-
-          });
-            //  console.log('Attempting to cancel interview with schedule ID:', e);
-        }
-
+  // ─── Cancel Interview ─────────────────────────────────────────────────────────
+  const cancelInterview = (scheduleId) => {
+    // Only allow if user has modify permission
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to cancel interviews',
+        position: 'top',
       });
-    };
+      return;
+    }
 
+    $q.dialog({
+      title: 'Cancel Interview',
+      message: 'Are you sure you want to cancel this interview schedule?',
+      persistent: true,
+      ok: {
+        label: 'Yes, Cancel It',
+        color: 'negative',
+        flat: true,
+      },
+      cancel: {
+        label: 'No',
+        color: 'primary',
+        flat: true,
+      },
+    }).onOk(async () => {
+      try {
+        await interviewStore.cancelInterview(scheduleId);
+        $q.notify({
+          type: 'positive',
+          message: 'Interview schedule cancelled successfully.',
+          position: 'top',
+        });
+        await interviewStore.fetchInterviews({
+          page: pagination.value.page,
+          perPage: pagination.value.rowsPerPage,
+          search: globalSearch.value,
+        });
+        pagination.value.rowsNumber = interviewStore.total;
+      } catch (e) {
+        $q.notify({
+          type: 'negative',
+          message: e?.response?.data?.message || e?.message || 'Failed to cancel interview.',
+          position: 'top',
+        });
+      }
+    });
+  };
 
-
-
-     // ─── Cancel Interview ─────────────────────────────────────────────────────────
-    const cancelExamSchedule = (scheduleExamId) => {
-      $q.dialog({
-        title: 'Cancel Examination',
-        message: 'Are you sure you want to cancel this examination schedule?',
-        // cancel: true,
-        persistent: true,
-        ok: {
-          label: 'Yes, Cancel It',
-          color: 'negative',
-          flat: true,
-        },
-
-        cancel: {
-          label: 'No',
-          color: 'primary',
-          flat: true,
-        },
-      }).onOk(async () => {
-        try {
-          await examStore.cancelExamSchedule(scheduleExamId);
-          $q.notify({
-            type: 'positive',
-            message: 'Examination schedule cancelled successfully.',
-            position: 'top',
-          });
-          await examStore.fetchExams({
-            page: examPagination.value.page,
-            perPage: examPagination.value.rowsPerPage,
-            search: globalSearch.value,
-          });
-          examPagination.value.rowsNumber = examStore.total;
-        } catch (e) {
-          $q.notify({
-            type: 'negative',
-            message: e?.response?.data?.message || e?.message || 'Failed to cancel examination.',
-            position: 'top',
-
-          });
-             console.log('Attempting to cancel examination with schedule ID:', e);
-        }
-
+  // ─── Cancel Exam Schedule ─────────────────────────────────────────────────────────
+  const cancelExamSchedule = (scheduleExamId) => {
+    // Only allow if user has modify permission
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to cancel exams',
+        position: 'top',
       });
-    };
+      return;
+    }
+
+    $q.dialog({
+      title: 'Cancel Examination',
+      message: 'Are you sure you want to cancel this examination schedule?',
+      persistent: true,
+      ok: {
+        label: 'Yes, Cancel It',
+        color: 'negative',
+        flat: true,
+      },
+      cancel: {
+        label: 'No',
+        color: 'primary',
+        flat: true,
+      },
+    }).onOk(async () => {
+      try {
+        await examStore.cancelExamSchedule(scheduleExamId);
+        $q.notify({
+          type: 'positive',
+          message: 'Examination schedule cancelled successfully.',
+          position: 'top',
+        });
+        await examStore.fetchExams({
+          page: examPagination.value.page,
+          perPage: examPagination.value.rowsPerPage,
+          search: examGlobalSearch.value,
+        });
+        examPagination.value.rowsNumber = examStore.total;
+      } catch (e) {
+        $q.notify({
+          type: 'negative',
+          message: e?.response?.data?.message || e?.message || 'Failed to cancel examination.',
+          position: 'top',
+        });
+      }
+    });
+  };
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
   onMounted(async () => {
@@ -1445,20 +1494,6 @@
     await examStore.fetchExams({ page: 1, perPage: examPagination.value.rowsPerPage, search: '' });
     examPagination.value.rowsNumber = examStore.total;
   });
-   // ─── Lifecycle ────────────────────────────────────────────────────────────────
-  // onMounted(async () => {
-  //   // Load interview list
-  //   await interviewStore.fetchInterviews({
-  //     page: 1,
-  //     perPage: pagination.value.rowsPerPage,
-  //     search: '',
-  //   });
-  //   pagination.value.rowsNumber = interviewStore.total;
-
-  //   // Load exam list
-  //   await examStore.fetchExams({ page: 1, perPage: examPagination.value.rowsPerPage, search: '' });
-  //   examPagination.value.rowsNumber = examStore.total;
-  // });
 </script>
 
 <style scoped lang="scss">
@@ -1563,6 +1598,9 @@
   }
   .bg-green-1 {
     background-color: rgba(76, 175, 80, 0.1);
+  }
+  .bg-red-1 {
+    background-color: rgba(244, 67, 54, 0.1);
   }
 
   @media (max-width: 1024px) {

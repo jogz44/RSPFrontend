@@ -36,8 +36,16 @@
         </q-select>
       </div>
 
+      <!-- Add Score Button - Only show if user has modify permission -->
       <div class="col-12 col-md-4 flex justify-end">
-        <q-btn rounded unelevated color="primary" icon="add" @click="openAddDialog">
+        <q-btn
+          v-if="canModifyExam"
+          rounded
+          unelevated
+          color="primary"
+          icon="add"
+          @click="openAddDialog"
+        >
           <span class="gt-xs q-ml-xs">Add Score</span>
         </q-btn>
       </div>
@@ -86,7 +94,9 @@
               <q-tooltip>View Details</q-tooltip>
             </q-btn>
 
+            <!-- Edit Button - Only show if user has modify permission -->
             <q-btn
+              v-if="canModifyExam"
               flat
               round
               dense
@@ -97,7 +107,10 @@
             >
               <q-tooltip>Update</q-tooltip>
             </q-btn>
+
+            <!-- Delete Button - Only show if user has modify permission -->
             <q-btn
+              v-if="canModifyExam"
               flat
               round
               dense
@@ -118,9 +131,10 @@
     </div>
 
     <!-- ================================================================
-         ADD SCORE DIALOG
+         ADD SCORE DIALOG - Only show if user has modify permission
          ================================================================ -->
     <q-dialog
+      v-if="canModifyExam"
       v-model="dialog"
       persistent
       maximized
@@ -578,9 +592,10 @@
     </q-dialog>
 
     <!-- ================================================================
-         EDIT DIALOG
+         EDIT DIALOG - Only show if user has modify permission
          ================================================================ -->
     <q-dialog
+      v-if="canModifyExam"
       v-model="editDetailDialog"
       persistent
       :maximized="$q.screen.lt.sm"
@@ -751,13 +766,15 @@
 
 <script>
   import { useExamScoreStore } from 'src/stores/examScoreStore';
+  import { useAuthStore } from 'stores/authStore';
 
   export default {
     name: 'ExamScorePage',
 
     setup() {
       const store = useExamScoreStore();
-      return { store };
+      const authStore = useAuthStore();
+      return { store, authStore };
     },
 
     data() {
@@ -827,6 +844,11 @@
     },
 
     computed: {
+      // Permission check for modify exam
+      canModifyExam() {
+        return this.authStore.user?.permissions?.modifyExam === '1';
+      },
+
       passingStatus() {
         const score = Number(this.editForm.exam_score);
         const total = Number(this.editForm.exam_total_score);
@@ -883,7 +905,7 @@
       },
 
       columns() {
-        return [
+        const cols = [
           {
             name: 'lastname',
             label: 'Last Name',
@@ -920,8 +942,18 @@
             field: 'exam_score',
             sortable: true,
           },
-          { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
         ];
+        // Only add action column if user has modify permission
+        if (this.canModifyExam) {
+          cols.push({
+            name: 'action',
+            label: 'Action',
+            align: 'center',
+            field: 'action',
+            sortable: false,
+          });
+        }
+        return cols;
       },
 
       applicantColumns() {
@@ -1050,6 +1082,15 @@
 
     methods: {
       editScore(row) {
+        // Only allow if user has modify permission
+        if (!this.canModifyExam) {
+          this.$q.notify({
+            type: 'warning',
+            message: 'You do not have permission to edit exam scores',
+            position: 'top',
+          });
+          return;
+        }
         this.selectedScore = row;
         this.editForm = {
           exam_type: row.exam_type || '',
@@ -1084,6 +1125,16 @@
       },
 
       async deleteScore(applicantExamScoreId) {
+        // Only allow if user has modify permission
+        if (!this.canModifyExam) {
+          this.$q.notify({
+            type: 'warning',
+            message: 'You do not have permission to delete exam scores',
+            position: 'top',
+          });
+          return;
+        }
+
         this.$q
           .dialog({
             title: 'Confirm Delete',
@@ -1149,6 +1200,16 @@
       },
 
       async openAddDialog() {
+        // Only allow if user has modify permission
+        if (!this.canModifyExam) {
+          this.$q.notify({
+            type: 'warning',
+            message: 'You do not have permission to add exam scores',
+            position: 'top',
+          });
+          return;
+        }
+
         this.session = {
           exam_title: '',
           exam_type: null,

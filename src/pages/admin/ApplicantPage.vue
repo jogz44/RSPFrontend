@@ -28,8 +28,10 @@
         </template>
       </q-input>
 
+      <!-- Report Buttons - Only show if user has report permission -->
       <div class="row q-gutter-sm">
         <q-btn
+          v-if="canReportApplicant"
           rounded
           unelevated
           color="orange"
@@ -40,6 +42,7 @@
           <q-tooltip>List of Qualified Applicants</q-tooltip>
         </q-btn>
         <q-btn
+          v-if="canReportApplicant"
           rounded
           unelevated
           color="orange"
@@ -254,10 +257,11 @@
               </q-td>
             </template>
 
-            <!-- Delete Action Column -->
+            <!-- Delete Action Column - Only show if user has modify permission -->
             <template #body-cell-action="p">
               <q-td :props="p">
                 <q-btn
+                  v-if="canModifyApplicant"
                   flat
                   round
                   dense
@@ -287,8 +291,8 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="showDeleteConfirmDialog" persistent>
+    <!-- Delete Confirmation Dialog - Only show if user has modify permission -->
+    <q-dialog v-if="canModifyApplicant" v-model="showDeleteConfirmDialog" persistent>
       <q-card>
         <q-card-section class="row items-center q-pb-none">
           <q-icon name="warning" color="negative" size="24px" class="q-mr-sm" />
@@ -335,9 +339,9 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- Qualified Report Modal                                           -->
+    <!-- Qualified Report Modal - Only show if user has report permission -->
     <!-- ================================================================ -->
-    <q-dialog v-model="showQualifiedModal" persistent>
+    <q-dialog v-if="canReportApplicant" v-model="showQualifiedModal" persistent>
       <q-card class="report-select-card">
         <q-card-section class="dialog-header header-add">
           <div class="row items-center no-wrap">
@@ -415,9 +419,9 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- Unqualified Report Modal                                         -->
+    <!-- Unqualified Report Modal - Only show if user has report permission -->
     <!-- ================================================================ -->
-    <q-dialog v-model="showUnqualifiedModal" persistent>
+    <q-dialog v-if="canReportApplicant" v-model="showUnqualifiedModal" persistent>
       <q-card class="report-select-card">
         <q-card-section class="dialog-header header-edit">
           <div class="row items-center no-wrap">
@@ -492,10 +496,10 @@
     </q-dialog>
 
     <!-- Report sub-dialogs -->
-    <q-dialog v-model="showQualifiedReportDialog" persistent>
+    <q-dialog v-if="canReportApplicant" v-model="showQualifiedReportDialog" persistent>
       <QualifiedReport :publicationDate="selectedQualifiedPublicationDate" />
     </q-dialog>
-    <q-dialog v-model="showUnqualifiedReportDialog" persistent>
+    <q-dialog v-if="canReportApplicant" v-model="showUnqualifiedReportDialog" persistent>
       <UnqualifiedReport :publicationDate="selectedUnqualifiedPublicationDate" />
     </q-dialog>
     <q-dialog v-model="showPrintDialog" persistent>
@@ -516,12 +520,28 @@
   import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
+  import { useAuthStore } from 'stores/authStore';
   import { useQuasar } from 'quasar';
 
   let searchTimeout = null;
   const applicantStore = useApplicantStore();
   const summaryReportStore = useSummaryReportStore();
+  const authStore = useAuthStore();
   const $q = useQuasar();
+
+  // ============================================================================
+  // PERMISSION CHECKS
+  // ============================================================================
+
+  // Permission for modifying applicants (delete applications)
+  const canModifyApplicant = computed(() => {
+    return authStore.user?.permissions?.modifyApplicantAccess === '1';
+  });
+
+  // Permission for viewing applicant reports (qualified/unqualified reports)
+  const canReportApplicant = computed(() => {
+    return authStore.user?.permissions?.reportApplicantAccess === '1';
+  });
 
   const globalSearch = ref('');
   const showDetailDialog = ref(false);
@@ -590,13 +610,25 @@
     { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
   ]);
 
-  const jobColumns = [
-    { name: 'submission_id', label: 'Submission ID', field: 'submission_id', align: 'left' },
-    { name: 'position', label: 'Position', field: 'position', align: 'left' },
-    { name: 'office', label: 'Office', field: 'office', align: 'left' },
-    { name: 'status', label: 'Status', field: 'status', align: 'center' },
-    { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
-  ];
+  const jobColumns = computed(() => {
+    const cols = [
+      { name: 'submission_id', label: 'Submission ID', field: 'submission_id', align: 'left' },
+      { name: 'position', label: 'Position', field: 'position', align: 'left' },
+      { name: 'office', label: 'Office', field: 'office', align: 'left' },
+      { name: 'status', label: 'Status', field: 'status', align: 'center' },
+    ];
+    // Only add action column if user has modify permission
+    if (canModifyApplicant.value) {
+      cols.push({
+        name: 'action',
+        label: 'Action',
+        align: 'center',
+        field: 'action',
+        sortable: false,
+      });
+    }
+    return cols;
+  });
 
   const applicantJobRows = computed(() => {
     if (!selectedApplicant.value) return [];
@@ -654,12 +686,30 @@
   });
 
   const openQualifiedReportDialog = async () => {
+    // Only allow if user has report permission
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to view reports',
+        position: 'top',
+      });
+      return;
+    }
     showQualifiedModal.value = true;
     selectedQualifiedPublicationDate.value = null;
     await fetchPublicationDates();
   };
 
   const openUnqualifiedReportDialog = async () => {
+    // Only allow if user has report permission
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to view reports',
+        position: 'top',
+      });
+      return;
+    }
     showUnqualifiedModal.value = true;
     selectedUnqualifiedPublicationDate.value = null;
     await fetchPublicationDates();
@@ -755,6 +805,15 @@
 
   // Delete Application Functions
   const confirmDeleteApplication = (jobRow) => {
+    // Only allow if user has modify permission
+    if (!canModifyApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to delete applications',
+        position: 'top',
+      });
+      return;
+    }
     deletingApplicationInfo.value = jobRow;
     showDeleteConfirmDialog.value = true;
   };
