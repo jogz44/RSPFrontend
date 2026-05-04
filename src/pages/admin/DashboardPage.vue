@@ -1,30 +1,8 @@
 <template>
   <q-page>
+    <!-- User has permission to view dashboard -->
     <div v-if="authStore.user && hasViewDashboardAccess" class="column no-gap">
       <!-- Welcome Message -->
-      <!-- <q-img
-        src="tgch.png"
-        class="q-pa-md column justify-center items-start"
-        style="height: 100px; opacity: 1.5"
-      >
-        <div
-          v-if="authStore.user"
-          class="column justify-center"
-          style="
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-          "
-        >
-          <div class="text-h text-weight-bolder q-ma-none">WELCOME!</div>
-        </div>
-        <div v-else class="q-mb-xs q-gutter-xs">
-          <h4 class="text-h5 text-weight-bolder q-my-none"><q-skeleton type="text" /></h4>
-          <p class="text-body2"><q-skeleton type="text" /></p>
-        </div>
-      </q-img> -->
-
       <div class="text-h5 text-weight-bolder text-primary q-ma-md">DASHBOARD</div>
 
       <!-- INTERNAL/EXTERNAL BADGES - Simplified -->
@@ -141,51 +119,6 @@
         <div class="col-8 flex flex-center"><StatusOverview class="full-width" /></div>
       </div>
 
-      <!-- STATISTICS HEADER -->
-      <!-- <div class="row justify-start items-start q-my-sm">
-        <div class="q-pa-xs">
-          <q-icon name="stacked_line_chart" size="40px" />
-        </div>
-        <div class="column">
-          <h5 class="text-weight-bold q-ma-none">Statistics Overview</h5>
-          <div class="row justify-start items-center q-gutter-x-xs">
-            <q-chip dense class="q-my-xs row justify-start">
-              Total Positions:
-              <span class="text-primary text-weight-bold q-ml-xs">
-                {{ Number(dashboardStore.fundedData?.total_positions || 0).toLocaleString() }}
-              </span>
-            </q-chip>
-            <q-chip dense class="q-my-xs row justify-start">
-              Funded:
-              <span class="text-blue-6 text-weight-bold q-ml-xs">
-                {{ Number(dashboardStore.fundedData?.funded || 0).toLocaleString() }}
-              </span>
-            </q-chip>
-            <q-chip dense class="q-my-xs row justify-start">
-              Unfunded:
-              <span class="text-amber-6 text-weight-bold q-ml-xs">
-                {{ Number(dashboardStore.fundedData?.unfunded || 0).toLocaleString() }}
-              </span>
-            </q-chip>
-            <q-chip dense class="q-my-xs row justify-start">
-              Occupied:
-              <span class="text-teal-6 text-weight-bold q-ml-xs">
-                {{ Number(dashboardStore.fundedData?.occupied || 0).toLocaleString() }}
-              </span>
-            </q-chip>
-            <q-chip dense class="q-my-xs row justify-start">
-              Vacant Funded:
-              <span class="text-deep-purple-4 text-weight-bold q-ml-xs">
-                {{ Number(dashboardStore.fundedData?.unoccupied || 0).toLocaleString() }}
-              </span>
-            </q-chip>
-          </div>
-        </div>
-      </div> -->
-
-      <!-- STATISTICS CARDS -->
-      <!-- <StatusOverview class="q-mx-auto" /> -->
-
       <!-- Jobpost / Office Overview Tabs -->
       <div class="row justify-start items-start q-mt-sm q-mb-xs q-mx-lg">
         <div class="column">
@@ -202,7 +135,6 @@
           <div class="row justify-start items-start q-ml-md">
             <q-chip dense class="q-my-xs row justify-start">
               Total Office:
-
               <q-badge dense rounded color="green" class="text-bold q-ml-xs">
                 {{ officeRows.length }}
               </q-badge>
@@ -294,7 +226,7 @@
       </q-tab-panels>
     </div>
 
-    <!-- Redesigned Minimalist Welcome with Background -->
+    <!-- User is authenticated but doesn't have dashboard permission -->
     <div v-else-if="authStore.user && !hasViewDashboardAccess" class="welcome-container">
       <q-img src="tagum-city-hall.webp" class="welcome-bg" style="opacity: 0.8">
         <div class="absolute-full flex flex-center">
@@ -325,8 +257,8 @@
               </div>
               <q-separator class="q-my-sm" />
               <div class="text-body2 text-grey-7">
-                Explore the portal to manage recruitment and access key features. Navigate using the
-                menu to get started.
+                You do not have permission to view the dashboard. Please contact your administrator
+                for access. Use the sidebar menu to navigate to available modules.
               </div>
             </div>
             <div v-else>
@@ -361,15 +293,16 @@
 </template>
 
 <script setup>
-  import { onMounted, computed, ref } from 'vue';
+  import { onMounted, computed, ref, watch } from 'vue';
   import { useAuthStore } from 'src/stores/authStore';
-  import StatusOverview from 'src/components/Dashboard/StatusOverview.vue';
+  import { useRouter, useRoute } from 'vue-router';
 
+  import StatusOverview from 'src/components/Dashboard/StatusOverview.vue';
   import { DashboardStore } from 'src/stores/dashboardStore';
   import { useJobPostStore } from 'src/stores/jobPostStore';
-  import { useRouter } from 'vue-router';
 
   const router = useRouter();
+  const route = useRoute();
 
   const useJobPost = useJobPostStore();
   const dashboardStore = DashboardStore();
@@ -379,7 +312,7 @@
 
   // Check if user has dashboard view permission
   const hasViewDashboardAccess = computed(() => {
-    return authStore.user?.permissions?.viewDashboardstat == '1';
+    return authStore.user?.permissions?.viewDashboardstat === '1';
   });
 
   const jobs = computed(() => {
@@ -482,10 +415,33 @@
     });
   };
 
+  // Check for unauthorized parameter from route guard
+  const checkUnauthorizedAccess = () => {
+    if (route.query.unauthorized === 'true') {
+      // Remove the query parameter without reloading
+      router.replace({ query: {} });
+    }
+  };
+
+  // Watch for permission changes and redirect if needed
+  watch(hasViewDashboardAccess, (hasAccess) => {
+    if (authStore.isAuthenticated && !hasAccess) {
+      // User is authenticated but doesn't have dashboard permission
+      // This is fine - show the welcome message instead
+      console.log('User does not have dashboard view permission');
+    }
+  });
+
   onMounted(async () => {
-    await dashboardStore.status();
-    await dashboardStore.fetchSummaryByOffice();
-    await useJobPost.job_post();
+    // Check for unauthorized access notification
+    checkUnauthorizedAccess();
+
+    // Only load dashboard data if user has permission
+    if (hasViewDashboardAccess.value) {
+      await dashboardStore.status();
+      await dashboardStore.fetchSummaryByOffice();
+      await useJobPost.job_post();
+    }
   });
 </script>
 
@@ -556,5 +512,9 @@
     border-radius: 16px !important;
     font-weight: 500 !important;
     letter-spacing: 0.5px;
+  }
+
+  .badge-simple {
+    border-radius: 20px;
   }
 </style>

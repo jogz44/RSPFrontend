@@ -9,6 +9,7 @@ import routes from './routes';
 import { useAuthStore } from 'src/stores/authStore';
 import { useRaterAuthStore } from 'src/stores/authStore_raters';
 import { useEmailStore } from 'src/stores/emailStore';
+import { Notify } from 'quasar';
 
 export default defineRouter(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
@@ -23,33 +24,88 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  Router.beforeEach(async (to) => {
+  Router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
     const raterAuthStore = useRaterAuthStore();
     const emailStore = useEmailStore();
 
+    // ========================================================================
+    // ADMIN ROUTES PERMISSION CHECK
+    // ========================================================================
 
     // Check if route requires authentication
     if (to.meta.auth) {
       // Admin routes
       if (to.meta.role === 'admin') {
-        // await authStore.checkAuth();
+        // Check authentication
         if (!authStore.isAuthenticated) {
-          return { name: 'Admin Login' };
+          Notify.create({
+            type: 'warning',
+            message: 'Please login to continue',
+            position: 'top',
+          });
+          return next({ name: 'Admin Login' });
+        }
+
+        // Verify token is still valid
+        const isValid = await authStore.checkAuth();
+        if (!isValid) {
+          Notify.create({
+            type: 'warning',
+            message: 'Session expired. Please login again.',
+            position: 'top',
+          });
+          return next({ name: 'Admin Login' });
+        }
+
+        // Check permissions if specified in route meta
+        const requiredPermissions = to.meta.permissions;
+        if (requiredPermissions && requiredPermissions.length > 0) {
+          const userRole = authStore.user?.user_role || authStore.user?.role;
+          const userPermissions = authStore.user?.permissions;
+
+          // Admin bypass - admins have all permissions
+          const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+
+          if (!isAdmin) {
+            const hasRequiredPermission = requiredPermissions.some(
+              (permission) => userPermissions?.[permission] === '1',
+            );
+
+            if (!hasRequiredPermission) {
+              Notify.create({
+                type: 'error',
+                message: 'You do not have permission to access this page',
+                position: 'top',
+                timeout: 3000,
+              });
+              return next({ name: 'Admin Dashboard', query: { unauthorized: true } });
+            }
+          }
         }
       }
       // Rater routes
       else if (to.meta.role === 'rater') {
         await raterAuthStore.checkAuth_rater();
         if (!raterAuthStore.isAuthenticated) {
-          return { name: 'Rater Login' };
+          Notify.create({
+            type: 'warning',
+            message: 'Please login to continue',
+            position: 'top',
+          });
+          return next({ name: 'Rater Login' });
         }
       }
       // User routes
       else if (to.meta.role === 'user') {
         emailStore.checkAuthStatus();
         if (!emailStore.isAuthenticated) {
-          return { name: 'Email' };
+          Notify.create({
+            type: 'warning',
+            message: 'Please login to continue',
+            position: 'top',
+          });
+          return next({ name: 'Email' });
         }
       }
     }
@@ -58,29 +114,28 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     if (to.meta.guest) {
       // Admin login page
       if (to.meta.role === 'admin') {
-        // await authStore.checkAuth();
         if (authStore.isAuthenticated) {
-          return { name: 'Admin Dashboard' };
+          return next({ name: 'Admin Dashboard' });
         }
       }
       // Rater login page
       else if (to.meta.role === 'rater') {
         await raterAuthStore.checkAuth_rater();
         if (raterAuthStore.isAuthenticated) {
-          return { name: 'Raters Homepage' };
+          return next({ name: 'Raters Homepage' });
         }
       }
       // User login page
       else if (to.meta.role === 'user') {
         emailStore.checkAuthStatus();
         if (emailStore.isAuthenticated) {
-          return { name: 'Homepage' };
+          return next({ name: 'Homepage' });
         }
       }
     }
 
     // No redirection needed
-    return true;
+    return next();
   });
 
   return Router;
