@@ -4,11 +4,11 @@
       <q-card-section class="header">
         <div class="row items-center justify-between">
           <div>
-            <h6 class="q-ma-none text-weight-bold">Rating Form for Qualification Standards2</h6>
+            <h6 class="q-ma-none text-weight-bold">Rating Form for Qualification Standards</h6>
             <div class="text-subtitle1">{{ position.position }}</div>
             <div class="text-caption">Office: {{ position.office }}</div>
             <div class="text-caption">Position ID: {{ positionID }}</div>
-              <div class="text-caption">jobpostID ID: {{position.id }}</div>
+            <div class="text-caption">Jobpost ID: {{ position.id }}</div>
           </div>
           <q-btn flat round dense icon="close" @click="closeForm" />
         </div>
@@ -84,21 +84,17 @@
                   Performance
                   <span class="text-caption">{{ performanceMaxRate }}%</span>
                 </th>
-
-                <th v-if="hasBehavioral" style="width: 110px">
-                  BEI
-                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
+                <th style="width: 80px" class="text-center">
+                  QS Total
+                  <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </th>
-
-                <!-- Exam always last before QS Total -->
                 <th v-if="hasExam" style="width: 110px">
                   Exam
                   <span class="text-caption">{{ examMaxRate }}%</span>
                 </th>
-
-                <th style="width: 80px" class="text-center">
-                  QS Total
-                  <div class="text-caption">({{ qsMaxRate }}%)</div>
+                <th v-if="hasBehavioral" style="width: 110px">
+                  BEI
+                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
                 </th>
                 <th style="width: 80px" class="text-center">
                   Grand Total
@@ -154,19 +150,10 @@
                     - {{ item.description }}
                   </div>
                 </td>
-
-                <td v-if="hasBehavioral">
-                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
-                  <div
-                    v-for="(item, index) in behavioral.items"
-                    :key="'bei-' + index"
-                    class="text-caption q-mb-xs criteria-item"
-                  >
-                    <span class="criteria-percentage">{{ item.percentage }}%</span>
-                    - {{ item.description }}
-                  </div>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">QS Total</div>
+                  <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </td>
-
                 <td v-if="hasExam">
                   <div class="text-weight-bold text-caption q-mb-xs">EXAM CRITERIA:</div>
                   <div
@@ -178,10 +165,24 @@
                     - {{ item.description || 'Exam' }}
                   </div>
                 </td>
-
-                <td></td>
-                <td></td>
-                <td></td>
+                <td v-if="hasBehavioral">
+                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
+                  <div
+                    v-for="(item, index) in behavioral.items"
+                    :key="'bei-' + index"
+                    class="text-caption q-mb-xs criteria-item"
+                  >
+                    <span class="criteria-percentage">{{ item.percentage }}%</span>
+                    - {{ item.description }}
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">Grand Total</div>
+                  <div class="text-caption">({{ totalMaxRate }}%)</div>
+                </td>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">Rank</div>
+                </td>
               </tr>
             </thead>
             <tbody>
@@ -290,6 +291,23 @@
                     />
                   </td>
 
+                  <td style="width: 80px" class="text-center">
+                    <div class="result-value">{{ calculateQS(applicant) }}</div>
+                  </td>
+
+                  <td v-if="hasExam" style="width: 110px">
+                    <q-input
+                      v-model="applicant.examScore"
+                      type="text"
+                      dense
+                      outlined
+                      class="score-input"
+                      placeholder="-"
+                      readonly
+                      @click.stop
+                    />
+                  </td>
+
                   <td v-if="hasBehavioral" style="width: 110px">
                     <q-input
                       v-model="applicant.behavioralScore"
@@ -312,25 +330,10 @@
                     />
                   </td>
 
-                  <td v-if="hasExam" style="width: 110px">
-                    <q-input
-                      v-model="applicant.examScore"
-                      type="text"
-                      dense
-                      outlined
-                      class="score-input"
-                      placeholder="-"
-                      readonly
-                      @click.stop
-                    />
-                  </td>
-
-                  <td style="width: 80px" class="text-center">
-                    <div class="result-value">{{ calculateQS(applicant) }}</div>
-                  </td>
                   <td style="width: 80px" class="text-center total-score">
                     <div class="result-value">{{ calculateTotal(applicant) }}</div>
                   </td>
+
                   <td style="width: 80px" class="text-center rank">
                     <div class="result-value">{{ applicant.ranking || '-' }}</div>
                   </td>
@@ -479,17 +482,16 @@
           <span class="text-caption text-info">
             {{ ratedApplicantsCount }} of {{ applicantsData.length }} applicants rated
           </span>
-
         </div>
 
         <div class="row justify-end q-gutter-sm">
           <q-btn
-          color="red"
-           icon-right="assignment"
+            color="red"
+            icon-right="assignment"
             @click="showModal"
-             dense
-           v-if="isRaterEnabled"
-             />
+            dense
+            v-if="isRaterEnabled"
+          />
 
           <q-btn color="primary" label="Save as Draft" icon-right="save" @click="saveDraft" dense />
           <q-btn
@@ -503,7 +505,6 @@
         </div>
       </q-card-section>
     </q-card>
-
   </q-dialog>
 
   <!-- Use existing QS Modal Component -->
@@ -514,66 +515,65 @@
   />
 
   <!-- Rater Assignment Modal -->
-<q-dialog v-model="showAssignModal" persistent>
-  <q-card style="min-width: 420px; max-width: 95vw">
-    <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6 text-weight-bold">Assign Rater</div>
-      <q-space />
-      <q-btn icon="close" flat round dense @click="showAssignModal = false" />
-    </q-card-section>
+  <q-dialog v-model="showAssignModal" persistent>
+    <q-card style="min-width: 420px; max-width: 95vw">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6 text-weight-bold">Assign Rater</div>
+        <q-space />
+        <q-btn icon="close" flat round dense @click="showAssignModal = false" />
+      </q-card-section>
 
-    <q-card-section class="q-pt-md q-gutter-md">
-      <!-- Rater Select -->
-      <q-select
-        v-model="assignSelectedRater"
-        :options="raterOptions"
-        label="Select Rater"
-        outlined
-        dense
-        emit-value
-        map-options
-        clearable
-        @update:model-value="onRaterChange"
-      />
+      <q-card-section class="q-pt-md q-gutter-md">
+        <!-- Rater Select -->
+        <q-select
+          v-model="assignSelectedRater"
+          :options="raterOptions"
+          label="Select Rater"
+          outlined
+          dense
+          emit-value
+          map-options
+          clearable
+          @update:model-value="onRaterChange"
+        />
 
-      <!-- Job Select — only shows after rater is selected -->
-      <q-select
-        v-if="assignSelectedRater"
-        v-model="assignSelectedJob"
-        :options="assignJobOptions"
-        label="Select Job"
-        outlined
-        dense
-        emit-value
-        map-options
-        clearable
-        no-options-label="No jobs assigned to this rater"
-      />
-    </q-card-section>
+        <!-- Job Select — only shows after rater is selected -->
+        <q-select
+          v-if="assignSelectedRater"
+          v-model="assignSelectedJob"
+          :options="assignJobOptions"
+          label="Select Job"
+          outlined
+          dense
+          emit-value
+          map-options
+          clearable
+          no-options-label="No jobs assigned to this rater"
+        />
+      </q-card-section>
 
-    <q-card-section class="row justify-end q-pt-none q-pb-md q-pr-md">
-      <q-btn flat label="Cancel" color="grey" @click="showAssignModal = false" class="q-mr-sm" />
-      <q-btn
-        label="Submit"
-        color="primary"
-
-             @click="submitRater"
-             :loading="isSubmittingRater"
-        :disable="!assignSelectedRater || !assignSelectedJob"
-      />
-    </q-card-section>
-  </q-card>
-</q-dialog>
+      <q-card-section class="row justify-end q-pt-none q-pb-md q-pr-md">
+        <q-btn flat label="Cancel" color="grey" @click="showAssignModal = false" class="q-mr-sm" />
+        <q-btn
+          label="Submit"
+          color="primary"
+          @click="submitRater"
+          :loading="isSubmittingRater"
+          :disable="!assignSelectedRater || !assignSelectedJob"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
-  import { ref, computed, watch,onMounted } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import { useQuasar } from 'quasar';
   import QualificationStandardModal from 'src/components/QSModal.vue';
   import { use_rating_form_store } from 'stores/ratingFormStore';
   import { useRaterAuthStore } from 'stores/authStore_raters';
   const $q = useQuasar();
-const useRatingStore = use_rating_form_store();
+  const useRatingStore = use_rating_form_store();
   // Props
   const props = defineProps({
     modelValue: Boolean,
@@ -585,11 +585,10 @@ const useRatingStore = use_rating_form_store();
   });
   const isSubmittingRater = ref(false);
 
-const useRater = useRaterAuthStore();
+  const useRater = useRaterAuthStore();
 
   // Replace with this
-const isRaterEnabled = computed(() => useRater.user?.enable === true);
-
+  const isRaterEnabled = computed(() => useRater.user?.enable === true);
 
   // Emits
   const emit = defineEmits(['close', 'update:modelValue', 'submit-ratings', 'save-draft']);
@@ -687,9 +686,12 @@ const isRaterEnabled = computed(() => useRater.user?.enable === true);
       (hasExam.value ? examMaxRate.value : 0),
   );
 
-  const detailsColspan = computed(
-    () => 1 + 4 + (hasBehavioral.value ? 1 : 0) + (hasExam.value ? 1 : 0) + 3,
-  );
+  const detailsColspan = computed(() => {
+    let count = 1 + 4 + 1 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1) + Rank (1)
+    if (hasExam.value) count += 1;
+    if (hasBehavioral.value) count += 1;
+    return count;
+  });
 
   // Helper function to check if a value is empty or just '-'
   const isEmpty = (value) => !value || value === '' || value === '-';
@@ -788,9 +790,9 @@ const isRaterEnabled = computed(() => useRater.user?.enable === true);
     { label: 'Experience Score', value: 'experienceScore' },
     { label: 'Training Score', value: 'trainingScore' },
     { label: 'Performance Score', value: 'performanceScore' },
-    ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
-    ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
     { label: 'Total QS', value: 'qsTotal' },
+    ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
+    ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
     { label: 'Grand Total', value: 'grandTotal' },
     { label: 'Ranking', value: 'ranking' },
   ];
@@ -1258,118 +1260,119 @@ const isRaterEnabled = computed(() => useRater.user?.enable === true);
     },
   );
 
-//   watch(
-//   () => props.position?.id,
-//   async (newId) => {
-//     if (newId) {
-//       await useRatingStore.raterListWithJob(newId);
-//     }
-//   },
-//   { immediate: true } // runs on mount too, replaces onMounted
-// );
-
-
   // Rater Assignment Modal state
-const showAssignModal = ref(false);
-const assignSelectedRater = ref(null);
-const assignSelectedJob = ref(null);
+  const showAssignModal = ref(false);
+  const assignSelectedRater = ref(null);
+  const assignSelectedJob = ref(null);
 
-// Opens the modal
-const showModal = () => {
-  const jobPostId = props.position?.id;
-  // if (!jobPostId) {
-  //   $q.notify({ color: 'warning', message: 'No job post ID found', icon: 'warning', position: 'top' });
-  //   return;
-  // }
-  assignSelectedRater.value = null;
-  assignSelectedJob.value = null;
-  useRatingStore.raterListWithJob(jobPostId); // 🔁 refresh on every open
-  showAssignModal.value = true;
-};
-// const showModal = () => {
-//   assignSelectedRater.value = null;
-//   assignSelectedJob.value = null;
-//   showAssignModal.value = true;
-// };
+  // Opens the modal
+  const showModal = () => {
+    const jobPostId = props.position?.id;
+    assignSelectedRater.value = null;
+    assignSelectedJob.value = null;
+    useRatingStore.raterListWithJob(jobPostId);
+    showAssignModal.value = true;
+  };
 
-// Build rater dropdown options from store
-const raterOptions = computed(() => {
-  const raters = useRatingStore.rater;
-  if (!Array.isArray(raters)) return [];
-  return raters.map((r) => ({
-    label: r.name,
-    value: r.id,
-  }));
-});
+  // Build rater dropdown options from store
+  const raterOptions = computed(() => {
+    const raters = useRatingStore.rater;
+    if (!Array.isArray(raters)) return [];
+    return raters.map((r) => ({
+      label: r.name,
+      value: r.id,
+    }));
+  });
 
-// Build job dropdown options for the selected rater
-const assignJobOptions = computed(() => {
-  const raters = useRatingStore.rater;
-  if (!Array.isArray(raters) || !assignSelectedRater.value) return [];
+  // Build job dropdown options for the selected rater
+  const assignJobOptions = computed(() => {
+    const raters = useRatingStore.rater;
+    if (!Array.isArray(raters) || !assignSelectedRater.value) return [];
 
-  const rater = raters.find((r) => r.id === assignSelectedRater.value);
-  if (!rater || !Array.isArray(rater.job_batches_rsp)) return [];
+    const rater = raters.find((r) => r.id === assignSelectedRater.value);
+    if (!rater || !Array.isArray(rater.job_batches_rsp)) return [];
 
-  return rater.job_batches_rsp.map((job) => ({
-    label: `${job.position} (${job.post_date} – ${job.end_date})`,
-    value: job.id,
-  }));
-});
+    return rater.job_batches_rsp.map((job) => ({
+      label: `${job.position} (${job.post_date} – ${job.end_date})`,
+      value: job.id,
+    }));
+  });
 
-// Reset job when rater changes
-const onRaterChange = () => {
-  assignSelectedJob.value = null;
-};
+  // Reset job when rater changes
+  const onRaterChange = () => {
+    assignSelectedJob.value = null;
+  };
 
-const submitRater = async () => {
-  isSubmittingRater.value = true;
-  try {
-    const result = await useRatingStore.getApplicantScore({
-      userId: assignSelectedRater.value,
-      jobPostId: assignSelectedJob.value,
-    });
+  const submitRater = async () => {
+    isSubmittingRater.value = true;
+    try {
+      const result = await useRatingStore.getApplicantScore({
+        userId: assignSelectedRater.value,
+        jobPostId: assignSelectedJob.value,
+      });
 
-    if (!result?.applicants?.length) {
-      $q.notify({ color: 'warning', message: 'No applicants found', icon: 'warning', position: 'top', timeout: 2000 });
+      if (!result?.applicants?.length) {
+        $q.notify({
+          color: 'warning',
+          message: 'No applicants found',
+          icon: 'warning',
+          position: 'top',
+          timeout: 2000,
+        });
+        return;
+      }
+
+      result.applicants.forEach((raterApplicant) => {
+        const applicant = applicantsData.value.find((a) => a.id === raterApplicant.id);
+        if (!applicant) return;
+
+        const score = raterApplicant.rating_score;
+        if (!score) return;
+
+        applicant.educationScore =
+          score.education_score != null ? formatNumber(score.education_score) : '';
+        applicant.experienceScore =
+          score.experience_score != null ? formatNumber(score.experience_score) : '';
+        applicant.trainingScore =
+          score.training_score != null ? formatNumber(score.training_score) : '';
+        applicant.performanceScore =
+          score.performance_score != null ? formatNumber(score.performance_score) : '';
+        applicant.behavioralScore =
+          score.behavioral_score != null ? formatNumber(score.behavioral_score) : '';
+        applicant.examScore = score.exam_score != null ? formatNumber(score.exam_score) : '';
+        applicant.ranking = score.ranking ?? null;
+      });
+
+      calculateAllRankings();
+      $q.notify({
+        color: 'positive',
+        message: 'Scores loaded successfully!',
+        icon: 'check_circle',
+        position: 'top',
+        timeout: 2000,
+      });
+      showAssignModal.value = false;
+    } catch {
+      $q.notify({
+        color: 'negative',
+        message: 'Failed to load scores. Please try again.',
+        icon: 'error',
+        position: 'top',
+        timeout: 2000,
+      });
+    } finally {
+      isSubmittingRater.value = false;
+    }
+  };
+
+  onMounted(async () => {
+    const jobPostId = props.position?.id;
+    if (!jobPostId) {
+      console.warn('No jobPostId available on mount');
       return;
     }
-
-    result.applicants.forEach((raterApplicant) => {
-      const applicant = applicantsData.value.find((a) => a.id === raterApplicant.id);
-      if (!applicant) return;
-
-      const score = raterApplicant.rating_score;
-      if (!score) return;
-
-      applicant.educationScore   = score.education_score   != null ? formatNumber(score.education_score)   : '';
-      applicant.experienceScore  = score.experience_score  != null ? formatNumber(score.experience_score)  : '';
-      applicant.trainingScore    = score.training_score    != null ? formatNumber(score.training_score)    : '';
-      applicant.performanceScore = score.performance_score != null ? formatNumber(score.performance_score) : '';
-      applicant.behavioralScore  = score.behavioral_score  != null ? formatNumber(score.behavioral_score)  : '';
-      applicant.examScore        = score.exam_score        != null ? formatNumber(score.exam_score)        : '';
-      applicant.ranking          = score.ranking           ?? null;
-    });
-
-    calculateAllRankings();
-    $q.notify({ color: 'positive', message: 'Scores loaded successfully!', icon: 'check_circle', position: 'top', timeout: 2000 });
-    showAssignModal.value = false;
-  // eslint-disable-next-line no-unused-vars
-  } catch (error) {
-    $q.notify({ color: 'negative', message: 'Failed to load scores. Please try again.', icon: 'error', position: 'top', timeout: 2000 });
-  } finally {
-    isSubmittingRater.value = false; // ✅ always resets, even on error or early return
-  }
-};
-
-onMounted(async () => {
-  const jobPostId = props.position?.id; // ✅ get it from props
-  if (!jobPostId) {
-    console.warn('No jobPostId available on mount');
-    return;
-  }
-  await useRatingStore.raterListWithJob(jobPostId);
-  console.log('rater state:', useRatingStore.rater);
-});
+    await useRatingStore.raterListWithJob(jobPostId);
+  });
 </script>
 
 <style lang="scss" scoped>
@@ -1417,7 +1420,7 @@ onMounted(async () => {
       padding: 8px;
       text-align: left;
       border: 1px solid #ddd;
-      vertical-align: middle;
+      vertical-align: top;
       font-size: 0.85rem;
     }
 
@@ -1425,6 +1428,7 @@ onMounted(async () => {
       background-color: #f2f2f2;
       font-weight: 500;
       text-align: center;
+      vertical-align: middle;
     }
   }
 
@@ -1434,14 +1438,18 @@ onMounted(async () => {
 
   .criteria-item {
     line-height: 1.3;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
   }
 
   .criteria-percentage {
     font-weight: bold;
     color: #1976d2;
     display: inline-block;
-    min-width: 35px;
+    min-width: 40px;
+    flex-shrink: 0;
   }
 
   .applicant-row {
@@ -1453,7 +1461,7 @@ onMounted(async () => {
     }
 
     &.expanded {
-      background-color: #e3f2fd;
+      background-color: #d0ffd6;
     }
   }
 
@@ -1482,12 +1490,12 @@ onMounted(async () => {
 
   .total-score {
     font-weight: bold;
-    color: #1976d2;
+    color: green;
   }
 
   .rank {
     font-weight: bold;
-    background-color: #f0f8ff;
+    background-color: #d0ffd6;
   }
 
   .applicant-details {

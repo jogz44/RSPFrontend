@@ -81,21 +81,17 @@
                   Performance
                   <span class="text-caption">{{ performanceMaxRate }}%</span>
                 </th>
-
-                <th v-if="hasBehavioral" style="width: 110px">
-                  BEI
-                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
+                <th style="width: 80px" class="text-center">
+                  QS Total
+                  <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </th>
-
-                <!-- Exam always last before QS Total -->
                 <th v-if="hasExam" style="width: 110px">
                   Exam
                   <span class="text-caption">{{ examMaxRate }}%</span>
                 </th>
-
-                <th style="width: 80px" class="text-center">
-                  QS Total
-                  <div class="text-caption">({{ qsMaxRate }}%)</div>
+                <th v-if="hasBehavioral" style="width: 110px">
+                  BEI
+                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
                 </th>
                 <th style="width: 80px" class="text-center">
                   Grand Total
@@ -151,19 +147,10 @@
                     - {{ item.description }}
                   </div>
                 </td>
-
-                <td v-if="hasBehavioral">
-                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
-                  <div
-                    v-for="(item, index) in behavioral.items"
-                    :key="'bei-' + index"
-                    class="text-caption q-mb-xs criteria-item"
-                  >
-                    <span class="criteria-percentage">{{ item.percentage }}%</span>
-                    - {{ item.description }}
-                  </div>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">QS Total</div>
+                  <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </td>
-
                 <td v-if="hasExam">
                   <div class="text-weight-bold text-caption q-mb-xs">EXAM CRITERIA:</div>
                   <div
@@ -175,10 +162,24 @@
                     - {{ item.description || 'Exam' }}
                   </div>
                 </td>
-
-                <td></td>
-                <td></td>
-                <td></td>
+                <td v-if="hasBehavioral">
+                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
+                  <div
+                    v-for="(item, index) in behavioral.items"
+                    :key="'bei-' + index"
+                    class="text-caption q-mb-xs criteria-item"
+                  >
+                    <span class="criteria-percentage">{{ item.percentage }}%</span>
+                    - {{ item.description }}
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">Grand Total</div>
+                  <div class="text-caption">({{ totalMaxRate }}%)</div>
+                </td>
+                <td class="text-center">
+                  <div class="text-weight-bold text-caption">Rank</div>
+                </td>
               </tr>
             </thead>
             <tbody>
@@ -253,16 +254,8 @@
                     />
                   </td>
 
-                  <td v-if="hasBehavioral" style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.behavioralScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td style="width: 80px" class="text-center">
+                    <div class="result-value">{{ calculateQS(applicant) }}</div>
                   </td>
 
                   <td v-if="hasExam" style="width: 110px">
@@ -277,16 +270,27 @@
                     />
                   </td>
 
-                  <td style="width: 80px" class="text-center">
-                    <div class="result-value">{{ calculateQS(applicant) }}</div>
+                  <td v-if="hasBehavioral" style="width: 110px">
+                    <q-input
+                      :model-value="formatScore(applicant.behavioralScore)"
+                      type="text"
+                      dense
+                      borderless
+                      readonly
+                      class="score-input"
+                      placeholder="-"
+                    />
                   </td>
+
                   <td style="width: 80px" class="text-center total-score">
                     <div class="result-value">{{ calculateTotal(applicant) }}</div>
                   </td>
+
                   <td style="width: 80px" class="text-center rank">
                     <div class="result-value">{{ applicant.ranking || '-' }}</div>
                   </td>
                 </tr>
+
                 <!-- Expandable Details -->
                 <tr v-if="expandedApplicant === applicant.id">
                   <td :colspan="detailsColspan" class="applicant-details">
@@ -494,9 +498,12 @@
       (hasExam.value ? examMaxRate.value : 0),
   );
 
-  const detailsColspan = computed(
-    () => 1 + 4 + (hasBehavioral.value ? 1 : 0) + (hasExam.value ? 1 : 0) + 3,
-  );
+  const detailsColspan = computed(() => {
+    let count = 1 + 4 + 1 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1) + Rank (1)
+    if (hasExam.value) count += 1;
+    if (hasBehavioral.value) count += 1;
+    return count;
+  });
 
   // State
   const expandedApplicant = ref(null);
@@ -515,9 +522,9 @@
     { label: 'Experience Score', value: 'experienceScore' },
     { label: 'Training Score', value: 'trainingScore' },
     { label: 'Performance Score', value: 'performanceScore' },
-    ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
-    ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
     { label: 'Total QS', value: 'qsTotal' },
+    ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
+    ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
     { label: 'Grand Total', value: 'grandTotal' },
     { label: 'Ranking', value: 'ranking' },
   ];
@@ -781,13 +788,14 @@
       padding: 8px;
       text-align: left;
       border: 1px solid #ddd;
-      vertical-align: middle;
+      vertical-align: top;
       font-size: 0.85rem;
     }
     th {
       background-color: #f2f2f2;
       font-weight: 500;
       text-align: center;
+      vertical-align: middle;
     }
   }
   .criteria-description {
@@ -795,13 +803,17 @@
   }
   .criteria-item {
     line-height: 1.3;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
   }
   .criteria-percentage {
     font-weight: bold;
     color: #2e7d32;
     display: inline-block;
     min-width: 35px;
+    flex-shrink: 0;
   }
   .applicant-row {
     cursor: pointer;
