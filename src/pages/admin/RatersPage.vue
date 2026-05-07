@@ -64,22 +64,6 @@
           loading-label="Loading raters..."
           no-data-label="No raters found"
         >
-          <template v-slot:body-cell-job_batches_rsp="props">
-            <q-td :props="props">
-              <div class="position-cell">
-                <q-badge
-                  v-for="(pos, index) in props.row.job_batches_rsp_array"
-                  :key="index"
-                  color="primary"
-                  text-color="white"
-                  class="q-pa-xs q-mb-xs badge-block"
-                >
-                  {{ pos.position }}
-                </q-badge>
-              </div>
-            </q-td>
-          </template>
-
           <template v-slot:body-cell-Office="props">
             <q-td :props="props">
               <div style="white-space: normal; overflow-wrap: break-word">
@@ -153,7 +137,7 @@
 
     <!-- Add/Edit Rater Modal - Only show if user has modify permission -->
     <q-dialog v-if="canModifyRater" v-model="showModal" persistent>
-      <q-card style="width: 500px; max-width: 90vw">
+      <q-card style="width: 600px; max-width: 90vw">
         <q-card-section class="row items-center justify-between bg-primary text-white">
           <div class="text-h4">
             <b>{{ isEditMode ? 'Edit Rater' : 'Add a Rater' }}</b>
@@ -193,10 +177,31 @@
               @update:model-value="handlePositionSelection"
               @before-show="snapshotPositions"
             >
+              <template v-slot:selected-item="scope">
+                <q-chip
+                  removable
+                  dense
+                  @remove="scope.removeAtIndex(scope.index)"
+                  color="primary"
+                  text-color="white"
+                  class="q-mr-xs"
+                >
+                  {{ getPositionDisplayName(scope.opt) }}
+                </q-chip>
+              </template>
+
               <template v-slot:option="scope">
                 <q-item v-bind="scope.itemProps">
                   <q-item-section>
-                    <q-item-label>{{ scope.opt.name }}</q-item-label>
+                    <q-item-label>
+                      {{ scope.opt.name }}
+                      <span class="text-caption text-grey-7" v-if="scope.opt.office_abbr">
+                        ({{ scope.opt.office_abbr }})
+                      </span>
+                    </q-item-label>
+                    <q-item-label caption v-if="scope.opt.office_abbr" class="text-grey-6">
+                      Office: {{ scope.opt.office_abbr }}
+                    </q-item-label>
                   </q-item-section>
                   <q-item-section side>
                     <q-checkbox
@@ -782,6 +787,41 @@
   // ==================== btn select job post  ====================
   const positionSelect = ref(null);
 
+  // Helper function to get office abbreviation
+  const getOfficeAbbr = (officeName) => {
+    if (!officeName) return '';
+
+    // Common office abbreviations mapping
+    const officeMap = {
+      'OFFICE OF THE CITY MAYOR': 'OCM',
+      'OFFICE OF THE CITY ACCOUNTANT': 'CACCO',
+      'OFFICE OF THE CITY BUDGET OFFICER': 'OCBO',
+      'OFFICE OF THE CITY ASSESSOR': 'OCASS',
+      'OFFICE OF THE CITY TREASURER': 'OCT',
+      'OFFICE OF THE CITY PLANNING AND DEVELOPMENT OFFICER': 'OCPDO',
+      'OFFICE OF THE CITY LEGAL OFFICER': 'OCLO',
+      'OFFICE OF THE CITY ADMINISTRATOR': 'OCAD',
+      'OFFICE OF THE CITY GENERAL SERVICES OFFICER': 'OCGSO',
+      'OFFICE OF THE CITY INFORMATION AND COMMUNICATIONS TECHNOLOGY MANAGEMENT OFFICER': 'CICTMO',
+      'OFFICE OF THE CITY HUMAN RESOURCE MANAGEMENT OFFICER': 'CHRMO',
+      'OFFICE OF THE CITY AGRICULTURIST': 'OCA',
+      'OFFICE OF THE CITY VETERINARIAN': 'OCVET',
+      'OFFICE OF THE CITY ENGINEER': 'OCE',
+      'OFFICE OF THE CITY HEALTH OFFICER': 'OCHO',
+      'OFFICE OF THE CITY SOCIAL WELFARE AND DEVELOPMENT OFFICER': 'OCSWDO',
+      'OFFICE OF THE CITY TOURISM OFFICER': 'OCTO',
+    };
+
+    return officeMap[officeName] || officeName.substring(0, 4).toUpperCase();
+  };
+
+  // Get display name for position with office abbreviation
+  const getPositionDisplayName = (position) => {
+    if (!position) return '';
+    const abbr = position.office_abbr || getOfficeAbbr(position.office_name || position.name);
+    return `${position.name} (${abbr})`;
+  };
+
   const closePositionSelect = async () => {
     await nextTick();
     if (positionSelect.value) {
@@ -811,13 +851,6 @@
         field: 'name',
         align: 'left',
         style: 'width: 15%; word-wrap: break-word; white-space: normal;',
-      },
-      {
-        name: 'job_batches_rsp',
-        label: 'Jobs Position to Rate',
-        field: 'job_batches_rsp',
-        align: 'left',
-        style: 'width: 25%',
       },
       {
         name: 'office',
@@ -922,7 +955,11 @@
 
   const positionsWithAllOption = computed(() => {
     if (!positions.value.length) return [];
-    const allOption = { id: 'all', name: 'All Positions' };
+    const allOption = {
+      id: 'all',
+      name: 'All Positions',
+      office_abbr: 'ALL',
+    };
     return [allOption, ...positions.value];
   });
 
@@ -1040,10 +1077,7 @@
     resetForm();
     isEditMode.value = false;
 
-    positions.value = jobPostStore.jobPosts.map((post) => ({
-      id: post.id,
-      name: post.Position,
-    }));
+    loadPositions();
   };
 
   const showAddModal = () => {
@@ -1056,6 +1090,17 @@
     resetForm();
     activeStatus.value = true;
     enable.value = false;
+    loadPositions();
+  };
+
+  // Load positions with office abbreviations
+  const loadPositions = () => {
+    positions.value = (jobPostStore.jobPosts || []).map((post) => ({
+      id: post.id,
+      name: post.Position,
+      office_abbr: post.office_abbr || getOfficeAbbr(post.Office),
+      office_name: post.Office,
+    }));
   };
 
   // ==================== VIEW RATER ====================
@@ -1144,6 +1189,8 @@
       positions.value = (jobPostStore.jobPostListEdit || []).map((post) => ({
         id: post.id,
         name: post.Position,
+        office_abbr: post.office_abbr || getOfficeAbbr(post.Office),
+        office_name: post.Office,
       }));
 
       const jobBatchesArray = Array.isArray(rater.job_batches_rsp) ? rater.job_batches_rsp : [];
@@ -1287,10 +1334,7 @@
       isLoadingTable.value = false;
     }
 
-    positions.value = (jobPostStore.jobPosts || []).map((post) => ({
-      id: post.id,
-      name: post.Position,
-    }));
+    loadPositions();
 
     if (Array.isArray(plantillaStore.office) && plantillaStore.office.length > 0) {
       const names = Array.from(
