@@ -139,7 +139,7 @@ export const usePlantillaStore = defineStore('plantilla', {
       this.loading = true;
       this.error = null;
       try {
-        const response = await adminApi.get('/office');
+        const response = await adminApi.get('/office/rater-list');
 
         // console.log(response.data); // Debugging
 

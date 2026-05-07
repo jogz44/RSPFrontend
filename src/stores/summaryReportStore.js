@@ -27,6 +27,22 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async fetchPositionWithBEI() {
+      try {
+        this.loading = true;
+        const response = await adminApi.get('/report/job-bei');
+        this.positions = response.data;
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.message;
+        console.error('Error fetching positions:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchApplicantDetail(jobpostId) {
       try {
         this.loading = true;

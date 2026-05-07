@@ -23,17 +23,17 @@
       </template>
     </q-table>
 
-    <!-- ==================== MODALS ==================== -->
-
-    <!-- 1. Final Summary / Applicant per Position Modal -->
-    <q-dialog v-model="showFinalSummaryModal" persistent>
+    <!-- ==================== FINAL SUMMARY / APPLICANT PER POSITION / BEI SUMMARY MODAL ==================== -->
+    <q-dialog v-model="showReportModal" persistent>
       <q-card style="min-width: 500px; max-width: 90vw">
         <q-card-section>
           <div class="text-h6">
             {{
               selectedReport?.id === 3
                 ? 'Applicant per Position Filters'
-                : 'Final Summary Report Filters'
+                : selectedReport?.id === 6
+                  ? 'BEI Summary Report Filters'
+                  : 'Final Summary Report Filters'
             }}
           </div>
         </q-card-section>
@@ -49,7 +49,7 @@
             <div class="q-mb-md">
               <div class="text-subtitle2 q-mb-sm">Publication Date Filter</div>
               <q-option-group
-                v-model="finalSummaryDateFilterType"
+                v-model="dateFilterType"
                 :options="[
                   { label: 'Single Date', value: 'single' },
                   { label: 'Date Range', value: 'range' },
@@ -59,62 +59,53 @@
                 inline
               />
 
-              <div v-if="finalSummaryDateFilterType === 'single'" class="q-mt-sm">
-                <q-input v-model="finalSummarySingleDate" label="Select Publication Date" outlined>
+              <div v-if="dateFilterType === 'single'" class="q-mt-sm">
+                <q-input v-model="singleDate" label="Select Publication Date" outlined>
                   <template v-slot:append>
                     <q-icon
                       name="event"
                       class="cursor-pointer"
-                      @click="showFinalSummarySingleDatePicker = true"
+                      @click="showSingleDatePicker = true"
                     />
                   </template>
                 </q-input>
-                <q-dialog v-model="showFinalSummarySingleDatePicker">
+                <q-dialog v-model="showSingleDatePicker">
                   <q-date
-                    v-model="finalSummarySingleDate"
+                    v-model="singleDate"
                     mask="YYYY-MM-DD"
-                    @update:model-value="onFinalSummarySingleDateChange"
+                    @update:model-value="onSingleDateChange"
                   />
                 </q-dialog>
               </div>
 
-              <div v-if="finalSummaryDateFilterType === 'range'" class="q-mt-sm">
-                <q-input v-model="finalSummaryDateRange.from" label="From Date" outlined>
+              <div v-if="dateFilterType === 'range'" class="q-mt-sm">
+                <q-input v-model="dateRange.from" label="From Date" outlined>
                   <template v-slot:append>
                     <q-icon
                       name="event"
                       class="cursor-pointer"
-                      @click="showFinalSummaryFromDatePicker = true"
+                      @click="showFromDatePicker = true"
                     />
                   </template>
                 </q-input>
-                <q-dialog v-model="showFinalSummaryFromDatePicker">
+                <q-dialog v-model="showFromDatePicker">
                   <q-date
-                    v-model="finalSummaryDateRange.from"
+                    v-model="dateRange.from"
                     mask="YYYY-MM-DD"
-                    @update:model-value="onFinalSummaryFromDateChange"
+                    @update:model-value="onFromDateChange"
                   />
                 </q-dialog>
 
-                <q-input
-                  v-model="finalSummaryDateRange.to"
-                  label="To Date"
-                  class="q-mt-sm"
-                  outlined
-                >
+                <q-input v-model="dateRange.to" label="To Date" class="q-mt-sm" outlined>
                   <template v-slot:append>
-                    <q-icon
-                      name="event"
-                      class="cursor-pointer"
-                      @click="showFinalSummaryToDatePicker = true"
-                    />
+                    <q-icon name="event" class="cursor-pointer" @click="showToDatePicker = true" />
                   </template>
                 </q-input>
-                <q-dialog v-model="showFinalSummaryToDatePicker">
+                <q-dialog v-model="showToDatePicker">
                   <q-date
-                    v-model="finalSummaryDateRange.to"
+                    v-model="dateRange.to"
                     mask="YYYY-MM-DD"
-                    @update:model-value="onFinalSummaryToDateChange"
+                    @update:model-value="onToDateChange"
                   />
                 </q-dialog>
               </div>
@@ -125,8 +116,8 @@
             <!-- Position Filter -->
             <div class="text-subtitle2 q-mb-sm">Select Positions</div>
             <q-select
-              v-model="selectedFinalSummaryPositions"
-              :options="filteredFinalSummaryPositionOptions"
+              v-model="selectedPositions"
+              :options="filteredPositionOptions"
               label="Select Positions"
               outlined
               multiple
@@ -136,19 +127,19 @@
               emit-value
               map-options
               :dropdown-icon="'arrow_drop_down'"
-              :display-value="displayFinalSummaryPositions"
+              :display-value="displayPositions"
             >
               <template v-slot:option="scope">
                 <q-item
                   v-if="scope.opt.value === 'select_all'"
                   clickable
-                  @click.stop="toggleFinalSummarySelectAll"
+                  @click.stop="toggleSelectAll"
                 >
                   <q-item-section>
                     <q-checkbox
-                      :model-value="allFinalSummarySelected"
+                      :model-value="allSelected"
                       label="Select All"
-                      @update:model-value="toggleFinalSummarySelectAll"
+                      @update:model-value="toggleSelectAll"
                     />
                   </q-item-section>
                 </q-item>
@@ -156,13 +147,13 @@
                   v-else
                   :key="scope.opt.value"
                   clickable
-                  @click.stop="toggleFinalSummaryPosition(scope.opt.value)"
+                  @click.stop="togglePosition(scope.opt.value)"
                 >
                   <q-item-section>
                     <q-checkbox
                       :label="scope.opt.label"
-                      :model-value="isFinalSummaryPositionSelected(scope.opt.value)"
-                      @update:model-value="toggleFinalSummaryPosition(scope.opt.value)"
+                      :model-value="isPositionSelected(scope.opt.value)"
+                      @update:model-value="togglePosition(scope.opt.value)"
                     />
                   </q-item-section>
                 </q-item>
@@ -176,12 +167,9 @@
               </template>
             </q-select>
 
-            <div
-              v-if="filteredFinalSummaryPositionOptions.length <= 1"
-              class="q-mt-sm text-caption text-grey"
-            >
+            <div v-if="filteredPositionOptions.length <= 1" class="q-mt-sm text-caption text-grey">
               {{
-                finalSummaryDateFilterType === 'all'
+                dateFilterType === 'all'
                   ? 'No positions available'
                   : 'No positions found for the selected date filter. Try selecting a different date or date range.'
               }}
@@ -190,12 +178,12 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" @click="closeFinalSummaryModal" />
+          <q-btn flat label="Cancel" @click="closeReportModal" />
           <q-btn
             color="primary"
             label="Generate Report"
-            :disable="selectedFinalSummaryPositions.length === 0"
-            @click="openFinalSummaryReport"
+            :disable="selectedPositions.length === 0"
+            @click="openReport"
           />
         </q-card-actions>
       </q-card>
@@ -477,7 +465,7 @@
 
     <!-- Final Summary Report Viewer -->
     <q-dialog v-model="showFinalSummaryReportViewer" maximized>
-      <FinalSummaryReport :positions="selectedFinalSummaryPositions" />
+      <FinalSummaryReport :positions="selectedPositions" />
     </q-dialog>
 
     <!-- Top 5 Ranking Report Viewer -->
@@ -487,7 +475,7 @@
 
     <!-- Applicant per Position Report Viewer -->
     <q-dialog v-model="showApplicantReportViewer" maximized>
-      <ApplicantPosition :jobpostId="selectedApplicantJobpostId" />
+      <ApplicantPosition :jobpostId="selectedPositions[0]" />
     </q-dialog>
 
     <!-- List of Position Report Viewer -->
@@ -502,12 +490,18 @@
         :effectiveDate="selectedNewEmployeeEffectiveDate"
       />
     </q-dialog>
+
+    <!-- BEI Summary Report Viewer -->
+    <q-dialog v-model="showBEISummaryReportViewer" maximized>
+      <BEISummaryReport :positions="selectedPositions" />
+    </q-dialog>
   </q-page>
 </template>
 
 <script>
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import FinalSummaryReport from 'components/reports/FinalSummaryReport.vue';
+  import BEISummaryReport from 'components/reports/BEISummaryReport.vue';
   import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
   import ApplicantPosition from 'components/reports/ApplicantPositionReport.vue';
   import ListOfPositionReport from 'components/reports/ListPositionReport.vue';
@@ -517,6 +511,7 @@
     name: 'ReportManagementPage',
 
     components: {
+      BEISummaryReport,
       FinalSummaryReport,
       TopApplicantReport,
       ApplicantPosition,
@@ -566,15 +561,18 @@
             name: 'List of Position',
             description: 'By Publication Date',
           },
+          {
+            id: 6,
+            name: 'BEI Summary Report',
+            description: 'By Publication Date and Position',
+          },
         ],
 
         pagination: { rowsPerPage: 10 },
 
         // ==================== MODAL VISIBILITY STATES ====================
         selectedReport: null,
-
-        // Final Summary / Applicant per Position Modal
-        showFinalSummaryModal: false,
+        showReportModal: false,
 
         // Top 5 Ranking Modal
         showTop5Modal: false,
@@ -591,22 +589,25 @@
         showApplicantReportViewer: false,
         showListOfPositionReportViewer: false,
         showNewEmployeeReportViewer: false,
+        showBEISummaryReportViewer: false,
 
-        // ==================== FINAL SUMMARY / APPLICANT PER POSITION DATA ====================
+        // ==================== POSITIONS DATA ====================
         loadingPositions: false,
-        allPositionsData: [],
-        finalSummaryPositionOptions: [],
-        selectedFinalSummaryPositions: [],
-        finalSummaryDateFilterType: 'all',
-        finalSummarySingleDate: '',
-        finalSummaryDateRange: { from: '', to: '' },
-        showFinalSummarySingleDatePicker: false,
-        showFinalSummaryFromDatePicker: false,
-        showFinalSummaryToDatePicker: false,
-        selectedApplicantJobpostId: null,
+        finalSummaryPositionsData: [], // For Final Summary Report (fetchPositionWithRating)
+        beiPositionsData: [], // For BEI Summary Report (fetchPositionWithBEI)
+        positionOptions: [],
+        selectedPositions: [],
+
+        // Date filter
+        dateFilterType: 'all',
+        singleDate: '',
+        dateRange: { from: '', to: '' },
+        showSingleDatePicker: false,
+        showFromDatePicker: false,
+        showToDatePicker: false,
 
         // ==================== TOP 5 RANKING DATA ====================
-        loadingTop5PublicationDates: false,
+        loadingPublicationDates: false,
         top5PublicationDateOptions: [],
         filteredTop5PublicationDateOptions: [],
         selectedTop5PublicationDate: null,
@@ -627,62 +628,64 @@
     },
 
     computed: {
-      // ==================== FINAL SUMMARY COMPUTED PROPERTIES ====================
-      allFinalSummaryPositions() {
-        return this.filteredFinalSummaryPositionOptions
+      // ==================== POSITION FILTER COMPUTED PROPERTIES ====================
+      currentPositionsData() {
+        // Return the appropriate data based on selected report type
+        if (this.selectedReport?.id === 6) {
+          return this.beiPositionsData;
+        } else {
+          return this.finalSummaryPositionsData;
+        }
+      },
+
+      allPositions() {
+        return this.filteredPositionOptions
           .filter((p) => p.value !== 'select_all')
           .map((p) => p.value);
       },
 
-      allFinalSummarySelected() {
+      allSelected() {
         return (
-          this.selectedFinalSummaryPositions.length === this.allFinalSummaryPositions.length &&
-          this.allFinalSummaryPositions.length > 0
+          this.selectedPositions.length === this.allPositions.length && this.allPositions.length > 0
         );
       },
 
-      displayFinalSummaryPositions() {
-        if (this.allFinalSummarySelected) return 'All positions selected';
-        const selectedLabels = this.filteredFinalSummaryPositionOptions
-          .filter(
-            (opt) =>
-              this.selectedFinalSummaryPositions.includes(opt.value) && opt.value !== 'select_all',
-          )
+      displayPositions() {
+        if (this.allSelected) return 'All positions selected';
+        const selectedLabels = this.filteredPositionOptions
+          .filter((opt) => this.selectedPositions.includes(opt.value) && opt.value !== 'select_all')
           .map((opt) => opt.label);
         return selectedLabels.join(', ');
       },
 
-      filteredFinalSummaryPositionOptions() {
-        if (this.finalSummaryDateFilterType === 'all') {
-          return this.finalSummaryPositionOptions;
+      filteredPositionOptions() {
+        if (this.dateFilterType === 'all') {
+          return this.positionOptions;
         }
 
-        let filteredPositions = [...this.allPositionsData];
+        let filteredPositions = [...this.currentPositionsData];
 
-        if (this.finalSummaryDateFilterType === 'single' && this.finalSummarySingleDate) {
+        if (this.dateFilterType === 'single' && this.singleDate) {
           filteredPositions = filteredPositions.filter((pos) => {
             const postDate = this.normalizeDate(pos.post_date);
-            return postDate === this.finalSummarySingleDate;
+            return postDate === this.singleDate;
           });
-        } else if (
-          this.finalSummaryDateFilterType === 'range' &&
-          this.finalSummaryDateRange.from &&
-          this.finalSummaryDateRange.to
-        ) {
+        } else if (this.dateFilterType === 'range' && this.dateRange.from && this.dateRange.to) {
           filteredPositions = filteredPositions.filter((pos) => {
             const postDate = this.normalizeDate(pos.post_date);
-            return (
-              postDate >= this.finalSummaryDateRange.from &&
-              postDate <= this.finalSummaryDateRange.to
-            );
+            return postDate >= this.dateRange.from && postDate <= this.dateRange.to;
           });
         }
+
+        // Use jobpostId for Final Summary and id for BEI
+        const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
+        const labelKey = 'Position';
 
         return [
           { value: 'select_all', label: 'Select All' },
           ...filteredPositions.map((pos) => ({
-            value: pos.jobpostId,
-            label: `${pos.Position} (${this.formatDate(pos.post_date)})`,
+            value: pos[valueKey],
+            label: `${pos[labelKey]} (${this.formatDate(pos.post_date)})`,
             postDate: pos.post_date,
           })),
         ];
@@ -702,45 +705,49 @@
     },
 
     watch: {
-      finalSummaryDateFilterType(newVal) {
-        this.selectedFinalSummaryPositions = [];
+      dateFilterType(newVal) {
+        this.selectedPositions = [];
         if (newVal === 'all') {
-          this.finalSummarySingleDate = '';
-          this.finalSummaryDateRange.from = '';
-          this.finalSummaryDateRange.to = '';
+          this.singleDate = '';
+          this.dateRange.from = '';
+          this.dateRange.to = '';
+        }
+      },
+
+      // Watch for report modal opening to load appropriate data
+      showReportModal(newVal) {
+        if (newVal && this.selectedReport) {
+          if (this.selectedReport.id === 6) {
+            this.loadBEIPositions();
+          } else {
+            this.loadFinalSummaryPositions();
+          }
         }
       },
     },
 
     async mounted() {
-      await this.loadPositions();
+      // Removed automatic loading - will load based on modal open
     },
 
     methods: {
       // ==================== DATA LOADING METHODS ====================
 
       /**
-       * Load positions for Final Summary and Applicant per Position reports
+       * Load positions for Final Summary Report (fetchPositionWithRating)
        */
-      async loadPositions() {
+      async loadFinalSummaryPositions() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingPositions = true;
         try {
           const positions = await summaryReportStore.fetchPositionWithRating();
-          this.allPositionsData = positions;
-          this.finalSummaryPositionOptions = [
-            { value: 'select_all', label: 'Select All' },
-            ...positions.map((pos) => ({
-              value: pos.jobpostId,
-              label: `${pos.Position} (${this.formatDate(pos.post_date)})`,
-              postDate: pos.post_date,
-            })),
-          ];
+          this.finalSummaryPositionsData = positions;
+          this.updatePositionOptions();
         } catch (error) {
-          console.error('Error loading positions:', error);
+          console.error('Error loading final summary positions:', error);
           this.$q.notify({
             type: 'negative',
-            message: 'Failed to load positions',
+            message: 'Failed to load positions for Final Summary Report',
             position: 'top',
           });
         } finally {
@@ -749,11 +756,50 @@
       },
 
       /**
+       * Load positions for BEI Summary Report (fetchPositionWithBEI)
+       */
+      async loadBEIPositions() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingPositions = true;
+        try {
+          const positions = await summaryReportStore.fetchPositionWithBEI();
+          this.beiPositionsData = positions;
+          this.updatePositionOptions();
+        } catch (error) {
+          console.error('Error loading BEI positions:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to load positions for BEI Summary Report',
+            position: 'top',
+          });
+        } finally {
+          this.loadingPositions = false;
+        }
+      },
+
+      /**
+       * Update position options based on current data source
+       */
+      updatePositionOptions() {
+        const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
+        const labelKey = 'Position';
+
+        this.positionOptions = [
+          { value: 'select_all', label: 'Select All' },
+          ...this.currentPositionsData.map((pos) => ({
+            value: pos[valueKey],
+            label: `${pos[labelKey]} (${this.formatDate(pos.post_date)})`,
+            postDate: pos.post_date,
+          })),
+        ];
+      },
+
+      /**
        * Load publication dates for Top 5 Ranking report
        */
       async loadTop5PublicationDates() {
         const summaryReportStore = useSummaryReportStore();
-        this.loadingTop5PublicationDates = true;
+        this.loadingPublicationDates = true;
         try {
           const response = await summaryReportStore.fetchPublicationDateList();
           this.top5PublicationDateOptions = response.map((item) => item.date);
@@ -766,7 +812,7 @@
             position: 'top',
           });
         } finally {
-          this.loadingTop5PublicationDates = false;
+          this.loadingPublicationDates = false;
         }
       },
 
@@ -826,7 +872,8 @@
         switch (row.id) {
           case 1: // Final Summary of Rating
           case 3: // Applicant per Position
-            this.openFinalSummaryModal();
+          case 6: // BEI Summary Report
+            this.openReportModal();
             break;
 
           case 2: // Top 5 Ranking Applicants
@@ -846,73 +893,77 @@
         }
       },
 
-      // ==================== FINAL SUMMARY / APPLICANT PER POSITION METHODS ====================
+      // ==================== REPORT MODAL METHODS ====================
 
-      openFinalSummaryModal() {
-        this.showFinalSummaryModal = true;
-        this.resetFinalSummaryFilters();
+      openReportModal() {
+        this.showReportModal = true;
+        this.resetFilters();
       },
 
-      resetFinalSummaryFilters() {
-        this.selectedFinalSummaryPositions = [];
-        this.finalSummaryDateFilterType = 'all';
-        this.finalSummarySingleDate = '';
-        this.finalSummaryDateRange.from = '';
-        this.finalSummaryDateRange.to = '';
+      resetFilters() {
+        this.selectedPositions = [];
+        this.dateFilterType = 'all';
+        this.singleDate = '';
+        this.dateRange.from = '';
+        this.dateRange.to = '';
       },
 
-      closeFinalSummaryModal() {
-        this.showFinalSummaryModal = false;
-        this.resetFinalSummaryFilters();
+      closeReportModal() {
+        this.showReportModal = false;
+        this.resetFilters();
+        // Clear data when closing to free memory
+        this.finalSummaryPositionsData = [];
+        this.beiPositionsData = [];
+        this.positionOptions = [];
       },
 
-      toggleFinalSummarySelectAll() {
-        if (this.allFinalSummarySelected) {
-          this.selectedFinalSummaryPositions = [];
+      toggleSelectAll() {
+        if (this.allSelected) {
+          this.selectedPositions = [];
         } else {
-          this.selectedFinalSummaryPositions = [...this.allFinalSummaryPositions];
+          this.selectedPositions = [...this.allPositions];
         }
       },
 
-      toggleFinalSummaryPosition(pos) {
-        const index = this.selectedFinalSummaryPositions.indexOf(pos);
+      togglePosition(pos) {
+        const index = this.selectedPositions.indexOf(pos);
         if (index > -1) {
-          this.selectedFinalSummaryPositions = this.selectedFinalSummaryPositions.filter(
-            (p) => p !== pos,
-          );
+          this.selectedPositions = this.selectedPositions.filter((p) => p !== pos);
         } else {
-          this.selectedFinalSummaryPositions = [...this.selectedFinalSummaryPositions, pos];
+          this.selectedPositions = [...this.selectedPositions, pos];
         }
       },
 
-      isFinalSummaryPositionSelected(pos) {
-        return this.selectedFinalSummaryPositions.includes(pos);
+      isPositionSelected(pos) {
+        return this.selectedPositions.includes(pos);
       },
 
-      onFinalSummarySingleDateChange() {
-        this.showFinalSummarySingleDatePicker = false;
-        this.selectedFinalSummaryPositions = [];
+      onSingleDateChange() {
+        this.showSingleDatePicker = false;
+        this.selectedPositions = [];
       },
 
-      onFinalSummaryFromDateChange() {
-        this.showFinalSummaryFromDatePicker = false;
-        this.selectedFinalSummaryPositions = [];
+      onFromDateChange() {
+        this.showFromDatePicker = false;
+        this.selectedPositions = [];
       },
 
-      onFinalSummaryToDateChange() {
-        this.showFinalSummaryToDatePicker = false;
-        this.selectedFinalSummaryPositions = [];
+      onToDateChange() {
+        this.showToDatePicker = false;
+        this.selectedPositions = [];
       },
 
-      openFinalSummaryReport() {
-        this.showFinalSummaryModal = false;
+      openReport() {
+        this.showReportModal = false;
 
         if (this.selectedReport?.id === 3) {
-          // Applicant per Position - pass single jobpostId
-          this.selectedApplicantJobpostId = this.selectedFinalSummaryPositions[0];
+          // Applicant per Position
           this.showApplicantReportViewer = true;
+        } else if (this.selectedReport?.id === 6) {
+          // BEI Summary Report
+          this.showBEISummaryReportViewer = true;
         } else {
-          // Final Summary of Rating - pass multiple positions
+          // Final Summary of Rating
           this.showFinalSummaryReportViewer = true;
         }
       },

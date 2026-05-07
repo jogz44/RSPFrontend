@@ -88,11 +88,211 @@
     }
   }
 
-  function normalizeLineBreaks(text = '') {
-    return String(text).replace(/<br\s*\/?>/gi, '\n');
+  // Helper function to get the criteria rating description for the applicant
+  function getCriteriaRatingDescription(jobPost, applicant, type) {
+    const criteriaRating = jobPost.criteria_rating?.[0];
+    if (!criteriaRating) return null;
+
+    const applicantText = applicant[`${type}_text`] || '';
+    const requiredValue = jobPost.criteria?.[type.charAt(0).toUpperCase() + type.slice(1)] || '';
+
+    // Parse the required value
+    let requiredYears = 0;
+    let requiredHours = 0;
+
+    if (type === 'experience') {
+      const yearMatch = requiredValue.match(/(\d+)\s*Years?/i);
+      requiredYears = yearMatch ? parseInt(yearMatch[1]) : 0;
+    }
+
+    if (type === 'training') {
+      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
+      requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
+    }
+
+    // Parse applicant's actual qualification
+    let applicantYears = 0;
+    let applicantHours = 0;
+    let hasEducation = false;
+
+    switch (type) {
+      case 'education': {
+        hasEducation =
+          applicantText &&
+          !applicantText.includes('No relevant') &&
+          (applicantText.includes('BACHELOR') || applicantText.includes('DEGREE'));
+        break;
+      }
+      case 'experience': {
+        const yearMatch = applicantText.match(/(\d+)\s*years?/i);
+        applicantYears = yearMatch ? parseInt(yearMatch[1]) : 0;
+        break;
+      }
+      case 'training': {
+        const hourMatch = applicantText.match(/(\d+)\s*hours?/i);
+        applicantHours = hourMatch ? parseInt(hourMatch[1]) : 0;
+        break;
+      }
+      case 'eligibility': {
+        break;
+      }
+    }
+
+    // Find matching criteria rating tier for experience
+    if (type === 'experience' && criteriaRating.experiences && requiredYears > 0) {
+      const percentageOfRequired = (applicantYears / requiredYears) * 100;
+
+      for (const exp of criteriaRating.experiences) {
+        const desc = exp.description;
+        let matches = false;
+
+        if (desc.includes('500% and above') && percentageOfRequired >= 500) matches = true;
+        else if (
+          desc.includes('400%-499%') &&
+          percentageOfRequired >= 400 &&
+          percentageOfRequired < 500
+        )
+          matches = true;
+        else if (
+          desc.includes('300%-399%') &&
+          percentageOfRequired >= 300 &&
+          percentageOfRequired < 400
+        )
+          matches = true;
+        else if (
+          desc.includes('200%-299%') &&
+          percentageOfRequired >= 200 &&
+          percentageOfRequired < 300
+        )
+          matches = true;
+        else if (
+          desc.includes('101%-199%') &&
+          percentageOfRequired >= 101 &&
+          percentageOfRequired < 200
+        )
+          matches = true;
+        else if (
+          desc.includes('Minimum Number') &&
+          percentageOfRequired >= 100 &&
+          percentageOfRequired < 101
+        )
+          matches = true;
+
+        if (matches) {
+          return desc;
+        }
+      }
+      return null;
+    }
+
+    // Find matching criteria rating tier for training
+    if (type === 'training' && criteriaRating.trainings && requiredHours > 0) {
+      if (applicantHours >= requiredHours) {
+        return criteriaRating.trainings[0]?.description || 'Meets minimum requirement';
+      }
+      return null;
+    }
+
+    // For positions that don't require experience/training
+    if (type === 'experience' && requiredValue.toLowerCase().includes('none required')) {
+      return null;
+    }
+
+    if (type === 'training' && requiredValue.toLowerCase().includes('none required')) {
+      return null;
+    }
+
+    // Education evaluation
+    if (type === 'education' && criteriaRating.educations) {
+      if (hasEducation) {
+        return criteriaRating.educations[0]?.description || 'Meets educational requirement';
+      }
+      return null;
+    }
+
+    // Eligibility evaluation
+    if (type === 'eligibility') {
+      const requiredElig = requiredValue.toLowerCase();
+      const hasRequiredElig =
+        (requiredElig.includes('professional') && applicantText.includes('PROFESSIONAL')) ||
+        (requiredElig.includes('subprofessional') && applicantText.includes('SUBPROFESSIONAL')) ||
+        (requiredElig.includes('electronics') && applicantText.includes('ELECTRONICS')) ||
+        (requiredElig.includes('career service') && applicantText.includes('CIVIL SERVICE'));
+
+      if (hasRequiredElig) {
+        return 'MEETS ELIGIBILITY REQUIREMENT';
+      }
+      return null;
+    }
+
+    return null;
   }
 
-  // Generate table rows from report data (show ALL applicants)
+  // Format the applicant's qualification text (clean up)
+  function getApplicantQualification(applicantText, type) {
+    if (!applicantText || applicantText.includes('No relevant')) {
+      return '';
+    }
+
+    let cleanText = applicantText;
+
+    // Remove bullet points and clean up
+    cleanText = cleanText.replace(/•\s*/g, '');
+
+    if (type === 'education') {
+      // Extract degree and units
+      const degreeMatch = cleanText.match(/(.+?)(?:\s*\(|$)/);
+      return degreeMatch ? degreeMatch[1].trim() : cleanText;
+    }
+
+    if (type === 'experience') {
+      // Extract years/months/days
+      const expMatch = cleanText.match(/(\d+ years?,?\s*\d* months?,?\s*\d* days?)/i);
+      return expMatch ? expMatch[1] : cleanText;
+    }
+
+    if (type === 'training') {
+      // Extract hours
+      const hoursMatch = cleanText.match(/(\d+)\s*hours?/i);
+      return hoursMatch ? `${hoursMatch[1]} HOURS` : cleanText;
+    }
+
+    if (type === 'eligibility') {
+      // Extract eligibility name
+      const eligMatch = cleanText.match(/(.+?)(?:\s*-\s*Rating|$)/);
+      return eligMatch ? eligMatch[1].trim() : cleanText;
+    }
+
+    return cleanText;
+  }
+
+  // Format cell content - simple format with criteria rating and applicant qualification
+  function formatCellContent(jobPost, applicant, type, requiredText, applicantText, remark) {
+    const criteriaRatingDesc = getCriteriaRatingDescription(jobPost, applicant, type);
+    const applicantQual = getApplicantQualification(applicantText, type);
+
+    let result = '';
+
+    if (criteriaRatingDesc) {
+      result += criteriaRatingDesc.toUpperCase();
+    } else if (requiredText && !requiredText.toLowerCase().includes('none required')) {
+      result += 'DOES NOT MEET REQUIREMENT';
+    }
+
+    if (applicantQual) {
+      if (result) result += '\n';
+      result += applicantQual.toUpperCase();
+    }
+
+    if (remark && remark.trim()) {
+      if (result) result += '\n\n';
+      result += `REMARKS: ${remark.toUpperCase()}`;
+    }
+
+    return result || 'N/A';
+  }
+
+  // Generate table rows from report data
   function generateTableRows() {
     if (!reportData.value || !reportData.value.jobPosts) {
       return [];
@@ -101,48 +301,53 @@
     const rows = [];
 
     reportData.value.jobPosts.forEach((jobPost) => {
-      // Position header row (gray background)
+      // Position header row (gray background) - ALL UPPERCASE
       rows.push([
         {
-          text: `${jobPost.Abbr} ${jobPost.ItemNo}`,
+          text: `${jobPost.Abbr} ${jobPost.ItemNo}`.toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
           alignment: 'center',
         },
         {
-          text: jobPost.SalaryGrade || '',
+          text: (jobPost.SalaryGrade || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
           alignment: 'center',
         },
         {
-          text: jobPost.Position || '',
+          text: (jobPost.Position || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
         },
         {
-          text: jobPost.criteria?.Education || '',
+          text: (jobPost.criteria?.Education || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Experience || '',
+          text: (jobPost.criteria?.Experience || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Training || '',
+          text: (jobPost.criteria?.Training || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Eligibility || '',
+          text: (jobPost.criteria?.Eligibility || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
       ]);
 
       if (jobPost.applicants && jobPost.applicants.length > 0) {
+        // Filter unique applicants by firstname and lastname
         const uniqueApplicants = jobPost.applicants.filter(
           (applicant, index, self) =>
             index ===
@@ -155,9 +360,7 @@
 
         uniqueApplicants.forEach((applicant) => {
           const applicantName = `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim();
-
           const isOutsider = String(applicant.applicant_status || '').toUpperCase() === 'OUTSIDER';
-
           const positionText = (applicant.current_designation || '').toUpperCase();
           const officeText = (applicant.office || '').toUpperCase();
 
@@ -165,53 +368,67 @@
             ? `${counter}. ${applicantName.toUpperCase()} (OUTSIDER)`
             : `${counter}. ${applicantName.toUpperCase()}\n${positionText}\n${officeText}`;
 
-          const educationText = normalizeLineBreaks(applicant.education_text || 'N/A');
-          const experienceText = normalizeLineBreaks(applicant.experience_text || 'N/A');
-          const trainingText = normalizeLineBreaks(applicant.training_text || 'N/A');
-          const eligibilityText = normalizeLineBreaks(applicant.eligibility_text || 'N/A');
-
-          const eduRemark = applicant.education_remark
-            ? `\n\nREMARKS: ${applicant.education_remark}`
-            : '';
-          const expRemark = applicant.experience_remark
-            ? `\n\nREMARKS: ${applicant.experience_remark}`
-            : '';
-          const trainRemark = applicant.training_remark
-            ? `\n\nREMARKS: ${applicant.training_remark}`
-            : '';
-          const eligRemark = applicant.eligibility_remark
-            ? `\n\nREMARKS: ${applicant.eligibility_remark}`
-            : '';
-
           rows.push([
             { text: '', style: 'applicantRow' },
             { text: '', style: 'applicantRow' },
-            { text: nameCellText, style: 'applicantRow' },
-            { text: `${educationText}${eduRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${experienceText}${expRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${trainingText}${trainRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${eligibilityText}${eligRemark}`, style: 'applicantRow', fontSize: 7 },
+            { text: nameCellText, style: 'applicantRow', fontSize: 7 },
+            {
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'education',
+                jobPost.criteria?.Education || 'N/A',
+                applicant.education_text,
+                applicant.education_remark,
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'experience',
+                jobPost.criteria?.Experience || 'N/A',
+                applicant.experience_text,
+                applicant.experience_remark,
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'training',
+                jobPost.criteria?.Training || 'N/A',
+                applicant.training_text,
+                applicant.training_remark,
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'eligibility',
+                jobPost.criteria?.Eligibility || 'N/A',
+                applicant.eligibility_text,
+                applicant.eligibility_remark,
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
           ]);
 
           counter += 1;
         });
-
-        if (counter === 1) {
-          rows.push([
-            {},
-            {},
-            { text: 'No qualified applicants', colSpan: 5, alignment: 'left', italics: true },
-            {},
-            {},
-            {},
-            {},
-          ]);
-        }
       } else {
         rows.push([
           {},
           {},
-          { text: 'No qualified applicants', colSpan: 5, alignment: 'left', italics: true },
+          { text: 'NO QUALIFIED APPLICANTS', colSpan: 5, alignment: 'left', italics: true },
           {},
           {},
           {},
@@ -236,185 +453,192 @@
 
     const logoBase64 = await getImageBase64('/logo.png');
 
-    import('pdfmake/build/pdfmake').then((pdfMakeModule) => {
-      const pdfMake = pdfMakeModule.default || pdfMakeModule;
-      import('pdfmake/build/vfs_fonts').then((vfsFontsModule) => {
-        pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
+    // Dynamically import pdfmake
+    const pdfMakeModule = await import('pdfmake/build/pdfmake');
+    const pdfMake = pdfMakeModule.default || pdfMakeModule;
+    const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
+    pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
-        const tableRows = generateTableRows();
+    const tableRows = generateTableRows();
 
-        const docDefinition = {
-          pageSize: 'LEGAL',
-          pageOrientation: 'landscape',
-          pageMargins: [72, 120, 72, 40],
-          header: function () {
-            return {
-              stack: [
+    const docDefinition = {
+      pageSize: 'LEGAL',
+      pageOrientation: 'landscape',
+      pageMargins: [72, 120, 72, 40],
+      header: function () {
+        return {
+          stack: [
+            {
+              canvas: [
                 {
-                  canvas: [
+                  type: 'rect',
+                  x: (1008 - 936) / 2,
+                  y: 60,
+                  w: 936,
+                  h: 25,
+                  color: '#008000',
+                },
+              ],
+            },
+            {
+              margin: [72, -65, 72, 0],
+              columns: [
+                {
+                  width: 65,
+                  stack: [
                     {
-                      type: 'rect',
-                      x: (1008 - 936) / 2,
-                      y: 60,
-                      w: 936,
-                      h: 25,
-                      color: '#008000',
+                      canvas: [
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: 75,
+                          h: 80,
+                          color: '#ffffff',
+                        },
+                      ],
                     },
+                    ...(logoBase64
+                      ? [
+                          {
+                            image: logoBase64,
+                            width: 65,
+                            height: 65,
+                            absolutePosition: { x: 77, y: 22 },
+                          },
+                        ]
+                      : []),
                   ],
                 },
                 {
-                  margin: [72, -65, 72, 0],
-                  columns: [
+                  width: '*',
+                  margin: [15, -15, 0, 0],
+                  stack: [
                     {
-                      width: 65,
-                      stack: [
-                        {
-                          canvas: [
-                            {
-                              type: 'rect',
-                              x: 0,
-                              y: 0,
-                              w: 75,
-                              h: 80,
-                              color: '#ffffff',
-                            },
-                          ],
-                        },
-                        ...(logoBase64
-                          ? [
-                              {
-                                image: logoBase64,
-                                width: 65,
-                                height: 65,
-                                absolutePosition: { x: 77, y: 22 },
-                              },
-                            ]
-                          : []),
-                      ],
+                      text: 'REPUBLIC OF THE PHILIPPINES'.toUpperCase(),
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 20, 0, 2],
                     },
                     {
-                      width: '*',
-                      margin: [15, -15, 0, 0],
-                      stack: [
-                        {
-                          text: 'REPUBLIC OF THE PHILIPPINES',
-                          fontSize: 8,
-                          color: '#00703c',
-                          alignment: 'left',
-                          margin: [0, 20, 0, 2],
-                        },
-                        {
-                          text: 'PROVINCE OF DAVAO DEL NORTE',
-                          fontSize: 8,
-                          color: '#00703c',
-                          alignment: 'left',
-                          margin: [0, 0, 0, 2],
-                        },
-                        {
-                          text: 'CITY OF TAGUM',
-                          fontSize: 10,
-                          bold: true,
-                          color: '#00703c',
-                          alignment: 'left',
-                        },
-                        {
-                          text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE',
-                          fontSize: 13,
-                          bold: true,
-                          color: 'white',
-                          margin: [0, 5, 0, 0],
-                        },
-                      ],
+                      text: 'PROVINCE OF DAVAO DEL NORTE'.toUpperCase(),
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 0, 0, 2],
+                    },
+                    {
+                      text: 'CITY OF TAGUM'.toUpperCase(),
+                      fontSize: 10,
+                      bold: true,
+                      color: '#00703c',
+                      alignment: 'left',
+                    },
+                    {
+                      text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE'.toUpperCase(),
+                      fontSize: 13,
+                      bold: true,
+                      color: 'white',
+                      margin: [0, 5, 0, 0],
                     },
                   ],
                 },
               ],
-            };
-          },
-          content: [
-            {
-              text: reportData.value.Header || "APPLICANT'S QUALIFICATION STANDARDS",
-              fontSize: 14,
-              bold: true,
-              alignment: 'center',
-              margin: [0, -20, 0, 0],
-            },
-            {
-              text: reportData.value.Date || `${props.publicationDate} PUBLICATION`,
-              fontSize: 14,
-              bold: true,
-              alignment: 'center',
-              margin: [0, 0, 0, 30],
-            },
-            {
-              table: {
-                headerRows: 2,
-                widths: ['8%', '4%', '15%', '18%', '18%', '18%', '18%'],
-                body: [
-                  [
-                    { text: 'Plantilla Code', style: 'tableHeader', rowSpan: 2 },
-                    { text: 'SG', style: 'tableHeader', rowSpan: 2 },
-                    {
-                      text: "Position Title with Applicant's Name",
-                      style: 'tableHeader',
-                      rowSpan: 2,
-                    },
-                    { text: 'Qualification Standards', style: 'tableHeader', colSpan: 4 },
-                    {},
-                    {},
-                    {},
-                  ],
-                  [
-                    {},
-                    {},
-                    {},
-                    { text: 'Education', style: 'tableHeader' },
-                    { text: 'Experience', style: 'tableHeader' },
-                    { text: 'Training', style: 'tableHeader' },
-                    { text: 'Eligibility', style: 'tableHeader' },
-                  ],
-                  ...tableRows,
-                ],
-              },
-              layout: {
-                hLineWidth: () => 1,
-                vLineWidth: () => 1,
-                hLineColor: () => '#000000',
-                vLineColor: () => '#000000',
-                paddingLeft: () => 4,
-                paddingRight: () => 4,
-                paddingTop: () => 2,
-                paddingBottom: () => 2,
-                fillColor: (rowIndex) => (rowIndex === 0 || rowIndex === 1 ? '#ffc000' : null),
-              },
             },
           ],
-          styles: {
-            tableHeader: {
-              fontSize: 8,
-              bold: true,
-              alignment: 'center',
-            },
-            positionRow: {
-              fontSize: 7,
-              bold: true,
-              alignment: 'left',
-            },
-            applicantRow: {
-              fontSize: 7,
-              alignment: 'left',
-            },
-          },
-          defaultStyle: {
-            fontSize: 7,
-          },
         };
+      },
+      content: [
+        {
+          text: (reportData.value.Header || "APPLICANT'S QUALIFICATION STANDARDS").toUpperCase(),
+          fontSize: 14,
+          bold: true,
+          alignment: 'center',
+          margin: [0, -20, 0, 0],
+        },
+        {
+          text: (reportData.value.Date || `${props.publicationDate} PUBLICATION`).toUpperCase(),
+          fontSize: 14,
+          bold: true,
+          alignment: 'center',
+          margin: [0, 0, 0, 30],
+        },
+        {
+          table: {
+            headerRows: 2,
+            widths: ['8%', '4%', '15%', '18%', '18%', '18%', '18%'],
+            body: [
+              [
+                { text: 'PLANTILLA CODE', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
+                { text: 'SG', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
+                {
+                  text: "POSITION TITLE WITH APPLICANT'S NAME",
+                  style: 'tableHeader',
+                  rowSpan: 2,
+                  fontSize: 7,
+                },
+                { text: 'QUALIFICATION STANDARDS', style: 'tableHeader', colSpan: 4, fontSize: 7 },
+                {},
+                {},
+                {},
+              ],
+              [
+                {},
+                {},
+                {},
+                { text: 'EDUCATION', style: 'tableHeader', fontSize: 7 },
+                { text: 'EXPERIENCE', style: 'tableHeader', fontSize: 7 },
+                { text: 'TRAINING', style: 'tableHeader', fontSize: 7 },
+                { text: 'ELIGIBILITY', style: 'tableHeader', fontSize: 7 },
+              ],
+              ...tableRows,
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => '#000000',
+            vLineColor: () => '#000000',
+            paddingLeft: () => 3,
+            paddingRight: () => 3,
+            paddingTop: () => 2,
+            paddingBottom: () => 2,
+            fillColor: (rowIndex) => {
+              if (rowIndex === 0 || rowIndex === 1) return '#ffc000';
+              return null;
+            },
+          },
+        },
+      ],
+      styles: {
+        tableHeader: {
+          fontSize: 7,
+          bold: true,
+          alignment: 'center',
+        },
+        positionRow: {
+          fontSize: 6.5,
+          bold: true,
+          alignment: 'left',
+        },
+        applicantRow: {
+          fontSize: 7,
+          alignment: 'left',
+        },
+        applicantCell: {
+          fontSize: 6.5,
+          alignment: 'left',
+        },
+      },
+      defaultStyle: {
+        fontSize: 6.5,
+      },
+    };
 
-        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-        pdfDocGenerator.getBlob((blob) => {
-          pdfUrl.value = URL.createObjectURL(blob);
-        });
-      });
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+    pdfDocGenerator.getBlob((blob) => {
+      pdfUrl.value = URL.createObjectURL(blob);
     });
   }
 

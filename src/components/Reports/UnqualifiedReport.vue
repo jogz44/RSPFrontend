@@ -1,7 +1,7 @@
 <template>
   <q-card class="modal-card">
     <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">Qualified Applicants Report</div>
+      <div class="text-h6">Unqualified Applicants Report</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -78,21 +78,59 @@
       reportData.value = response;
       console.log('Report data:', response);
     } catch (error) {
-      console.error('Error fetching qualified report:', error);
+      console.error('Error fetching unqualified report:', error);
       $q.notify({
         type: 'negative',
-        message: 'Failed to load qualified applicants report',
+        message: 'Failed to load unqualified applicants report',
       });
     } finally {
       isLoading.value = false;
     }
   }
 
-  function normalizeLineBreaks(text = '') {
-    return String(text).replace(/<br\s*\/?>/gi, '\n');
+  // Format cell content for unqualified applicants
+
+  function formatUnqualifiedCellContent(applicantText, remark, type) {
+    let result = '';
+
+    // Check if there's actual qualification text
+    if (applicantText && applicantText !== 'N/A') {
+      let cleanText = applicantText;
+      cleanText = cleanText.replace(/•\s*/g, '');
+
+      // If it's "No relevant..." type messages, display as is
+      if (applicantText.includes('No relevant')) {
+        result = applicantText;
+      } else {
+        // Parse actual qualifications
+        if (type === 'education') {
+          const degreeMatch = cleanText.match(/(.+?)(?:\s*\(|$)/);
+          result = degreeMatch ? degreeMatch[1].trim() : cleanText;
+        } else if (type === 'experience') {
+          const expMatch = cleanText.match(/(\d+ years?,?\s*\d* months?,?\s*\d* days?)/i);
+          result = expMatch ? expMatch[1] : cleanText;
+        } else if (type === 'training') {
+          const hoursMatch = cleanText.match(/(\d+)\s*hours?/i);
+          result = hoursMatch ? `${hoursMatch[1]} HOURS` : cleanText;
+        } else if (type === 'eligibility') {
+          const eligMatch = cleanText.match(/(.+?)(?:\s*-\s*Rating|$)/);
+          result = eligMatch ? eligMatch[1].trim() : cleanText;
+        } else {
+          result = cleanText;
+        }
+      }
+    } else {
+      result = 'NO QUALIFICATION RECORDED';
+    }
+
+    if (remark && remark.trim()) {
+      result += `\n\nREMARKS: ${remark.toUpperCase()}`;
+    }
+
+    return result.toUpperCase();
   }
 
-  // Generate table rows from report data (show ALL applicants)
+  // Generate table rows from report data
   function generateTableRows() {
     if (!reportData.value || !reportData.value.jobPosts) {
       return [];
@@ -101,44 +139,48 @@
     const rows = [];
 
     reportData.value.jobPosts.forEach((jobPost) => {
-      // Position header row (gray background)
+      // Position header row (gray background) - ALL UPPERCASE
       rows.push([
         {
-          text: `${jobPost.Abbr} ${jobPost.ItemNo}`,
+          text: `${jobPost.Abbr} ${jobPost.ItemNo}`.toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
           alignment: 'center',
         },
         {
-          text: jobPost.SalaryGrade || '',
+          text: (jobPost.SalaryGrade || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
           alignment: 'center',
         },
         {
-          text: jobPost.Position || '',
+          text: (jobPost.Position || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
         },
         {
-          text: jobPost.criteria?.Education || '',
+          text: (jobPost.criteria?.Education || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Experience || '',
+          text: (jobPost.criteria?.Experience || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Training || '',
+          text: (jobPost.criteria?.Training || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
         {
-          text: jobPost.criteria?.Eligibility || '',
+          text: (jobPost.criteria?.Eligibility || '').toUpperCase(),
           style: 'positionRow',
           fillColor: '#d9d9d9',
+          fontSize: 6.5,
         },
       ]);
 
@@ -155,9 +197,7 @@
 
         uniqueApplicants.forEach((applicant) => {
           const applicantName = `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim();
-
           const isOutsider = String(applicant.applicant_status || '').toUpperCase() === 'OUTSIDER';
-
           const positionText = (applicant.current_designation || '').toUpperCase();
           const officeText = (applicant.office || '').toUpperCase();
 
@@ -165,53 +205,55 @@
             ? `${counter}. ${applicantName.toUpperCase()} (OUTSIDER)`
             : `${counter}. ${applicantName.toUpperCase()}\n${positionText}\n${officeText}`;
 
-          const educationText = normalizeLineBreaks(applicant.education_text || 'N/A');
-          const experienceText = normalizeLineBreaks(applicant.experience_text || 'N/A');
-          const trainingText = normalizeLineBreaks(applicant.training_text || 'N/A');
-          const eligibilityText = normalizeLineBreaks(applicant.eligibility_text || 'N/A');
-
-          const eduRemark = applicant.education_remark
-            ? `\n\nREMARKS: ${applicant.education_remark}`
-            : '';
-          const expRemark = applicant.experience_remark
-            ? `\n\nREMARKS: ${applicant.experience_remark}`
-            : '';
-          const trainRemark = applicant.training_remark
-            ? `\n\nREMARKS: ${applicant.training_remark}`
-            : '';
-          const eligRemark = applicant.eligibility_remark
-            ? `\n\nREMARKS: ${applicant.eligibility_remark}`
-            : '';
-
           rows.push([
             { text: '', style: 'applicantRow' },
             { text: '', style: 'applicantRow' },
-            { text: nameCellText, style: 'applicantRow' },
-            { text: `${educationText}${eduRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${experienceText}${expRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${trainingText}${trainRemark}`, style: 'applicantRow', fontSize: 7 },
-            { text: `${eligibilityText}${eligRemark}`, style: 'applicantRow', fontSize: 7 },
+            { text: nameCellText, style: 'applicantRow', fontSize: 7 },
+            {
+              text: formatUnqualifiedCellContent(
+                applicant.education_text,
+                applicant.education_remark,
+                'education',
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatUnqualifiedCellContent(
+                applicant.experience_text,
+                applicant.experience_remark,
+                'experience',
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatUnqualifiedCellContent(
+                applicant.training_text,
+                applicant.training_remark,
+                'training',
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
+            {
+              text: formatUnqualifiedCellContent(
+                applicant.eligibility_text,
+                applicant.eligibility_remark,
+                'eligibility',
+              ),
+              style: 'applicantCell',
+              fontSize: 6.5,
+            },
           ]);
 
           counter += 1;
         });
-
-        if (counter === 1) {
-          rows.push([
-            {},
-            {},
-            { text: 'No qualified applicants', colSpan: 5, alignment: 'left', italics: true },
-            {},
-            {},
-            {},
-            {},
-          ]);
-        }
       } else {
         rows.push([
           {},
           {},
-          { text: 'No qualified applicants', colSpan: 5, alignment: 'left', italics: true },
+          { text: 'NO APPLICANT', colSpan: 5, alignment: 'center', italics: true },
           {},
           {},
           {},
@@ -297,28 +339,28 @@
                       margin: [15, -15, 0, 0],
                       stack: [
                         {
-                          text: 'REPUBLIC OF THE PHILIPPINES',
+                          text: 'REPUBLIC OF THE PHILIPPINES'.toUpperCase(),
                           fontSize: 8,
                           color: '#00703c',
                           alignment: 'left',
                           margin: [0, 20, 0, 2],
                         },
                         {
-                          text: 'PROVINCE OF DAVAO DEL NORTE',
+                          text: 'PROVINCE OF DAVAO DEL NORTE'.toUpperCase(),
                           fontSize: 8,
                           color: '#00703c',
                           alignment: 'left',
                           margin: [0, 0, 0, 2],
                         },
                         {
-                          text: 'CITY OF TAGUM',
+                          text: 'CITY OF TAGUM'.toUpperCase(),
                           fontSize: 10,
                           bold: true,
                           color: '#00703c',
                           alignment: 'left',
                         },
                         {
-                          text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE',
+                          text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE'.toUpperCase(),
                           fontSize: 13,
                           bold: true,
                           color: 'white',
@@ -333,15 +375,17 @@
           },
           content: [
             {
-              text: reportData.value.Header || "APPLICANT'S UNQUALIFICATION STANDARDS",
-              fontSize: 14,
+              text: (
+                reportData.value.Header || "APPLICANT'S UNQUALIFICATION STANDARDS"
+              ).toUpperCase(),
+              fontSize: 13,
               bold: true,
               alignment: 'center',
               margin: [0, -20, 0, 0],
             },
             {
-              text: reportData.value.Date || `${props.publicationDate} PUBLICATION`,
-              fontSize: 14,
+              text: (reportData.value.Date || `${props.publicationDate} PUBLICATION`).toUpperCase(),
+              fontSize: 12,
               bold: true,
               alignment: 'center',
               margin: [0, 0, 0, 30],
@@ -352,14 +396,20 @@
                 widths: ['8%', '4%', '15%', '18%', '18%', '18%', '18%'],
                 body: [
                   [
-                    { text: 'Plantilla Code', style: 'tableHeader', rowSpan: 2 },
-                    { text: 'SG', style: 'tableHeader', rowSpan: 2 },
+                    { text: 'PLANTILLA CODE', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
+                    { text: 'SG', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
                     {
-                      text: "Position Title with Applicant's Name",
+                      text: "POSITION TITLE WITH APPLICANT'S NAME",
                       style: 'tableHeader',
                       rowSpan: 2,
+                      fontSize: 7,
                     },
-                    { text: 'Qualification Standards', style: 'tableHeader', colSpan: 4 },
+                    {
+                      text: 'QUALIFICATION STANDARDS',
+                      style: 'tableHeader',
+                      colSpan: 4,
+                      fontSize: 7,
+                    },
                     {},
                     {},
                     {},
@@ -368,21 +418,21 @@
                     {},
                     {},
                     {},
-                    { text: 'Education', style: 'tableHeader' },
-                    { text: 'Experience', style: 'tableHeader' },
-                    { text: 'Training', style: 'tableHeader' },
-                    { text: 'Eligibility', style: 'tableHeader' },
+                    { text: 'EDUCATION', style: 'tableHeader', fontSize: 7 },
+                    { text: 'EXPERIENCE', style: 'tableHeader', fontSize: 7 },
+                    { text: 'TRAINING', style: 'tableHeader', fontSize: 7 },
+                    { text: 'ELIGIBILITY', style: 'tableHeader', fontSize: 7 },
                   ],
                   ...tableRows,
                 ],
               },
               layout: {
-                hLineWidth: () => 1,
-                vLineWidth: () => 1,
+                hLineWidth: () => 0.5,
+                vLineWidth: () => 0.5,
                 hLineColor: () => '#000000',
                 vLineColor: () => '#000000',
-                paddingLeft: () => 4,
-                paddingRight: () => 4,
+                paddingLeft: () => 3,
+                paddingRight: () => 3,
                 paddingTop: () => 2,
                 paddingBottom: () => 2,
                 fillColor: (rowIndex) => (rowIndex === 0 || rowIndex === 1 ? '#ffc000' : null),
@@ -391,12 +441,12 @@
           ],
           styles: {
             tableHeader: {
-              fontSize: 8,
+              fontSize: 7,
               bold: true,
               alignment: 'center',
             },
             positionRow: {
-              fontSize: 7,
+              fontSize: 6.5,
               bold: true,
               alignment: 'left',
             },
@@ -404,9 +454,13 @@
               fontSize: 7,
               alignment: 'left',
             },
+            applicantCell: {
+              fontSize: 6.5,
+              alignment: 'left',
+            },
           },
           defaultStyle: {
-            fontSize: 7,
+            fontSize: 6.5,
           },
         };
 
