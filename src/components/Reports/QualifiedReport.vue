@@ -428,7 +428,7 @@
         rows.push([
           {},
           {},
-          { text: 'NO QUALIFIED APPLICANTS', colSpan: 5, alignment: 'left', italics: true },
+          { text: 'NO APPLICANT', colSpan: 5, alignment: 'center', italics: true },
           {},
           {},
           {},
