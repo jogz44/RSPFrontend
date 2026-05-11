@@ -21,7 +21,7 @@ const routes = [
         meta: {
           auth: true,
           role: 'admin',
-          permissions: ['viewDashboardstat'],
+          // permissions: ['viewDashboardstat'],
         },
       },
       {
