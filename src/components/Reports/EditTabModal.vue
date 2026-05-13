@@ -209,7 +209,7 @@
       // Build complete payload with all required fields
       const payload = {
         // Personal Information (required by backend)
-        tempId: personalData.value.tempId || '',
+        tempId: personalData.tempId || '',
         Surname: editedData.value.Surname || '',
         Address: personalData.Address,
         Firstname: editedData.value.Firstname || '',

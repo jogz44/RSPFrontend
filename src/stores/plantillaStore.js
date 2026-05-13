@@ -319,7 +319,7 @@ export const usePlantillaStore = defineStore('plantilla', {
     async editEmployee(ControlNo, payload) {
       try {
         this.loading = true;
-        const response = await adminApi.put(`/employee/update/${ControlNo}`, payload, {
+        const response = await adminApi.post(`/employee/update/${ControlNo}`, payload, {
           validateStatus: (status) => status < 500,
         });
         return response;

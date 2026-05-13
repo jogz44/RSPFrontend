@@ -53,22 +53,16 @@
 
         <!-- Search Bar -->
         <q-input
-        
           outlined
           dense
           placeholder="Search by name or control number..."
           class="q-mb-md"
           v-model="globalSearch"
+          clearable
+          @clear="onSearchClear"
         >
           <template v-slot:prepend>
             <q-icon name="search" />
-          </template>
-          <template v-slot:append>
-            <q-icon
-              v-if="employeeSearch"
-              name="clear"
-              class="cursor-pointer"
-            />
           </template>
         </q-input>
 
@@ -76,11 +70,10 @@
         <q-table
           flat
           bordered
-          :rows="usePlantilla.employee"
+          :rows="filteredEmployees"
           :columns="employeeColumns"
           row-key="ControlNo"
           :loading="loadingEmployees"
-
           v-model:pagination="pagination"
           @request="onRequest"
         >
@@ -338,9 +331,16 @@
 
         <div class="row q-col-gutter-md q-mb-md">
           <div class="col-6">
+            <!--
+              Searchable Vice Select:
+              - use-input: enables the text input inside the dropdown
+              - input-debounce="0": filter fires immediately on each keystroke
+              - @filter: runs our case-insensitive filterViceOptions function
+              - hide-selected + fill-input: keeps typed text visible while searching
+            -->
             <q-select
               v-model="selectedVice"
-              :options="viceOptions"
+              :options="filteredViceOptions"
               option-label="label"
               option-value="value"
               label="Vice Name"
@@ -349,9 +349,15 @@
               clearable
               emit-value
               map-options
+              use-input
+              input-debounce="0"
+              hide-selected
+              fill-input
               :loading="loadingVice"
               :disable="viceOptions.length === 0"
+              @filter="filterViceOptions"
               @update:model-value="handleViceSelection"
+              @clear="clearViceSelection"
             >
               <template v-slot:prepend>
                 <q-icon name="person" />
@@ -359,7 +365,22 @@
               <template v-slot:no-option>
                 <q-item>
                   <q-item-section class="text-grey">
-                    Click "Load Previous Employee" to fetch data
+                    {{
+                      viceOptions.length === 0
+                        ? 'Click "Load Previous Employee" to fetch data'
+                        : 'No match found'
+                    }}
+                  </q-item-section>
+                </q-item>
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section avatar>
+                    <q-icon name="person" color="primary" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    <q-item-label caption>Cause: {{ scope.opt.cause }}</q-item-label>
                   </q-item-section>
                 </q-item>
               </template>
@@ -470,8 +491,6 @@
 <script setup>
   import { ref, computed, watch, onMounted } from 'vue';
   import { usePlantillaStore } from 'stores/plantillaStore';
-  // import { useAuthStore } from 'stores/authStore';
-  // import { useLogsStore } from 'stores/logsStore';
   import { toast } from 'src/boot/toast';
   import { useQuasar } from 'quasar';
 
@@ -492,8 +511,6 @@
 
   // Store instances
   const usePlantilla = usePlantillaStore();
-  // const authStore = useAuthStore();
-  // const logStore = useLogsStore();
   const $q = useQuasar();
 
   // Refs
@@ -503,7 +520,6 @@
   const loadingEmployees = ref(false);
   const loadingVice = ref(false);
   const qsDataLoad = ref([]);
-  // const employeeList = ref([]);
   const employeeSearch = ref('');
   const selectedEmployee = ref(null);
   const viceList = ref([]);
@@ -511,18 +527,17 @@
   const positionDesignation = ref('');
   const globalSearch = ref('');
 
-  let searchTimeout = null; // ✅ Manual debounce timeout
+  // ✅ Holds the currently filtered vice options shown in the dropdown
+  const filteredViceOptions = ref([]);
+
+  let searchTimeout = null;
+
   // Constants
   const employeeColumns = [
     { name: 'ControlNo', label: 'Control No', field: 'ControlNo', align: 'left', sortable: true },
     { name: 'Firstname', label: 'First Name', field: 'Firstname', align: 'left', sortable: true },
     { name: 'Surname', label: 'Surname', field: 'Surname', align: 'left', sortable: true },
   ];
-
-  // const employeePagination = ref({
-  //   page: 1,
-  //   rowsPerPage: 10,
-  // });
 
   const qsColumns = [
     { name: 'education', label: 'Education', field: 'Education', align: 'left' },
@@ -558,30 +573,16 @@
     controlNo: '',
   });
 
-  // Computed Properties
-  // const filteredEmployees = computed(() => {
-  //   if (!employeeSearch.value) {
-  //     return Array.isArray(employeeList.value) ? employeeList.value : [];
-  //   }
-  //   const search = employeeSearch.value.toLowerCase();
-  //   return Array.isArray(employeeList.value)
-  //     ? employeeList.value.filter(
-  //         (emp) =>
-  //           emp.Firstname?.toLowerCase().includes(search) ||
-  //           emp.Surname?.toLowerCase().includes(search) ||
-  //           emp.ControlNo?.toLowerCase().includes(search),
-  //       )
-  //     : [];
-  // });
-
+  // ---------------------------------------------------------------------------
+  // Pagination
+  // ---------------------------------------------------------------------------
   const pagination = ref({
-  sortBy: 'ControlNo',
-  descending: false,
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0, // ✅ REQUIRED
-});
-
+    sortBy: 'ControlNo',
+    descending: false,
+    page: 1,
+    rowsPerPage: 10,
+    rowsNumber: 0,
+  });
 
   const onRequest = async (props) => {
     const { page, rowsPerPage, sortBy, descending } = props.pagination;
@@ -589,17 +590,48 @@
     await usePlantilla.fetchAllEmployee({
       page,
       perPage: rowsPerPage,
+      // Pass search as-is; the API should be case-insensitive on the backend.
+      // Client-side filtering via filteredEmployees handles the display layer.
       search: globalSearch.value,
     });
 
-    // ✅ CRITICAL: Update all pagination properties
     pagination.value.page = page;
     pagination.value.rowsPerPage = rowsPerPage;
-    pagination.value.rowsNumber = usePlantilla.total; // ← This enables pagination controls
+    pagination.value.rowsNumber = usePlantilla.total;
     pagination.value.sortBy = sortBy;
     pagination.value.descending = descending;
   };
 
+  // ---------------------------------------------------------------------------
+  // ✅ Case-insensitive client-side filter for the employee table.
+  //    The store already returns the page from the server, so this is a
+  //    secondary filter that normalises casing on whatever the server sends back.
+  // ---------------------------------------------------------------------------
+  const filteredEmployees = computed(() => {
+    const raw = usePlantilla.employee;
+    if (!Array.isArray(raw)) return [];
+
+    const term = globalSearch.value.trim().toLowerCase();
+    if (!term) return raw;
+
+    return raw.filter((emp) => {
+      const firstname = (emp.Firstname || '').toLowerCase();
+      const surname = (emp.Surname || '').toLowerCase();
+      const controlNo = (emp.ControlNo || '').toLowerCase();
+      return (
+        firstname.includes(term) ||
+        surname.includes(term) ||
+        // Also match "firstname surname" or "surname firstname" combos
+        `${firstname} ${surname}`.includes(term) ||
+        `${surname} ${firstname}`.includes(term) ||
+        controlNo.includes(term)
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Vice options — full list derived from viceList
+  // ---------------------------------------------------------------------------
   const viceOptions = computed(() => {
     return viceList.value.map((vice) => ({
       label: `${vice.Firstname || ''} ${vice.Surname || ''}`.trim(),
@@ -610,6 +642,31 @@
     }));
   });
 
+  // Keep filteredViceOptions in sync whenever viceList changes (e.g. after load)
+  watch(viceOptions, (newOpts) => {
+    filteredViceOptions.value = newOpts;
+  });
+
+  // ---------------------------------------------------------------------------
+  // ✅ filterViceOptions — called by q-select's @filter event.
+  //    Performs case-insensitive substring search on the label (name).
+  // ---------------------------------------------------------------------------
+  const filterViceOptions = (val, update) => {
+    update(() => {
+      if (!val || val.trim() === '') {
+        filteredViceOptions.value = viceOptions.value;
+      } else {
+        const term = val.trim().toLowerCase();
+        filteredViceOptions.value = viceOptions.value.filter((opt) =>
+          opt.label.toLowerCase().includes(term),
+        );
+      }
+    });
+  };
+
+  // ---------------------------------------------------------------------------
+  // Computed Helpers
+  // ---------------------------------------------------------------------------
   const isCoterminousOrElective = computed(() => {
     const status = employeeDetails.value.Status?.toUpperCase();
     return status === 'CO-TERMINOUS' || status === 'ELECTIVE';
@@ -625,16 +682,13 @@
       employeeDetails.value.ItemNo &&
       employeeDetails.value.Renew;
 
-    // If CO-TERMINOUS or ELECTIVE, posting dates are not required
-    if (isCoterminousOrElective.value) {
-      return baseValid;
-    }
-
-    // For other statuses, posting dates are required
+    if (isCoterminousOrElective.value) return baseValid;
     return baseValid && employeeDetails.value.post_date && employeeDetails.value.end_date;
   });
 
+  // ---------------------------------------------------------------------------
   // Helper Functions
+  // ---------------------------------------------------------------------------
   const getEmployeeFullName = (employee) => {
     if (!employee) return '';
     return `${employee.Firstname || ''} ${employee.Surname || ''}`.trim();
@@ -648,81 +702,68 @@
     selectedEmployee.value = employee;
   };
 
+  const onSearchClear = () => {
+    globalSearch.value = '';
+  };
+
   const getToDateHint = () => {
     const status = employeeDetails.value.Status?.toUpperCase();
-    if (status === 'CO-TERMINOUS' || status === 'ELECTIVE') {
-      return '3 years from From Date';
-    } else if (status === 'REGULAR') {
-      return 'End of month, Dec 31, 50 years from From Date';
-    }
+    if (status === 'CO-TERMINOUS' || status === 'ELECTIVE') return '3 years from From Date';
+    if (status === 'REGULAR') return 'End of month, Dec 31, 50 years from From Date';
     return 'Calculated based on employment status';
   };
 
   const calculateToDate = (fromDate, status) => {
     if (!fromDate) return '';
-
-    // Parse the date string properly
     let baseDate;
     try {
-      // Handle both formats: YYYY/MM/DD and YYYY-MM-DD
       const dateStr = fromDate.replace(/\//g, '-');
       baseDate = new Date(dateStr);
-
-      // Check if date is valid
-      if (isNaN(baseDate.getTime())) {
-        console.error('Invalid date:', fromDate);
-        return '';
-      }
-    } catch (error) {
-      console.error('Error parsing date:', error);
+      if (isNaN(baseDate.getTime())) return '';
+    } catch {
       return '';
     }
 
     const statusUpper = status?.toUpperCase();
-
     if (statusUpper === 'CO-TERMINOUS' || statusUpper === 'ELECTIVE') {
-      // 3 years from from date
-      const futureDate = new Date(baseDate);
-      futureDate.setFullYear(futureDate.getFullYear() + 3);
-      return formatDate(futureDate);
+      const d = new Date(baseDate);
+      d.setFullYear(d.getFullYear() + 3);
+      return formatDate(d);
     } else if (statusUpper === 'REGULAR') {
-      // End of month, December 31, 50 years from from date
-      const futureDate = new Date(baseDate);
-      futureDate.setFullYear(futureDate.getFullYear() + 50);
-      futureDate.setMonth(11); // December (0-indexed)
-      futureDate.setDate(31); // Last day of December
-      return formatDate(futureDate);
+      const d = new Date(baseDate);
+      d.setFullYear(d.getFullYear() + 50);
+      d.setMonth(11);
+      d.setDate(31);
+      return formatDate(d);
     }
-
-    // Default: same as from date
     return formatDate(baseDate);
   };
 
   const formatDate = (date) => {
     if (!date || isNaN(date.getTime())) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}/${month}/${day}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}/${m}/${d}`;
   };
 
-  const getCurrentDate = () => {
-    return formatDate(new Date());
-  };
+  const getCurrentDate = () => formatDate(new Date());
 
   const updateToDate = () => {
-    // Update ToDate whenever FromDate changes
-    const newToDate = calculateToDate(employeeDetails.value.FromDate, employeeDetails.value.Status);
-    employeeDetails.value.ToDate = newToDate;
+    employeeDetails.value.ToDate = calculateToDate(
+      employeeDetails.value.FromDate,
+      employeeDetails.value.Status,
+    );
   };
 
+  // ---------------------------------------------------------------------------
   // Vice Details Functions
+  // ---------------------------------------------------------------------------
   const loadViceDetails = async () => {
     if (!positionDesignation.value || !employeeDetails.value.Status) {
       toast.error('Position designation and employment status are required');
       return;
     }
-
     try {
       loadingVice.value = true;
       const viceData = await usePlantilla.fetchVice(
@@ -730,6 +771,8 @@
         employeeDetails.value.Status,
       );
       viceList.value = viceData || [];
+      // Reset filtered list to full list after fresh load
+      filteredViceOptions.value = viceOptions.value;
 
       if (viceList.value.length === 0) {
         toast.info('No previous employees found for this position and status');
@@ -740,6 +783,7 @@
       console.error('Error loading vice details:', error);
       toast.error('Failed to load previous employee data');
       viceList.value = [];
+      filteredViceOptions.value = [];
     } finally {
       loadingVice.value = false;
     }
@@ -751,7 +795,6 @@
       employeeDetails.value.vicecause = '';
       return;
     }
-
     const selected = viceOptions.value.find((opt) => opt.value === controlNo);
     if (selected) {
       employeeDetails.value.vicename = selected.name;
@@ -759,22 +802,17 @@
     }
   };
 
-  // Data Loading Functions
-  // const loadEmployees = async () => {
-  //   try {
-  //     loadingEmployees.value = true;
-  //     const employees = await usePlantilla.fetchAllEmployee();
-  //     employeeList.value = employees || [];
-  //   } catch (error) {
-  //     console.error('Error loading employees:', error);
-  //     toast.error('Failed to load employees');
-  //   } finally {
-  //     loadingEmployees.value = false;
-  //   }
-  // };
+  const clearViceSelection = () => {
+    employeeDetails.value.vicename = '';
+    employeeDetails.value.vicecause = '';
+    selectedVice.value = null;
+  };
 
+  // ---------------------------------------------------------------------------
+  // Data Loading
+  // ---------------------------------------------------------------------------
   const loadPositionData = async () => {
-    if (!props.positionData || !props.positionData.PositionID) {
+    if (!props.positionData?.PositionID) {
       console.error('Invalid position data:', props.positionData);
       toast.error('Invalid position data');
       return;
@@ -784,7 +822,6 @@
     const status = props.positionData.designationStatus || '';
     const toDate = calculateToDate(today, status);
 
-    // Store the designation for vice fetching
     positionDesignation.value = props.positionData.Designation || props.positionData.position || '';
 
     employeeDetails.value = {
@@ -814,7 +851,6 @@
       controlNo: '',
     };
 
-    // Load qualification standards
     try {
       loading.value = true;
       await usePlantilla.fetchQsData(props.positionData.PositionID);
@@ -827,7 +863,9 @@
     }
   };
 
-  // Navigation Functions
+  // ---------------------------------------------------------------------------
+  // Navigation
+  // ---------------------------------------------------------------------------
   const goToStep2 = () => {
     if (!selectedEmployee.value) {
       toast.error('Please select an employee first');
@@ -837,7 +875,9 @@
     step.value = 2;
   };
 
-  // Submit Function
+  // ---------------------------------------------------------------------------
+  // Submit
+  // ---------------------------------------------------------------------------
   const submitEmployee = async () => {
     if (isSubmitting.value) return;
     if (!isFormValid.value) {
@@ -846,13 +886,10 @@
     }
 
     isSubmitting.value = true;
-
     try {
-      // Set post_date and end_date to 'N/A' if CO-TERMINOUS or ELECTIVE
       const postDate = isCoterminousOrElective.value
         ? 'N/A'
         : employeeDetails.value.post_date.replace(/\//g, '-');
-
       const endDate = isCoterminousOrElective.value
         ? 'N/A'
         : employeeDetails.value.end_date.replace(/\//g, '-');
@@ -888,51 +925,34 @@
       };
 
       console.log('Submitting payload:', payload);
-
-      // Use the plantilla store's addEmployee method
       const response = await usePlantilla.addEmployee(payload);
-
       console.log('Response:', response);
 
-      if (response && response.data && response.data.success) {
-        // Log the action
-        // logStore.logAction(
-        //   `${authStore.user.name} added employee ${getEmployeeFullName(selectedEmployee.value)} (${employeeDetails.value.controlNo}) to position ${employeeDetails.value.Position}. PositionID: ${employeeDetails.value.PositionID}, ItemNo: ${employeeDetails.value.ItemNo}`,
-        // );
-
+      if (response?.data?.success) {
         $q.notify({
           type: 'positive',
           message: response.data.message || 'Employee added successfully!',
           position: 'top',
           timeout: 2000,
         });
-
         emit('employee-added');
         closeModal();
       } else {
-        // Display the error message from the response
-        const errorMessage = response?.data?.message || 'Failed to add employee. Please try again.';
-        console.error('Error response:', response);
-
         $q.notify({
           type: 'negative',
-          message: errorMessage,
+          message: response?.data?.message || 'Failed to add employee. Please try again.',
           position: 'top',
           timeout: 4000,
         });
       }
     } catch (error) {
       console.error('Error adding employee:', error);
-
-      // Always display the error message from the server if available
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to add employee. Please try again.';
-
       $q.notify({
         type: 'negative',
-        message: errorMessage,
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to add employee. Please try again.',
         position: 'top',
         timeout: 4000,
       });
@@ -941,13 +961,17 @@
     }
   };
 
-  // Close Modal Function
+  // ---------------------------------------------------------------------------
+  // Close Modal
+  // ---------------------------------------------------------------------------
   const closeModal = () => {
     step.value = 1;
     selectedEmployee.value = null;
     selectedVice.value = null;
     viceList.value = [];
+    filteredViceOptions.value = [];
     employeeSearch.value = '';
+    globalSearch.value = '';
     positionDesignation.value = '';
     employeeDetails.value = {
       Office: '',
@@ -980,76 +1004,60 @@
     emit('close');
   };
 
+  // ---------------------------------------------------------------------------
   // Watchers
+  // ---------------------------------------------------------------------------
   watch(
     () => props.show,
     async (newVal) => {
-      if (newVal) {
-        await loadPositionData();
-        // await loadEmployees();
-      }
+      if (newVal) await loadPositionData();
     },
   );
 
   watch(
     () => props.positionData,
     async (newVal) => {
-      if (newVal && props.show) {
-        await loadPositionData();
-      }
+      if (newVal && props.show) await loadPositionData();
     },
     { deep: true },
   );
 
-  // Watch FromDate for manual changes (typing)
   watch(
     () => employeeDetails.value.FromDate,
     (newVal, oldVal) => {
-      if (newVal && newVal !== oldVal) {
-        updateToDate();
-      }
+      if (newVal && newVal !== oldVal) updateToDate();
     },
   );
 
-   watch(globalSearch, (newValue) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
+  // ✅ Debounced search watcher — passes the raw string to the API
+  //    (backend should handle case-insensitivity), and the computed
+  //    filteredEmployees handles it client-side as a safety net.
+  watch(globalSearch, (newValue) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
-      pagination.value.page = 1; // Reset to first page on search
-
+      pagination.value.page = 1;
       await usePlantilla.fetchAllEmployee({
         page: 1,
         perPage: pagination.value.rowsPerPage,
-        search: newValue,
+        search: newValue, // raw value; backend should be case-insensitive
       });
-
-      // ✅ Update rowsNumber after search
       pagination.value.rowsNumber = usePlantilla.total;
     }, 500);
   });
 
+  // ---------------------------------------------------------------------------
   // Lifecycle
-  onMounted(() => {
-    if (props.show && props.positionData) {
-      loadPositionData();
-      // loadEmployees();
-    }
+  // ---------------------------------------------------------------------------
+  onMounted(async () => {
+    if (props.show && props.positionData) loadPositionData();
+
+    await usePlantilla.fetchAllEmployee({
+      page: 1,
+      perPage: pagination.value.rowsPerPage,
+      search: '',
+    });
+    pagination.value.rowsNumber = usePlantilla.total;
   });
-
-onMounted(async () => {
-
-  await usePlantilla.fetchAllEmployee({
-    page: 1,
-    perPage: pagination.value.rowsPerPage,
-    search: '',
-  });
-
-  // ✅ Set total rows to enable pagination
-  pagination.value.rowsNumber = usePlantilla.total;
-});
-
 </script>
 
 <style lang="scss" scoped>
@@ -1059,12 +1067,10 @@ onMounted(async () => {
   :deep(.q-field--outlined) {
     padding: 0;
   }
-
   :deep(.q-table) {
     border: 1px solid #e0e0e0;
     border-radius: 4px;
   }
-
   :deep(.q-stepper) {
     background: transparent;
   }
@@ -1073,11 +1079,9 @@ onMounted(async () => {
     cursor: pointer;
     transition: background-color 0.2s ease;
   }
-
   .cursor-pointer:hover {
     background-color: rgba(0, 0, 0, 0.03);
   }
-
   .rounded-borders {
     border-radius: 8px;
   }
