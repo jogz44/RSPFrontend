@@ -52,6 +52,17 @@
         >
           <q-tooltip>List of Unqualified Applicants</q-tooltip>
         </q-btn>
+        <q-btn
+          v-if="canReportApplicant"
+          rounded
+          unelevated
+          color="orange"
+          icon="article"
+          label="All Applicants Report"
+          @click="openAllApplicantsReportDialog"
+        >
+          <q-tooltip>List of All Applicants</q-tooltip>
+        </q-btn>
       </div>
     </div>
 
@@ -495,12 +506,95 @@
       </q-card>
     </q-dialog>
 
+    <!-- ================================================================ -->
+    <!-- All Applicants Report Modal - Only show if user has report permission -->
+    <!-- ================================================================ -->
+    <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsModal" persistent>
+      <q-card class="report-select-card">
+        <q-card-section class="dialog-header header-all">
+          <div class="row items-center no-wrap">
+            <q-icon name="article" size="28px" class="q-mr-sm" />
+            <div>
+              <div class="text-h6 text-bold">All Applicants Report</div>
+              <div class="text-caption opacity-80">Select a publication date to generate</div>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" class="close-btn" @click="closeAllApplicantsModal" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-lg">
+          <div v-if="loadingPublicationDates" class="text-center q-pa-md">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
+          </div>
+          <div v-else>
+            <div class="section-label q-mb-md">
+              <q-icon name="event" size="16px" class="q-mr-xs" />
+              Publication Date
+            </div>
+            <q-select
+              v-model="selectedAllApplicantsPublicationDate"
+              :options="filteredAllApplicantsPublicationDateOptions"
+              label="Select Publication Date"
+              outlined
+              dense
+              use-input
+              input-debounce="300"
+              @filter="filterAllApplicantsPublicationDates"
+            >
+              <template v-slot:no-option>
+                <q-item><q-item-section class="text-grey">No dates found</q-item-section></q-item>
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+              <template v-slot:selected>
+                <span v-if="selectedAllApplicantsPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedAllApplicantsPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+        <div class="dialog-footer row justify-end items-center q-pa-md q-gutter-sm">
+          <q-btn rounded flat label="Cancel" color="grey-7" @click="closeAllApplicantsModal" />
+          <q-btn
+            rounded
+            unelevated
+            color="primary"
+            label="Generate Report"
+            icon="print"
+            :disable="!selectedAllApplicantsPublicationDate"
+            @click="generateAllApplicantsReport"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
     <!-- Report sub-dialogs -->
     <q-dialog v-if="canReportApplicant" v-model="showQualifiedReportDialog" persistent>
       <QualifiedReport :publicationDate="selectedQualifiedPublicationDate" />
     </q-dialog>
     <q-dialog v-if="canReportApplicant" v-model="showUnqualifiedReportDialog" persistent>
       <UnqualifiedReport :publicationDate="selectedUnqualifiedPublicationDate" />
+    </q-dialog>
+    <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsReportDialog" persistent>
+      <ApplicantReport :publicationDate="selectedAllApplicantsPublicationDate" />
     </q-dialog>
     <q-dialog v-model="showPrintDialog" persistent>
       <ApplicantReport
@@ -533,12 +627,10 @@
   // PERMISSION CHECKS
   // ============================================================================
 
-  // Permission for modifying applicants (delete applications)
   const canModifyApplicant = computed(() => {
     return authStore.user?.permissions?.modifyApplicantAccess === '1';
   });
 
-  // Permission for viewing applicant reports (qualified/unqualified reports)
   const canReportApplicant = computed(() => {
     return authStore.user?.permissions?.reportApplicantAccess === '1';
   });
@@ -553,15 +645,23 @@
   const selectedPositions = ref([]);
   const showPrintDialog = ref(false);
 
+  // Qualified report refs
   const showQualifiedModal = ref(false);
   const selectedQualifiedPublicationDate = ref(null);
   const filteredQualifiedPublicationDateOptions = ref([]);
   const showQualifiedReportDialog = ref(false);
 
+  // Unqualified report refs
   const showUnqualifiedModal = ref(false);
   const selectedUnqualifiedPublicationDate = ref(null);
   const filteredUnqualifiedPublicationDateOptions = ref([]);
   const showUnqualifiedReportDialog = ref(false);
+
+  // All Applicants report refs
+  const showAllApplicantsModal = ref(false);
+  const selectedAllApplicantsPublicationDate = ref(null);
+  const filteredAllApplicantsPublicationDateOptions = ref([]);
+  const showAllApplicantsReportDialog = ref(false);
 
   const loadingPublicationDates = ref(false);
   const publicationDateOptions = ref([]);
@@ -617,7 +717,6 @@
       { name: 'office', label: 'Office', field: 'office', align: 'left' },
       { name: 'status', label: 'Status', field: 'status', align: 'center' },
     ];
-    // Only add action column if user has modify permission
     if (canModifyApplicant.value) {
       cols.push({
         name: 'action',
@@ -632,10 +731,7 @@
 
   const applicantJobRows = computed(() => {
     if (!selectedApplicant.value) return [];
-
-    // Use job_post array from the store response
     const jobPosts = selectedApplicant.value.job_post;
-
     if (Array.isArray(jobPosts) && jobPosts.length > 0) {
       return jobPosts.map((job, idx) => ({
         submission_id: job.id || idx + 1,
@@ -644,8 +740,6 @@
         status: job.status || 'N/A',
       }));
     }
-
-    // Fallback to single job_post
     if (jobPosts && typeof jobPosts === 'object' && !Array.isArray(jobPosts)) {
       return [
         {
@@ -656,7 +750,6 @@
         },
       ];
     }
-
     return [];
   });
 
@@ -685,8 +778,32 @@
     }, 500);
   });
 
+  // ============================================================================
+  // SHARED: Fetch publication dates (used by all three report modals)
+  // ============================================================================
+  const fetchPublicationDates = async () => {
+    loadingPublicationDates.value = true;
+    try {
+      const response = await summaryReportStore.fetchPublicationDateList();
+      publicationDateOptions.value = Array.isArray(response) ? response.map((i) => i.date) : [];
+      filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredAllApplicantsPublicationDateOptions.value = [...publicationDateOptions.value];
+    } catch {
+      $q.notify({ type: 'negative', message: 'Failed to load publication dates' });
+      publicationDateOptions.value = [];
+      filteredQualifiedPublicationDateOptions.value = [];
+      filteredUnqualifiedPublicationDateOptions.value = [];
+      filteredAllApplicantsPublicationDateOptions.value = [];
+    } finally {
+      loadingPublicationDates.value = false;
+    }
+  };
+
+  // ============================================================================
+  // QUALIFIED REPORT
+  // ============================================================================
   const openQualifiedReportDialog = async () => {
-    // Only allow if user has report permission
     if (!canReportApplicant.value) {
       $q.notify({
         type: 'warning',
@@ -700,8 +817,29 @@
     await fetchPublicationDates();
   };
 
+  const filterQualifiedPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredQualifiedPublicationDateOptions.value = publicationDateOptions.value.filter((v) =>
+        v.toLowerCase().includes(needle),
+      );
+    });
+  };
+
+  const closeQualifiedModal = () => {
+    showQualifiedModal.value = false;
+    selectedQualifiedPublicationDate.value = null;
+  };
+
+  const generateQualifiedReport = () => {
+    showQualifiedModal.value = false;
+    showQualifiedReportDialog.value = true;
+  };
+
+  // ============================================================================
+  // UNQUALIFIED REPORT
+  // ============================================================================
   const openUnqualifiedReportDialog = async () => {
-    // Only allow if user has report permission
     if (!canReportApplicant.value) {
       $q.notify({
         type: 'warning',
@@ -715,32 +853,6 @@
     await fetchPublicationDates();
   };
 
-  const fetchPublicationDates = async () => {
-    loadingPublicationDates.value = true;
-    try {
-      const response = await summaryReportStore.fetchPublicationDateList();
-      publicationDateOptions.value = Array.isArray(response) ? response.map((i) => i.date) : [];
-      filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
-      filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
-    } catch {
-      $q.notify({ type: 'negative', message: 'Failed to load publication dates' });
-      publicationDateOptions.value = [];
-      filteredQualifiedPublicationDateOptions.value = [];
-      filteredUnqualifiedPublicationDateOptions.value = [];
-    } finally {
-      loadingPublicationDates.value = false;
-    }
-  };
-
-  const filterQualifiedPublicationDates = (val, update) => {
-    update(() => {
-      const needle = val.toLowerCase();
-      filteredQualifiedPublicationDateOptions.value = publicationDateOptions.value.filter((v) =>
-        v.toLowerCase().includes(needle),
-      );
-    });
-  };
-
   const filterUnqualifiedPublicationDates = (val, update) => {
     update(() => {
       const needle = val.toLowerCase();
@@ -750,24 +862,55 @@
     });
   };
 
-  const closeQualifiedModal = () => {
-    showQualifiedModal.value = false;
-    selectedQualifiedPublicationDate.value = null;
-  };
   const closeUnqualifiedModal = () => {
     showUnqualifiedModal.value = false;
     selectedUnqualifiedPublicationDate.value = null;
   };
 
-  const generateQualifiedReport = () => {
-    showQualifiedModal.value = false;
-    showQualifiedReportDialog.value = true;
-  };
   const generateUnqualifiedReport = () => {
     showUnqualifiedModal.value = false;
     showUnqualifiedReportDialog.value = true;
   };
 
+  // ============================================================================
+  // ALL APPLICANTS REPORT
+  // ============================================================================
+  const openAllApplicantsReportDialog = async () => {
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to view reports',
+        position: 'top',
+      });
+      return;
+    }
+    showAllApplicantsModal.value = true;
+    selectedAllApplicantsPublicationDate.value = null;
+    await fetchPublicationDates();
+  };
+
+  const filterAllApplicantsPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredAllApplicantsPublicationDateOptions.value = publicationDateOptions.value.filter((v) =>
+        v.toLowerCase().includes(needle),
+      );
+    });
+  };
+
+  const closeAllApplicantsModal = () => {
+    showAllApplicantsModal.value = false;
+    selectedAllApplicantsPublicationDate.value = null;
+  };
+
+  const generateAllApplicantsReport = () => {
+    showAllApplicantsModal.value = false;
+    showAllApplicantsReportDialog.value = true;
+  };
+
+  // ============================================================================
+  // VIEW APPLICANT
+  // ============================================================================
   const viewApplicant = async (applicant) => {
     selectedApplicant.value = applicant;
     showDetailDialog.value = true;
@@ -803,9 +946,10 @@
     }
   };
 
-  // Delete Application Functions
+  // ============================================================================
+  // DELETE APPLICATION
+  // ============================================================================
   const confirmDeleteApplication = (jobRow) => {
-    // Only allow if user has modify permission
     if (!canModifyApplicant.value) {
       $q.notify({
         type: 'warning',
@@ -842,7 +986,6 @@
       showDeleteConfirmDialog.value = false;
       deletingApplicationInfo.value = null;
 
-      // Refresh the view by re-fetching applicant details
       if (selectedApplicant.value) {
         const firstname =
           selectedApplicant.value.n_personal_info?.firstname ||
@@ -868,7 +1011,6 @@
         }
       }
 
-      // Refresh main table
       await applicantStore.fetchApplicants({
         page: pagination.value.page,
         perPage: pagination.value.rowsPerPage,
@@ -926,6 +1068,10 @@
   }
   .header-view {
     background: #1565c0;
+  }
+  /* New header color for All Applicants modal */
+  .header-all {
+    background: #6a1b9a;
   }
   .close-btn {
     color: rgba(255, 255, 255, 0.8);

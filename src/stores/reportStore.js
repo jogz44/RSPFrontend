@@ -23,15 +23,18 @@ export const useReportStore = defineStore('report', {
         this.loading = false;
       }
     },
-    async fetchApplicantList(id) {
+    async fetchApplicantList(date) {
       try {
         this.loading = true;
-        const response = await adminApi.get(`/report/job-post/${id}`);
+        const response = await adminApi.get(`/report/applicant/${date}`);
+        // The response data is nested: response.data.data.data
         this.report = response.data;
         this.error = null;
+        return response.data;
       } catch (err) {
         this.error = err.message;
         console.error('Error fetching report positions:', err);
+        throw err;
       } finally {
         this.loading = false;
       }

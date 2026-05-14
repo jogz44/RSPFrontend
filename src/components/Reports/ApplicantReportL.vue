@@ -188,7 +188,7 @@
 
         const tableBody = [];
 
-        // Header row - New order: Applicant Name, Position, Office, Salary Grade, Item No, Email, Contact Number
+        // Header row - Applicant Name, Position, Office, Salary Grade, Item No, Email, Contact Number
         tableBody.push([
           { text: 'APPLICANT NAME', style: 'tableHeader', alignment: 'center' },
           { text: 'POSITION', style: 'tableHeader', alignment: 'center' },
@@ -205,7 +205,7 @@
           const rowspan = row.rowspan;
 
           if (rowspan > 1 && row.isFirstRow) {
-            // Row with rowspan for Applicant Name only (first column)
+            // Row with rowspan for Applicant Name, Email, Contact Number
             tableBody.push([
               { text: row.applicantName || '', rowSpan: rowspan, alignment: 'left' },
               { text: row.position || '', alignment: 'left' },
@@ -227,7 +227,7 @@
               { text: row.contactNumber || '', alignment: 'left' },
             ]);
           } else if (!row.isFirstRow) {
-            // Subsequent rows for same applicant (no rowspan for Applicant Name, Email, Contact Number)
+            // Subsequent rows for same applicant
             tableBody.push([
               { text: '', alignment: 'left' },
               { text: row.position || '', alignment: 'left' },
@@ -244,7 +244,7 @@
 
         const docDefinition = {
           pageSize: 'A4',
-          pageOrientation: 'portrait',
+          pageOrientation: 'landscape',
           pageMargins: [40, 120, 40, 40],
           header: function () {
             return {
@@ -253,9 +253,9 @@
                   canvas: [
                     {
                       type: 'rect',
-                      x: (595.28 - 523.28) / 2,
+                      x: (841.89 - 761.89) / 2, // Centered for landscape
                       y: 60,
-                      w: 523.28,
+                      w: 761.89,
                       h: 25,
                       color: '#008000',
                     },
@@ -341,7 +341,7 @@
             {
               table: {
                 headerRows: 1,
-                widths: ['12%', '18%', '28%', '9%', '7%', '15%', '12%'],
+                widths: ['17%', '15%', '25%', '8%', '7%', '18%', '10%'],
                 body: tableBody,
               },
               layout: {
@@ -365,7 +365,7 @@
           ],
           styles: {
             tableHeader: {
-              fontSize: 8,
+              fontSize: 9,
               bold: true,
             },
           },
@@ -397,7 +397,7 @@
 <style scoped>
   .modal-card {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     height: 85vh;
     display: flex;
     flex-direction: column;
