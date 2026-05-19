@@ -5,87 +5,102 @@
       <!-- Welcome Message -->
       <div class="text-h5 text-weight-bolder text-primary q-ma-md">DASHBOARD</div>
 
-      <!-- INTERNAL/EXTERNAL BADGES - Simplified -->
-      <div class="row q-col-gutter-sm q-mx-lg q-mb-md">
-        <div class="col-12">
-          <div class="row justify-start items-center q-gutter-sm">
-            <q-badge
-              outline
-              color="blue"
-              class="badge-simple"
-              style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
-            >
-              <q-icon name="people" size="xs" class="q-mr-xs" />
-              Internal: {{ Number(dashboardStore.fundedData?.internal).toLocaleString() }}
-            </q-badge>
+      <!-- INTERNAL/EXTERNAL BADGES and Publication Info in a row -->
+      <div class="row items-center justify-between q-mx-lg q-mb-sm">
+        <!-- Badges on the left -->
+        <div class="row items-center q-gutter-sm">
+          <q-badge
+            outline
+            color="green"
+            class="badge-simple"
+            style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
+          >
+            <q-icon name="people" size="xs" class="q-mr-xs" />
+            Total Applicant: {{ Number(dashboardStore.total_applicant).toLocaleString() }}
+          </q-badge>
+          <q-badge
+            outline
+            color="green"
+            class="badge-simple"
+            style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
+          >
+            <q-icon name="people" size="xs" class="q-mr-xs" />
+            Internal: {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
+          </q-badge>
+          <q-badge
+            outline
+            color="primary"
+            class="badge-simple"
+            style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
+          >
+            <q-icon name="people" size="xs" class="q-mr-xs" />
+            External: {{ Number(dashboardStore.external_applicant).toLocaleString() }}
+          </q-badge>
+        </div>
 
-            <q-badge
-              outline
-              color="primary"
-              class="badge-simple"
-              style="padding: 6px 12px; font-size: 0.85rem; font-weight: 800"
-            >
-              <q-icon name="people" size="xs" class="q-mr-xs" />
-              External: {{ Number(dashboardStore.fundedData?.external).toLocaleString() }}
-            </q-badge>
-          </div>
+        <!-- Publication badges on the right -->
+        <div class="row items-center q-gutter-sm">
+          <q-badge
+            outline
+            color="deep-purple"
+            class="badge-simple"
+            style="padding: 6px 12px; font-size: 1rem; font-weight: 700"
+          >
+            Publication Date: {{ dashboardStore.publication_date }}
+          </q-badge>
+          <q-badge
+            outline
+            color="deep-purple"
+            class="badge-simple"
+            style="padding: 6px 12px; font-size: 1rem; font-weight: 700"
+          >
+            Published Position: {{ dashboardStore.published_position }}
+          </q-badge>
         </div>
       </div>
 
-      <div class="row q-col-gutter-sm q-mx-lg items-center">
+      <!-- Cards row with top alignment -->
+      <div class="row q-col-gutter-sm q-mx-lg items-start">
+        <!-- Positions Card -->
         <div class="col-4">
-          <q-card class="bg-white">
-            <q-card-section class="q-pa-md">
-              <!-- TOTAL -->
-              <div class="row items-center q-mb-xs">
-                <q-icon name="assessment" color="primary" size="md" class="q-mr-sm" />
-                <div class="text-body3 text-bold">
-                  Total Positions:
-                  <span class="text-primary text-weight-bold q-ml-xs">
-                    {{ Number(dashboardStore.fundedData?.total_positions).toLocaleString() }}
-                  </span>
-                </div>
+          <q-card class="stat-card ct-light-blue bg-white">
+            <q-card-section class="card-content">
+              <div class="card-title q-mb-xs">Total positions</div>
+              <div class="metric-value text-blue-4">
+                {{ Number(dashboardStore.total_positions).toLocaleString() }}
               </div>
-              <q-separator />
-
-              <!-- TWO COLUMNS UNDER TOTAL -->
+              <q-separator class="q-my-sm" />
               <div class="row q-col-gutter-md items-stretch q-pa-xs">
-                <!-- LEFT: FUNDED -->
+                <!-- Funded -->
                 <div class="col-6">
                   <div class="row items-center q-mb-xs">
-                    <q-icon name="account_balance" color="blue-6" size="xs" class="q-mr-sm" />
-                    <div class="text-subtitle1 text-bold">
-                      Funded:
+                    <div class="text-subtitle1 text-bold text-grey-8">
+                      Funded Position:
                       <span class="text-blue-6 text-weight-bold q-ml-xs">
-                        {{ Number(dashboardStore.fundedData?.funded).toLocaleString() }}
+                        {{ Number(dashboardStore.funded).toLocaleString() }}
                       </span>
                     </div>
                   </div>
-
                   <div class="row items-center justify-between">
                     <span class="text-subtitle2">
-                      Occupied:
+                      Filled Up:
                       <span class="text-teal-6 text-weight-bold q-ml-xs">
-                        {{ Number(dashboardStore.fundedData?.occupied).toLocaleString() }}
+                        {{ Number(dashboardStore.filled).toLocaleString() }}
                       </span>
                     </span>
-
                     <span class="text-subtitle2">
                       Vacant:
                       <span class="text-deep-purple-4 text-weight-bold q-ml-xs">
-                        {{ Number(dashboardStore.fundedData?.unoccupied).toLocaleString() }}
+                        {{ Number(dashboardStore.vacant).toLocaleString() }}
                       </span>
                     </span>
                   </div>
-
-                  <!-- PROGRESS (Occupied vs Vacant via track) -->
                   <q-linear-progress
                     size="6px"
                     rounded
                     :value="
-                      dashboardStore.fundedData?.funded
-                        ? (dashboardStore.fundedData?.occupied || 0) /
-                          dashboardStore.fundedData?.funded
+                      dashboardStore.funded
+                        ? (dashboardStore.filled || 0) / dashboardStore.funded
                         : 0
                     "
                     color="teal-3"
@@ -93,20 +108,17 @@
                     class="q-mt-xs"
                   />
                 </div>
-
-                <!-- VERTICAL DIVIDER -->
+                <!-- Vertical Divider -->
                 <div class="col-auto flex flex-center">
                   <q-separator vertical />
                 </div>
-
-                <!-- RIGHT: UNFUNDED -->
+                <!-- Unfunded -->
                 <div class="col">
                   <div class="row items-center">
-                    <q-icon name="money_off" color="amber-6" size="xs" class="q-mr-sm" />
-                    <div class="text-subtitle1 text-bold">
-                      Unfunded:
+                    <div class="text-subtitle1 text-bold text-grey-8">
+                      Unfunded Position:
                       <span class="text-amber-6 text-weight-bold q-ml-xs">
-                        {{ Number(dashboardStore.fundedData?.unfunded).toLocaleString() }}
+                        {{ Number(dashboardStore.unfunded).toLocaleString() }}
                       </span>
                     </div>
                   </div>
@@ -116,7 +128,72 @@
           </q-card>
         </div>
 
-        <div class="col-8 flex flex-center"><StatusOverview class="full-width" /></div>
+        <!-- Status Cards (inlined from StatusOverview) -->
+        <div class="col-8">
+          <div class="row q-col-gutter-sm">
+            <!-- Total Applications -->
+            <div class="col-12 col-md-4">
+              <q-card class="stat-card ct-green bg-white">
+                <q-card-section class="card-content">
+                  <div class="card-title q-mb-xs">Total applications</div>
+                  <div class="metric-value text-green-9">
+                    {{ dashboardStore.total_applicant }}
+                  </div>
+                  <q-separator class="q-my-sm" />
+                  <div class="row">
+                    <div class="col-6 pair-left">
+                      <div class="metric-label">Internal</div>
+                      <div class="pair-value text-green-9">
+                        {{ dashboardStore.internal_applicantion }}
+                      </div>
+                    </div>
+                    <div class="col-6 pair-right">
+                      <div class="metric-label">External</div>
+                      <div class="pair-value text-red-9">
+                        {{ dashboardStore.external_application }}
+                      </div>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+
+            <!-- Pre-Assessment -->
+            <div class="col-12 col-md-4">
+              <q-card class="stat-card ct-blue bg-white">
+                <q-card-section class="card-content">
+                  <div class="card-title q-mb-xs">Pre-assessment</div>
+                  <div class="metric-value text-blue-9">
+                    {{ dashboardStore.qualified + dashboardStore.unqualified }}
+                  </div>
+                  <q-separator class="q-my-sm" />
+                  <div class="row">
+                    <div class="col-6 pair-left">
+                      <div class="metric-label">Qualified</div>
+                      <div class="pair-value text-green-9">{{ dashboardStore.qualified }}</div>
+                    </div>
+                    <div class="col-6 pair-right">
+                      <div class="metric-label">For QS verification</div>
+                      <div class="pair-value text-red-9">{{ dashboardStore.unqualified }}</div>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+
+            <!-- For Assessment -->
+            <div class="col-12 col-md-4">
+              <q-card class="stat-card ct-amber bg-white">
+                <q-card-section class="card-content">
+                  <div class="card-title q-mb-xs">For assessment</div>
+                  <div class="metric-value text-orange-9">
+                    {{ dashboardStore.for_assessment }}
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Jobpost / Office Overview Tabs -->
@@ -130,17 +207,16 @@
       </div>
 
       <q-tab-panels v-model="activeOverviewTab" animated>
-        <!-- Office Overview (Default) -->
+        <!-- Office Overview -->
         <q-tab-panel name="office">
           <div class="row justify-start items-start q-ml-md">
-            <q-chip dense class="q-my-xs row justify-start">
+            <q-chip dense class="q-my-xs row justify-start q-pl-md q-pr-md q-mb-md">
               Total Office:
               <q-badge dense rounded color="green" class="text-bold q-ml-xs">
                 {{ officeRows.length }}
               </q-badge>
             </q-chip>
           </div>
-
           <div class="row justify-between">
             <q-card class="q-mx-auto" style="width: 98%">
               <q-table
@@ -159,14 +235,13 @@
         <!-- Jobs Overview -->
         <q-tab-panel name="jobs">
           <div class="row justify-start items-start q-ml-md">
-            <q-chip dense class="q-my-xs row justify-start">
+            <q-chip dense class="q-my-xs row justify-start q-pl-md q-pr-md q-mb-md">
               Total Active Job Posts:
               <q-badge dense rounded color="green" class="text-bold q-ml-xs">
                 {{ jobs.length }}
               </q-badge>
             </q-chip>
           </div>
-
           <div class="row justify-between">
             <q-card class="q-mx-auto" style="width: 98%">
               <q-table
@@ -177,6 +252,7 @@
                 :loading="useJobPost.loading"
                 :pagination="{ rowsPerPage: 5 }"
                 dense
+                wrap-cells
               >
                 <template v-slot:body-cell-office="props">
                   <q-td :props="props">
@@ -191,6 +267,18 @@
                     <div class="text-body2" style="white-space: normal; width: 300px">
                       {{ props.row.Position }}
                     </div>
+                  </q-td>
+                </template>
+
+                <template v-slot:body-cell-qualified_count="props">
+                  <q-td :props="props">
+                    {{ props.row.qualified_count || 0 }}
+                  </q-td>
+                </template>
+
+                <template v-slot:body-cell-unqualified_count="props">
+                  <q-td :props="props">
+                    {{ props.row.unqualified_count || 0 }}
                   </q-td>
                 </template>
 
@@ -226,7 +314,7 @@
       </q-tab-panels>
     </div>
 
-    <!-- User is authenticated but doesn't have dashboard permission -->
+    <!-- No Permission -->
     <div v-else-if="authStore.user && !hasViewDashboardAccess" class="welcome-container">
       <q-img src="tagum-city-hall.webp" class="welcome-bg" style="opacity: 0.8">
         <div class="absolute-full flex flex-center">
@@ -271,7 +359,7 @@
       </q-img>
     </div>
 
-    <!-- Loading Screen -->
+    <!-- Loading -->
     <div v-else class="welcome-container">
       <div class="absolute-full flex flex-center">
         <q-card
@@ -296,8 +384,6 @@
   import { onMounted, computed, ref, watch } from 'vue';
   import { useAuthStore } from 'src/stores/authStore';
   import { useRouter, useRoute } from 'vue-router';
-
-  import StatusOverview from 'src/components/Dashboard/StatusOverview.vue';
   import { DashboardStore } from 'src/stores/dashboardStore';
   import { useJobPostStore } from 'src/stores/jobPostStore';
 
@@ -310,37 +396,83 @@
 
   const activeOverviewTab = ref('office');
 
-  // Check if user has dashboard view permission
-  const hasViewDashboardAccess = computed(() => {
-    return authStore.user?.permissions?.viewDashboardstat === '1';
-  });
+  const hasViewDashboardAccess = computed(
+    () => authStore.user?.permissions?.viewDashboardstat === '1',
+  );
 
-  const jobs = computed(() => {
-    return useJobPost.jobPosts.filter((job) => {
-      return job.status && job.status.toLowerCase() !== 'republished';
-    });
-  });
+  const jobs = computed(() =>
+    useJobPost.jobPosts.filter((job) => job.status?.toLowerCase() !== 'republished'),
+  );
 
   const officeRows = computed(() => dashboardStore.summaryByOffice || []);
 
+  // Office columns with Pre-assessment header
   const officeColumns = [
     { name: 'Office', label: 'Office', align: 'left', field: 'Office', sortable: true },
     {
       name: 'Total_applicant',
-      label: 'No. of Applicants',
+      label: 'No. of Application',
       align: 'center',
       field: 'Total_applicant',
       sortable: true,
     },
-    { name: 'Pending', label: 'Pending', align: 'center', field: 'Pending', sortable: true },
-    { name: 'Qualified', label: 'Qualified', align: 'center', field: 'Qualified', sortable: true },
+    {
+      name: 'Qualified',
+      label: 'Qualified',
+      align: 'center',
+      field: 'Qualified',
+      sortable: true,
+    },
     {
       name: 'Unqualified',
-      label: 'Unqualified',
+      label: 'For QS Verification',
       align: 'center',
       field: 'Unqualified',
       sortable: true,
     },
+    {
+      name: 'Pending',
+      label: 'For Assessment',
+      align: 'center',
+      field: 'Pending',
+      sortable: true,
+    },
+  ];
+
+  // Jobs columns with all visible columns
+  const columns = [
+    { name: 'office', label: 'Office', align: 'left', field: 'Office', sortable: true },
+    { name: 'jobs', label: 'Position', align: 'left', field: 'Position', sortable: true },
+    {
+      name: 'total_applicants',
+      label: 'No. of Application',
+      align: 'center',
+      field: 'total_applicants',
+      sortable: true,
+    },
+    {
+      name: 'qualified_count',
+      label: 'Qualified',
+      align: 'center',
+      field: 'qualified_count',
+      sortable: true,
+    },
+    {
+      name: 'unqualified_count',
+      label: 'For QS Verification',
+      align: 'center',
+      field: 'unqualified_count',
+      sortable: true,
+    },
+    {
+      name: 'pending_count',
+      label: 'For Assessment',
+      align: 'center',
+      field: 'pending_count',
+      sortable: true,
+    },
+    { name: 'status', label: 'Status', align: 'center', field: 'status', sortable: true },
+    { name: 'action', label: 'Action', align: 'center', field: 'action', sortable: false },
   ];
 
   const getStatusColor = (status) => {
@@ -354,11 +486,9 @@
       case 'rated':
         return 'purple';
       case 'occupied':
-        return 'green';
       case 'qualified':
         return 'green';
       case 'unqualified':
-        return 'red';
       case 'unoccupied':
         return 'red-9';
       case 'republished':
@@ -368,75 +498,20 @@
     }
   };
 
-  const columns = [
-    { name: 'office', label: 'Office', align: 'left', field: 'Office', sortable: true },
-    { name: 'jobs', label: 'Position', align: 'left', field: 'Position', sortable: true },
-    {
-      name: 'total_applicants',
-      label: 'No. of Applicants',
-      align: 'center',
-      field: 'total_applicants',
-      sortable: true,
-    },
-    {
-      name: 'pending_count',
-      label: 'Pending',
-      align: 'center',
-      field: 'pending_count',
-      sortable: true,
-    },
-    {
-      name: 'qualified_count',
-      label: 'Qualified',
-      align: 'center',
-      field: 'qualified_count',
-      sortable: true,
-    },
-    {
-      name: 'unqualified_count',
-      label: 'Unqualified',
-      align: 'center',
-      field: 'unqualified_count',
-      sortable: true,
-    },
-    {
-      name: 'action',
-      label: 'Action',
-      align: 'center',
-      field: 'action',
-      sortable: false,
-    },
-  ];
+  const viewJob = (row) => router.push({ name: 'JobPost View', params: { id: row.id } });
 
-  const viewJob = (row) => {
-    router.push({
-      name: 'JobPost View',
-      params: { id: row.id },
-    });
-  };
-
-  // Check for unauthorized parameter from route guard
   const checkUnauthorizedAccess = () => {
-    if (route.query.unauthorized === 'true') {
-      // Remove the query parameter without reloading
-      router.replace({ query: {} });
-    }
+    if (route.query.unauthorized === 'true') router.replace({ query: {} });
   };
 
-  // Watch for permission changes and redirect if needed
   watch(hasViewDashboardAccess, (hasAccess) => {
     if (authStore.isAuthenticated && !hasAccess) {
-      // User is authenticated but doesn't have dashboard permission
-      // This is fine - show the welcome message instead
       console.log('User does not have dashboard view permission');
     }
   });
 
   onMounted(async () => {
-    // Check for unauthorized access notification
     checkUnauthorizedAccess();
-
-    // Only load dashboard data if user has permission
     if (hasViewDashboardAccess.value) {
       await dashboardStore.status();
       await dashboardStore.fetchSummaryByOffice();
@@ -448,34 +523,91 @@
 <style scoped>
   .stat-card {
     border-radius: 10px;
+    border-top: 3px solid transparent;
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
   }
-
   .stat-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 
-  .date-filter {
-    max-width: 160px;
+  .ct-light-blue {
+    border-top-color: #7fbcf2;
+  }
+  .ct-green {
+    border-top-color: #1b5e20;
+  }
+  .ct-blue {
+    border-top-color: #0d47a1;
+  }
+  .ct-amber {
+    border-top-color: #e65100;
+  }
+  .ct-teal {
+    border-top-color: #00695c;
+  }
+  .ct-purple {
+    border-top-color: #4527a0;
   }
 
-  .table-container {
-    flex: 1;
-    min-width: 80%;
-    padding: 3px 8px;
-    border-radius: 6px;
+  .card-content {
+    padding: 14px 16px;
   }
 
-  .job-card-container {
-    width: 24%;
-    margin-left: 4px;
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #757575;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: #757575;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .pair-value {
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .sub-value {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .pair-left {
+    border-right: 1px solid #eeeeee;
+    padding-right: 12px;
+  }
+  .pair-right {
+    padding-left: 12px;
+  }
+
+  .badge-simple {
+    border-radius: 20px;
   }
 
   .applicants-table {
     width: 100%;
+  }
+
+  .cell-wrap {
+    white-space: normal;
+    max-width: 300px;
+  }
+
+  .status-badge {
+    font-size: 0.95rem;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
   }
 
   .welcome-container {
@@ -483,7 +615,6 @@
     height: 80vh;
     overflow: hidden;
   }
-
   .welcome-bg {
     position: absolute;
     top: 0;
@@ -492,29 +623,10 @@
     height: 100%;
     object-fit: cover;
   }
-
   .welcome-card {
     transition: transform 0.2s ease;
   }
-
   .welcome-card:hover {
     transform: scale(1.01);
-  }
-
-  .access-denied-card {
-    transition: transform 0.2s ease;
-  }
-
-  /* Status badges */
-  .status-badge {
-    font-size: 0.95rem !important;
-    padding: 4px 10px !important;
-    border-radius: 16px !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px;
-  }
-
-  .badge-simple {
-    border-radius: 20px;
   }
 </style>

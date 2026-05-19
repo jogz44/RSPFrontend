@@ -1,32 +1,42 @@
 import { defineStore } from 'pinia';
 import { adminApi } from 'src/boot/axios_admin';
-import { toast } from 'src/boot/toast'; // Import toast instance
+import { toast } from 'src/boot/toast';
 
 export const DashboardStore = defineStore('dashboard', {
   state: () => ({
-    fundedData: null,
-    summaryByOffice: [],
+    // publish_jobpost
+    published_position: 0,
+    publication_date: null,
 
-    vw_active: [],
+    // applicant_application
+    qualified: 0,
+    for_assessment: 0,
+    unqualified: 0,
+    total_applicantion: 0,
+    internal_applicantion: 0,
+    external_application: 0,
+
+    // plantilla_position
+    funded: 0,
+    unfunded: 0,
+    filled: 0,
+    vacant: 0,
+    total_positions: 0,
+
+    // applicant_actual_application
+    internal_applicant: 0,
+    external_applicant: 0,
+    total_applicant: 0,
+
+    summaryByOffice: [],
     vw_status: [],
-    totalMale: 0,
-    totalFemale: 0,
-    countAll: 0,
     loading: false,
     error: null,
-    qualified: 0,
-    unqualified: 0,
-    pending: 0,
-    total: 0,
-    total_applicant: 0,
-    total_positions: 0,
-    internal: 0,
-    external: 0,
   }),
 
   actions: {
     async status() {
-      if (this.loading) return; // ← guard against duplicate calls
+      if (this.loading) return;
 
       this.loading = true;
       this.error = null;
@@ -34,23 +44,29 @@ export const DashboardStore = defineStore('dashboard', {
         const response = await adminApi.get('dashboard');
         const data = response.data;
 
-        this.fundedData = {
-          total_positions: data.total_positions,
-          total_applicant: data.total_applicant,
-          funded: data.funded,
-          unfunded: data.unfunded,
-          occupied: data.occupied,
-          unoccupied: data.unoccupied,
-          internal: data.internal,
-          external: data.external,
-        };
+        // publish_jobpost
+        this.published_position = data.publish_jobpost.vacant;
+        this.publication_date = data.publish_jobpost.post_date;
 
-        this.total_applicant = data.total_applicant;
-        this.qualified = data.qualified;
-        this.unqualified = data.unqualified;
-        this.pending = data.pending;
-        this.external = data.external;
-        this.internal = data.internal;
+        // applicant_application
+        this.qualified = data.applicant_application.qualified;
+        this.for_assessment = data.applicant_application.pending;
+        this.unqualified = data.applicant_application.unqualified;
+        this.total_application = data.applicant_application.total_applicant;
+        this.internal_application = data.applicant_application.internal;
+        this.external_application = data.applicant_application.external;
+
+        // plantilla_position
+        this.funded = data.plantilla_position.funded;
+        this.unfunded = data.plantilla_position.unfunded;
+        this.filled = data.plantilla_position.occupied;
+        this.vacant = data.plantilla_position.unoccupied;
+        this.total_positions = data.plantilla_position.total_positions;
+
+        // applicant_actual_application
+        this.internal_applicant = data.applicant_actual_application.internal_actual;
+        this.external_applicant = data.applicant_actual_application.external_actual;
+        this.total_applicant = data.applicant_actual_application.total_application_actual;
 
         return data;
       } catch (error) {
@@ -102,34 +118,6 @@ export const DashboardStore = defineStore('dashboard', {
         this.loading = false;
         console.log(error.response.data?.message);
         toast.warning(error.response.data?.message);
-      }
-    },
-
-    async fetchCountAll() {
-      this.loading = true;
-      try {
-        const response = await adminApi.get('/vw-Active/count');
-        this.countAll = response.data.total;
-      } catch (error) {
-        this.countAll = 0;
-        console.log(error.response.data?.message);
-        toast.warning(error.response.data?.message);
-      }
-    },
-
-    async getSexCount() {
-      this.loading = true;
-      this.error = null;
-      try {
-        const response = await adminApi.get('/vw-Active/Sex');
-        this.totalMale = response.data.totalMale;
-        this.totalFemale = response.data.totalFemale;
-      } catch (error) {
-        this.totalMale = 0;
-        this.totalFemale = 0;
-        const errorMessage = error.response?.data?.message || 'Failed to fetch sex count';
-        console.log(errorMessage);
-        toast.warning(errorMessage);
       }
     },
   },
