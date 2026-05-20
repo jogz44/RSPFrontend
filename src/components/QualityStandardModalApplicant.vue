@@ -967,48 +967,104 @@
   };
 
   // ── Date / Duration helpers ───────────────────────────────────────────────────
-
   const parseDate = (dateString) => {
     if (!dateString) return null;
     const parts = dateString.split('/');
     if (parts.length === 3) {
-      const [a, b, c] = parts.map(Number);
-      // Try MM/DD/YYYY first
-      let dt = new Date(c, a - 1, b);
-      if (!isNaN(dt.getTime()) && dt.getDate() === b && dt.getMonth() === a - 1) return dt;
-      // Try DD/MM/YYYY
-      dt = new Date(c, b - 1, a);
-      if (!isNaN(dt.getTime()) && dt.getDate() === a && dt.getMonth() === b - 1) return dt;
+      const [day, month, year] = parts.map(Number);
+      // DD/MM/YYYY only
+      const dt = new Date(year, month - 1, day);
+      if (!isNaN(dt.getTime()) && dt.getDate() === day && dt.getMonth() === month - 1) {
+        return dt;
+      }
     }
     const dt = new Date(dateString);
     return isNaN(dt.getTime()) ? null : dt;
   };
 
-  const calculateMonthsDifference = (startDate, endDate, applicationDate = null) => {
-    if (!startDate) return 0;
+  const calculateExactDuration = (startDate, endDate, applicationDate = null) => {
+    if (!startDate) return { years: 0, months: 0, days: 0 };
+
     const start = parseDate(startDate);
-    if (!start) return 0;
+    if (!start) return { years: 0, months: 0, days: 0 };
+
     let end;
-    if (endDate && typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present') {
+
+    if (endDate && typeof endDate === 'string' && endDate.toLowerCase() === 'present') {
       end = applicationDate ? parseDate(applicationDate) : new Date();
-      if (!end) end = new Date();
     } else {
       end = parseDate(endDate);
-      if (!end) return 0;
     }
-    let total =
-      (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    if (end.getDate() - start.getDate() < 0) total -= 1;
-    return Math.max(0, total);
+
+    if (!end || start > end) return { years: 0, months: 0, days: 0 };
+
+    let years = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    let days = end.getDate() - start.getDate();
+
+    // get last day of end month
+    const endMonthLastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+    const isEndOfMonth = end.getDate() === endMonthLastDay;
+
+    // borrow month if needed
+    if (days < 0) {
+      months -= 1;
+      const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+
+    // normalize years/months
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+
+    // ⭐ FIX: treat full month completion when start is day 1 and end is end-of-month
+    if (start.getDate() === 1 && isEndOfMonth) {
+      months += 1;
+      days = 0;
+    }
+
+    // final normalization (safety)
+    if (months >= 12) {
+      years += Math.floor(months / 12);
+      months = months % 12;
+    }
+
+    return {
+      years,
+      months,
+      days,
+    };
   };
 
-  const formatDuration = (months) => {
-    if (months === 0) return '0 months';
-    const y = Math.floor(months / 12);
-    const m = months % 12;
-    if (y === 0) return `${m} month${m !== 1 ? 's' : ''}`;
-    if (m === 0) return `${y} year${y !== 1 ? 's' : ''}`;
-    return `${y} year${y !== 1 ? 's' : ''}, ${m} month${m !== 1 ? 's' : ''}`;
+  // Keep calculateMonthsDifference for backward compatibility
+  // const calculateMonthsDifference = (startDate, endDate, applicationDate = null) => {
+  //   const duration = calculateExactDuration(startDate, endDate, applicationDate);
+  //   return duration.totalMonths;
+  // };
+
+  const formatDuration = (duration) => {
+    if (!duration) return '0 months';
+
+    const { years = 0, months = 0, days = 0 } = duration;
+
+    const parts = [];
+
+    if (years > 0) {
+      parts.push(`${years} year${years !== 1 ? 's' : ''}`);
+    }
+
+    if (months > 0) {
+      parts.push(`${months} month${months !== 1 ? 's' : ''}`);
+    }
+
+    if (days > 0) {
+      parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+    }
+
+    return parts.length ? parts.join(', ') : '0 months';
   };
 
   const formatDateRange = (startDate, endDate) => {
@@ -1036,22 +1092,48 @@
       props.applicantData?.date_applied ||
       null;
     return xExperience.value.map((exp) => {
-      const durationMonths = calculateMonthsDifference(
+      const duration = calculateExactDuration(
         exp.work_date_from,
         exp.work_date_to,
         applicationDate,
       );
-      return { ...exp, durationMonths, durationText: formatDuration(durationMonths) };
+      return {
+        ...exp,
+        durationMonths: duration.totalMonths,
+        durationYears: duration.years,
+        durationMonthsOnly: duration.months,
+        durationDays: duration.days,
+        durationText: formatDuration(duration),
+      };
     });
   });
 
-  const totalSelectedExperienceMonths = computed(() =>
-    experienceWithDuration.value.reduce((sum, exp) => {
-      return selectedExperienceIds.value.includes(exp.uniqueId)
-        ? sum + (exp.durationMonths || 0)
-        : sum;
-    }, 0),
-  );
+  const totalSelectedExperienceMonths = computed(() => {
+    let totalDays = 0;
+
+    experienceWithDuration.value.forEach((exp) => {
+      if (!selectedExperienceIds.value.includes(exp.uniqueId)) return;
+
+      const start = parseDate(exp.work_date_from);
+      const end =
+        exp.work_date_to?.toLowerCase() === 'present' ? new Date() : parseDate(exp.work_date_to);
+
+      if (!start || !end) return;
+
+      // convert entire range into raw days difference (source of truth)
+      const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+
+      totalDays += diff;
+    });
+
+    const years = Math.floor(totalDays / 365);
+    totalDays %= 365;
+
+    const months = Math.floor(totalDays / 30);
+    const days = totalDays % 30;
+
+    return { years, months, days };
+  });
 
   const parseTrainingHours = (hours) => {
     if (!hours) return 0;

@@ -75,6 +75,15 @@ const routes = [
         },
       },
       {
+        path: '/library',
+        name: 'Exam Score List',
+        component: () => import('pages/admin/LibraryPage.vue'),
+        meta: {
+          auth: true,
+          role: 'admin',
+        },
+      },
+      {
         path: '/plantilla',
         name: 'Admin Plantilla',
         component: () => import('pages/admin/PlantillaPage.vue'),

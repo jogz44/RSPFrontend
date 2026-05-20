@@ -134,6 +134,22 @@
         </q-card>
       </q-expansion-item>
 
+      <q-item
+        v-if="hasUserManagementAccess"
+        dense
+        class="q-mx-xs q-my-xs"
+        style="border-radius: 17px; padding: 8px 11px"
+        clickable
+        v-ripple
+        to="/library"
+        active-class="active-menu"
+      >
+        <q-item-section avatar>
+          <q-icon name="library_books" size="sm" />
+        </q-item-section>
+        <q-item-section>Library</q-item-section>
+      </q-item>
+
       <!-- ================================================================ -->
       <!-- USER MANAGEMENT — guarded by userManagement permission           -->
       <!-- ================================================================ -->
