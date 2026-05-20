@@ -16,7 +16,7 @@
         <div>Loading report...</div>
       </div>
       <div
-        v-else-if="!pdfUrl && !isLoading && tableData.length === 0"
+        v-else-if="!pdfUrl && !isLoading && internalRows.length === 0 && externalRows.length === 0"
         class="column items-center justify-center text-grey q-gutter-sm"
         style="height: 100%"
       >
@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-  import { ref, watch, onMounted, onUnmounted } from 'vue';
+  import { ref, watch, onUnmounted } from 'vue';
   import { useReportStore } from 'stores/reportStore';
 
   const props = defineProps({
@@ -49,15 +49,16 @@
   const isLoading = ref(false);
   const reportStore = useReportStore();
   const reportData = ref(null);
-  const tableData = ref([]);
+  const internalRows = ref([]);
+  const externalRows = ref([]);
 
-  // Watch for changes in publication date
+  // Watch for changes in publication date (immediate handles initial load)
   watch(
     () => props.publicationDate,
     async (newDate) => {
       if (newDate) {
         await fetchReportData();
-        if (tableData.value.length > 0) {
+        if (internalRows.value.length > 0 || externalRows.value.length > 0) {
           await generatePdfContent();
         }
       }
@@ -65,11 +66,59 @@
     { immediate: true },
   );
 
+  // Helper function to format name: Last, First Middle
+  function formatFullName(firstname, lastname) {
+    if (!firstname && !lastname) return '';
+    const first = firstname ? firstname.trim().toUpperCase() : '';
+    const last = lastname ? lastname.trim().toUpperCase() : '';
+    if (last && first) return `${last}, ${first}`;
+    if (last) return last;
+    if (first) return first;
+    return '';
+  }
+
+  // Helper function to clean and format phone number (no spaces)
+  function cleanPhoneNumber(phone) {
+    if (!phone) return 'N/A';
+
+    // Remove spaces, dashes, parentheses, slashes, and dots
+    let cleaned = phone.replace(/[\s\-()/.]/g, '');
+
+    // Check if it's a valid number
+    if (cleaned.length === 0) return 'N/A';
+
+    // If number has 10 digits and starts with 9, add 0 at the beginning
+    if (cleaned.length === 10 && cleaned.startsWith('9')) {
+      cleaned = '0' + cleaned;
+    }
+
+    // If number has 11 digits and starts with 09 or 9, keep as is
+    if (cleaned.length === 11 && cleaned.startsWith('09')) {
+      // Already in correct format
+    } else if (cleaned.length === 11 && cleaned.startsWith('9')) {
+      cleaned = '0' + cleaned;
+    } else if (cleaned.length === 12 && cleaned.startsWith('639')) {
+      // Convert 639... to 09...
+      cleaned = '0' + cleaned.substring(2);
+    }
+
+    // Return without spaces
+    return cleaned;
+  }
+
+  // Sort function by formatted name (Last, First)
+  function sortByName(a, b) {
+    const nameA = a.sortName || '';
+    const nameB = b.sortName || '';
+    return nameA.localeCompare(nameB);
+  }
+
   async function fetchReportData() {
     if (!props.publicationDate) return;
 
     isLoading.value = true;
-    tableData.value = [];
+    internalRows.value = [];
+    externalRows.value = [];
     reportData.value = null;
 
     try {
@@ -77,22 +126,35 @@
 
       // Handle the nested response structure correctly
       if (reportStore.report && reportStore.report.data) {
-        if (reportStore.report.data.data && Array.isArray(reportStore.report.data.data)) {
-          reportData.value = reportStore.report.data.data;
+        if (reportStore.report.data.data && reportStore.report.data.data.external) {
+          // Structure with external and internal arrays
+          const externalApplicants = reportStore.report.data.data.external || [];
+          const internalApplicants = reportStore.report.data.data.internal || [];
+
+          // Process external applicants
+          processApplicants(externalApplicants, 'external', externalRows.value);
+
+          // Process internal applicants
+          processApplicants(internalApplicants, 'internal', internalRows.value);
+
+          // Sort both arrays by formatted name
+          externalRows.value.sort(sortByName);
+          internalRows.value.sort(sortByName);
         } else if (Array.isArray(reportStore.report.data)) {
-          reportData.value = reportStore.report.data;
+          // Old structure - treat all as external
+          processApplicants(reportStore.report.data, 'external', externalRows.value);
+          externalRows.value.sort(sortByName);
         } else if (reportStore.report.data.applicants) {
-          reportData.value = reportStore.report.data.applicants;
+          processApplicants(reportStore.report.data.applicants, 'external', externalRows.value);
+          externalRows.value.sort(sortByName);
         } else {
           console.warn('Unexpected data structure:', reportStore.report);
-          reportData.value = [];
         }
 
-        console.log('Report data extracted:', reportData.value);
-        transformDataForTable();
+        console.log('External applicants:', externalRows.value.length);
+        console.log('Internal applicants:', internalRows.value.length);
       } else {
         console.warn('No report data found');
-        reportData.value = [];
       }
     } catch (err) {
       console.error('Error fetching report:', err);
@@ -101,55 +163,54 @@
     }
   }
 
-  function transformDataForTable() {
-    const rows = [];
-
-    if (!reportData.value || !Array.isArray(reportData.value)) {
-      console.warn('Invalid report data:', reportData.value);
+  function processApplicants(applicants, type, targetArray) {
+    if (!applicants || !Array.isArray(applicants)) {
+      console.warn(`Invalid ${type} applicants data:`, applicants);
       return;
     }
 
-    console.log('Transforming data for', reportData.value.length, 'applicants');
+    console.log(`Processing ${applicants.length} ${type} applicants`);
 
-    reportData.value.forEach((item) => {
-      const applicant = item.applicant || item;
+    applicants.forEach((item) => {
+      const applicant = item;
       const applications = applicant.applicant_application || [];
+      const formattedName = formatFullName(applicant.firstname, applicant.lastname);
+      const email = (applicant.email_address || '').toLowerCase();
+      const contactNumber = cleanPhoneNumber(applicant.cellphone_number);
 
       if (applications.length === 0) {
-        rows.push({
-          applicantName: `${applicant.firstname || ''} ${applicant.lastname || ''}`
-            .trim()
-            .toUpperCase(),
+        targetArray.push({
+          applicantName: formattedName,
           position: 'N/A',
           office: 'N/A',
           salaryGrade: 'N/A',
           itemNo: 'N/A',
-          email: (applicant.email_address || '').toLowerCase(),
-          contactNumber: applicant.cellphone_number || 'N/A',
-          rowspan: 1,
+          email: email,
+          contactNumber: contactNumber,
+          sortName: formattedName,
           isFirstRow: true,
+          type: type,
         });
       } else {
+        // Flatten the data - each application becomes its own row
+        // Name, email, contact only on first row, empty on subsequent rows
         applications.forEach((app, appIndex) => {
-          rows.push({
-            applicantName: `${applicant.firstname || ''} ${applicant.lastname || ''}`
-              .trim()
-              .toUpperCase(),
+          targetArray.push({
+            applicantName: appIndex === 0 ? formattedName : '',
             position: app.job_post?.Position || 'N/A',
             office: app.job_post?.Office || 'N/A',
             salaryGrade: app.job_post?.SalaryGrade || 'N/A',
             itemNo: app.job_post?.ItemNo || 'N/A',
-            email: (applicant.email_address || '').toLowerCase(),
-            contactNumber: applicant.cellphone_number || 'N/A',
-            rowspan: applications.length,
+            email: appIndex === 0 ? email : '',
+            contactNumber: appIndex === 0 ? contactNumber : '',
+            sortName: formattedName, // Keep the full name for sorting
             isFirstRow: appIndex === 0,
+            type: type,
+            submissionId: app.submission_id,
           });
         });
       }
     });
-
-    tableData.value = rows;
-    console.log('Transformed rows:', tableData.value.length);
   }
 
   async function getImageBase64(url) {
@@ -173,7 +234,7 @@
       URL.revokeObjectURL(pdfUrl.value);
     }
 
-    if (!tableData.value.length) {
+    if (internalRows.value.length === 0 && externalRows.value.length === 0) {
       console.log('No data to generate PDF');
       pdfUrl.value = null;
       return;
@@ -188,35 +249,51 @@
 
         const tableBody = [];
 
-        // Header row - New order: Applicant Name, Position, Office, Salary Grade, Item No, Email, Contact Number
+        // Main header row - grey background
         tableBody.push([
-          { text: 'APPLICANT NAME', style: 'tableHeader', alignment: 'center' },
-          { text: 'POSITION', style: 'tableHeader', alignment: 'center' },
-          { text: 'OFFICE', style: 'tableHeader', alignment: 'center' },
-          { text: 'SALARY GRADE', style: 'tableHeader', alignment: 'center' },
-          { text: 'ITEM NO', style: 'tableHeader', alignment: 'center' },
-          { text: 'EMAIL', style: 'tableHeader', alignment: 'center' },
-          { text: 'CONTACT NUMBER', style: 'tableHeader', alignment: 'center' },
+          {
+            text: 'APPLICANT NAME',
+            style: 'tableHeader',
+            alignment: 'center',
+            fillColor: '#e0e0e0',
+          },
+          { text: 'POSITION', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+          { text: 'OFFICE', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+          { text: 'SALARY GRADE', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+          { text: 'ITEM NO', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+          { text: 'EMAIL', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+          {
+            text: 'CONTACT NUMBER',
+            style: 'tableHeader',
+            alignment: 'center',
+            fillColor: '#e0e0e0',
+          },
         ]);
 
-        let currentIndex = 0;
-        while (currentIndex < tableData.value.length) {
-          const row = tableData.value[currentIndex];
-          const rowspan = row.rowspan;
+        // Helper function to add applicant rows for a section
+        function addSectionRows(rows, sectionTitle) {
+          if (rows.length === 0) return;
 
-          if (rowspan > 1 && row.isFirstRow) {
-            // Row with rowspan for Applicant Name only (first column)
-            tableBody.push([
-              { text: row.applicantName || '', rowSpan: rowspan, alignment: 'left' },
-              { text: row.position || '', alignment: 'left' },
-              { text: row.office || '', alignment: 'left' },
-              { text: row.salaryGrade || '', alignment: 'center' },
-              { text: row.itemNo || '', alignment: 'center' },
-              { text: row.email || '', rowSpan: rowspan, alignment: 'left' },
-              { text: row.contactNumber || '', rowSpan: rowspan, alignment: 'left' },
-            ]);
-          } else if (rowspan === 1) {
-            // Single row applicant
+          // Add section header row - grey background
+          tableBody.push([
+            {
+              text: sectionTitle,
+              colSpan: 7,
+              style: 'sectionHeader',
+              alignment: 'center',
+              bold: true,
+              fillColor: '#e0e0e0',
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+          ]);
+
+          // Add all rows (no rowspan, each row is independent)
+          rows.forEach((row) => {
             tableBody.push([
               { text: row.applicantName || '', alignment: 'left' },
               { text: row.position || '', alignment: 'left' },
@@ -226,26 +303,17 @@
               { text: row.email || '', alignment: 'left' },
               { text: row.contactNumber || '', alignment: 'left' },
             ]);
-          } else if (!row.isFirstRow) {
-            // Subsequent rows for same applicant (no rowspan for Applicant Name, Email, Contact Number)
-            tableBody.push([
-              { text: '', alignment: 'left' },
-              { text: row.position || '', alignment: 'left' },
-              { text: row.office || '', alignment: 'left' },
-              { text: row.salaryGrade || '', alignment: 'center' },
-              { text: row.itemNo || '', alignment: 'center' },
-              { text: '', alignment: 'left' },
-              { text: '', alignment: 'left' },
-            ]);
-          }
-
-          currentIndex++;
+          });
         }
 
+        // Add Internal section first then External section
+        addSectionRows(internalRows.value, 'INTERNAL APPLICANTS');
+        addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
+
         const docDefinition = {
-          pageSize: 'A4',
-          pageOrientation: 'portrait',
-          pageMargins: [40, 120, 40, 40],
+          pageSize: 'LEGAL',
+          pageOrientation: 'landscape',
+          pageMargins: [40, 120, 40, 50],
           header: function () {
             return {
               stack: [
@@ -253,9 +321,9 @@
                   canvas: [
                     {
                       type: 'rect',
-                      x: (595.28 - 523.28) / 2,
+                      x: (1008 - 928) / 2,
                       y: 60,
-                      w: 523.28,
+                      w: 928,
                       h: 25,
                       color: '#008000',
                     },
@@ -330,6 +398,15 @@
               ],
             };
           },
+          footer: function (currentPage, pageCount) {
+            return {
+              margin: [40, 0, 40, 20],
+              columns: [
+                { text: '', width: '*' },
+                { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', fontSize: 7 },
+              ],
+            };
+          },
           content: [
             {
               text: `List of All Applicants - ${props.publicationDate || ''}`,
@@ -340,19 +417,23 @@
             },
             {
               table: {
-                headerRows: 1,
-                widths: ['12%', '18%', '28%', '9%', '7%', '15%', '12%'],
+                widths: ['15%', '21%', '25%', '8%', '5%', '18%', '8%'],
                 body: tableBody,
+                keepWithHeaderRows: 1,
               },
               layout: {
-                fillColor: function (rowIndex) {
-                  return rowIndex === 0 ? '#e0e0e0' : null;
+                fillColor: function (rowIndex, node) {
+                  const row = node.table.body[rowIndex];
+                  if (row && row[0] && row[0].colSpan === 7) {
+                    return '#e0e0e0';
+                  }
+                  return null;
                 },
                 hLineWidth: function () {
-                  return 0.5;
+                  return 0.3;
                 },
                 vLineWidth: function () {
-                  return 0.5;
+                  return 0.3;
                 },
                 hLineColor: function () {
                   return '#aaaaaa';
@@ -365,8 +446,12 @@
           ],
           styles: {
             tableHeader: {
-              fontSize: 8,
+              fontSize: 9,
               bold: true,
+            },
+            sectionHeader: {
+              fontSize: 9,
+              margin: [0, 4, 0, 4],
             },
           },
           defaultStyle: { fontSize: 8 },
@@ -383,21 +468,12 @@
   onUnmounted(() => {
     if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
   });
-
-  onMounted(async () => {
-    if (props.publicationDate) {
-      await fetchReportData();
-      if (tableData.value.length > 0) {
-        await generatePdfContent();
-      }
-    }
-  });
 </script>
 
 <style scoped>
   .modal-card {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     height: 85vh;
     display: flex;
     flex-direction: column;

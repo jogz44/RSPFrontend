@@ -12,8 +12,8 @@ export const DashboardStore = defineStore('dashboard', {
     qualified: 0,
     for_assessment: 0,
     unqualified: 0,
-    total_applicantion: 0,
-    internal_applicantion: 0,
+    total_application: 0,
+    internal_application: 0,
     external_application: 0,
 
     // plantilla_position
