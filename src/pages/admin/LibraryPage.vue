@@ -16,7 +16,7 @@
 
     <!-- ── Filters / Toolbar ───────────────────────────────────────── -->
     <div class="row items-center q-col-gutter-md q-mb-md">
-      <div class="col-12 col-sm-6 col-md-4">
+      <div class="col-12 col-sm-6 col-md-3">
         <q-input v-model="globalSearch" outlined dense placeholder="Search remarks..." clearable>
           <template #prepend>
             <q-icon name="search" color="primary" />
@@ -24,8 +24,32 @@
         </q-input>
       </div>
 
-      <div class="col-12 col-md-8 flex justify-end">
-        <q-btn rounded unelevated color="primary" icon="add" @click="openAddDialog">
+      <div class="col-12 col-sm-6 col-md-3">
+        <q-select
+          v-model="categoryFilter"
+          :options="categoryOptions"
+          outlined
+          dense
+          label="Filter by category"
+          clearable
+          emit-value
+          map-options
+        >
+          <template #prepend>
+            <q-icon name="category" color="primary" />
+          </template>
+        </q-select>
+      </div>
+
+      <div class="col-12 col-md-6 flex justify-end">
+        <q-btn
+          v-if="hasModifyPermission"
+          rounded
+          unelevated
+          color="primary"
+          icon="add"
+          @click="openAddDialog"
+        >
           <span class="gt-xs q-ml-xs">Add Remark</span>
         </q-btn>
       </div>
@@ -43,9 +67,19 @@
         flat
         wrap-cells
       >
+        <template #body-cell-category="props">
+          <q-td :props="props">
+            <q-badge :color="getCategoryColor(props.row.category)" class="category-badge">
+              {{ props.row.category || 'N/A' }}
+            </q-badge>
+          </q-td>
+        </template>
+
         <template #body-cell-action="p">
           <q-td :props="p">
+            <!-- Edit button - only if has modify permission -->
             <q-btn
+              v-if="hasModifyPermission"
               flat
               round
               dense
@@ -57,7 +91,9 @@
               <q-tooltip>Update</q-tooltip>
             </q-btn>
 
+            <!-- Delete button - only if has modify permission -->
             <q-btn
+              v-if="hasModifyPermission"
               flat
               round
               dense
@@ -68,6 +104,12 @@
             >
               <q-tooltip>Delete</q-tooltip>
             </q-btn>
+
+            <!-- Read-only indicator for users without modify permission -->
+            <q-badge v-if="!hasModifyPermission" outline color="blue" class="read-only-badge">
+              <q-icon name="visibility" size="12px" class="q-mr-xs" />
+              Read Only
+            </q-badge>
           </q-td>
         </template>
 
@@ -103,9 +145,24 @@
         <q-card-section class="q-pa-lg" style="max-height: 65vh; overflow-y: auto">
           <div class="row q-col-gutter-md">
             <div class="col-12">
+              <q-select
+                v-model="addForm.category"
+                label="Category *"
+                outlined
+                dense
+                :options="categoryOptions"
+                emit-value
+                map-options
+                :rules="[(v) => !!v || 'Category is required']"
+              >
+                <template #prepend><q-icon name="category" size="18px" /></template>
+              </q-select>
+            </div>
+
+            <div class="col-12">
               <q-input
                 v-model="addForm.remarks"
-                label="Remark"
+                label="Remark *"
                 outlined
                 dense
                 type="textarea"
@@ -173,9 +230,24 @@
 
           <div class="row q-col-gutter-md">
             <div class="col-12">
+              <q-select
+                v-model="editForm.category"
+                label="Category *"
+                outlined
+                dense
+                :options="categoryOptions"
+                emit-value
+                map-options
+                :rules="[(v) => !!v || 'Category is required']"
+              >
+                <template #prepend><q-icon name="category" size="18px" /></template>
+              </q-select>
+            </div>
+
+            <div class="col-12">
               <q-input
                 v-model="editForm.remarks"
-                label="Remark"
+                label="Remark *"
                 outlined
                 dense
                 type="textarea"
@@ -209,18 +281,27 @@
 
 <script>
   import { useRemarkStore } from 'src/stores/remarkStore';
+  import { useAuthStore } from 'src/stores/authStore';
 
   export default {
     name: 'LibraryRemarksPage',
 
     setup() {
       const store = useRemarkStore();
-      return { store };
+      const authStore = useAuthStore();
+      return { store, authStore };
     },
 
     data() {
       return {
         globalSearch: '',
+        categoryFilter: null,
+        categoryOptions: [
+          { label: 'EDUCATION', value: 'EDUCATION' },
+          { label: 'EXPERIENCE', value: 'EXPERIENCE' },
+          { label: 'TRAINING', value: 'TRAINING' },
+          { label: 'ELIGIBILITY', value: 'ELIGIBILITY' },
+        ],
         pagination: {
           sortBy: 'remarks',
           descending: false,
@@ -233,28 +314,46 @@
         selectedRemark: null,
 
         addForm: {
+          category: '',
           remarks: '',
         },
 
         editForm: {
+          category: '',
           remarks: '',
         },
       };
     },
 
     computed: {
+      // Check if user has modify permission
+      hasModifyPermission() {
+        return this.authStore.user?.permissions?.modifyLibraryAccess === '1';
+      },
+
       filteredRemarks() {
-        const search = (this.globalSearch || '').toLowerCase().trim();
-        return (this.store.remarks || []).filter((r) => {
-          if (!search) return true;
-          return [r.remarks, r.created_at]
-            .filter(Boolean)
-            .some((v) => String(v).toLowerCase().includes(search));
-        });
+        let search = (this.globalSearch || '').toLowerCase().trim();
+        let filtered = this.store.remarks || [];
+
+        // Apply category filter
+        if (this.categoryFilter) {
+          filtered = filtered.filter((r) => r.category === this.categoryFilter);
+        }
+
+        // Apply search filter
+        if (search) {
+          filtered = filtered.filter((r) => {
+            return [r.remarks, r.category, r.created_at]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(search));
+          });
+        }
+
+        return filtered;
       },
 
       columns() {
-        return [
+        const cols = [
           {
             name: 'remarks',
             label: 'Remark',
@@ -263,42 +362,69 @@
             sortable: true,
           },
           {
-            name: 'created_at',
-            label: 'Date Created',
+            name: 'category',
+            label: 'Category',
             align: 'left',
-            field: 'created_at',
+            field: 'category',
             sortable: true,
           },
           {
             name: 'action',
-            label: 'Action',
+            label: this.hasModifyPermission ? 'Action' : 'Access',
             align: 'center',
             field: 'action',
             sortable: false,
           },
         ];
+
+        return cols;
       },
     },
 
     methods: {
+      getCategoryColor(category) {
+        const colors = {
+          EDUCATION: 'blue',
+          EXPERIENCE: 'green',
+          TRAINING: 'orange',
+          ELIGIBILITY: 'purple',
+        };
+        return colors[category] || 'primary';
+      },
+
       editRemark(row) {
         this.selectedRemark = row;
         this.editForm = {
+          category: row.category || '',
           remarks: row.remarks || '',
         };
         this.editDialog = true;
       },
 
       openAddDialog() {
-        this.addForm = { remarks: '' };
+        this.addForm = { category: '', remarks: '' };
         this.addDialog = true;
       },
 
       async submitAdd() {
-        if (!this.addForm.remarks) {
-          this.$q.notify({ type: 'negative', message: 'Remark is required', position: 'top' });
+        if (!this.addForm.category) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Category is required',
+            position: 'top',
+          });
           return;
         }
+
+        if (!this.addForm.remarks) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Remark is required',
+            position: 'top',
+          });
+          return;
+        }
+
         try {
           await this.store.storeRemark(this.addForm);
           this.$q.notify({
@@ -307,6 +433,8 @@
             position: 'top',
           });
           this.addDialog = false;
+          // Reset form
+          this.addForm = { category: '', remarks: '' };
         } catch (e) {
           this.$q.notify({
             type: 'negative',
@@ -317,10 +445,24 @@
       },
 
       async submitEdit() {
-        if (!this.editForm.remarks) {
-          this.$q.notify({ type: 'negative', message: 'Remark is required', position: 'top' });
+        if (!this.editForm.category) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Category is required',
+            position: 'top',
+          });
           return;
         }
+
+        if (!this.editForm.remarks) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Remark is required',
+            position: 'top',
+          });
+          return;
+        }
+
         try {
           await this.store.updateRemark(this.selectedRemark.remarks_id, this.editForm);
           this.$q.notify({
@@ -389,5 +531,17 @@
   .dialog-footer {
     background: #fff;
     flex-shrink: 0;
+  }
+
+  .category-badge {
+    padding: 4px 8px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .read-only-badge {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
   }
 </style>

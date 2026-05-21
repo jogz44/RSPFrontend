@@ -270,7 +270,7 @@
 
             <!-- Applicants Table -->
             <q-table
-              :rows="filteredApplicants"
+              :rows="applicantsWithSequence"
               :columns="applicantColumns"
               row-key="id"
               flat
@@ -286,6 +286,11 @@
               @request="onApplicantRequest"
               :rows-per-page-options="[2, 10, 20, 50, 100, 0]"
             >
+              <template #body-cell-submission_id="props">
+                <q-td :props="props">
+                  {{ props.row.sequence }}
+                </q-td>
+              </template>
               <template #body-cell-name="props">
                 <q-td :props="props">
                   {{ props.row.firstname }} {{ props.row.lastname }}
@@ -482,7 +487,7 @@
 
     <!-- ===== Notify Unqualified Applicants Dialog ===== -->
     <q-dialog v-model="sendEvalConfirmDialog" persistent>
-      <q-card style="min-width: 500px; max-width: 650px; width: 100%">
+      <q-card style="min-width: 900px; max-width: 1100px; width: 100%">
         <!-- Header -->
         <q-card-section class="bg-green-9 text-white row items-center q-py-sm">
           <q-icon name="email" size="1.4em" class="q-mr-sm" />
@@ -530,7 +535,7 @@
           </q-banner>
 
           <!-- Unqualified List Header -->
-          <div class="row items-center justify-between q-mb-xs">
+          <div class="row items-center justify-between q-mb-md">
             <div class="text-subtitle2 text-grey-8 text-bold">
               <q-icon name="person_off" class="q-mr-xs text-red-7" />
               Unqualified Applicants to be Notified
@@ -549,46 +554,84 @@
             <div class="text-caption text-grey-6 q-mt-xs">No unqualified applicants found.</div>
           </div>
 
-          <!-- Scrollable List -->
-          <q-scroll-area
-            v-else
-            style="height: 230px; border: 1px solid #e0e0e0; border-radius: 8px"
-          >
-            <q-list separator dense>
-              <q-item
-                v-for="applicant in unqualifiedApplicants"
-                :key="applicant.id"
-                class="q-py-sm"
-              >
-                <!-- <q-item-section avatar>
-                  <q-avatar size="30px" color="red-1" text-color="red-8" font-size="0.8em">
-                    {{ index + 1 }}
-                  </q-avatar>
-                </q-item-section> -->
-                <q-item-section>
-                  <q-item-label class="text-body2 text-bold">
-                    {{ applicant.firstname }} {{ applicant.lastname }}
-                    <span v-if="applicant.name_extension">{{ applicant.name_extension }}</span>
-                  </q-item-label>
-                  <q-item-label caption class="row items-center q-gutter-xs">
-                    <q-badge
-                      :color="applicant.source === 'Internal' ? 'blue' : 'orange'"
-                      rounded
-                      class="text-caption"
-                    >
-                      {{ applicant.source }}
-                    </q-badge>
-                    <span class="text-grey-6">Applied: {{ applicant.appliedDate || '-' }}</span>
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge color="red" rounded class="text-caption q-px-sm">Unqualified</q-badge>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-scroll-area>
+          <!-- Table of Unqualified Applicants -->
+          <div v-else>
+            <q-table
+              :rows="unqualifiedApplicantsWithSequence"
+              :columns="unqualifiedApplicantColumns"
+              row-key="id"
+              flat
+              bordered
+              class="unqualified-table"
+              dense
+              separator="cell"
+              color="primary"
+            >
+              <template #body-cell-submission_id="props">
+                <q-td :props="props">
+                  {{ props.row.sequence }}
+                </q-td>
+              </template>
 
-          <div class="text-caption text-grey-5 q-mt-sm">
+              <template #body-cell-name="props">
+                <q-td :props="props">
+                  {{ props.row.firstname }} {{ props.row.lastname }}
+                  <span v-if="props.row.name_extension">{{ props.row.name_extension }}</span>
+                </q-td>
+              </template>
+
+              <template #body-cell-appliedDate="props">
+                <q-td :props="props">
+                  {{ props.row.appliedDate || '-' }}
+                </q-td>
+              </template>
+
+              <template #body-cell-source="props">
+                <q-td :props="props">
+                  <q-badge
+                    :color="props.row.source === 'Internal' ? 'blue' : 'orange'"
+                    rounded
+                    class="text-caption"
+                  >
+                    {{ props.row.source }}
+                  </q-badge>
+                </q-td>
+              </template>
+
+              <template #body-cell-status="props">
+                <q-td :props="props">
+                  <q-badge color="red" rounded class="text-caption q-px-sm">
+                    {{ props.row.status }}
+                  </q-badge>
+                </q-td>
+              </template>
+
+              <template #body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    size="sm"
+                    flat
+                    icon="email"
+                    color="primary"
+                    @click="openUnqualifiedEmailModal(props.row)"
+                  >
+                    <q-tooltip>Send Email</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    size="sm"
+                    flat
+                    icon="visibility"
+                    color="blue"
+                    @click="viewApplicantDetails(props.row)"
+                  >
+                    <q-tooltip>View Details</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+            </q-table>
+          </div>
+
+          <div class="text-caption text-grey-5 q-mt-md">
             <q-icon name="info" class="q-mr-xs" />
             An email notification will be sent to each unqualified applicant listed above.
           </div>
@@ -715,6 +758,15 @@
       @on-hired="onApplicantHired"
       @close="closeScoreModal"
     />
+
+    <!-- Unqualified Email Modal -->
+    <UnqualifiedEmail
+      v-if="selectedUnqualifiedApplicant"
+      :show="unqualifiedEmailModal"
+      :applicant="selectedUnqualifiedApplicant"
+      @update:show="unqualifiedEmailModal = $event"
+      @close="unqualifiedEmailModal = false"
+    />
   </div>
 </template>
 
@@ -729,6 +781,7 @@
   import QualificationModal from 'src/components/QualityStandardModalApplicant.vue';
   import ScoreModal from 'src/components/Rater/ApplicantScore.vue';
   import ImportApplicantsModal from 'src/components/ImportApplicant.vue';
+  import UnqualifiedEmail from 'src/components/Email/UnqualifiedEmail.vue';
 
   const router = useRouter();
   const route = useRoute();
@@ -738,6 +791,10 @@
   const applicantSearch = ref('');
   const isLoading = ref(false);
   const sendEvalConfirmDialog = ref(false);
+
+  // Unqualified Email Modal
+  const unqualifiedEmailModal = ref(false);
+  const selectedUnqualifiedApplicant = ref(null);
 
   const canModifyJobPost = computed(() => {
     return authStore.user?.permissions?.modifyJobpostAccess == '1';
@@ -892,8 +949,29 @@
     ),
   );
 
+  const unqualifiedApplicantColumns = ref([
+    { name: 'submission_id', label: 'No', field: 'sequence', align: 'center', sortable: false },
+    { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
+    { name: 'appliedDate', label: 'Application Date', field: 'appliedDate', align: 'center' },
+    { name: 'source', label: 'Source', field: 'source', align: 'center', sortable: true },
+    { name: 'status', label: 'Status', field: 'status', align: 'center' },
+    { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
+  ]);
+
   const openNotifyUnqualifiedDialog = () => {
     sendEvalConfirmDialog.value = true;
+  };
+
+  const openUnqualifiedEmailModal = (row) => {
+    selectedUnqualifiedApplicant.value = {
+      nPersonalInfo_id: row.raw?.nPersonalInfo_id || row.nPersonalInfo_id,
+      ControlNo: row.raw?.ControlNo || row.ControlNo,
+      submission_id: row.raw?.submission_id || row.submission_id || row.id,
+      firstname: row.firstname,
+      lastname: row.lastname,
+      name_extension: row.name_extension || '',
+    };
+    unqualifiedEmailModal.value = true;
   };
 
   const filteredApplicants = computed(() => {
@@ -934,10 +1012,19 @@
     return types;
   });
 
-  // Get weight for a criteria type
-  // const getCriteriaWeight = (type) => {
-  //   return criteriaWeights.value[type] || 0;
-  // };
+  const applicantsWithSequence = computed(() => {
+    return filteredApplicants.value.map((applicant, index) => ({
+      ...applicant,
+      sequence: index + 1,
+    }));
+  });
+
+  const unqualifiedApplicantsWithSequence = computed(() => {
+    return unqualifiedApplicants.value.map((applicant, index) => ({
+      ...applicant,
+      sequence: index + 1,
+    }));
+  });
 
   // Dynamic rating columns based on criteria
   const dynamicRatingColumns = computed(() => {
@@ -1058,7 +1145,6 @@
     return [...selectedJob.value.history]
       .sort((a, b) => new Date(b.post_date) - new Date(a.post_date))
       .map((h) => ({
-        // label: `${formatDate(h.post_date, 'MMM D, YYYY')} - ${formatDate(h.end_date, 'MMM D, YYYY')}`,
         label: `${formatDate(h.post_date, 'MMM D, YYYY')}`,
         value: h.id,
         historyData: h,
@@ -1075,27 +1161,22 @@
     if (ratingResponse?.criteria && ratingResponse.criteria.length > 0) {
       const criteriaData = ratingResponse.criteria[0];
 
-      // Get education weight
       if (criteriaData.educations && criteriaData.educations.length > 0) {
         criteriaWeights.value.education = parseInt(criteriaData.educations[0].weight) || 0;
       }
 
-      // Get experience weight
       if (criteriaData.experiences && criteriaData.experiences.length > 0) {
         criteriaWeights.value.experience = parseInt(criteriaData.experiences[0].weight) || 0;
       }
 
-      // Get training weight
       if (criteriaData.trainings && criteriaData.trainings.length > 0) {
         criteriaWeights.value.training = parseInt(criteriaData.trainings[0].weight) || 0;
       }
 
-      // Get performance weight
       if (criteriaData.performances && criteriaData.performances.length > 0) {
         criteriaWeights.value.performance = parseInt(criteriaData.performances[0].weight) || 0;
       }
 
-      // Get exam weight
       if (criteriaData.exams && criteriaData.exams.length > 0) {
         criteriaWeights.value.exam = parseInt(criteriaData.exams[0].weight) || 0;
         hasExamScore.value = criteriaWeights.value.exam > 0;
@@ -1153,7 +1234,6 @@
         };
       }
 
-      // Extract criteria weights from rating response
       if (ratingResponse.status === 'fulfilled' && ratingResponse.value) {
         extractCriteriaWeights(ratingResponse.value);
       }
@@ -1357,7 +1437,13 @@
   };
 
   const applicantColumns = ref([
-    { name: 'submission_id', label: 'No', field: 'submission_id', align: 'center', sortable: true },
+    {
+      name: 'submission_id',
+      label: 'No',
+      field: 'submission_id',
+      align: 'center',
+      sortable: false,
+    },
     { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
     { name: 'appliedDate', label: 'Applied Date', field: 'appliedDate', align: 'center' },
     { name: 'source', label: 'Source', field: 'source', align: 'center', sortable: true },
@@ -1372,6 +1458,8 @@
       return {
         id: a.nPersonalInfo_id || a.submission_id,
         submission_id: a.submission_id,
+        nPersonalInfo_id: a.nPersonalInfo_id,
+        ControlNo: a.ControlNo,
         name: fullName,
         firstname: a.firstname || '',
         lastname: a.lastname || '',
@@ -1551,10 +1639,8 @@
   const refreshAllData = async () => {
     isLoading.value = true;
     try {
-      // Refresh job details and criteria
       await loadAllData(jobId.value);
 
-      // Refresh applicants list
       await jobPostStore.fetch_applicant(selectedJob.value.id, {
         page: applicantPagination.value.page,
         perPage:
@@ -1564,7 +1650,6 @@
         search: globalSearch.value,
       });
 
-      // Refresh ratings data
       await jobPostStore.fetch_applicant_rating(selectedJob.value.id, {
         page: ratingPagination.value.page,
         perPage:
@@ -1596,7 +1681,6 @@
   const onCloseQualificationModal = () => {
     qualificationModalVisible.value = false;
     selectedApplicantData.value = {};
-    // Refresh all data when QS modal closes
     refreshAllData();
   };
   const onViewPDS = () => {
@@ -1643,7 +1727,6 @@
 </script>
 
 <style scoped>
-  /* ===== Chips ===== */
   .chips-row {
     display: flex;
     flex-wrap: wrap;
@@ -1679,7 +1762,6 @@
     font-weight: 700;
   }
 
-  /* ===== Info Items ===== */
   .info-item {
     display: flex;
     align-items: center;
@@ -1687,14 +1769,12 @@
     padding: 3px 0;
   }
 
-  /* ===== Criteria Cards ===== */
   .criteria-card {
     border-left: 3px solid #4caf50;
     border-radius: 6px;
     background: #fafafa;
   }
 
-  /* ===== Tabs ===== */
   .q-tabs {
     background-color: #fff;
     border-radius: 8px 8px 0 0;
@@ -1710,12 +1790,10 @@
     padding: 16px;
   }
 
-  /* ===== Tables ===== */
   .q-table tr:hover {
     background-color: #f5f5f5;
   }
 
-  /* ===== Rating Table: no horizontal scroll ===== */
   .rating-table .q-table {
     table-layout: fixed;
     width: 100%;
@@ -1726,10 +1804,13 @@
     word-break: break-word;
   }
 
-  /* ===== Badge ===== */
   .assessment-status .q-badge {
     font-size: 0.9rem;
     padding: 8px 12px;
     border-radius: 4px;
+  }
+
+  .unqualified-table {
+    width: 100%;
   }
 </style>

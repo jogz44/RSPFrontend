@@ -76,11 +76,12 @@ const routes = [
       },
       {
         path: '/library',
-        name: 'Exam Score List',
+        name: 'Library Page',
         component: () => import('pages/admin/LibraryPage.vue'),
         meta: {
           auth: true,
           role: 'admin',
+          permissions: ['viewLibraryAccess'],
         },
       },
       {

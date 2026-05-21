@@ -340,7 +340,8 @@
                         label="View"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewPlantillaAccess')"
+                        @update:model-value="() => onViewToggle('viewPlantillaAccess')"
                       />
                       <q-toggle
                         true-value="1"
@@ -349,7 +350,7 @@
                         label="Modify"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyPlantillaAccess')"
                       />
                     </div>
                     <div class="perm-row two-col">
@@ -360,7 +361,7 @@
                         label="Publication"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('requestPublication')"
                       />
                       <q-toggle
                         true-value="1"
@@ -369,7 +370,7 @@
                         label="Report"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('reportPlantillaAccess')"
                       />
                     </div>
                   </div>
@@ -388,7 +389,8 @@
                         label="View"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewJobpostAccess')"
+                        @update:model-value="() => onViewToggle('viewJobpostAccess')"
                       />
                       <q-toggle
                         true-value="1"
@@ -397,7 +399,7 @@
                         label="Modify"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyJobpostAccess')"
                       />
                     </div>
                   </div>
@@ -416,7 +418,8 @@
                         label="View"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewApplicantAccess')"
+                        @update:model-value="() => onViewToggle('viewApplicantAccess')"
                       />
                       <q-toggle
                         true-value="1"
@@ -425,7 +428,7 @@
                         label="Modify"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyApplicantAccess')"
                       />
                     </div>
                     <div class="perm-row">
@@ -436,7 +439,36 @@
                         label="Report"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('reportApplicantAccess')"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Library -->
+                  <div class="perm-group">
+                    <div class="perm-group-title">
+                      <q-icon name="library_books" size="14px" class="q-mr-xs" />
+                      Library
+                    </div>
+                    <div class="perm-row two-col">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.viewLibraryAccess"
+                        label="View Library"
+                        dense
+                        color="primary"
+                        :disable="!canToggleView('viewLibraryAccess')"
+                        @update:model-value="() => onViewToggle('viewLibraryAccess')"
+                      />
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.modifyLibraryAccess"
+                        label="Modify Library"
+                        dense
+                        color="primary"
+                        @update:model-value="() => onChildToggle('modifyLibraryAccess')"
                       />
                     </div>
                   </div>
@@ -455,7 +487,8 @@
                         label="View"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewSchedule')"
+                        @update:model-value="() => onViewToggle('viewSchedule')"
                       />
                       <q-toggle
                         true-value="1"
@@ -464,7 +497,7 @@
                         label="Modify"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifySchedule')"
                       />
                     </div>
                   </div>
@@ -483,7 +516,8 @@
                         label="View"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewExam')"
+                        @update:model-value="() => onViewToggle('viewExam')"
                       />
                       <q-toggle
                         true-value="1"
@@ -492,7 +526,7 @@
                         label="Modify"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyExam')"
                       />
                     </div>
                   </div>
@@ -511,7 +545,8 @@
                         label="View Raters"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        :disable="!canToggleView('viewRater')"
+                        @update:model-value="() => onViewToggle('viewRater')"
                       />
                       <q-toggle
                         true-value="1"
@@ -520,7 +555,7 @@
                         label="Modify Raters"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyRater')"
                       />
                     </div>
                     <div class="perm-row two-col">
@@ -531,7 +566,7 @@
                         label="View Criteria"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('viewCriteria')"
                       />
                       <q-toggle
                         true-value="1"
@@ -540,7 +575,7 @@
                         label="Modify Criteria"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('modifyCriteria')"
                       />
                     </div>
                     <div class="perm-row">
@@ -551,7 +586,7 @@
                         label="View Reports"
                         dense
                         color="primary"
-                        @update:model-value="syncSelectAll"
+                        @update:model-value="() => onChildToggle('viewReport')"
                       />
                     </div>
                   </div>
@@ -637,7 +672,7 @@
   import ButtonResetPassword from 'components/ButtonResetPassword.vue';
   import ButtonDelete from 'components/ButtonDelete.vue';
 
-  // ── All permission keys ───────────────────────────────────────────────
+  // ── All permission keys ─────────────────────────────────────
   const ALL_PERMISSION_KEYS = [
     'viewDashboardstat',
     'viewPlantillaAccess',
@@ -649,6 +684,8 @@
     'viewApplicantAccess',
     'modifyApplicantAccess',
     'reportApplicantAccess',
+    'viewLibraryAccess',
+    'modifyLibraryAccess',
     'viewSchedule',
     'modifySchedule',
     'viewExam',
@@ -661,6 +698,34 @@
     'userManagement',
     'viewActivityLogs',
   ];
+
+  // ── Child permissions that require their parent "View" permission ──
+  const CHILD_PERMISSIONS_MAP = {
+    modifyPlantillaAccess: 'viewPlantillaAccess',
+    requestPublication: 'viewPlantillaAccess',
+    reportPlantillaAccess: 'viewPlantillaAccess',
+    modifyJobpostAccess: 'viewJobpostAccess',
+    modifyApplicantAccess: 'viewApplicantAccess',
+    reportApplicantAccess: 'viewApplicantAccess',
+    modifyLibraryAccess: 'viewLibraryAccess',
+    modifySchedule: 'viewSchedule',
+    modifyExam: 'viewExam',
+    modifyRater: 'viewRater',
+    viewCriteria: 'viewRater',
+    modifyCriteria: 'viewRater',
+    viewReport: 'viewRater',
+  };
+
+  // ── Get all child permissions for a given view permission ──
+  function getChildPermissionsForView(viewKey) {
+    const children = [];
+    for (const [child, parent] of Object.entries(CHILD_PERMISSIONS_MAP)) {
+      if (parent === viewKey) {
+        children.push(child);
+      }
+    }
+    return children;
+  }
 
   // ── Badge color based on role name ───────────────────────────────────
   const ROLE_COLORS = ['teal', 'blue', 'green', 'orange', 'pink', 'cyan', 'indigo', 'brown'];
@@ -735,6 +800,36 @@
         return ALL_PERMISSION_KEYS.every((k) => permissions[k] === '1');
       }
 
+      // ── Check if view permission can be toggled OFF ──
+      function canToggleView(viewKey) {
+        // If view is currently ON and we're trying to turn it OFF
+        if (form.value.permissions[viewKey] === '1') {
+          // Check if any child permissions are ON
+          const children = getChildPermissionsForView(viewKey);
+          const hasChildOn = children.some((child) => form.value.permissions[child] === '1');
+
+          // If there are child permissions ON, prevent toggling OFF
+          if (hasChildOn) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // ── Handle View toggle (prevent turning OFF if children exist) ──
+      function onViewToggle(viewKey) {
+        // If trying to turn OFF but can't, revert
+        if (form.value.permissions[viewKey] === '0' && !canToggleView(viewKey)) {
+          // Show notification to user
+          form.value.permissions[viewKey] = '1';
+          // Optional: Show a message
+          setTimeout(() => {
+            // You can add a toast notification here if needed
+          }, 100);
+        }
+        syncSelectAll();
+      }
+
       // ── Form state ───────────────────────────────────────────────────
       const dialog = ref(false);
       const isEditing = ref(false);
@@ -747,6 +842,16 @@
         active: true,
         permissions: defaultPermissions(),
       });
+
+      // ── Handle Child toggle - Auto-enable parent View permission ──────
+      function onChildToggle(childKey) {
+        const parentKey = CHILD_PERMISSIONS_MAP[childKey];
+        if (parentKey && form.value.permissions[childKey] === '1') {
+          // If child is being turned ON, also turn ON the parent view permission
+          form.value.permissions[parentKey] = '1';
+        }
+        syncSelectAll();
+      }
 
       // ── Select All toggle ────────────────────────────────────────────
       function onSelectAllToggle(val) {
@@ -820,6 +925,8 @@
           viewApplicantAccess: p.viewApplicantAccess || '0',
           modifyApplicantAccess: p.modifyApplicantAccess || '0',
           reportApplicantAccess: p.reportApplicantAccess || '0',
+          viewLibraryAccess: p.viewLibraryAccess || '0',
+          modifyLibraryAccess: p.modifyLibraryAccess || '0',
           viewSchedule: p.viewSchedule || '0',
           modifySchedule: p.modifySchedule || '0',
           viewExam: p.viewExam || '0',
@@ -888,6 +995,9 @@
         clearRole,
         onSelectAllToggle,
         syncSelectAll,
+        onChildToggle,
+        onViewToggle,
+        canToggleView,
         openAddDialog,
         openEditDialog,
         submitForm,

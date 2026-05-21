@@ -135,7 +135,7 @@
       </q-expansion-item>
 
       <q-item
-        v-if="hasUserManagementAccess"
+        v-if="hasLibraryAccess"
         dense
         class="q-mx-xs q-my-xs"
         style="border-radius: 17px; padding: 8px 11px"
@@ -243,6 +243,16 @@
     () =>
       authStore.user?.permissions?.viewSchedule === '1' ||
       authStore.user?.permissions?.modifySchedule === '1',
+  );
+
+  // ============================================================================
+  // SCHEDULE PERMISSIONS
+  // ============================================================================
+
+  const hasLibraryAccess = computed(
+    () =>
+      authStore.user?.permissions?.viewLibraryAccess === '1' ||
+      authStore.user?.permissions?.modifyLibraryAccess === '1',
   );
 
   // ============================================================================
