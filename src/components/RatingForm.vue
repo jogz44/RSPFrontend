@@ -65,49 +65,59 @@
         <div v-else>
           <table class="rating-table">
             <!-- Criteria Header (Sticky) -->
+            <colgroup>
+              <col style="width: 200px" />
+              <col :style="{ width: criteriaColWidths.education + 'px' }" />
+              <col :style="{ width: criteriaColWidths.experience + 'px' }" />
+              <col :style="{ width: criteriaColWidths.training + 'px' }" />
+              <col :style="{ width: criteriaColWidths.performance + 'px' }" />
+              <col style="width: 80px" />
+              <col v-if="hasExam" :style="{ width: criteriaColWidths.exam + 'px' }" />
+              <col v-if="hasBehavioral" :style="{ width: criteriaColWidths.behavioral + 'px' }" />
+              <col style="width: 80px" />
+            </colgroup>
             <thead class="sticky-criteria">
               <tr>
-                <th style="width: 200px">Name of Applicant</th>
-                <th style="width: 110px">
+                <th>Name of Applicant</th>
+                <th>
                   Education
-                  <span class="text-caption">{{ educationMaxRate }}%</span>
+                  <span class="text-caption">({{ educationMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Experience
-                  <span class="text-caption">{{ experienceMaxRate }}%</span>
+                  <span class="text-caption">({{ experienceMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Training
-                  <span class="text-caption">{{ trainingMaxRate }}%</span>
+                  <span class="text-caption">({{ trainingMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Performance
-                  <span class="text-caption">{{ performanceMaxRate }}%</span>
+                  <span class="text-caption">({{ performanceMaxRate }}%)</span>
                 </th>
-                <th style="width: 80px" class="text-center">
+                <th class="text-center col-qs-total">
                   QS Total
                   <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </th>
-                <th v-if="hasExam" style="width: 110px">
+                <th v-if="hasExam">
                   Exam
-                  <span class="text-caption">{{ examMaxRate }}%</span>
+                  <span class="text-caption">({{ examMaxRate }}%)</span>
                 </th>
-                <th v-if="hasBehavioral" style="width: 110px">
+                <th v-if="hasBehavioral">
                   BEI
-                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
+                  <span class="text-caption">({{ behavioralMaxRate }}%)</span>
                 </th>
-                <th style="width: 80px" class="text-center">
+                <th class="text-center col-grand-total">
                   Grand Total
                   <div class="text-caption">({{ totalMaxRate }}%)</div>
                 </th>
-                <th style="width: 80px" class="text-center">Rank</th>
               </tr>
               <tr class="bg-grey-2 criteria-description">
                 <td>
                   <div class="text-weight-bold text-caption">Criteria</div>
                 </td>
+                <!-- Education criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">EDUCATION CRITERIA:</div>
                   <div
                     v-for="(item, index) in education.items"
                     :key="'edu-' + index"
@@ -117,8 +127,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Experience criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">EXPERIENCE CRITERIA:</div>
                   <div
                     v-for="(item, index) in experience.items"
                     :key="'exp-' + index"
@@ -128,8 +138,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Training criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">TRAINING CRITERIA:</div>
                   <div
                     v-for="(item, index) in training.items"
                     :key="'train-' + index"
@@ -139,8 +149,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Performance criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">PERFORMANCE CRITERIA:</div>
                   <div
                     v-for="(item, index) in performance.items"
                     :key="'perf-' + index"
@@ -150,12 +160,9 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">QS Total</div>
-                  <div class="text-caption">({{ qsMaxRate }}%)</div>
-                </td>
+                <!-- QS Total: intentionally blank -->
+                <td class="col-qs-total"></td>
                 <td v-if="hasExam">
-                  <div class="text-weight-bold text-caption q-mb-xs">EXAM CRITERIA:</div>
                   <div
                     v-for="(item, index) in exam.items"
                     :key="'exam-' + index"
@@ -166,7 +173,6 @@
                   </div>
                 </td>
                 <td v-if="hasBehavioral">
-                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
                   <div
                     v-for="(item, index) in behavioral.items"
                     :key="'bei-' + index"
@@ -176,13 +182,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">Grand Total</div>
-                  <div class="text-caption">({{ totalMaxRate }}%)</div>
-                </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">Rank</div>
-                </td>
+                <!-- Grand Total: intentionally blank -->
+                <td class="col-grand-total"></td>
               </tr>
             </thead>
             <tbody>
@@ -203,7 +204,7 @@
                     </div>
                   </td>
 
-                  <td style="width: 110px">
+                  <td>
                     <q-input
                       v-model="applicant.educationScore"
                       type="text"
@@ -225,7 +226,7 @@
                     />
                   </td>
 
-                  <td style="width: 110px">
+                  <td>
                     <q-input
                       v-model="applicant.experienceScore"
                       type="text"
@@ -247,7 +248,7 @@
                     />
                   </td>
 
-                  <td style="width: 110px">
+                  <td>
                     <q-input
                       v-model="applicant.trainingScore"
                       type="text"
@@ -269,7 +270,7 @@
                     />
                   </td>
 
-                  <td style="width: 110px">
+                  <td>
                     <q-input
                       v-model="applicant.performanceScore"
                       type="text"
@@ -291,11 +292,11 @@
                     />
                   </td>
 
-                  <td style="width: 80px" class="text-center">
+                  <td class="text-center col-qs-total">
                     <div class="result-value">{{ calculateQS(applicant) }}</div>
                   </td>
 
-                  <td v-if="hasExam" style="width: 110px">
+                  <td v-if="hasExam">
                     <q-input
                       v-model="applicant.examScore"
                       type="text"
@@ -308,7 +309,7 @@
                     />
                   </td>
 
-                  <td v-if="hasBehavioral" style="width: 110px">
+                  <td v-if="hasBehavioral">
                     <q-input
                       v-model="applicant.behavioralScore"
                       type="text"
@@ -330,12 +331,8 @@
                     />
                   </td>
 
-                  <td style="width: 80px" class="text-center total-score">
+                  <td class="text-center total-score col-grand-total">
                     <div class="result-value">{{ calculateTotal(applicant) }}</div>
-                  </td>
-
-                  <td style="width: 80px" class="text-center rank">
-                    <div class="result-value">{{ applicant.ranking || '-' }}</div>
                   </td>
                 </tr>
 
@@ -687,10 +684,59 @@
   );
 
   const detailsColspan = computed(() => {
-    let count = 1 + 4 + 1 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1) + Rank (1)
+    let count = 1 + 4 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1)
     if (hasExam.value) count += 1;
     if (hasBehavioral.value) count += 1;
     return count;
+  });
+
+  // Dynamic column widths ranked by longest criteria description.
+  // All 6 scored columns are compared together so the column with the longest
+  // description text gets the widest width, shortest gets the narrowest.
+  const COL_MIN = 180;
+  const COL_MAX = 500;
+
+  const longestDescLen = (items) => {
+    if (!items || items.length === 0) return 0;
+    return Math.max(...items.map((i) => (i.description || '').length));
+  };
+
+  const criteriaColWidths = computed(() => {
+    const lengths = {
+      education: longestDescLen(education.value.items),
+      experience: longestDescLen(experience.value.items),
+      training: longestDescLen(training.value.items),
+      performance: longestDescLen(performance.value.items),
+      behavioral: longestDescLen(behavioral.value.items),
+      exam: longestDescLen(exam.value.items),
+    };
+
+    const allLens = Object.values(lengths);
+    const maxLen = Math.max(...allLens);
+    const activeLens = allLens.filter((l) => l > 0);
+    const minLen = activeLens.length ? Math.min(...activeLens) : 0;
+    const range = maxLen - minLen || 1;
+
+    // Non-widest columns are capped at 3/4 of COL_MAX so they don't
+    // over-expand when their content is noticeably shorter than the widest.
+    const COL_SECONDARY = Math.round(COL_MAX * 0.5);
+
+    const toWidth = (len) => {
+      if (len === 0) return COL_MIN;
+      const isWidest = len === maxLen;
+      const cap = isWidest ? COL_MAX : COL_SECONDARY;
+      const ratio = (len - minLen) / range;
+      return Math.round(COL_MIN + ratio * (cap - COL_MIN));
+    };
+
+    return {
+      education: toWidth(lengths.education),
+      experience: toWidth(lengths.experience),
+      training: toWidth(lengths.training),
+      performance: toWidth(lengths.performance),
+      behavioral: toWidth(lengths.behavioral),
+      exam: toWidth(lengths.exam),
+    };
   });
 
   // Helper function to check if a value is empty or just '-'
@@ -794,7 +840,6 @@
     ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
     ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
     { label: 'Grand Total', value: 'grandTotal' },
-    { label: 'Ranking', value: 'ranking' },
   ];
 
   const filteredApplicants = computed(() => {
@@ -1422,6 +1467,9 @@
       border: 1px solid #ddd;
       vertical-align: top;
       font-size: 0.85rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     th {
@@ -1432,23 +1480,63 @@
     }
   }
 
+  // ─── QS Total column highlight ───────────────────────────────────────────
+  .col-qs-total {
+    background-color: #e8f4fd !important;
+    border-left: 2px solid #1976d2 !important;
+    border-right: 2px solid #1976d2 !important;
+
+    // Header variant
+    thead & {
+      color: #1565c0;
+      font-weight: 600 !important;
+    }
+
+    // Criteria description row — keep blank but preserve highlight
+    .criteria-description & {
+      background-color: #ddeefa !important;
+    }
+  }
+
+  // ─── Grand Total column highlight ────────────────────────────────────────
+  .col-grand-total {
+    background-color: #e8f5e9 !important;
+    border-left: 2px solid #388e3c !important;
+    border-right: 2px solid #388e3c !important;
+
+    // Header variant
+    thead & {
+      color: #2e7d32;
+      font-weight: 600 !important;
+    }
+
+    // Criteria description row — keep blank but preserve highlight
+    .criteria-description & {
+      background-color: #d6edd8 !important;
+    }
+  }
+
   .criteria-description {
     background-color: #f9f9f9;
   }
 
   .criteria-item {
-    line-height: 1.3;
-    margin-bottom: 8px;
+    line-height: 1.4;
+    margin-bottom: 6px;
     display: flex;
     align-items: flex-start;
-    gap: 6px;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .criteria-percentage {
     font-weight: bold;
     color: #1976d2;
     display: inline-block;
-    min-width: 40px;
+    min-width: 34px;
     flex-shrink: 0;
   }
 
@@ -1490,12 +1578,8 @@
 
   .total-score {
     font-weight: bold;
-    color: green;
-  }
-
-  .rank {
-    font-weight: bold;
-    background-color: #d0ffd6;
+    // col-grand-total provides the green background; keep text bold
+    color: #2e7d32;
   }
 
   .applicant-details {

@@ -1,22 +1,25 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
     <q-card class="rating-modal">
-      <!-- Header (Sticky) -->
-      <q-card-section class="header sticky-header">
+      <q-card-section class="header">
         <div class="row items-center justify-between">
           <div>
-            <h6 class="q-ma-none text-weight-bold">Rated Applicants for Qualification Standards</h6>
+            <h6 class="q-ma-none text-weight-bold">Rating Form for Qualification Standards</h6>
             <div class="text-subtitle1">{{ position.position }}</div>
             <div class="text-caption">Office: {{ position.office }}</div>
+            <div class="text-caption">Position ID: {{ positionID }}</div>
+            <div class="text-caption">Jobpost ID: {{ position.id }}</div>
           </div>
           <q-btn flat round dense icon="close" @click="closeForm" />
         </div>
+
+        <!-- Filter & Sort Controls -->
         <div class="row q-mt-sm q-col-gutter-sm">
           <div class="col-4">
             <q-input
               v-model="filterText"
               dense
-              borderless
+              outlined
               placeholder="Filter by name"
               class="filter-input"
               clearable
@@ -27,7 +30,7 @@
             </q-input>
           </div>
           <div class="col-4">
-            <q-select v-model="sortBy" :options="sortOptions" dense borderless label="Sort by" />
+            <q-select v-model="sortBy" :options="sortOptions" dense outlined label="Sort by" />
           </div>
           <div class="col-4">
             <q-btn-toggle
@@ -62,49 +65,59 @@
         <div v-else>
           <table class="rating-table">
             <!-- Criteria Header (Sticky) -->
+            <colgroup>
+              <col style="width: 200px" />
+              <col :style="{ width: criteriaColWidths.education + 'px' }" />
+              <col :style="{ width: criteriaColWidths.experience + 'px' }" />
+              <col :style="{ width: criteriaColWidths.training + 'px' }" />
+              <col :style="{ width: criteriaColWidths.performance + 'px' }" />
+              <col style="width: 80px" />
+              <col v-if="hasExam" :style="{ width: criteriaColWidths.exam + 'px' }" />
+              <col v-if="hasBehavioral" :style="{ width: criteriaColWidths.behavioral + 'px' }" />
+              <col style="width: 80px" />
+            </colgroup>
             <thead class="sticky-criteria">
               <tr>
-                <th style="width: 200px">Name of Applicant</th>
-                <th style="width: 110px">
+                <th>Name of Applicant</th>
+                <th>
                   Education
-                  <span class="text-caption">{{ educationMaxRate }}%</span>
+                  <span class="text-caption">({{ educationMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Experience
-                  <span class="text-caption">{{ experienceMaxRate }}%</span>
+                  <span class="text-caption">({{ experienceMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Training
-                  <span class="text-caption">{{ trainingMaxRate }}%</span>
+                  <span class="text-caption">({{ trainingMaxRate }}%)</span>
                 </th>
-                <th style="width: 110px">
+                <th>
                   Performance
-                  <span class="text-caption">{{ performanceMaxRate }}%</span>
+                  <span class="text-caption">({{ performanceMaxRate }}%)</span>
                 </th>
-                <th style="width: 80px" class="text-center">
+                <th class="text-center col-qs-total">
                   QS Total
                   <div class="text-caption">({{ qsMaxRate }}%)</div>
                 </th>
-                <th v-if="hasExam" style="width: 110px">
+                <th v-if="hasExam">
                   Exam
-                  <span class="text-caption">{{ examMaxRate }}%</span>
+                  <span class="text-caption">({{ examMaxRate }}%)</span>
                 </th>
-                <th v-if="hasBehavioral" style="width: 110px">
+                <th v-if="hasBehavioral">
                   BEI
-                  <span class="text-caption">{{ behavioralMaxRate }}%</span>
+                  <span class="text-caption">({{ behavioralMaxRate }}%)</span>
                 </th>
-                <th style="width: 80px" class="text-center">
+                <th class="text-center col-grand-total">
                   Grand Total
                   <div class="text-caption">({{ totalMaxRate }}%)</div>
                 </th>
-                <th style="width: 80px" class="text-center">Rank</th>
               </tr>
               <tr class="bg-grey-2 criteria-description">
                 <td>
                   <div class="text-weight-bold text-caption">Criteria</div>
                 </td>
+                <!-- Education criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">EDUCATION CRITERIA:</div>
                   <div
                     v-for="(item, index) in education.items"
                     :key="'edu-' + index"
@@ -114,8 +127,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Experience criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">EXPERIENCE CRITERIA:</div>
                   <div
                     v-for="(item, index) in experience.items"
                     :key="'exp-' + index"
@@ -125,8 +138,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Training criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">TRAINING CRITERIA:</div>
                   <div
                     v-for="(item, index) in training.items"
                     :key="'train-' + index"
@@ -136,8 +149,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
+                <!-- Performance criteria items — no heading label -->
                 <td>
-                  <div class="text-weight-bold text-caption q-mb-xs">PERFORMANCE CRITERIA:</div>
                   <div
                     v-for="(item, index) in performance.items"
                     :key="'perf-' + index"
@@ -147,12 +160,9 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">QS Total</div>
-                  <div class="text-caption">({{ qsMaxRate }}%)</div>
-                </td>
+                <!-- QS Total: intentionally blank -->
+                <td class="col-qs-total"></td>
                 <td v-if="hasExam">
-                  <div class="text-weight-bold text-caption q-mb-xs">EXAM CRITERIA:</div>
                   <div
                     v-for="(item, index) in exam.items"
                     :key="'exam-' + index"
@@ -163,7 +173,6 @@
                   </div>
                 </td>
                 <td v-if="hasBehavioral">
-                  <div class="text-weight-bold text-caption q-mb-xs">BEI CRITERIA:</div>
                   <div
                     v-for="(item, index) in behavioral.items"
                     :key="'bei-' + index"
@@ -173,13 +182,8 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">Grand Total</div>
-                  <div class="text-caption">({{ totalMaxRate }}%)</div>
-                </td>
-                <td class="text-center">
-                  <div class="text-weight-bold text-caption">Rank</div>
-                </td>
+                <!-- Grand Total: intentionally blank -->
+                <td class="col-grand-total"></td>
               </tr>
             </thead>
             <tbody>
@@ -197,97 +201,33 @@
                       <span class="text-caption ellipsis">
                         {{ applicant.firstname }} {{ applicant.lastname }}
                       </span>
-                      <q-btn
-                        flat
-                        dense
-                        round
-                        size="xs"
-                        icon="visibility"
-                        class="q-ml-xs"
-                        @click.stop="openQSModal(applicant)"
-                      />
                     </div>
                   </td>
 
-                  <td style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.educationScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <!-- Display scores as read-only text (view mode) -->
+                  <td class="text-center">
+                    {{ formatScoreDisplay(applicant.educationScore) }}
                   </td>
-                  <td style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.experienceScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td class="text-center">
+                    {{ formatScoreDisplay(applicant.experienceScore) }}
                   </td>
-                  <td style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.trainingScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td class="text-center">
+                    {{ formatScoreDisplay(applicant.trainingScore) }}
                   </td>
-                  <td style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.performanceScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td class="text-center">
+                    {{ formatScoreDisplay(applicant.performanceScore) }}
                   </td>
-
-                  <td style="width: 80px" class="text-center">
+                  <td class="text-center col-qs-total">
                     <div class="result-value">{{ calculateQS(applicant) }}</div>
                   </td>
-
-                  <td v-if="hasExam" style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.examScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td v-if="hasExam" class="text-center">
+                    {{ formatScoreDisplay(applicant.examScore) }}
                   </td>
-
-                  <td v-if="hasBehavioral" style="width: 110px">
-                    <q-input
-                      :model-value="formatScore(applicant.behavioralScore)"
-                      type="text"
-                      dense
-                      borderless
-                      readonly
-                      class="score-input"
-                      placeholder="-"
-                    />
+                  <td v-if="hasBehavioral" class="text-center">
+                    {{ formatScoreDisplay(applicant.behavioralScore) }}
                   </td>
-
-                  <td style="width: 80px" class="text-center total-score">
+                  <td class="text-center total-score col-grand-total">
                     <div class="result-value">{{ calculateTotal(applicant) }}</div>
-                  </td>
-
-                  <td style="width: 80px" class="text-center rank">
-                    <div class="result-value">{{ applicant.ranking || '-' }}</div>
                   </td>
                 </tr>
 
@@ -295,98 +235,127 @@
                 <tr v-if="expandedApplicant === applicant.id">
                   <td :colspan="detailsColspan" class="applicant-details">
                     <div class="row q-col-gutter-sm q-py-sm">
-                      <!-- Education Details -->
-                      <div class="col-3">
-                        <div class="detail-panel">
-                          <div class="detail-title">Education</div>
-                          <div v-if="applicant.education && applicant.education.length > 0">
-                            <div
-                              v-for="(edu, index) in applicant.education"
-                              :key="index"
-                              class="q-mb-xs"
-                            >
-                              <div class="text-weight-bold">{{ edu.level }}</div>
-                              <div>{{ edu.school_name || 'N/A' }}</div>
-                              <div>{{ edu.degree || 'N/A' }}</div>
-                              <div v-if="edu.year_graduated">
-                                Graduated: {{ edu.year_graduated }}
-                              </div>
-                              <hr v-if="index < applicant.education.length - 1" class="q-my-xs" />
-                            </div>
-                          </div>
-                          <div v-else class="text-grey-6">No education data</div>
-                        </div>
+                      <div class="col-12 q-mb-sm">
+                        <q-btn
+                          label="View Qualification Standards"
+                          icon="visibility"
+                          color="primary"
+                          outline
+                          dense
+                          size="sm"
+                          @click="openQSModal(applicant)"
+                        />
                       </div>
-                      <!-- Work Experience Details -->
-                      <div class="col-3">
-                        <div class="detail-panel">
-                          <div class="detail-title">Work Experience</div>
-                          <div
-                            v-if="applicant.work_experience && applicant.work_experience.length > 0"
-                          >
-                            <div
-                              v-for="(work, index) in applicant.work_experience"
-                              :key="index"
-                              class="q-mb-xs"
-                            >
-                              <div class="text-weight-bold">{{ work.position_title }}</div>
-                              <div>{{ work.department }}</div>
-                              <div>
-                                {{ formatDate(work.work_date_from) }} to
-                                {{ formatDate(work.work_date_to) }}
+                      <div class="col-12">
+                        <div class="row q-col-gutter-sm">
+                          <!-- Education Details -->
+                          <div class="col-3">
+                            <div class="detail-panel">
+                              <div class="detail-title">Education</div>
+                              <div v-if="applicant.education && applicant.education.length > 0">
+                                <div
+                                  v-for="(edu, index) in applicant.education"
+                                  :key="index"
+                                  class="q-mb-xs"
+                                >
+                                  <div class="text-weight-bold">{{ edu.level }}</div>
+                                  <div>{{ edu.school_name || 'N/A' }}</div>
+                                  <div>{{ edu.degree || 'N/A' }}</div>
+                                  <div v-if="edu.year_graduated">
+                                    Graduated: {{ edu.year_graduated }}
+                                  </div>
+                                  <hr
+                                    v-if="index < applicant.education.length - 1"
+                                    class="q-my-xs"
+                                  />
+                                </div>
                               </div>
-                              <div>Salary: ₱{{ work.monthly_salary }}</div>
-                              <div>{{ work.status_of_appointment }}</div>
-                              <hr
-                                v-if="index < applicant.work_experience.length - 1"
-                                class="q-my-xs"
-                              />
+                              <div v-else class="text-grey-6">No education data</div>
                             </div>
                           </div>
-                          <div v-else class="text-grey-6">No work experience</div>
-                        </div>
-                      </div>
-                      <!-- Training Details -->
-                      <div class="col-3">
-                        <div class="detail-panel">
-                          <div class="detail-title">Training</div>
-                          <div v-if="applicant.training && applicant.training.length > 0">
-                            <div
-                              v-for="(train, index) in applicant.training"
-                              :key="index"
-                              class="q-mb-xs"
-                            >
-                              <div class="text-weight-bold">{{ train.training_title }}</div>
-                              <div>
-                                {{ formatDate(train.inclusive_date_from) }} to
-                                {{ formatDate(train.inclusive_date_to) }}
+
+                          <!-- Work Experience Details -->
+                          <div class="col-3">
+                            <div class="detail-panel">
+                              <div class="detail-title">Work Experience</div>
+                              <div
+                                v-if="
+                                  applicant.work_experience && applicant.work_experience.length > 0
+                                "
+                              >
+                                <div
+                                  v-for="(work, index) in applicant.work_experience"
+                                  :key="index"
+                                  class="q-mb-xs"
+                                >
+                                  <div class="text-weight-bold">{{ work.position_title }}</div>
+                                  <div>{{ work.department }}</div>
+                                  <div>
+                                    {{ formatDate(work.work_date_from) }} to
+                                    {{ formatDate(work.work_date_to) }}
+                                  </div>
+                                  <div>Salary: ₱{{ work.monthly_salary }}</div>
+                                  <div>{{ work.status_of_appointment }}</div>
+                                  <hr
+                                    v-if="index < applicant.work_experience.length - 1"
+                                    class="q-my-xs"
+                                  />
+                                </div>
                               </div>
-                              <div>{{ train.number_of_hours }} hours</div>
-                              <div>{{ train.conducted_by }}</div>
-                              <hr v-if="index < applicant.training.length - 1" class="q-my-xs" />
+                              <div v-else class="text-grey-6">No work experience</div>
                             </div>
                           </div>
-                          <div v-else class="text-grey-6">No training data</div>
-                        </div>
-                      </div>
-                      <!-- Eligibility Details -->
-                      <div class="col-3">
-                        <div class="detail-panel">
-                          <div class="detail-title">Eligibility</div>
-                          <div v-if="applicant.eligibity && applicant.eligibity.length > 0">
-                            <div
-                              v-for="(elig, index) in applicant.eligibity"
-                              :key="index"
-                              class="q-mb-xs"
-                            >
-                              <div class="text-weight-bold">{{ elig.eligibility }}</div>
-                              <div>Rating: {{ elig.rating }}%</div>
-                              <div>Exam Date: {{ formatDate(elig.date_of_examination) }}</div>
-                              <div>License: {{ elig.license_number }}</div>
-                              <hr v-if="index < applicant.eligibity.length - 1" class="q-my-xs" />
+
+                          <!-- Training Details -->
+                          <div class="col-3">
+                            <div class="detail-panel">
+                              <div class="detail-title">Training</div>
+                              <div v-if="applicant.training && applicant.training.length > 0">
+                                <div
+                                  v-for="(train, index) in applicant.training"
+                                  :key="index"
+                                  class="q-mb-xs"
+                                >
+                                  <div class="text-weight-bold">{{ train.training_title }}</div>
+                                  <div>
+                                    {{ formatDate(train.inclusive_date_from) }} to
+                                    {{ formatDate(train.inclusive_date_to) }}
+                                  </div>
+                                  <div>{{ train.number_of_hours }} hours</div>
+                                  <div>{{ train.conducted_by }}</div>
+                                  <hr
+                                    v-if="index < applicant.training.length - 1"
+                                    class="q-my-xs"
+                                  />
+                                </div>
+                              </div>
+                              <div v-else class="text-grey-6">No training data</div>
                             </div>
                           </div>
-                          <div v-else class="text-grey-6">No eligibility data</div>
+
+                          <!-- Eligibility Details -->
+                          <div class="col-3">
+                            <div class="detail-panel">
+                              <div class="detail-title">Eligibility</div>
+                              <div v-if="applicant.eligibity && applicant.eligibity.length > 0">
+                                <div
+                                  v-for="(elig, index) in applicant.eligibity"
+                                  :key="index"
+                                  class="q-mb-xs"
+                                >
+                                  <div class="text-weight-bold">{{ elig.eligibility }}</div>
+                                  <div>Rating: {{ elig.rating }}%</div>
+                                  <div>Exam Date: {{ formatDate(elig.date_of_examination) }}</div>
+                                  <div>License: {{ elig.license_number }}</div>
+                                  <hr
+                                    v-if="index < applicant.eligibity.length - 1"
+                                    class="q-my-xs"
+                                  />
+                                </div>
+                              </div>
+                              <div v-else class="text-grey-6">No eligibility data</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -399,10 +368,15 @@
       </q-card-section>
 
       <!-- Footer (Sticky) -->
-      <q-card-section class="footer-section sticky-footer"></q-card-section>
+      <q-card-section class="footer-section sticky-footer">
+        <div class="row justify-end">
+          <q-btn color="primary" label="Close" icon-right="close" @click="closeForm" dense />
+        </div>
+      </q-card-section>
     </q-card>
   </q-dialog>
 
+  <!-- Use existing QS Modal Component -->
   <QualificationStandardModal
     v-model:show="showQSModal"
     :applicant-data="selectedApplicantForQS"
@@ -412,7 +386,10 @@
 
 <script setup>
   import { ref, computed, watch } from 'vue';
+  import { useQuasar } from 'quasar';
   import QualificationStandardModal from 'src/components/QSModal.vue';
+
+  const $q = useQuasar();
 
   // Props
   const props = defineProps({
@@ -425,12 +402,21 @@
   });
 
   // Emits
-  const emit = defineEmits(['update:modelValue', 'close']);
+  const emit = defineEmits(['close', 'update:modelValue']);
 
   // Computed
   const isOpen = computed({
     get: () => props.modelValue,
     set: (value) => emit('update:modelValue', value),
+  });
+
+  // Get PositionID from raw criteria
+  const positionID = computed(() => {
+    if (props.rawCriteria && props.rawCriteria.job_batch) {
+      return props.rawCriteria.job_batch.PositionID;
+    }
+    // Fallback to position data
+    return props.position.tblStructureDetails_ID || null;
   });
 
   // Transform criteria structure to include items array (MAX RATE uses weight)
@@ -499,10 +485,95 @@
   );
 
   const detailsColspan = computed(() => {
-    let count = 1 + 4 + 1 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1) + Rank (1)
+    let count = 1 + 4 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1)
     if (hasExam.value) count += 1;
     if (hasBehavioral.value) count += 1;
     return count;
+  });
+
+  // Helper function to check if a value is empty or just '-'
+  const isEmpty = (value) => !value || value === '' || value === '-';
+
+  // Helper function to format number for display
+  const formatNumber = (num) => {
+    const number = parseFloat(num);
+    if (isNaN(number)) return num;
+
+    if (number % 1 === 0) {
+      return String(Math.round(number));
+    } else {
+      return number.toFixed(2);
+    }
+  };
+
+  const formatScoreDisplay = (score) => {
+    if (isEmpty(score)) return '-';
+    return formatNumber(score);
+  };
+
+  const getExamRatio = (applicant) => {
+    if (!hasExam.value) return null;
+    const examScore = parseFloat(
+      applicant?.applicant_exam_score?.exam_score ?? applicant?.exam_score,
+    );
+    const examTotal = parseFloat(applicant?.applicant_exam_score?.exam_total_score);
+    if (isNaN(examScore) || isNaN(examTotal) || examTotal <= 0) return null;
+    return examScore / examTotal;
+  };
+
+  const getExamScore = (applicant) => {
+    const ratio = getExamRatio(applicant);
+    if (ratio === null) return null;
+    return ratio * examMaxRate.value;
+  };
+
+  // Dynamic column widths ranked by longest criteria description.
+  // All 6 scored columns are compared together so the column with the longest
+  // description text gets the widest width, shortest gets the narrowest.
+  const COL_MIN = 180;
+  const COL_MAX = 500;
+
+  const longestDescLen = (items) => {
+    if (!items || items.length === 0) return 0;
+    return Math.max(...items.map((i) => (i.description || '').length));
+  };
+
+  const criteriaColWidths = computed(() => {
+    const lengths = {
+      education: longestDescLen(education.value.items),
+      experience: longestDescLen(experience.value.items),
+      training: longestDescLen(training.value.items),
+      performance: longestDescLen(performance.value.items),
+      behavioral: longestDescLen(behavioral.value.items),
+      exam: longestDescLen(exam.value.items),
+    };
+
+    const allLens = Object.values(lengths);
+    const maxLen = Math.max(...allLens);
+    const activeLens = allLens.filter((l) => l > 0);
+    const minLen = activeLens.length ? Math.min(...activeLens) : 0;
+    const range = maxLen - minLen || 1;
+
+    // Non-widest columns are capped at 3/4 of COL_MAX so they don't
+    // over-expand when their content is noticeably shorter than the widest.
+    const COL_SECONDARY = Math.round(COL_MAX * 0.5);
+
+    const toWidth = (len) => {
+      if (len === 0) return COL_MIN;
+      const isWidest = len === maxLen;
+      const cap = isWidest ? COL_MAX : COL_SECONDARY;
+      const ratio = (len - minLen) / range;
+      return Math.round(COL_MIN + ratio * (cap - COL_MIN));
+    };
+
+    return {
+      education: toWidth(lengths.education),
+      experience: toWidth(lengths.experience),
+      training: toWidth(lengths.training),
+      performance: toWidth(lengths.performance),
+      behavioral: toWidth(lengths.behavioral),
+      exam: toWidth(lengths.exam),
+    };
   });
 
   // State
@@ -512,7 +583,7 @@
   const sortOrder = ref('asc');
   const applicantsData = ref([]);
 
-  // QS Modal state
+  // QS Modal State
   const showQSModal = ref(false);
   const selectedApplicantForQS = ref(null);
 
@@ -526,7 +597,6 @@
     ...(hasExam.value ? [{ label: 'Exam Score', value: 'examScore' }] : []),
     ...(hasBehavioral.value ? [{ label: 'BEI Score', value: 'behavioralScore' }] : []),
     { label: 'Grand Total', value: 'grandTotal' },
-    { label: 'Ranking', value: 'ranking' },
   ];
 
   const filteredApplicants = computed(() => {
@@ -561,8 +631,8 @@
           break;
 
         default:
-          aValue = parseFloat(a[sortBy.value.value]) || 0;
-          bValue = parseFloat(b[sortBy.value.value]) || 0;
+          aValue = isEmpty(a[sortBy.value.value]) ? -1 : parseFloat(a[sortBy.value.value]) || 0;
+          bValue = isEmpty(b[sortBy.value.value]) ? -1 : parseFloat(b[sortBy.value.value]) || 0;
       }
 
       return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
@@ -575,22 +645,90 @@
   const initializeApplicants = () => {
     if (props.applicants?.length > 0) {
       applicantsData.value = props.applicants.map((applicant) => {
+        // Get scores from rating_score (submitted ratings) or fallback to draft_score
         const ratingScore = applicant.rating_score || {};
-        const computedExamScore = getExamScore(applicant);
+        const draftScore = applicant.draft_score || {};
 
+        // Use rating_score first (submitted), then draft_score if available
+        const educationScore =
+          ratingScore.education_score !== null && ratingScore.education_score !== undefined
+            ? ratingScore.education_score
+            : draftScore.education_score;
+
+        const experienceScore =
+          ratingScore.experience_score !== null && ratingScore.experience_score !== undefined
+            ? ratingScore.experience_score
+            : draftScore.experience_score;
+
+        const trainingScore =
+          ratingScore.training_score !== null && ratingScore.training_score !== undefined
+            ? ratingScore.training_score
+            : draftScore.training_score;
+
+        const performanceScore =
+          ratingScore.performance_score !== null && ratingScore.performance_score !== undefined
+            ? ratingScore.performance_score
+            : draftScore.performance_score;
+
+        const behavioralScore =
+          ratingScore.behavioral_score !== null && ratingScore.behavioral_score !== undefined
+            ? ratingScore.behavioral_score
+            : draftScore.behavioral_score;
+
+        // For exam score, check if there's an applicant_exam_score or use rating_score
+        const computedExamScore = getExamScore(applicant);
+        const examScoreFromRating = ratingScore.exam_score;
+
+        // For display in view mode, format numbers properly
         return {
           ...applicant,
-          educationScore: parseFloat(ratingScore.education_score ?? 0),
-          experienceScore: parseFloat(ratingScore.experience_score ?? 0),
-          trainingScore: parseFloat(ratingScore.training_score ?? 0),
-          performanceScore: parseFloat(ratingScore.performance_score ?? 0),
-          behavioralScore: parseFloat(ratingScore.behavioral_score ?? 0),
-          examScore: computedExamScore ?? 0,
+          educationScore:
+            educationScore !== null &&
+            educationScore !== undefined &&
+            educationScore !== 0 &&
+            educationScore !== '-'
+              ? formatNumber(educationScore)
+              : '',
+          experienceScore:
+            experienceScore !== null &&
+            experienceScore !== undefined &&
+            experienceScore !== 0 &&
+            experienceScore !== '-'
+              ? formatNumber(experienceScore)
+              : '',
+          trainingScore:
+            trainingScore !== null &&
+            trainingScore !== undefined &&
+            trainingScore !== 0 &&
+            trainingScore !== '-'
+              ? formatNumber(trainingScore)
+              : '',
+          performanceScore:
+            performanceScore !== null &&
+            performanceScore !== undefined &&
+            performanceScore !== 0 &&
+            performanceScore !== '-'
+              ? formatNumber(performanceScore)
+              : '',
+          behavioralScore:
+            behavioralScore !== null &&
+            behavioralScore !== undefined &&
+            behavioralScore !== 0 &&
+            behavioralScore !== '-'
+              ? formatNumber(behavioralScore)
+              : '',
+          examScore:
+            computedExamScore !== null && computedExamScore !== undefined
+              ? formatNumber(computedExamScore)
+              : examScoreFromRating !== null &&
+                  examScoreFromRating !== undefined &&
+                  examScoreFromRating !== '-'
+                ? formatNumber(examScoreFromRating)
+                : '',
           name: `${applicant.firstname} ${applicant.lastname}`,
-          ranking: ratingScore.ranking || 0,
+          ranking: ratingScore.ranking || draftScore.ranking || null,
         };
       });
-      calculateAllRankings();
     } else {
       applicantsData.value = [];
     }
@@ -598,66 +736,54 @@
 
   const calculateQS = (applicant) => {
     if (!applicant) return '-';
-    const eduScore = parseFloat(applicant.educationScore) || 0;
-    const expScore = parseFloat(applicant.experienceScore) || 0;
-    const trainingScore = parseFloat(applicant.trainingScore) || 0;
-    const perfScore = parseFloat(applicant.performanceScore) || 0;
 
-    if (eduScore === 0 && expScore === 0 && trainingScore === 0 && perfScore === 0) {
+    const eduScore = isEmpty(applicant.educationScore)
+      ? 0
+      : parseFloat(applicant.educationScore) || 0;
+    const expScore = isEmpty(applicant.experienceScore)
+      ? 0
+      : parseFloat(applicant.experienceScore) || 0;
+    const trainingScore = isEmpty(applicant.trainingScore)
+      ? 0
+      : parseFloat(applicant.trainingScore) || 0;
+    const perfScore = isEmpty(applicant.performanceScore)
+      ? 0
+      : parseFloat(applicant.performanceScore) || 0;
+
+    if (
+      isEmpty(applicant.educationScore) &&
+      isEmpty(applicant.experienceScore) &&
+      isEmpty(applicant.trainingScore) &&
+      isEmpty(applicant.performanceScore)
+    ) {
       return '-';
     }
 
     const qsScore = eduScore + expScore + trainingScore + perfScore;
-    return Math.min(qsScore, qsMaxRate.value).toFixed(2);
+    const result = Math.min(qsScore, qsMaxRate.value);
+    return formatNumber(result);
   };
 
   const calculateTotal = (applicant) => {
     if (!applicant) return '-';
-    const qsScoreRaw = calculateQS(applicant);
-    if (qsScoreRaw === '-') return '-';
 
-    const qsScore = parseFloat(qsScoreRaw);
-    const beiScore = hasBehavioral.value ? parseFloat(applicant.behavioralScore) || 0 : 0;
-    const examScore = hasExam.value ? (getExamScore(applicant) ?? 0) : 0;
+    const qsScore = calculateQS(applicant);
 
-    if (qsScore === 0 && beiScore === 0 && examScore === 0) {
+    if (qsScore === '-') {
       return '-';
     }
 
-    return Math.min(qsScore + beiScore + examScore, totalMaxRate.value).toFixed(2);
-  };
+    const qsScoreNum = parseFloat(qsScore);
+    const beiScore = hasBehavioral.value
+      ? isEmpty(applicant.behavioralScore)
+        ? 0
+        : parseFloat(applicant.behavioralScore) || 0
+      : 0;
 
-  const formatScore = (score) => {
-    if (score === null || score === undefined || score === 0) {
-      return '';
-    }
-    return score.toString();
-  };
+    const examScore = hasExam.value ? (getExamScore(applicant) ?? 0) : 0;
 
-  const calculateAllRankings = () => {
-    if (!applicantsData.value.length) return;
-    const sortedApplicants = [...applicantsData.value].sort((a, b) => {
-      return parseFloat(calculateTotal(b)) - parseFloat(calculateTotal(a));
-    });
-    const scoreMap = {};
-    sortedApplicants.forEach((applicant, index) => {
-      const totalScore = calculateTotal(applicant);
-      if (!scoreMap[totalScore]) {
-        scoreMap[totalScore] = {
-          firstPosition: index,
-          count: 0,
-        };
-      }
-      scoreMap[totalScore].count++;
-    });
-    sortedApplicants.forEach((applicant) => {
-      const totalScore = calculateTotal(applicant);
-      const position = scoreMap[totalScore].firstPosition;
-      const originalApplicant = applicantsData.value.find((a) => a.id === applicant.id);
-      if (originalApplicant) {
-        originalApplicant.ranking = position + 1;
-      }
-    });
+    const result = Math.min(qsScoreNum + beiScore + examScore, totalMaxRate.value);
+    return formatNumber(result);
   };
 
   const toggleApplicant = (applicantId) => {
@@ -666,6 +792,7 @@
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
+
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString();
@@ -674,47 +801,44 @@
     }
   };
 
-  const openQSModal = (applicant) => {
-    selectedApplicantForQS.value = {
-      submission_id: applicant.id,
-      PositionID: props.rawCriteria?.job_batch?.PositionID || null,
-      name: `${applicant.firstname} ${applicant.lastname}`,
-      firstname: applicant.firstname,
-      lastname: applicant.lastname,
-      position: props.position.position,
-      office: props.position.office,
-      appliedDate: formatDate(applicant.created_at),
-      status: applicant.status || 'PENDING',
-      education: applicant.education || [],
-      work_experience: applicant.work_experience || [],
-      training: applicant.training || [],
-      eligibity: applicant.eligibity || [],
-      eligibility: applicant.eligibity || [],
-      nPersonalInfo_id: applicant.nPersonalInfo_id,
-      ControlNo: applicant.ControlNo,
-    };
-    showQSModal.value = true;
+  // QS Modal Methods
+  const openQSModal = async (applicant) => {
+    try {
+      selectedApplicantForQS.value = {
+        submission_id: applicant.id,
+        PositionID: positionID.value,
+        name: `${applicant.firstname} ${applicant.lastname}`,
+        firstname: applicant.firstname,
+        lastname: applicant.lastname,
+        position: props.position.position,
+        office: props.position.office,
+        appliedDate: formatDate(applicant.created_at),
+        status: applicant.status || 'PENDING',
+
+        education: applicant.education || [],
+        work_experience: applicant.work_experience || [],
+        training: applicant.training || [],
+        eligibity: applicant.eligibity || [],
+        eligibility: applicant.eligibity || [],
+
+        nPersonalInfo_id: applicant.nPersonalInfo_id,
+        ControlNo: applicant.ControlNo,
+      };
+
+      showQSModal.value = true;
+    } catch {
+      $q.notify({
+        color: 'negative',
+        message: 'Failed to open qualification standards',
+        icon: 'error',
+        position: 'top',
+        timeout: 3000,
+      });
+    }
   };
 
   const closeForm = () => {
     isOpen.value = false;
-    emit('close');
-  };
-
-  const getExamRatio = (applicant) => {
-    if (!hasExam.value) return null;
-    const examScore = parseFloat(
-      applicant?.applicant_exam_score?.exam_score ?? applicant?.exam_score,
-    );
-    const examTotal = parseFloat(applicant?.applicant_exam_score?.exam_total_score);
-    if (isNaN(examScore) || isNaN(examTotal) || examTotal <= 0) return null;
-    return examScore / examTotal;
-  };
-
-  const getExamScore = (applicant) => {
-    const ratio = getExamRatio(applicant);
-    if (ratio === null) return null;
-    return ratio * examMaxRate.value;
   };
 
   // Watchers
@@ -751,22 +875,19 @@
     display: flex;
     flex-direction: column;
   }
+
   .header {
     background-color: #f5f5f5;
     padding: 12px 16px;
   }
+
   .filter-input {
     .q-field__control {
       height: 32px;
       min-height: 32px;
     }
   }
-  .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: #f5f5f5;
-  }
+
   .sticky-footer {
     position: sticky;
     bottom: 0;
@@ -774,15 +895,18 @@
     background-color: #f5f5f5;
     margin-top: auto;
   }
+
   .scrollable-content {
     flex: 1;
     overflow-y: auto;
     padding: 8px;
     max-height: calc(90vh - 200px);
   }
+
   .rating-table {
     width: 100%;
     border-collapse: collapse;
+
     th,
     td {
       padding: 8px;
@@ -790,7 +914,11 @@
       border: 1px solid #ddd;
       vertical-align: top;
       font-size: 0.85rem;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
+
     th {
       background-color: #f2f2f2;
       font-weight: 500;
@@ -798,57 +926,94 @@
       vertical-align: middle;
     }
   }
+
+  // ─── QS Total column highlight ───────────────────────────────────────────
+  .col-qs-total {
+    background-color: #e8f4fd !important;
+    border-left: 2px solid #1976d2 !important;
+    border-right: 2px solid #1976d2 !important;
+
+    // Header variant
+    thead & {
+      color: #1565c0;
+      font-weight: 600 !important;
+    }
+
+    // Criteria description row — keep blank but preserve highlight
+    .criteria-description & {
+      background-color: #ddeefa !important;
+    }
+  }
+
+  // ─── Grand Total column highlight ────────────────────────────────────────
+  .col-grand-total {
+    background-color: #e8f5e9 !important;
+    border-left: 2px solid #388e3c !important;
+    border-right: 2px solid #388e3c !important;
+
+    // Header variant
+    thead & {
+      color: #2e7d32;
+      font-weight: 600 !important;
+    }
+
+    // Criteria description row — keep blank but preserve highlight
+    .criteria-description & {
+      background-color: #d6edd8 !important;
+    }
+  }
+
   .criteria-description {
     background-color: #f9f9f9;
   }
+
   .criteria-item {
-    line-height: 1.3;
-    margin-bottom: 8px;
+    line-height: 1.4;
+    margin-bottom: 6px;
     display: flex;
     align-items: flex-start;
-    gap: 6px;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: normal;
+    word-break: break-word;
   }
+
   .criteria-percentage {
     font-weight: bold;
-    color: #2e7d32;
+    color: #1976d2;
     display: inline-block;
-    min-width: 35px;
+    min-width: 34px;
     flex-shrink: 0;
   }
+
   .applicant-row {
     cursor: pointer;
     transition: background-color 0.2s;
+
     &:hover {
       background-color: rgba(0, 0, 0, 0.03);
     }
+
     &.expanded {
       background-color: #d0ffd6;
     }
   }
-  .score-input {
-    width: 100%;
-    :deep(.q-field__control) {
-      min-height: 32px;
-      height: 32px;
-    }
-    :deep(input) {
-      font-size: 0.85rem;
-    }
-  }
+
   .result-value {
     font-size: 0.85rem;
   }
+
   .total-score {
     font-weight: bold;
-    color: green;
+    // col-grand-total provides the green background; keep text bold
+    color: #2e7d32;
   }
-  .rank {
-    font-weight: bold;
-    background-color: #d0ffd6;
-  }
+
   .applicant-details {
     background-color: #f8f9fa;
   }
+
   .detail-panel {
     border: 1px solid #e0e0e0;
     border-radius: 4px;
@@ -859,6 +1024,7 @@
     height: auto;
     overflow-y: visible;
   }
+
   .detail-title {
     font-weight: bold;
     margin-bottom: 4px;
@@ -866,21 +1032,25 @@
     border-bottom: 1px solid #eee;
     font-size: 0.85rem;
   }
+
   .footer-section {
     padding: 12px 16px;
     border-top: 1px solid #e0e0e0;
     background-color: #f5f5f5;
   }
+
   .ellipsis {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   hr.q-my-xs {
     border: none;
     border-top: 1px solid #eee;
     margin: 4px 0;
   }
+
   .text-caption {
     font-size: 0.85rem;
     line-height: 1.2;

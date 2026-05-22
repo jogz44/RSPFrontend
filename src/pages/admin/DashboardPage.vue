@@ -12,8 +12,8 @@
           <q-card-section class="card-content">
             <!-- Total Positions -->
             <div class="row justify-between items-center q-mb-md">
-              <span class="card-title text-bold text-grey-8">Total Positions:</span>
-              <span class="metric-value text-blue-4 text-weight-bold">
+              <span class="card-label text-bold text-grey-8">TOTAL PLANTILLA POSITIONS:</span>
+              <span class="card-number text-blue-4">
                 {{ Number(dashboardStore.total_positions).toLocaleString() }}
               </span>
             </div>
@@ -25,14 +25,15 @@
               <!-- Left Column -->
               <div class="col-12 col-md-5">
                 <div class="row justify-between items-center q-mb-sm">
-                  <span class="card-title text-bold text-grey-8">Funded:</span>
-                  <span class="text-blue-6 text-weight-bold">
+                  <span class="card-label text-bold text-grey-8">Funded Positions:</span>
+                  <span class="card-number text-blue-6">
                     {{ Number(dashboardStore.funded).toLocaleString() }}
                   </span>
                 </div>
                 <div class="row justify-between items-center">
-                  <span class="card-title text-bold text-grey-8">Unfunded:</span>
-                  <span class="text-amber-6 text-weight-bold">
+                  <span class="card-label text-bold text-grey-8">Unfunded Positions</span>
+                  <span class="card-label text-bold text-grey-8">:</span>
+                  <span class="card-number text-amber-6">
                     {{ Number(dashboardStore.unfunded).toLocaleString() }}
                   </span>
                 </div>
@@ -51,81 +52,53 @@
               <!-- Right Column -->
               <div class="col-12 col-md">
                 <div class="row justify-between items-center q-mb-sm">
-                  <span class="card-title text-bold text-grey-7">Filled-up:</span>
-                  <span class="text-teal-6 text-weight-bold">
+                  <span class="card-label text-bold text-grey-7">Filled-up Positions:</span>
+                  <span class="card-number text-teal-6">
                     {{ Number(dashboardStore.filled).toLocaleString() }}
                   </span>
                 </div>
                 <div class="row justify-between items-center">
-                  <span class="card-title text-bold text-grey-7">Vacant Funded:</span>
-                  <span class="text-deep-purple-4 text-weight-bold">
+                  <span class="card-label text-bold text-grey-7">Vacant Funded Positions:</span>
+                  <span class="card-number text-deep-purple-4">
                     {{ Number(dashboardStore.vacant).toLocaleString() }}
                   </span>
                 </div>
               </div>
             </div>
-
-            <!-- Progress Bar -->
-            <q-linear-progress
-              size="6px"
-              rounded
-              class="q-mt-md"
-              :value="
-                dashboardStore.funded ? (dashboardStore.filled || 0) / dashboardStore.funded : 0
-              "
-              color="teal-3"
-              track-color="purple-9"
-            />
           </q-card-section>
         </q-card>
 
         <!-- Publication Date -->
         <q-card class="stat-card ct-purple bg-white">
-          <q-card-section class="card-content">
-            <div class="card-title q-mb-xs">Publication Date</div>
-            <div class="metric-value text-deep-purple text-wrap">
+          <q-card-section class="card-content-publication">
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Publication Date</div>
+            <div class="card-number text-deep-purple text-wrap q-mb-md">
               {{ dashboardStore.publication_date }}
             </div>
-          </q-card-section>
-        </q-card>
 
-        <!-- Published Position -->
-        <q-card class="stat-card ct-purple bg-white">
-          <q-card-section class="card-content">
-            <div class="card-title q-mb-xs">Published Positions</div>
-            <div class="metric-value text-deep-purple">{{ dashboardStore.published_position }}</div>
+            <q-separator class="q-my-sm" />
+
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Published Positions</div>
+            <div class="card-number text-deep-purple">
+              {{ Number(dashboardStore.published_position).toLocaleString() }}
+            </div>
           </q-card-section>
         </q-card>
       </div>
 
-      <!-- BADGES ROW: stacks vertically on mobile -->
+      <!-- BADGES ROW -->
       <div class="badges-row q-mx-md q-mb-sm">
         <div class="badges-group">
-          <q-badge
-            outline
-            color="green"
-            class="badge-simple"
-            style="padding: 6px 12px; font-size: 0.8rem; font-weight: 800"
-          >
-            <q-icon name="people" size="xs" class="q-mr-xs" />
+          <q-badge outline color="green" class="badge-large">
+            <q-icon name="people" size="sm" class="q-mr-xs" />
             Total Applicant: {{ Number(dashboardStore.total_applicant).toLocaleString() }}
           </q-badge>
-          <q-badge
-            outline
-            color="green"
-            class="badge-simple"
-            style="padding: 6px 12px; font-size: 0.8rem; font-weight: 800"
-          >
-            <q-icon name="people" size="xs" class="q-mr-xs" />
+          <q-badge outline color="green" class="badge-large">
+            <q-icon name="people" size="sm" class="q-mr-xs" />
             Internal: {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
           </q-badge>
-          <q-badge
-            outline
-            color="primary"
-            class="badge-simple"
-            style="padding: 6px 12px; font-size: 0.8rem; font-weight: 800"
-          >
-            <q-icon name="people" size="xs" class="q-mr-xs" />
+          <q-badge outline color="primary" class="badge-large">
+            <q-icon name="people" size="sm" class="q-mr-xs" />
             External: {{ Number(dashboardStore.external_applicant).toLocaleString() }}
           </q-badge>
         </div>
@@ -136,17 +109,23 @@
         <!-- Total Applications -->
         <q-card class="stat-card ct-green bg-white">
           <q-card-section class="card-content">
-            <div class="card-title q-mb-xs">Total Applications</div>
-            <div class="metric-value text-green-9">{{ dashboardStore.total_application }}</div>
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Total Applications</div>
+            <div class="card-number text-green-9">
+              {{ Number(dashboardStore.total_application).toLocaleString() }}
+            </div>
             <q-separator class="q-my-sm" />
             <div class="row">
               <div class="col-6 pair-left">
-                <div class="metric-label">Internal</div>
-                <div class="pair-value text-green-9">{{ dashboardStore.internal_application }}</div>
+                <div class="card-label text-grey-7 text-bold">Internal</div>
+                <div class="card-number text-green-9">
+                  {{ Number(dashboardStore.internal_application).toLocaleString() }}
+                </div>
               </div>
               <div class="col-6 pair-right">
-                <div class="metric-label">External</div>
-                <div class="pair-value text-red-9">{{ dashboardStore.external_application }}</div>
+                <div class="card-label text-grey-7 text-bold">External</div>
+                <div class="card-number text-green-9">
+                  {{ Number(dashboardStore.external_application).toLocaleString() }}
+                </div>
               </div>
             </div>
           </q-card-section>
@@ -155,19 +134,23 @@
         <!-- Pre-Assessment -->
         <q-card class="stat-card ct-blue bg-white">
           <q-card-section class="card-content">
-            <div class="card-title q-mb-xs">Pre-assessment</div>
-            <div class="metric-value text-blue-9">
-              {{ dashboardStore.qualified + dashboardStore.unqualified }}
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Pre-assessment</div>
+            <div class="card-number text-blue-9">
+              {{ Number(dashboardStore.qualified + dashboardStore.unqualified).toLocaleString() }}
             </div>
             <q-separator class="q-my-sm" />
             <div class="row">
               <div class="col-6 pair-left">
-                <div class="metric-label">Qualified</div>
-                <div class="pair-value text-green-9">{{ dashboardStore.qualified }}</div>
+                <div class="card-label text-grey-7 text-bold">Qualified</div>
+                <div class="card-number text-green-9">
+                  {{ Number(dashboardStore.qualified).toLocaleString() }}
+                </div>
               </div>
               <div class="col-6 pair-right">
-                <div class="metric-label">For QS Verification</div>
-                <div class="pair-value text-red-9">{{ dashboardStore.unqualified }}</div>
+                <div class="card-label text-grey-7 text-bold">For QS Validation</div>
+                <div class="card-number text-red-9">
+                  {{ Number(dashboardStore.unqualified).toLocaleString() }}
+                </div>
               </div>
             </div>
           </q-card-section>
@@ -176,8 +159,10 @@
         <!-- For Assessment -->
         <q-card class="stat-card ct-amber bg-white">
           <q-card-section class="card-content">
-            <div class="card-title q-mb-xs">For Assessment</div>
-            <div class="metric-value text-orange-9">{{ dashboardStore.for_assessment }}</div>
+            <div class="card-label q-mb-xs text-grey-8 text-bold">For Assessment</div>
+            <div class="card-number text-orange-9">
+              {{ Number(dashboardStore.for_assessment).toLocaleString() }}
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -257,7 +242,7 @@
                         border-right: 1px solid rgba(0, 0, 0, 0.18) !important;
                       "
                     >
-                      For QS Verification
+                      For QS Validation
                     </q-th>
                   </q-tr>
                 </template>
@@ -332,7 +317,7 @@
                       <div class="mobile-stat-value text-green-8">{{ row.Qualified }}</div>
                     </div>
                     <div class="col-6">
-                      <div class="mobile-stat-label">For QS Verification</div>
+                      <div class="mobile-stat-label">For QS Validation</div>
                       <div class="mobile-stat-value text-red-8">{{ row.Unqualified }}</div>
                     </div>
                   </div>
@@ -417,7 +402,7 @@
                         border-right: 1px solid rgba(0, 0, 0, 0.18) !important;
                       "
                     >
-                      For QS Verification
+                      For QS Validation
                     </q-th>
                   </q-tr>
                 </template>
@@ -534,7 +519,7 @@
                       </div>
                     </div>
                     <div class="col-6">
-                      <div class="mobile-stat-label">For QS Verification</div>
+                      <div class="mobile-stat-label">For QS Validation</div>
                       <div class="mobile-stat-value text-red-8">
                         {{ job.unqualified_count || 0 }}
                       </div>
@@ -689,7 +674,7 @@
     { name: 'Qualified', label: 'Qualified', align: 'center', field: 'Qualified', sortable: true },
     {
       name: 'Unqualified',
-      label: 'For QS Verification',
+      label: 'For QS Validation',
       align: 'center',
       field: 'Unqualified',
       sortable: true,
@@ -716,7 +701,7 @@
     },
     {
       name: 'unqualified_count',
-      label: 'For QS Verification',
+      label: 'For QS Validation',
       align: 'center',
       field: 'unqualified_count',
       sortable: true,
@@ -778,6 +763,23 @@
 </script>
 
 <style scoped>
+  /* ─── UNIFIED TYPOGRAPHY SYSTEM ─────────────────────────── */
+  /* All labels — same size as "TOTAL PLANTILLA POSITIONS" label */
+  .card-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #616161;
+    letter-spacing: 0.2px;
+  }
+
+  /* All numbers — same size, same bold weight across every card */
+  .card-number {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
   /* ─── BADGES ROW ─────────────────────────────────────── */
   .badges-row {
     display: flex;
@@ -790,12 +792,19 @@
   .badges-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
   }
 
-  .badge-simple {
-    border-radius: 20px;
+  /* Large badge style */
+  .badge-large {
+    padding: 10px 18px !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    border-radius: 24px !important;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
   }
 
   /* ─── SEARCH INPUT ─────────────────────────────────────── */
@@ -807,14 +816,14 @@
     border-radius: 8px;
   }
 
-  /* ─── STAT CARDS GRID - TOP ROW ────────────────────────────────── */
+  /* ─── STAT CARDS GRID - TOP ROW ────────────────────────── */
   .stat-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 12px;
   }
 
-  /* ─── STAT CARDS GRID - BOTTOM ROW (Equal width) ────────────────────────────────── */
+  /* ─── STAT CARDS GRID - BOTTOM ROW (Equal width) ────────── */
   .stat-grid-bottom {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -847,6 +856,12 @@
     .search-input {
       margin-top: 8px;
       width: 100%;
+    }
+
+    .badge-large {
+      padding: 8px 14px !important;
+      font-size: 0.82rem !important;
+      min-height: 34px;
     }
   }
 
@@ -892,29 +907,9 @@
     padding: 14px 16px;
   }
 
-  .card-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #757575;
-  }
-
-  .metric-value {
-    font-size: 26px;
-    font-weight: 500;
-    line-height: 1.2;
-    word-break: break-word;
-  }
-
-  .metric-label {
-    font-size: 12px;
-    color: #757575;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-
-  .pair-value {
-    font-size: 18px;
-    font-weight: 500;
+  /* Expanded publication card content with more vertical padding */
+  .card-content-publication {
+    padding: 20px 20px;
   }
 
   .pair-left {
@@ -996,7 +991,7 @@
 
   .mobile-stat-value {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 700;
   }
 
   /* Hide on mobile */
@@ -1069,25 +1064,21 @@
       padding: 10px 12px;
     }
 
-    .metric-value {
-      font-size: 20px;
+    .card-content-publication {
+      padding: 14px 14px;
     }
 
-    .pair-value {
-      font-size: 14px;
+    .card-number {
+      font-size: 18px;
     }
 
-    .card-title {
+    .card-label {
       font-size: 11px;
     }
 
-    .metric-label {
-      font-size: 10px;
-    }
-
-    .badge-simple {
-      font-size: 0.7rem !important;
-      padding: 4px 8px !important;
+    .badge-large {
+      font-size: 0.75rem !important;
+      padding: 7px 12px !important;
     }
   }
 </style>

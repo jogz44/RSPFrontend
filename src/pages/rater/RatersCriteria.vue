@@ -79,7 +79,7 @@
             >
               <q-tooltip>View</q-tooltip>
             </q-btn>
-
+            <!-- 
             <q-btn
               v-if="props.row.submitted"
               dense
@@ -92,7 +92,7 @@
               @click="openPrintModal(props.row)"
             >
               <q-tooltip>Print</q-tooltip>
-            </q-btn>
+            </q-btn> -->
           </div>
         </q-td>
       </template>
