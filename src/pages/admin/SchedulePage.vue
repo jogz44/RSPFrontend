@@ -38,7 +38,6 @@
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
-            <!-- Schedule Interview Button - Only show if user has modify permission -->
             <q-btn
               v-if="canModifySchedule"
               color="primary"
@@ -107,7 +106,6 @@
                   >
                     <q-tooltip>View Details</q-tooltip>
                   </q-btn>
-                  <!-- Cancel Interview Button - Only show if user has modify permission -->
                   <q-btn
                     v-if="canModifySchedule"
                     round
@@ -116,7 +114,7 @@
                     size="sm"
                     class="bg-red-1"
                     icon="cancel"
-                    @click="cancelInterview(props.row.schedule_id)"
+                    @click="openCancelInterviewDialog(props.row)"
                   >
                     <q-tooltip>Cancel</q-tooltip>
                   </q-btn>
@@ -151,7 +149,6 @@
                 <q-icon name="search" color="primary" />
               </template>
             </q-input>
-            <!-- Schedule Exam Button - Only show if user has modify permission -->
             <q-btn
               v-if="canModifySchedule"
               color="primary"
@@ -218,7 +215,6 @@
                   >
                     <q-tooltip>View Details</q-tooltip>
                   </q-btn>
-                  <!-- Cancel Exam Button - Only show if user has modify permission -->
                   <q-btn
                     v-if="canModifySchedule"
                     round
@@ -227,7 +223,7 @@
                     size="sm"
                     class="bg-red-1"
                     icon="cancel"
-                    @click="cancelExamSchedule(props.row.schedule_id)"
+                    @click="openCancelExamDialog(props.row)"
                   >
                     <q-tooltip>Cancel</q-tooltip>
                   </q-btn>
@@ -248,7 +244,7 @@
       </q-tab-panels>
     </div>
 
-    <!-- ======================== INTERVIEW: Schedule Dialog - Only show if user has modify permission ======================== -->
+    <!-- ======================== INTERVIEW: Schedule Dialog ======================== -->
     <q-dialog v-if="canModifySchedule" v-model="showScheduleDialog" persistent>
       <q-card style="min-width: 700px; max-width: 90vw">
         <q-card-section class="q-pa-md">
@@ -367,6 +363,21 @@
                 </div>
               </q-td>
             </template>
+            <template v-slot:body-cell-action="props">
+              <q-td :props="props">
+                <q-btn
+                  round
+                  flat
+                  color="orange"
+                  size="sm"
+                  class="bg-orange-1"
+                  icon="email"
+                  @click="previewInterviewEmailForApplicant(props.row, scheduleForm)"
+                >
+                  <q-tooltip>Preview Email</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
             <template v-slot:no-data>
               <div class="full-width row flex-center q-pa-md text-grey">
                 <div class="column items-center">
@@ -391,7 +402,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- ======================== EXAM: Schedule Dialog - Only show if user has modify permission ======================== -->
+    <!-- ======================== EXAM: Schedule Dialog ======================== -->
     <q-dialog v-if="canModifySchedule" v-model="showExamScheduleDialog" persistent>
       <q-card style="min-width: 700px; max-width: 90vw">
         <q-card-section class="q-pa-md">
@@ -510,6 +521,21 @@
                 </div>
               </q-td>
             </template>
+            <template v-slot:body-cell-action="props">
+              <q-td :props="props">
+                <q-btn
+                  round
+                  flat
+                  color="orange"
+                  size="sm"
+                  class="bg-orange-1"
+                  icon="email"
+                  @click="previewExamEmailForApplicant(props.row, examScheduleForm)"
+                >
+                  <q-tooltip>Preview Email</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
             <template v-slot:no-data>
               <div class="full-width row flex-center q-pa-md text-grey">
                 <div class="column items-center">
@@ -529,6 +555,261 @@
             @click="submitExamSchedule"
             :disable="!isExamFormValid"
             :loading="examStore.loading"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ======================== INTERVIEW: Cancel Dialog ======================== -->
+    <q-dialog v-model="showCancelInterviewDialog" persistent>
+      <q-card style="min-width: 800px; max-width: 90vw">
+        <q-card-section class="q-pa-md bg-negative text-white">
+          <div class="row justify-between items-center">
+            <div class="text-h6 text-weight-bold">Cancel Interview Schedule</div>
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              color="white"
+              @click="closeCancelInterviewDialog"
+            />
+          </div>
+        </q-card-section>
+        <q-separator />
+        <div v-if="cancelInterviewLoading" class="q-pa-xl text-center">
+          <q-spinner size="2rem" color="negative" class="q-mb-sm" />
+          <div class="text-subtitle2">Loading interview details...</div>
+        </div>
+        <q-card-section v-else class="q-pa-md">
+          <div class="q-mb-md">
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">Batch Information</div>
+            <q-input
+              :model-value="cancelInterviewData.batch_name || 'Not specified'"
+              label="Batch Name"
+              outlined
+              dense
+              readonly
+              class="q-mb-sm"
+            />
+            <q-input
+              :model-value="cancelInterviewData.venue_interview || 'Not specified'"
+              label="Venue"
+              outlined
+              dense
+              readonly
+              class="q-mb-sm"
+            />
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-sm-6">
+                <q-input
+                  :model-value="formatDate(cancelInterviewData.date_interview)"
+                  label="Interview Date"
+                  outlined
+                  dense
+                  readonly
+                />
+              </div>
+              <div class="col-12 col-sm-6">
+                <q-input
+                  :model-value="formatTime(cancelInterviewData.time_interview)"
+                  label="Interview Time"
+                  outlined
+                  dense
+                  readonly
+                />
+              </div>
+            </div>
+          </div>
+          <q-separator class="q-my-md" />
+          <div>
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">
+              Scheduled Applicants
+              <q-badge color="negative" class="q-ml-sm">
+                {{ cancelInterviewApplicants.length }}
+              </q-badge>
+            </div>
+            <q-table
+              :rows="cancelInterviewApplicants"
+              :columns="viewApplicantColumns"
+              row-key="submission_id"
+              :pagination="viewPagination"
+              class="applicant-view-table"
+              :rows-per-page-options="[5, 10, 20, 100, 200]"
+            >
+              <template v-slot:body-cell-applicant_name="props">
+                <q-td :props="props">
+                  <div class="text-body text-weight-medium">
+                    {{ props.row.applicant_name }}
+                  </div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-position="props">
+                <q-td :props="props">
+                  <div class="text-body2">{{ props.row.position || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-contact_no="props">
+                <q-td :props="props">
+                  <div class="text-body2">{{ props.row.contact_no || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    round
+                    flat
+                    color="orange"
+                    size="sm"
+                    class="bg-orange-1"
+                    icon="email"
+                    @click="previewCancelledInterviewEmailForApplicant(props.row)"
+                  >
+                    <q-tooltip>Preview Cancellation Email</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+              <template v-slot:no-data>
+                <div class="full-width row flex-center q-pa-md text-grey">
+                  <div class="column items-center">
+                    <q-icon name="person_off" size="2em" class="q-mb-sm" />
+                    <div>No applicants scheduled for this interview</div>
+                  </div>
+                </div>
+              </template>
+            </q-table>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn label="Close" color="grey" flat @click="closeCancelInterviewDialog" />
+          <q-btn
+            label="Confirm Cancellation"
+            color="negative"
+            @click="confirmCancelInterview"
+            :loading="cancelling"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ======================== EXAM: Cancel Dialog ======================== -->
+    <q-dialog v-model="showCancelExamDialog" persistent>
+      <q-card style="min-width: 800px; max-width: 90vw">
+        <q-card-section class="q-pa-md bg-negative text-white">
+          <div class="row justify-between items-center">
+            <div class="text-h6 text-weight-bold">Cancel Exam Schedule</div>
+            <q-btn icon="close" flat round dense color="white" @click="closeCancelExamDialog" />
+          </div>
+        </q-card-section>
+        <q-separator />
+        <div v-if="cancelExamLoading" class="q-pa-xl text-center">
+          <q-spinner size="2rem" color="negative" class="q-mb-sm" />
+          <div class="text-subtitle2">Loading exam details...</div>
+        </div>
+        <q-card-section v-else class="q-pa-md">
+          <div class="q-mb-md">
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">Batch Information</div>
+            <q-input
+              :model-value="cancelExamData.batch_name || 'Not specified'"
+              label="Batch Name"
+              outlined
+              dense
+              readonly
+              class="q-mb-sm"
+            />
+            <q-input
+              :model-value="cancelExamData.venue_exam || 'Not specified'"
+              label="Venue"
+              outlined
+              dense
+              readonly
+              class="q-mb-sm"
+            />
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-sm-6">
+                <q-input
+                  :model-value="formatDate(cancelExamData.date_exam)"
+                  label="Exam Date"
+                  outlined
+                  dense
+                  readonly
+                />
+              </div>
+              <div class="col-12 col-sm-6">
+                <q-input
+                  :model-value="formatTime(cancelExamData.time_exam)"
+                  label="Exam Time"
+                  outlined
+                  dense
+                  readonly
+                />
+              </div>
+            </div>
+          </div>
+          <q-separator class="q-my-md" />
+          <div>
+            <div class="text-subtitle1 text-weight-bold q-mb-sm">
+              Scheduled Applicants
+              <q-badge color="negative" class="q-ml-sm">{{ cancelExamApplicants.length }}</q-badge>
+            </div>
+            <q-table
+              :rows="cancelExamApplicants"
+              :columns="viewApplicantColumns"
+              row-key="submission_id"
+              :pagination="viewPagination"
+              class="applicant-view-table"
+              :rows-per-page-options="[5, 10, 20, 100, 200]"
+            >
+              <template v-slot:body-cell-applicant_name="props">
+                <q-td :props="props">
+                  <div class="text-body text-weight-medium">{{ props.row.applicant_name }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-position="props">
+                <q-td :props="props">
+                  <div class="text-body2">{{ props.row.position || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-contact_no="props">
+                <q-td :props="props">
+                  <div class="text-body2">{{ props.row.contact_no || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    round
+                    flat
+                    color="orange"
+                    size="sm"
+                    class="bg-orange-1"
+                    icon="email"
+                    @click="previewCancelledExamEmailForApplicant(props.row)"
+                  >
+                    <q-tooltip>Preview Cancellation Email</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+              <template v-slot:no-data>
+                <div class="full-width row flex-center q-pa-md text-grey">
+                  <div class="column items-center">
+                    <q-icon name="person_off" size="2em" class="q-mb-sm" />
+                    <div>No applicants scheduled for this exam</div>
+                  </div>
+                </div>
+              </template>
+            </q-table>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn label="Close" color="grey" flat @click="closeCancelExamDialog" />
+          <q-btn
+            label="Confirm Cancellation"
+            color="negative"
+            @click="confirmCancelExam"
+            :loading="cancelling"
           />
         </q-card-actions>
       </q-card>
@@ -602,31 +883,36 @@
               class="applicant-view-table"
               :rows-per-page-options="[5, 10, 20, 100, 200]"
             >
-              <template v-slot:body-cell-name="props">
+              <template v-slot:body-cell-applicant_name="props">
                 <q-td :props="props">
                   <div class="text-body text-weight-medium">
-                    {{ props.row.applicant_name || `${props.row.firstname} ${props.row.lastname}` }}
+                    {{ props.row.applicant_name }}
                   </div>
                 </q-td>
               </template>
               <template v-slot:body-cell-position="props">
                 <q-td :props="props">
-                  <div class="positions-list">
-                    <div
-                      v-for="(p, i) in props.row.positions || [props.row.position]"
-                      :key="i"
-                      class="position-item"
-                    >
-                      {{ p || 'N/A' }}
-                    </div>
-                  </div>
+                  <div class="text-body2">{{ props.row.position || 'N/A' }}</div>
                 </q-td>
               </template>
-              <template v-slot:body-cell-control_no="props">
+              <template v-slot:body-cell-contact_no="props">
                 <q-td :props="props">
-                  <q-badge color="grey-7" class="text-caption">
-                    {{ props.row.ControlNo || props.row.control_no || 'N/A' }}
-                  </q-badge>
+                  <div class="text-body2">{{ props.row.contact_no || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    round
+                    flat
+                    color="orange"
+                    size="sm"
+                    class="bg-orange-1"
+                    icon="email"
+                    @click="previewInterviewEmailForApplicant(props.row, viewData)"
+                  >
+                    <q-tooltip>Preview Email</q-tooltip>
+                  </q-btn>
                 </q-td>
               </template>
               <template v-slot:no-data>
@@ -715,7 +1001,7 @@
               class="applicant-view-table"
               :rows-per-page-options="[5, 10, 20, 100, 200]"
             >
-              <template v-slot:body-cell-name="props">
+              <template v-slot:body-cell-applicant_name="props">
                 <q-td :props="props">
                   <div class="text-body text-weight-medium">{{ props.row.applicant_name }}</div>
                 </q-td>
@@ -728,6 +1014,21 @@
               <template v-slot:body-cell-contact_no="props">
                 <q-td :props="props">
                   <div class="text-body2">{{ props.row.contact_no || 'N/A' }}</div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-action="props">
+                <q-td :props="props">
+                  <q-btn
+                    round
+                    flat
+                    color="orange"
+                    size="sm"
+                    class="bg-orange-1"
+                    icon="email"
+                    @click="previewExamEmailForApplicant(props.row, examViewData)"
+                  >
+                    <q-tooltip>Preview Email</q-tooltip>
+                  </q-btn>
                 </q-td>
               </template>
               <template v-slot:no-data>
@@ -747,6 +1048,38 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Email Preview Components -->
+    <InterviewEmail
+      ref="interviewEmailDialog"
+      :show="showInterviewEmail"
+      :applicant="selectedApplicant"
+      :interview-details="selectedInterviewDetails"
+      @close="showInterviewEmail = false"
+    />
+    <ExamEmail
+      ref="examEmailDialog"
+      :show="showExamEmail"
+      :applicant="selectedApplicant"
+      :exam-details="selectedExamDetails"
+      @close="showExamEmail = false"
+    />
+
+    <!-- Cancelled Email Preview Components -->
+    <InterviewCancelled
+      ref="interviewCancelledEmailDialog"
+      :show="showInterviewCancelledEmail"
+      :applicant="selectedApplicant"
+      :interview-details="selectedInterviewDetails"
+      @close="showInterviewCancelledEmail = false"
+    />
+    <ExamCancelled
+      ref="examCancelledEmailDialog"
+      :show="showExamCancelledEmail"
+      :applicant="selectedApplicant"
+      :exam-details="selectedExamDetails"
+      @close="showExamCancelledEmail = false"
+    />
   </q-page>
 </template>
 
@@ -756,6 +1089,10 @@
   import { useInterviewStore } from 'stores/interviewStore';
   import { useExamScheduleStore } from 'stores/examScheduleStore';
   import { useAuthStore } from 'stores/authStore';
+  import InterviewEmail from 'src/components/Email/InterviewEmail.vue';
+  import ExamEmail from 'src/components/Email/ExamEmail.vue';
+  import InterviewCancelled from 'src/components/Email/InterviewCancelled.vue';
+  import ExamCancelled from 'src/components/Email/ExamCancelled.vue';
 
   let searchTimeout = null;
   let examSearchTimeout = null;
@@ -765,6 +1102,28 @@
   const examStore = useExamScheduleStore();
   const authStore = useAuthStore();
   const { formatDate: qFormatDate } = date;
+
+  // Email dialog state
+  const showInterviewEmail = ref(false);
+  const showExamEmail = ref(false);
+  const showInterviewCancelledEmail = ref(false);
+  const showExamCancelledEmail = ref(false);
+  const selectedApplicant = ref(null);
+  const selectedInterviewDetails = ref(null);
+  const selectedExamDetails = ref(null);
+
+  // Cancel dialog state
+  const showCancelInterviewDialog = ref(false);
+  const showCancelExamDialog = ref(false);
+  const cancelInterviewData = ref({});
+  const cancelInterviewApplicants = ref([]);
+  const cancelExamData = ref({});
+  const cancelExamApplicants = ref([]);
+  const cancelInterviewLoading = ref(false);
+  const cancelExamLoading = ref(false);
+  const cancelling = ref(false);
+  const pendingCancelScheduleId = ref(null);
+  const pendingCancelExamId = ref(null);
 
   // ============================================================================
   // PERMISSION CHECK
@@ -872,18 +1231,15 @@
         sortable: true,
         style: 'width: 15%',
       },
-    ];
-    // Only add action column if user has modify permission
-    if (canModifySchedule.value) {
-      baseColumns.push({
+      {
         name: 'action',
         label: 'Action',
         align: 'center',
         field: 'action',
         sortable: false,
         style: 'width: 10%',
-      });
-    }
+      },
+    ];
     return baseColumns;
   });
 
@@ -929,18 +1285,15 @@
         sortable: true,
         style: 'width: 15%',
       },
-    ];
-    // Only add action column if user has modify permission
-    if (canModifySchedule.value) {
-      cols.push({
+      {
         name: 'action',
         label: 'Action',
         align: 'center',
         field: 'action',
         sortable: false,
         style: 'width: 10%',
-      });
-    }
+      },
+    ];
     return cols;
   });
 
@@ -951,7 +1304,7 @@
       align: 'left',
       field: 'name',
       sortable: true,
-      style: 'width: 40%',
+      style: 'width: 35%',
     },
     {
       name: 'office',
@@ -959,7 +1312,7 @@
       align: 'left',
       field: 'office',
       sortable: false,
-      style: 'width: 30%',
+      style: 'width: 25%',
     },
     {
       name: 'position',
@@ -968,6 +1321,14 @@
       field: 'position',
       sortable: false,
       style: 'width: 30%',
+    },
+    {
+      name: 'action',
+      label: 'Action',
+      align: 'center',
+      field: 'action',
+      sortable: false,
+      style: 'width: 10%',
     },
   ];
 
@@ -986,7 +1347,7 @@
       align: 'left',
       field: 'position',
       sortable: false,
-      style: 'width: 45%; white-space: normal;',
+      style: 'width: 40%; white-space: normal;',
     },
     {
       name: 'contact_no',
@@ -994,7 +1355,15 @@
       align: 'left',
       field: 'contact_no',
       sortable: false,
-      style: 'width: 20%; white-space: normal;',
+      style: 'width: 15%; white-space: normal;',
+    },
+    {
+      name: 'action',
+      label: 'Action',
+      align: 'center',
+      field: 'action',
+      sortable: false,
+      style: 'width: 10%; white-space: normal;',
     },
   ];
 
@@ -1064,9 +1433,14 @@
       ControlNo: s.ControlNo,
       firstname: s.firstname,
       lastname: s.lastname,
-      offices: [s.job_batch_rsp?.Office || 'N/A'],
-      positions: [s.job_batch_rsp?.Position || 'N/A'],
+      offices: s.job_batch_rsp ? [s.job_batch_rsp.Office || 'N/A'] : s.offices || ['N/A'],
+      positions: s.job_batch_rsp ? [s.job_batch_rsp.Position || 'N/A'] : s.positions || ['N/A'],
+      itemNo: s.job_batch_rsp?.ItemNo || s.itemNo || null,
+      salaryGrade: s.job_batch_rsp?.SalaryGrade || s.salaryGrade || null,
       job_batches_rsp_id: s.job_batches_rsp_id,
+      email: s.email,
+      phone: s.phone,
+      job_batch_rsp: s.job_batch_rsp,
     }));
 
   const transformedInterviewApplicants = computed(() =>
@@ -1108,6 +1482,21 @@
   const isExamFormValid = computed(
     () => examScheduleForm.value.date_exam && examScheduleForm.value.selected_applicants.length > 0,
   );
+
+  // Helper to get current form data as plain object for email preview
+  const getCurrentInterviewFormData = () => ({
+    date_interview: scheduleForm.value.date_interview || null,
+    time_interview: scheduleForm.value.time_interview || null,
+    venue_interview: scheduleForm.value.venue_interview || null,
+    batch_name: scheduleForm.value.batch_name || null,
+  });
+
+  const getCurrentExamFormData = () => ({
+    date_exam: examScheduleForm.value.date_exam || null,
+    time_exam: examScheduleForm.value.time_exam || null,
+    venue_exam: examScheduleForm.value.venue_exam || null,
+    batch_name: examScheduleForm.value.batch_name || null,
+  });
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
   const formatDate = (dateStr) => {
@@ -1154,6 +1543,398 @@
     return new Date(dateVal) >= today;
   };
 
+  // ─── Normalize Applicant ──────────────────────────────────────────────────────
+  const normalizeApplicant = (applicant) => {
+    if (!applicant) return null;
+
+    let firstname = applicant.firstname || '';
+    let lastname = applicant.lastname || '';
+
+    if (!firstname && !lastname && applicant.applicant_name) {
+      const parts = applicant.applicant_name.trim().split(' ');
+      firstname = parts[0] || '';
+      lastname = parts.slice(1).join(' ') || '';
+    }
+
+    let position = applicant.position || 'N/A';
+    if (position === 'N/A' && applicant.positions && Array.isArray(applicant.positions)) {
+      position = applicant.positions[0] || 'N/A';
+    }
+    if (position === 'N/A' && applicant.job_batch_rsp?.Position) {
+      position = applicant.job_batch_rsp.Position;
+    }
+
+    let office = applicant.office || 'N/A';
+    if (office === 'N/A' && applicant.offices && Array.isArray(applicant.offices)) {
+      office = applicant.offices[0] || 'N/A';
+    }
+    if (office === 'N/A' && applicant.job_batch_rsp?.Office) {
+      office = applicant.job_batch_rsp.Office;
+    }
+
+    let itemNo = applicant.itemNo || null;
+    if (!itemNo && applicant.job_batch_rsp?.ItemNo) {
+      itemNo = applicant.job_batch_rsp.ItemNo;
+    }
+
+    let salaryGrade = applicant.salaryGrade || null;
+    if (!salaryGrade && applicant.job_batch_rsp?.SalaryGrade) {
+      salaryGrade = applicant.job_batch_rsp.SalaryGrade;
+    }
+
+    return {
+      ...applicant,
+      firstname,
+      lastname,
+      position,
+      office,
+      itemNo,
+      salaryGrade,
+    };
+  };
+
+  // ─── Email Preview Methods ────────────────────────────────────────────────────
+  const previewInterviewEmailForApplicant = (applicant, interviewDetailsSource = null) => {
+    if (!applicant) {
+      console.warn('Attempted to preview email with null applicant');
+      return;
+    }
+
+    selectedApplicant.value = normalizeApplicant(applicant);
+
+    if (interviewDetailsSource) {
+      if (interviewDetailsSource.value !== undefined) {
+        if (interviewDetailsSource.value.date_interview !== undefined) {
+          selectedInterviewDetails.value = getCurrentInterviewFormData();
+        } else {
+          selectedInterviewDetails.value = interviewDetailsSource.value;
+        }
+      } else if (typeof interviewDetailsSource === 'function') {
+        selectedInterviewDetails.value = interviewDetailsSource();
+      } else {
+        if (
+          interviewDetailsSource.date_interview !== undefined &&
+          !interviewDetailsSource._isFormRef
+        ) {
+          selectedInterviewDetails.value = interviewDetailsSource;
+        } else {
+          selectedInterviewDetails.value = getCurrentInterviewFormData();
+        }
+      }
+    } else if (viewData.value?.schedule_id) {
+      selectedInterviewDetails.value = viewData.value;
+    } else {
+      selectedInterviewDetails.value = null;
+    }
+
+    showInterviewEmail.value = true;
+  };
+
+  const previewExamEmailForApplicant = (applicant, examDetailsSource = null) => {
+    if (!applicant) {
+      console.warn('Attempted to preview email with null applicant');
+      return;
+    }
+
+    selectedApplicant.value = normalizeApplicant(applicant);
+
+    if (examDetailsSource) {
+      if (examDetailsSource.value !== undefined) {
+        if (examDetailsSource.value.date_exam !== undefined) {
+          selectedExamDetails.value = getCurrentExamFormData();
+        } else {
+          selectedExamDetails.value = examDetailsSource.value;
+        }
+      } else if (typeof examDetailsSource === 'function') {
+        selectedExamDetails.value = examDetailsSource();
+      } else {
+        if (examDetailsSource.date_exam !== undefined || examDetailsSource.date !== undefined) {
+          selectedExamDetails.value = {
+            date_exam: examDetailsSource.date_exam || examDetailsSource.date,
+            time_exam: examDetailsSource.time_exam || examDetailsSource.time,
+            venue_exam: examDetailsSource.venue_exam || examDetailsSource.venue,
+            batch_name: examDetailsSource.batch_name,
+            itemNo: examDetailsSource.itemNo,
+            position: examDetailsSource.position,
+            office: examDetailsSource.office,
+          };
+        } else {
+          selectedExamDetails.value = getCurrentExamFormData();
+        }
+      }
+    } else if (examViewData.value?.schedule_id) {
+      selectedExamDetails.value = {
+        date_exam: examViewData.value.date_exam || examViewData.value.date,
+        time_exam: examViewData.value.time_exam || examViewData.value.time,
+        venue_exam: examViewData.value.venue_exam || examViewData.value.venue,
+        batch_name: examViewData.value.batch_name,
+      };
+    } else {
+      selectedExamDetails.value = null;
+    }
+
+    showExamEmail.value = true;
+  };
+
+  // ─── Cancelled Email Preview Methods ───────────────────────────────────────────
+  const previewCancelledInterviewEmailForApplicant = (applicant) => {
+    if (!applicant) {
+      console.warn('Attempted to preview cancelled email with null applicant');
+      return;
+    }
+
+    selectedApplicant.value = normalizeApplicant(applicant);
+    selectedInterviewDetails.value = cancelInterviewData.value;
+    showInterviewCancelledEmail.value = true;
+  };
+
+  const previewCancelledExamEmailForApplicant = (applicant) => {
+    if (!applicant) {
+      console.warn('Attempted to preview cancelled email with null applicant');
+      return;
+    }
+
+    selectedApplicant.value = normalizeApplicant(applicant);
+    selectedExamDetails.value = cancelExamData.value;
+    showExamCancelledEmail.value = true;
+  };
+
+  // ─── Cancel Interview Dialog Methods ───────────────────────────────────────────
+  const openCancelInterviewDialog = async (interview) => {
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to cancel interviews',
+        position: 'top',
+      });
+      return;
+    }
+
+    showCancelInterviewDialog.value = true;
+    cancelInterviewLoading.value = true;
+    pendingCancelScheduleId.value = interview.schedule_id;
+
+    try {
+      const detail = await interviewStore.fetchScheduleDetails(interview.schedule_id);
+
+      let scheduleData = {};
+      let applicants = [];
+
+      if (detail) {
+        if (detail.schedule_id !== undefined || detail.date || detail.time || detail.venue) {
+          scheduleData = {
+            schedule_id: detail.schedule_id || interview.schedule_id,
+            batch_name: detail.batch_name || interview.batch_name,
+            venue_interview: detail.venue || interview.venue_interview,
+            date_interview: detail.date || interview.date_interview,
+            time_interview: detail.time || interview.time_interview,
+          };
+          applicants = detail.applicants || [];
+        } else if (detail.schedule) {
+          scheduleData = {
+            schedule_id: detail.schedule.schedule_id,
+            batch_name: detail.schedule.batch_name,
+            venue_interview: detail.schedule.venue,
+            date_interview: detail.schedule.date,
+            time_interview: detail.schedule.time,
+          };
+          applicants = detail.applicants || [];
+        } else if (Array.isArray(detail)) {
+          applicants = detail;
+          scheduleData = {
+            ...interview,
+            venue_interview: interview.venue_interview,
+            date_interview: interview.date_interview,
+            time_interview: interview.time_interview,
+          };
+        } else {
+          scheduleData = interview;
+          applicants = [];
+        }
+      } else {
+        scheduleData = interview;
+      }
+
+      cancelInterviewData.value = scheduleData;
+
+      if (Array.isArray(applicants) && applicants.length > 0) {
+        cancelInterviewApplicants.value = applicants.map((applicant, index) => ({
+          submission_id: applicant.submission_id || applicant.applicant_id || index,
+          applicant_name:
+            applicant.applicant_name ||
+            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
+            'Unknown Applicant',
+          position: applicant.position || 'N/A',
+          office: applicant.office || 'N/A',
+          contact_no: applicant.contact_no || applicant.phone || 'N/A',
+          itemNo: applicant.itemNo || null,
+          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
+          firstname: applicant.firstname || '',
+          lastname: applicant.lastname || '',
+          email: applicant.email,
+        }));
+      } else {
+        cancelInterviewApplicants.value = [];
+      }
+    } catch (e) {
+      console.error('Error loading interview details for cancellation:', e);
+      $q.notify({
+        type: 'negative',
+        message: e?.message || 'Failed to load interview details',
+        position: 'top',
+      });
+      closeCancelInterviewDialog();
+    } finally {
+      cancelInterviewLoading.value = false;
+    }
+  };
+
+  const closeCancelInterviewDialog = () => {
+    showCancelInterviewDialog.value = false;
+    cancelInterviewData.value = {};
+    cancelInterviewApplicants.value = [];
+    pendingCancelScheduleId.value = null;
+  };
+
+  const confirmCancelInterview = async () => {
+    if (!pendingCancelScheduleId.value) return;
+
+    cancelling.value = true;
+    try {
+      await interviewStore.cancelInterview(pendingCancelScheduleId.value);
+      $q.notify({
+        type: 'positive',
+        message: 'Interview schedule cancelled successfully.',
+        position: 'top',
+      });
+      closeCancelInterviewDialog();
+      await interviewStore.fetchInterviews({
+        page: pagination.value.page,
+        perPage: pagination.value.rowsPerPage,
+        search: globalSearch.value,
+      });
+      pagination.value.rowsNumber = interviewStore.total;
+    } catch (e) {
+      $q.notify({
+        type: 'negative',
+        message: e?.response?.data?.message || e?.message || 'Failed to cancel interview.',
+        position: 'top',
+      });
+    } finally {
+      cancelling.value = false;
+    }
+  };
+
+  // ─── Cancel Exam Dialog Methods ────────────────────────────────────────────────
+  const openCancelExamDialog = async (exam) => {
+    if (!canModifySchedule.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to cancel exams',
+        position: 'top',
+      });
+      return;
+    }
+
+    showCancelExamDialog.value = true;
+    cancelExamLoading.value = true;
+    pendingCancelExamId.value = exam.schedule_id;
+
+    try {
+      const detail = await examStore.fetchExamDetails(exam.schedule_id);
+
+      let scheduleData = {};
+      let applicants = [];
+
+      if (detail) {
+        scheduleData = {
+          schedule_id: detail.schedule_id || exam.schedule_id,
+          batch_name: detail.batch_name || exam.batch_name,
+          venue_exam: detail.venue_exam || detail.venue || exam.venue_exam || exam.venue,
+          date_exam: detail.date_exam || detail.date || exam.date_exam || exam.date,
+          time_exam: detail.time_exam || detail.time || exam.time_exam || exam.time,
+        };
+
+        if (detail.applicants && Array.isArray(detail.applicants)) {
+          applicants = detail.applicants;
+        } else if (Array.isArray(detail)) {
+          applicants = detail;
+        }
+      } else {
+        scheduleData = exam;
+        applicants = exam.applicants || [];
+      }
+
+      cancelExamData.value = scheduleData;
+
+      if (Array.isArray(applicants) && applicants.length > 0) {
+        cancelExamApplicants.value = applicants.map((applicant, index) => ({
+          submission_id: applicant.submission_id || applicant.applicant_id || index,
+          applicant_name:
+            applicant.applicant_name ||
+            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
+            'Unknown Applicant',
+          position: applicant.position || 'N/A',
+          office: applicant.office || 'N/A',
+          contact_no: applicant.contact_no || applicant.phone || 'N/A',
+          itemNo: applicant.itemNo || null,
+          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
+          firstname: applicant.firstname || '',
+          lastname: applicant.lastname || '',
+          email: applicant.email,
+        }));
+      } else {
+        cancelExamApplicants.value = [];
+      }
+    } catch (e) {
+      console.error('Error loading exam details for cancellation:', e);
+      $q.notify({
+        type: 'negative',
+        message: e?.message || 'Failed to load exam details',
+        position: 'top',
+      });
+      closeCancelExamDialog();
+    } finally {
+      cancelExamLoading.value = false;
+    }
+  };
+
+  const closeCancelExamDialog = () => {
+    showCancelExamDialog.value = false;
+    cancelExamData.value = {};
+    cancelExamApplicants.value = [];
+    pendingCancelExamId.value = null;
+  };
+
+  const confirmCancelExam = async () => {
+    if (!pendingCancelExamId.value) return;
+
+    cancelling.value = true;
+    try {
+      await examStore.cancelExamSchedule(pendingCancelExamId.value);
+      $q.notify({
+        type: 'positive',
+        message: 'Examination schedule cancelled successfully.',
+        position: 'top',
+      });
+      closeCancelExamDialog();
+      await examStore.fetchExams({
+        page: examPagination.value.page,
+        perPage: examPagination.value.rowsPerPage,
+        search: examGlobalSearch.value,
+      });
+      examPagination.value.rowsNumber = examStore.total;
+    } catch (e) {
+      $q.notify({
+        type: 'negative',
+        message: e?.response?.data?.message || e?.message || 'Failed to cancel examination.',
+        position: 'top',
+      });
+    } finally {
+      cancelling.value = false;
+    }
+  };
+
   // ─── Interview dialog methods ──────────────────────────────────────────────────
   const resetScheduleForm = () => {
     scheduleForm.value = {
@@ -1167,7 +1948,6 @@
   };
 
   const openScheduleDialog = async () => {
-    // Only allow if user has modify permission
     if (!canModifySchedule.value) {
       $q.notify({
         type: 'warning',
@@ -1248,24 +2028,70 @@
 
   const viewInterview = async (interview) => {
     try {
-      viewData.value = interview;
       showViewDialog.value = true;
       const detail = await interviewStore.fetchScheduleDetails(interview.schedule_id);
-      const schedule = detail?.schedule || detail || {};
-      viewData.value = {
-        ...schedule,
-        schedule_id: schedule.schedule_id ?? interview.schedule_id,
-        batch_name: schedule.batch_name ?? interview.batch_name,
-        venue_interview: schedule.venue_interview ?? interview.venue_interview,
-        date_interview: schedule.date_interview ?? interview.date_interview,
-        time_interview: schedule.time_interview ?? interview.time_interview,
-      };
+
+      let scheduleData = {};
       let applicants = [];
-      if (Array.isArray(detail)) applicants = detail;
-      else if (Array.isArray(detail?.applicants)) applicants = detail.applicants;
-      else if (Array.isArray(detail?.data)) applicants = detail.data;
-      viewApplicants.value = applicants;
+
+      if (detail) {
+        if (detail.schedule_id !== undefined || detail.date || detail.time || detail.venue) {
+          scheduleData = {
+            schedule_id: detail.schedule_id || interview.schedule_id,
+            batch_name: detail.batch_name || interview.batch_name,
+            venue_interview: detail.venue || interview.venue_interview,
+            date_interview: detail.date || interview.date_interview,
+            time_interview: detail.time || interview.time_interview,
+          };
+          applicants = detail.applicants || [];
+        } else if (detail.schedule) {
+          scheduleData = {
+            schedule_id: detail.schedule.schedule_id,
+            batch_name: detail.schedule.batch_name,
+            venue_interview: detail.schedule.venue,
+            date_interview: detail.schedule.date,
+            time_interview: detail.schedule.time,
+          };
+          applicants = detail.applicants || [];
+        } else if (Array.isArray(detail)) {
+          applicants = detail;
+          scheduleData = {
+            ...interview,
+            venue_interview: interview.venue_interview,
+            date_interview: interview.date_interview,
+            time_interview: interview.time_interview,
+          };
+        } else {
+          scheduleData = interview;
+          applicants = [];
+        }
+      } else {
+        scheduleData = interview;
+      }
+
+      viewData.value = scheduleData;
+
+      if (Array.isArray(applicants) && applicants.length > 0) {
+        viewApplicants.value = applicants.map((applicant, index) => ({
+          submission_id: applicant.submission_id || applicant.applicant_id || index,
+          applicant_name:
+            applicant.applicant_name ||
+            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
+            'Unknown Applicant',
+          position: applicant.position || 'N/A',
+          office: applicant.office || 'N/A',
+          contact_no: applicant.contact_no || applicant.phone || 'N/A',
+          itemNo: applicant.itemNo || null,
+          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
+          firstname: applicant.firstname || '',
+          lastname: applicant.lastname || '',
+          email: applicant.email,
+        }));
+      } else {
+        viewApplicants.value = [];
+      }
     } catch (e) {
+      console.error('Error loading interview details:', e);
       $q.notify({
         type: 'negative',
         message: e?.message || 'Failed to load interview details',
@@ -1288,7 +2114,6 @@
   };
 
   const openExamScheduleDialog = async () => {
-    // Only allow if user has modify permission
     if (!canModifySchedule.value) {
       $q.notify({
         type: 'warning',
@@ -1365,12 +2190,65 @@
 
   const viewExam = async (exam) => {
     try {
-      examViewData.value = exam;
       showExamViewDialog.value = true;
+
+      examViewData.value = {
+        schedule_id: exam.schedule_id,
+        batch_name: exam.batch_name,
+        date_exam: exam.date_exam || exam.date,
+        time_exam: exam.time_exam || exam.time,
+        venue_exam: exam.venue_exam || exam.venue,
+      };
+
       const detail = await examStore.fetchExamDetails(exam.schedule_id);
-      examViewData.value = detail;
-      examViewApplicants.value = detail?.applicants || [];
+
+      if (detail) {
+        examViewData.value = {
+          schedule_id: detail.schedule_id || exam.schedule_id,
+          batch_name: detail.batch_name || exam.batch_name,
+          date_exam: detail.date_exam || detail.date || exam.date_exam || exam.date,
+          time_exam: detail.time_exam || detail.time || exam.time_exam || exam.time,
+          venue_exam: detail.venue_exam || detail.venue || exam.venue_exam || exam.venue,
+        };
+
+        let applicants = [];
+        if (detail.applicants && Array.isArray(detail.applicants)) {
+          applicants = detail.applicants;
+        } else if (Array.isArray(detail)) {
+          applicants = detail;
+        }
+
+        examViewApplicants.value = applicants.map((applicant, index) => ({
+          submission_id: applicant.submission_id || applicant.applicant_id || index,
+          applicant_name:
+            applicant.applicant_name ||
+            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
+            'Unknown Applicant',
+          position: applicant.position || 'N/A',
+          office: applicant.office || 'N/A',
+          contact_no: applicant.contact_no || applicant.phone || 'N/A',
+          itemNo: applicant.itemNo || null,
+          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
+          firstname: applicant.firstname || '',
+          lastname: applicant.lastname || '',
+          email: applicant.email,
+        }));
+      } else {
+        if (exam.applicants && Array.isArray(exam.applicants)) {
+          examViewApplicants.value = exam.applicants.map((applicant, index) => ({
+            submission_id: index,
+            applicant_name: applicant.applicant_name || 'Unknown Applicant',
+            position: applicant.position || 'N/A',
+            office: applicant.office || 'N/A',
+            contact_no: applicant.contact_no || 'N/A',
+            itemNo: applicant.itemNo || null,
+          }));
+        } else {
+          examViewApplicants.value = [];
+        }
+      }
     } catch (e) {
+      console.error('Error loading exam details:', e);
       $q.notify({
         type: 'negative',
         message: e?.message || 'Failed to load exam details',
@@ -1380,109 +2258,8 @@
     }
   };
 
-  // ─── Cancel Interview ─────────────────────────────────────────────────────────
-  const cancelInterview = (scheduleId) => {
-    // Only allow if user has modify permission
-    if (!canModifySchedule.value) {
-      $q.notify({
-        type: 'warning',
-        message: 'You do not have permission to cancel interviews',
-        position: 'top',
-      });
-      return;
-    }
-
-    $q.dialog({
-      title: 'Cancel Interview',
-      message: 'Are you sure you want to cancel this interview schedule?',
-      persistent: true,
-      ok: {
-        label: 'Yes, Cancel It',
-        color: 'negative',
-        flat: true,
-      },
-      cancel: {
-        label: 'No',
-        color: 'primary',
-        flat: true,
-      },
-    }).onOk(async () => {
-      try {
-        await interviewStore.cancelInterview(scheduleId);
-        $q.notify({
-          type: 'positive',
-          message: 'Interview schedule cancelled successfully.',
-          position: 'top',
-        });
-        await interviewStore.fetchInterviews({
-          page: pagination.value.page,
-          perPage: pagination.value.rowsPerPage,
-          search: globalSearch.value,
-        });
-        pagination.value.rowsNumber = interviewStore.total;
-      } catch (e) {
-        $q.notify({
-          type: 'negative',
-          message: e?.response?.data?.message || e?.message || 'Failed to cancel interview.',
-          position: 'top',
-        });
-      }
-    });
-  };
-
-  // ─── Cancel Exam Schedule ─────────────────────────────────────────────────────────
-  const cancelExamSchedule = (scheduleExamId) => {
-    // Only allow if user has modify permission
-    if (!canModifySchedule.value) {
-      $q.notify({
-        type: 'warning',
-        message: 'You do not have permission to cancel exams',
-        position: 'top',
-      });
-      return;
-    }
-
-    $q.dialog({
-      title: 'Cancel Examination',
-      message: 'Are you sure you want to cancel this examination schedule?',
-      persistent: true,
-      ok: {
-        label: 'Yes, Cancel It',
-        color: 'negative',
-        flat: true,
-      },
-      cancel: {
-        label: 'No',
-        color: 'primary',
-        flat: true,
-      },
-    }).onOk(async () => {
-      try {
-        await examStore.cancelExamSchedule(scheduleExamId);
-        $q.notify({
-          type: 'positive',
-          message: 'Examination schedule cancelled successfully.',
-          position: 'top',
-        });
-        await examStore.fetchExams({
-          page: examPagination.value.page,
-          perPage: examPagination.value.rowsPerPage,
-          search: examGlobalSearch.value,
-        });
-        examPagination.value.rowsNumber = examStore.total;
-      } catch (e) {
-        $q.notify({
-          type: 'negative',
-          message: e?.response?.data?.message || e?.message || 'Failed to cancel examination.',
-          position: 'top',
-        });
-      }
-    });
-  };
-
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
   onMounted(async () => {
-    // Load interview list
     await interviewStore.fetchInterviews({
       page: 1,
       perPage: pagination.value.rowsPerPage,
@@ -1490,7 +2267,6 @@
     });
     pagination.value.rowsNumber = interviewStore.total;
 
-    // Load exam list
     await examStore.fetchExams({ page: 1, perPage: examPagination.value.rowsPerPage, search: '' });
     examPagination.value.rowsNumber = examStore.total;
   });
@@ -1601,6 +2377,9 @@
   }
   .bg-red-1 {
     background-color: rgba(244, 67, 54, 0.1);
+  }
+  .bg-orange-1 {
+    background-color: rgba(255, 152, 0, 0.1);
   }
 
   @media (max-width: 1024px) {

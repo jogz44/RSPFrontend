@@ -53,7 +53,6 @@
   const isLoading = ref(false);
   const reportData = ref(null);
 
-  // Helper function to convert image to base64
   async function getImageBase64(url) {
     try {
       const response = await fetch(url);
@@ -70,7 +69,6 @@
     }
   }
 
-  // Fetch report data
   async function fetchReportData() {
     try {
       isLoading.value = true;
@@ -88,57 +86,83 @@
     }
   }
 
-  // Helper function to get the criteria rating description for the applicant
+  function calculateTotalExperience(applicant) {
+    if (!applicant.experience || applicant.experience.length === 0) {
+      return '';
+    }
+
+    let totalDays = 0;
+
+    applicant.experience.forEach((exp) => {
+      let fromDate, toDate;
+
+      if (exp.WFrom) {
+        const [day, month, year] = exp.WFrom.split('/');
+        fromDate = new Date(`${year}-${month}-${day}`);
+      } else if (exp.work_date_from) {
+        fromDate = new Date(exp.work_date_from);
+      }
+
+      if (exp.WTo) {
+        const [day, month, year] = exp.WTo.split('/');
+        toDate = new Date(`${year}-${month}-${day}`);
+      } else if (exp.work_date_to) {
+        toDate = new Date(exp.work_date_to);
+      }
+
+      if (fromDate && toDate && !isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
+        const diffTime = Math.abs(toDate - fromDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        totalDays += diffDays;
+      }
+    });
+
+    let years = Math.floor(totalDays / 365);
+    let remainingDays = totalDays % 365;
+    let months = Math.floor(remainingDays / 30);
+    let days = remainingDays % 30;
+
+    let result = '';
+    if (years > 0) result += `${years} year${years > 1 ? 's' : ''}`;
+    if (months > 0) {
+      if (result) result += ', ';
+      result += `${months} month${months > 1 ? 's' : ''}`;
+    }
+    if (days > 0) {
+      if (result) result += ', ';
+      result += `${days} day${days > 1 ? 's' : ''}`;
+    }
+
+    return result ? `${result} of relevant experience` : '';
+  }
+
   function getCriteriaRatingDescription(jobPost, applicant, type) {
     const criteriaRating = jobPost.criteria_rating?.[0];
     if (!criteriaRating) return null;
 
-    const applicantText = applicant[`${type}_text`] || '';
     const requiredValue = jobPost.criteria?.[type.charAt(0).toUpperCase() + type.slice(1)] || '';
 
-    // Parse the required value
     let requiredYears = 0;
-    let requiredHours = 0;
 
     if (type === 'experience') {
       const yearMatch = requiredValue.match(/(\d+)\s*Years?/i);
       requiredYears = yearMatch ? parseInt(yearMatch[1]) : 0;
     }
 
-    if (type === 'training') {
-      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
-      requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
-    }
-
-    // Parse applicant's actual qualification
     let applicantYears = 0;
-    let applicantHours = 0;
-    let hasEducation = false;
 
-    switch (type) {
-      case 'education': {
-        hasEducation =
-          applicantText &&
-          !applicantText.includes('No relevant') &&
-          (applicantText.includes('BACHELOR') || applicantText.includes('DEGREE'));
-        break;
-      }
-      case 'experience': {
-        const yearMatch = applicantText.match(/(\d+)\s*years?/i);
-        applicantYears = yearMatch ? parseInt(yearMatch[1]) : 0;
-        break;
-      }
-      case 'training': {
-        const hourMatch = applicantText.match(/(\d+)\s*hours?/i);
-        applicantHours = hourMatch ? parseInt(hourMatch[1]) : 0;
-        break;
-      }
-      case 'eligibility': {
-        break;
+    if (type === 'experience') {
+      const calculatedExperience = calculateTotalExperience(applicant);
+      const yearMatch = calculatedExperience.match(/(\d+)\s*years?/i);
+      applicantYears = yearMatch ? parseInt(yearMatch[1]) : 0;
+
+      if (applicantYears === 0) {
+        const applicantText = applicant.experience_text || '';
+        const fallbackYearMatch = applicantText.match(/(\d+)\s*years?/i);
+        applicantYears = fallbackYearMatch ? parseInt(fallbackYearMatch[1]) : 0;
       }
     }
 
-    // Find matching criteria rating tier for experience
     if (type === 'experience' && criteriaRating.experiences && requiredYears > 0) {
       const percentageOfRequired = (applicantYears / requiredYears) * 100;
 
@@ -185,114 +209,135 @@
       return null;
     }
 
-    // Find matching criteria rating tier for training
-    if (type === 'training' && criteriaRating.trainings && requiredHours > 0) {
-      if (applicantHours >= requiredHours) {
-        return criteriaRating.trainings[0]?.description || 'Meets minimum requirement';
-      }
-      return null;
-    }
-
-    // For positions that don't require experience/training
     if (type === 'experience' && requiredValue.toLowerCase().includes('none required')) {
-      return null;
-    }
-
-    if (type === 'training' && requiredValue.toLowerCase().includes('none required')) {
-      return null;
-    }
-
-    // Education evaluation
-    if (type === 'education' && criteriaRating.educations) {
-      if (hasEducation) {
-        return criteriaRating.educations[0]?.description || 'Meets educational requirement';
-      }
-      return null;
-    }
-
-    // Eligibility evaluation
-    if (type === 'eligibility') {
-      const requiredElig = requiredValue.toLowerCase();
-      const hasRequiredElig =
-        (requiredElig.includes('professional') && applicantText.includes('PROFESSIONAL')) ||
-        (requiredElig.includes('subprofessional') && applicantText.includes('SUBPROFESSIONAL')) ||
-        (requiredElig.includes('electronics') && applicantText.includes('ELECTRONICS')) ||
-        (requiredElig.includes('career service') && applicantText.includes('CIVIL SERVICE'));
-
-      if (hasRequiredElig) {
-        return 'MEETS ELIGIBILITY REQUIREMENT';
-      }
       return null;
     }
 
     return null;
   }
 
-  // Format the applicant's qualification text (clean up)
-  function getApplicantQualification(applicantText, type) {
-    if (!applicantText || applicantText.includes('No relevant')) {
+  function getEducationInfo(applicant) {
+    if (!applicant.education || applicant.education.length === 0) {
+      return '';
+    }
+
+    const educationLines = applicant.education.map((edu) => {
+      let line = edu.degree || edu.Degree || '';
+      const units = edu.highest_units || edu.NumUnits || '';
+      line += ` (${units} UNITS)`;
+      return line;
+    });
+
+    return educationLines.join('\n');
+  }
+
+  function getApplicantQualification(applicantText, type, applicant) {
+    if (type === 'education') {
+      if (applicantText) {
+        if (applicantText.toLowerCase().includes('no relevant')) {
+          return applicantText.trim();
+        }
+
+        let cleanText = applicantText;
+        cleanText = cleanText.replace(/<br\s*\/?>/gi, '\n');
+        cleanText = cleanText.replace(/•\s*/g, '');
+        return cleanText.trim();
+      }
+
+      const educationInfo = getEducationInfo(applicant);
+      if (educationInfo) {
+        return educationInfo;
+      }
+      return '';
+    }
+
+    if (applicantText && applicantText.toLowerCase().includes('no relevant')) {
+      return applicantText.trim();
+    }
+
+    if (!applicantText) {
       return '';
     }
 
     let cleanText = applicantText;
-
-    // Remove bullet points and clean up
+    cleanText = cleanText.replace(/<br\s*\/?>/gi, '\n');
     cleanText = cleanText.replace(/•\s*/g, '');
 
-    if (type === 'education') {
-      // Extract degree and units
-      const degreeMatch = cleanText.match(/(.+?)(?:\s*\(|$)/);
-      return degreeMatch ? degreeMatch[1].trim() : cleanText;
-    }
-
     if (type === 'experience') {
-      // Extract years/months/days
-      const expMatch = cleanText.match(/(\d+ years?,?\s*\d* months?,?\s*\d* days?)/i);
-      return expMatch ? expMatch[1] : cleanText;
+      const calculatedExperience = calculateTotalExperience(applicant);
+      if (calculatedExperience) {
+        return calculatedExperience;
+      }
+      return cleanText.trim();
     }
 
     if (type === 'training') {
-      // Extract hours
-      const hoursMatch = cleanText.match(/(\d+)\s*hours?/i);
-      return hoursMatch ? `${hoursMatch[1]} HOURS` : cleanText;
+      return cleanText.trim();
     }
 
-    if (type === 'eligibility') {
-      // Extract eligibility name
-      const eligMatch = cleanText.match(/(.+?)(?:\s*-\s*Rating|$)/);
-      return eligMatch ? eligMatch[1].trim() : cleanText;
-    }
-
-    return cleanText;
+    return cleanText.trim();
   }
 
-  // Format cell content - simple format with criteria rating and applicant qualification
   function formatCellContent(jobPost, applicant, type, requiredText, applicantText, remark) {
-    const criteriaRatingDesc = getCriteriaRatingDescription(jobPost, applicant, type);
-    const applicantQual = getApplicantQualification(applicantText, type);
-
     let result = '';
 
-    if (criteriaRatingDesc) {
-      result += criteriaRatingDesc.toUpperCase();
-    } else if (requiredText && !requiredText.toLowerCase().includes('none required')) {
-      result += 'DOES NOT MEET REQUIREMENT';
-    }
+    if (type === 'experience') {
+      const criteriaRatingDesc = getCriteriaRatingDescription(jobPost, applicant, type);
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
 
-    if (applicantQual) {
-      if (result) result += '\n';
-      result += applicantQual.toUpperCase();
+      if (criteriaRatingDesc) {
+        result += criteriaRatingDesc.toUpperCase();
+        if (applicantQual) {
+          result += '\n' + applicantQual.toUpperCase();
+        }
+      } else if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      }
+    } else if (type === 'training') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      const requiredValue = requiredText || '';
+      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
+      const requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
+
+      const applicantHourMatch = applicantText?.match(/(\d+)\s*hours?/i);
+      const applicantHours = applicantHourMatch ? parseInt(applicantHourMatch[1]) : 0;
+
+      if (applicantHours >= requiredHours && requiredHours > 0) {
+        result += 'MEETS TRAINING REQUIREMENT';
+        if (applicantQual) {
+          result += '\n' + applicantQual.toUpperCase();
+        }
+      } else if (requiredValue.toLowerCase().includes('none required')) {
+        if (applicantQual) {
+          result += applicantQual.toUpperCase();
+        }
+      } else if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      }
+    } else if (type === 'education') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      } else {
+        result += '';
+      }
+    } else if (type === 'eligibility') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      } else {
+        result += '';
+      }
     }
 
     if (remark && remark.trim()) {
-      if (result) result += '\n\n';
+      if (result && result !== '') result += '\n\n';
       result += `REMARKS: ${remark.toUpperCase()}`;
     }
 
-    return result || 'N/A';
+    return result || '';
   }
 
-  // Generate table rows from report data
   function generateTableRows() {
     if (!reportData.value || !reportData.value.jobPosts) {
       return [];
@@ -301,7 +346,6 @@
     const rows = [];
 
     reportData.value.jobPosts.forEach((jobPost) => {
-      // Position header row (gray background) - ALL UPPERCASE
       rows.push([
         {
           text: `${jobPost.Abbr} ${jobPost.ItemNo}`.toUpperCase(),
@@ -347,7 +391,6 @@
       ]);
 
       if (jobPost.applicants && jobPost.applicants.length > 0) {
-        // Filter unique applicants by firstname and lastname
         const uniqueApplicants = jobPost.applicants.filter(
           (applicant, index, self) =>
             index ===
@@ -377,7 +420,7 @@
                 jobPost,
                 applicant,
                 'education',
-                jobPost.criteria?.Education || 'N/A',
+                jobPost.criteria?.Education || '',
                 applicant.education_text,
                 applicant.education_remark,
               ),
@@ -389,7 +432,7 @@
                 jobPost,
                 applicant,
                 'experience',
-                jobPost.criteria?.Experience || 'N/A',
+                jobPost.criteria?.Experience || '',
                 applicant.experience_text,
                 applicant.experience_remark,
               ),
@@ -401,7 +444,7 @@
                 jobPost,
                 applicant,
                 'training',
-                jobPost.criteria?.Training || 'N/A',
+                jobPost.criteria?.Training || '',
                 applicant.training_text,
                 applicant.training_remark,
               ),
@@ -413,7 +456,7 @@
                 jobPost,
                 applicant,
                 'eligibility',
-                jobPost.criteria?.Eligibility || 'N/A',
+                jobPost.criteria?.Eligibility || '',
                 applicant.eligibility_text,
                 applicant.eligibility_remark,
               ),
@@ -453,7 +496,6 @@
 
     const logoBase64 = await getImageBase64('/logo.png');
 
-    // Dynamically import pdfmake
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfMake = pdfMakeModule.default || pdfMakeModule;
     const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
@@ -551,7 +593,7 @@
       },
       content: [
         {
-          text: (reportData.value.Header || "APPLICANT'S QUALIFICATION STANDARDS").toUpperCase(),
+          text: 'PREQUALIFIED APPLICANT REPORT'.toUpperCase(),
           fontSize: 14,
           bold: true,
           alignment: 'center',

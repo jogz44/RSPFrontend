@@ -117,7 +117,9 @@
 
             <!-- ── Tab Panels ── -->
             <q-tab-panels v-model="tab" class="q-pa-none tab-panels-scroll">
-              <!-- EDUCATION -->
+              <!-- ═══════════════════════════════════════════════════════════
+                   EDUCATION
+              ════════════════════════════════════════════════════════════ -->
               <q-tab-panel
                 name="education"
                 class="column q-pa-sm no-wrap full-height"
@@ -183,25 +185,59 @@
                   </q-scroll-area>
                 </div>
 
+                <!-- EDUCATION REMARK -->
                 <div style="flex: 0 0 auto">
+                  <!-- Read-only when locked -->
                   <q-input
+                    v-if="!canModifyJobPost || isJobOccupied || evaluationLocked"
                     v-model="xData.education_remark"
                     label="Remarks"
-                    autogrow
                     outlined
                     dense
+                    readonly
+                    bg-color="grey-3"
                     class="modern-input"
-                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                    :bg-color="
-                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                    "
+                  />
+                  <!-- Searchable select when editable -->
+                  <q-select
+                    v-else
+                    v-model="xData.education_remark"
+                    :options="filteredEducationRemarks"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    label="Remarks"
+                    outlined
+                    dense
+                    use-input
+                    input-debounce="200"
+                    clearable
+                    class="modern-input"
                     :error="isUnqualified && remarksTouched && !xData.education_remark?.trim()"
                     error-message="Education remark is required when Unqualified"
-                  />
+                    @filter="(val, update) => filterRemarks(val, update, 'EDUCATION', 'education')"
+                    @clear="xData.education_remark = ''"
+                  >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section class="text-grey">No matching remarks</q-item-section>
+                      </q-item>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
               </q-tab-panel>
 
-              <!-- EXPERIENCE -->
+              <!-- ═══════════════════════════════════════════════════════════
+                   EXPERIENCE
+              ════════════════════════════════════════════════════════════ -->
               <q-tab-panel
                 name="experience"
                 class="column q-pa-sm no-wrap full-height"
@@ -337,25 +373,59 @@
                   </q-scroll-area>
                 </div>
 
+                <!-- EXPERIENCE REMARK -->
                 <div style="flex: 0 0 auto">
                   <q-input
+                    v-if="!canModifyJobPost || isJobOccupied || evaluationLocked"
                     v-model="xData.experience_remark"
                     label="Remarks"
-                    autogrow
                     outlined
                     dense
+                    readonly
+                    bg-color="grey-3"
                     class="modern-input"
-                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                    :bg-color="
-                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                    "
+                  />
+                  <q-select
+                    v-else
+                    v-model="xData.experience_remark"
+                    :options="filteredExperienceRemarks"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    label="Remarks"
+                    outlined
+                    dense
+                    use-input
+                    input-debounce="200"
+                    clearable
+                    class="modern-input"
                     :error="isUnqualified && remarksTouched && !xData.experience_remark?.trim()"
                     error-message="Experience remark is required when Unqualified"
-                  />
+                    @filter="
+                      (val, update) => filterRemarks(val, update, 'EXPERIENCE', 'experience')
+                    "
+                    @clear="xData.experience_remark = ''"
+                  >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section class="text-grey">No matching remarks</q-item-section>
+                      </q-item>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
               </q-tab-panel>
 
-              <!-- TRAINING -->
+              <!-- ═══════════════════════════════════════════════════════════
+                   TRAINING
+              ════════════════════════════════════════════════════════════ -->
               <q-tab-panel
                 name="training"
                 class="column q-pa-sm no-wrap full-height"
@@ -482,25 +552,57 @@
                   </q-scroll-area>
                 </div>
 
+                <!-- TRAINING REMARK -->
                 <div style="flex: 0 0 auto">
                   <q-input
+                    v-if="!canModifyJobPost || isJobOccupied || evaluationLocked"
                     v-model="xData.training_remark"
                     label="Remarks"
-                    autogrow
                     outlined
                     dense
+                    readonly
+                    bg-color="grey-3"
                     class="modern-input"
-                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                    :bg-color="
-                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                    "
+                  />
+                  <q-select
+                    v-else
+                    v-model="xData.training_remark"
+                    :options="filteredTrainingRemarks"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    label="Remarks"
+                    outlined
+                    dense
+                    use-input
+                    input-debounce="200"
+                    clearable
+                    class="modern-input"
                     :error="isUnqualified && remarksTouched && !xData.training_remark?.trim()"
                     error-message="Training remark is required when Unqualified"
-                  />
+                    @filter="(val, update) => filterRemarks(val, update, 'TRAINING', 'training')"
+                    @clear="xData.training_remark = ''"
+                  >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section class="text-grey">No matching remarks</q-item-section>
+                      </q-item>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
               </q-tab-panel>
 
-              <!-- ELIGIBILITY -->
+              <!-- ═══════════════════════════════════════════════════════════
+                   ELIGIBILITY
+              ════════════════════════════════════════════════════════════ -->
               <q-tab-panel
                 name="eligibility"
                 class="column q-pa-sm no-wrap full-height"
@@ -570,21 +672,53 @@
                   </q-scroll-area>
                 </div>
 
+                <!-- ELIGIBILITY REMARK -->
                 <div style="flex: 0 0 auto">
                   <q-input
+                    v-if="!canModifyJobPost || isJobOccupied || evaluationLocked"
                     v-model="xData.eligibility_remark"
                     label="Remarks"
-                    autogrow
                     outlined
                     dense
+                    readonly
+                    bg-color="grey-3"
                     class="modern-input"
-                    :readonly="!canModifyJobPost || isJobOccupied || evaluationLocked"
-                    :bg-color="
-                      !canModifyJobPost || isJobOccupied || evaluationLocked ? 'grey-3' : 'white'
-                    "
+                  />
+                  <q-select
+                    v-else
+                    v-model="xData.eligibility_remark"
+                    :options="filteredEligibilityRemarks"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    label="Remarks"
+                    outlined
+                    dense
+                    use-input
+                    input-debounce="200"
+                    clearable
+                    class="modern-input"
                     :error="isUnqualified && remarksTouched && !xData.eligibility_remark?.trim()"
                     error-message="Eligibility remark is required when Unqualified"
-                  />
+                    @filter="
+                      (val, update) => filterRemarks(val, update, 'ELIGIBILITY', 'eligibility')
+                    "
+                    @clear="xData.eligibility_remark = ''"
+                  >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section class="text-grey">No matching remarks</q-item-section>
+                      </q-item>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
               </q-tab-panel>
             </q-tab-panels>
@@ -684,6 +818,7 @@
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
+  import { useRemarkStore } from 'stores/remarkStore';
   import PDSModalApplicant from './PDSModalApplicant.vue';
   import SupportingDocumentsModal from './SuppDocs.vue';
   import WESModal from './WESModal.vue';
@@ -718,6 +853,73 @@
     eligibility_images: [],
     experience_images: [],
   });
+
+  // ── Remark store & filtered options ──────────────────────────────────────────
+
+  const remarkStore = useRemarkStore();
+
+  /**
+   * Raw remarks list loaded from the store.
+   * Each entry: { remarks_id, remarks, category, ... }
+   */
+  const allRemarks = computed(() => remarkStore.remarks || []);
+
+  /**
+   * Per-category filtered arrays used by each q-select.
+   * We keep a separate ref for each category so the @filter callback
+   * can narrow them down further by the user's search input.
+   */
+  const filteredEducationRemarks = ref([]);
+  const filteredExperienceRemarks = ref([]);
+  const filteredTrainingRemarks = ref([]);
+  const filteredEligibilityRemarks = ref([]);
+
+  /**
+   * Maps category key → the reactive ref holding filtered options
+   */
+  const categoryFilterMap = {
+    EDUCATION: filteredEducationRemarks,
+    EXPERIENCE: filteredExperienceRemarks,
+    TRAINING: filteredTrainingRemarks,
+    ELIGIBILITY: filteredEligibilityRemarks,
+  };
+
+  /**
+   * Builds the full option list for a given category.
+   * Returns [{ label: string, value: string }]
+   */
+  const buildOptions = (category, needle = '') => {
+    return allRemarks.value
+      .filter((r) => r.category?.toUpperCase() === category.toUpperCase())
+      .filter((r) => (needle ? r.remarks?.toLowerCase().includes(needle.toLowerCase()) : true))
+      .map((r) => ({ label: r.remarks, value: r.remarks }));
+  };
+
+  /**
+   * q-select @filter handler.
+   * category  – 'EDUCATION' | 'EXPERIENCE' | 'TRAINING' | 'ELIGIBILITY'
+   * filterKey – matching key in categoryFilterMap (same values, uppercase)
+   */
+  const filterRemarks = (val, update, category) => {
+    update(() => {
+      categoryFilterMap[category].value = buildOptions(category, val);
+    });
+  };
+
+  /**
+   * Initialise all four filter refs whenever allRemarks changes
+   * (i.e. after the store fetch completes).
+   */
+  const initRemarkOptions = () => {
+    filteredEducationRemarks.value = buildOptions('EDUCATION');
+    filteredExperienceRemarks.value = buildOptions('EXPERIENCE');
+    filteredTrainingRemarks.value = buildOptions('TRAINING');
+    filteredEligibilityRemarks.value = buildOptions('ELIGIBILITY');
+  };
+
+  watch(allRemarks, initRemarkOptions, { immediate: true });
+
+  // ── Stores ────────────────────────────────────────────────────────────────────
 
   const authStore = useAuthStore();
   const jobPostStore = useJobPostStore();
@@ -967,12 +1169,12 @@
   };
 
   // ── Date / Duration helpers ───────────────────────────────────────────────────
+
   const parseDate = (dateString) => {
     if (!dateString) return null;
     const parts = dateString.split('/');
     if (parts.length === 3) {
       const [day, month, year] = parts.map(Number);
-      // DD/MM/YYYY only
       const dt = new Date(year, month - 1, day);
       if (!isNaN(dt.getTime()) && dt.getDate() === day && dt.getMonth() === month - 1) {
         return dt;
@@ -1002,67 +1204,42 @@
     let months = end.getMonth() - start.getMonth();
     let days = end.getDate() - start.getDate();
 
-    // get last day of end month
     const endMonthLastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-
     const isEndOfMonth = end.getDate() === endMonthLastDay;
 
-    // borrow month if needed
     if (days < 0) {
       months -= 1;
       const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
       days += prevMonth.getDate();
     }
 
-    // normalize years/months
     if (months < 0) {
       years -= 1;
       months += 12;
     }
 
-    // ⭐ FIX: treat full month completion when start is day 1 and end is end-of-month
     if (start.getDate() === 1 && isEndOfMonth) {
       months += 1;
       days = 0;
     }
 
-    // final normalization (safety)
     if (months >= 12) {
       years += Math.floor(months / 12);
       months = months % 12;
     }
 
-    return {
-      years,
-      months,
-      days,
-    };
+    return { years, months, days };
   };
-
-  // Keep calculateMonthsDifference for backward compatibility
-  // const calculateMonthsDifference = (startDate, endDate, applicationDate = null) => {
-  //   const duration = calculateExactDuration(startDate, endDate, applicationDate);
-  //   return duration.totalMonths;
-  // };
 
   const formatDuration = (duration) => {
     if (!duration) return '0 months';
 
     const { years = 0, months = 0, days = 0 } = duration;
-
     const parts = [];
 
-    if (years > 0) {
-      parts.push(`${years} year${years !== 1 ? 's' : ''}`);
-    }
-
-    if (months > 0) {
-      parts.push(`${months} month${months !== 1 ? 's' : ''}`);
-    }
-
-    if (days > 0) {
-      parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-    }
+    if (years > 0) parts.push(`${years} year${years !== 1 ? 's' : ''}`);
+    if (months > 0) parts.push(`${months} month${months !== 1 ? 's' : ''}`);
+    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
 
     return parts.length ? parts.join(', ') : '0 months';
   };
@@ -1120,15 +1297,12 @@
 
       if (!start || !end) return;
 
-      // convert entire range into raw days difference (source of truth)
       const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-
       totalDays += diff;
     });
 
     const years = Math.floor(totalDays / 365);
     totalDays %= 365;
-
     const months = Math.floor(totalDays / 30);
     const days = totalDays % 30;
 
@@ -1448,6 +1622,11 @@
     isLoadingPDS.value = true;
 
     try {
+      // Fetch remarks from store if not yet loaded
+      if (!allRemarks.value.length) {
+        await remarkStore.fetchRemarks();
+      }
+
       let pdsData = null;
       if (props.applicantData?.submission_id)
         pdsData = await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);

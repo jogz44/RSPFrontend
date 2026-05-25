@@ -53,7 +53,6 @@
   const isLoading = ref(false);
   const reportData = ref(null);
 
-  // Helper function to convert image to base64
   async function getImageBase64(url) {
     try {
       const response = await fetch(url);
@@ -70,7 +69,6 @@
     }
   }
 
-  // Fetch report data
   async function fetchReportData() {
     try {
       isLoading.value = true;
@@ -88,49 +86,258 @@
     }
   }
 
-  // Format cell content for unqualified applicants
+  function calculateTotalExperience(applicant) {
+    if (!applicant.experience || applicant.experience.length === 0) {
+      return '';
+    }
 
-  function formatUnqualifiedCellContent(applicantText, remark, type) {
+    let totalDays = 0;
+
+    applicant.experience.forEach((exp) => {
+      let fromDate, toDate;
+
+      if (exp.WFrom) {
+        const [day, month, year] = exp.WFrom.split('/');
+        fromDate = new Date(`${year}-${month}-${day}`);
+      } else if (exp.work_date_from) {
+        fromDate = new Date(exp.work_date_from);
+      }
+
+      if (exp.WTo) {
+        const [day, month, year] = exp.WTo.split('/');
+        toDate = new Date(`${year}-${month}-${day}`);
+      } else if (exp.work_date_to) {
+        toDate = new Date(exp.work_date_to);
+      }
+
+      if (fromDate && toDate && !isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
+        const diffTime = Math.abs(toDate - fromDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        totalDays += diffDays;
+      }
+    });
+
+    let years = Math.floor(totalDays / 365);
+    let remainingDays = totalDays % 365;
+    let months = Math.floor(remainingDays / 30);
+    let days = remainingDays % 30;
+
     let result = '';
+    if (years > 0) result += `${years} year${years > 1 ? 's' : ''}`;
+    if (months > 0) {
+      if (result) result += ', ';
+      result += `${months} month${months > 1 ? 's' : ''}`;
+    }
+    if (days > 0) {
+      if (result) result += ', ';
+      result += `${days} day${days > 1 ? 's' : ''}`;
+    }
 
-    // Check if there's actual qualification text
-    if (applicantText && applicantText !== 'N/A') {
-      let cleanText = applicantText;
-      cleanText = cleanText.replace(/•\s*/g, '');
+    return result ? `${result} of relevant experience` : '';
+  }
 
-      // If it's "No relevant..." type messages, display as is
-      if (applicantText.includes('No relevant')) {
-        result = applicantText;
-      } else {
-        // Parse actual qualifications
-        if (type === 'education') {
-          const degreeMatch = cleanText.match(/(.+?)(?:\s*\(|$)/);
-          result = degreeMatch ? degreeMatch[1].trim() : cleanText;
-        } else if (type === 'experience') {
-          const expMatch = cleanText.match(/(\d+ years?,?\s*\d* months?,?\s*\d* days?)/i);
-          result = expMatch ? expMatch[1] : cleanText;
-        } else if (type === 'training') {
-          const hoursMatch = cleanText.match(/(\d+)\s*hours?/i);
-          result = hoursMatch ? `${hoursMatch[1]} HOURS` : cleanText;
-        } else if (type === 'eligibility') {
-          const eligMatch = cleanText.match(/(.+?)(?:\s*-\s*Rating|$)/);
-          result = eligMatch ? eligMatch[1].trim() : cleanText;
-        } else {
-          result = cleanText;
+  function getCriteriaRatingDescription(jobPost, applicant, type) {
+    const criteriaRating = jobPost.criteria_rating?.[0];
+    if (!criteriaRating) return null;
+
+    const requiredValue = jobPost.criteria?.[type.charAt(0).toUpperCase() + type.slice(1)] || '';
+
+    let requiredYears = 0;
+
+    if (type === 'experience') {
+      const yearMatch = requiredValue.match(/(\d+)\s*Years?/i);
+      requiredYears = yearMatch ? parseInt(yearMatch[1]) : 0;
+    }
+
+    let applicantYears = 0;
+
+    if (type === 'experience') {
+      const calculatedExperience = calculateTotalExperience(applicant);
+      const yearMatch = calculatedExperience.match(/(\d+)\s*years?/i);
+      applicantYears = yearMatch ? parseInt(yearMatch[1]) : 0;
+
+      if (applicantYears === 0) {
+        const applicantText = applicant.experience_text || '';
+        const fallbackYearMatch = applicantText.match(/(\d+)\s*years?/i);
+        applicantYears = fallbackYearMatch ? parseInt(fallbackYearMatch[1]) : 0;
+      }
+    }
+
+    if (type === 'experience' && criteriaRating.experiences && requiredYears > 0) {
+      const percentageOfRequired = (applicantYears / requiredYears) * 100;
+
+      for (const exp of criteriaRating.experiences) {
+        const desc = exp.description;
+        let matches = false;
+
+        if (desc.includes('500% and above') && percentageOfRequired >= 500) matches = true;
+        else if (
+          desc.includes('400%-499%') &&
+          percentageOfRequired >= 400 &&
+          percentageOfRequired < 500
+        )
+          matches = true;
+        else if (
+          desc.includes('300%-399%') &&
+          percentageOfRequired >= 300 &&
+          percentageOfRequired < 400
+        )
+          matches = true;
+        else if (
+          desc.includes('200%-299%') &&
+          percentageOfRequired >= 200 &&
+          percentageOfRequired < 300
+        )
+          matches = true;
+        else if (
+          desc.includes('101%-199%') &&
+          percentageOfRequired >= 101 &&
+          percentageOfRequired < 200
+        )
+          matches = true;
+        else if (
+          desc.includes('Minimum Number') &&
+          percentageOfRequired >= 100 &&
+          percentageOfRequired < 101
+        )
+          matches = true;
+
+        if (matches) {
+          return desc;
         }
       }
-    } else {
-      result = 'NO QUALIFICATION RECORDED';
+      return null;
+    }
+
+    if (type === 'experience' && requiredValue.toLowerCase().includes('none required')) {
+      return null;
+    }
+
+    return null;
+  }
+
+  function getEducationInfo(applicant) {
+    if (!applicant.education || applicant.education.length === 0) {
+      return '';
+    }
+
+    const educationLines = applicant.education.map((edu) => {
+      let line = edu.degree || edu.Degree || '';
+      const units = edu.highest_units || edu.NumUnits || '';
+      line += ` (${units} UNITS)`;
+      return line;
+    });
+
+    return educationLines.join('\n');
+  }
+
+  function getApplicantQualification(applicantText, type, applicant) {
+    if (type === 'education') {
+      if (applicantText) {
+        if (applicantText.toLowerCase().includes('no relevant')) {
+          return applicantText.trim();
+        }
+
+        let cleanText = applicantText;
+        cleanText = cleanText.replace(/<br\s*\/?>/gi, '\n');
+        cleanText = cleanText.replace(/•\s*/g, '');
+        return cleanText.trim();
+      }
+
+      const educationInfo = getEducationInfo(applicant);
+      if (educationInfo) {
+        return educationInfo;
+      }
+      return '';
+    }
+
+    if (applicantText && applicantText.toLowerCase().includes('no relevant')) {
+      return applicantText.trim();
+    }
+
+    if (!applicantText) {
+      return '';
+    }
+
+    let cleanText = applicantText;
+    cleanText = cleanText.replace(/<br\s*\/?>/gi, '\n');
+    cleanText = cleanText.replace(/•\s*/g, '');
+
+    if (type === 'experience') {
+      const calculatedExperience = calculateTotalExperience(applicant);
+      if (calculatedExperience) {
+        return calculatedExperience;
+      }
+      return cleanText.trim();
+    }
+
+    if (type === 'training') {
+      return cleanText.trim();
+    }
+
+    return cleanText.trim();
+  }
+
+  function formatCellContent(jobPost, applicant, type, requiredText, applicantText, remark) {
+    let result = '';
+
+    if (type === 'experience') {
+      const criteriaRatingDesc = getCriteriaRatingDescription(jobPost, applicant, type);
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+
+      if (criteriaRatingDesc) {
+        result += criteriaRatingDesc.toUpperCase();
+        if (applicantQual) {
+          result += '\n' + applicantQual.toUpperCase();
+        }
+      } else if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      }
+    } else if (type === 'training') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      const requiredValue = requiredText || '';
+      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
+      const requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
+
+      const applicantHourMatch = applicantText?.match(/(\d+)\s*hours?/i);
+      const applicantHours = applicantHourMatch ? parseInt(applicantHourMatch[1]) : 0;
+
+      if (applicantHours >= requiredHours && requiredHours > 0) {
+        result += 'MEETS TRAINING REQUIREMENT';
+        if (applicantQual) {
+          result += '\n' + applicantQual.toUpperCase();
+        }
+      } else if (requiredValue.toLowerCase().includes('none required')) {
+        if (applicantQual) {
+          result += applicantQual.toUpperCase();
+        }
+      } else if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      }
+    } else if (type === 'education') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      } else {
+        result += '';
+      }
+    } else if (type === 'eligibility') {
+      const applicantQual = getApplicantQualification(applicantText, type, applicant);
+      if (applicantQual) {
+        result += applicantQual.toUpperCase();
+      } else {
+        result += '';
+      }
     }
 
     if (remark && remark.trim()) {
-      result += `\n\nREMARKS: ${remark.toUpperCase()}`;
+      if (result && result !== '') result += '\n\n';
+      result += `REMARKS: ${remark.toUpperCase()}`;
     }
 
-    return result.toUpperCase();
+    return result || '';
   }
 
-  // Generate table rows from report data
   function generateTableRows() {
     if (!reportData.value || !reportData.value.jobPosts) {
       return [];
@@ -139,7 +346,6 @@
     const rows = [];
 
     reportData.value.jobPosts.forEach((jobPost) => {
-      // Position header row (gray background) - ALL UPPERCASE
       rows.push([
         {
           text: `${jobPost.Abbr} ${jobPost.ItemNo}`.toUpperCase(),
@@ -210,37 +416,49 @@
             { text: '', style: 'applicantRow' },
             { text: nameCellText, style: 'applicantRow', fontSize: 7 },
             {
-              text: formatUnqualifiedCellContent(
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'education',
+                jobPost.criteria?.Education || '',
                 applicant.education_text,
                 applicant.education_remark,
-                'education',
               ),
               style: 'applicantCell',
               fontSize: 6.5,
             },
             {
-              text: formatUnqualifiedCellContent(
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'experience',
+                jobPost.criteria?.Experience || '',
                 applicant.experience_text,
                 applicant.experience_remark,
-                'experience',
               ),
               style: 'applicantCell',
               fontSize: 6.5,
             },
             {
-              text: formatUnqualifiedCellContent(
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'training',
+                jobPost.criteria?.Training || '',
                 applicant.training_text,
                 applicant.training_remark,
-                'training',
               ),
               style: 'applicantCell',
               fontSize: 6.5,
             },
             {
-              text: formatUnqualifiedCellContent(
+              text: formatCellContent(
+                jobPost,
+                applicant,
+                'eligibility',
+                jobPost.criteria?.Eligibility || '',
                 applicant.eligibility_text,
                 applicant.eligibility_remark,
-                'eligibility',
               ),
               style: 'applicantCell',
               fontSize: 6.5,
@@ -278,197 +496,193 @@
 
     const logoBase64 = await getImageBase64('/logo.png');
 
-    import('pdfmake/build/pdfmake').then((pdfMakeModule) => {
-      const pdfMake = pdfMakeModule.default || pdfMakeModule;
-      import('pdfmake/build/vfs_fonts').then((vfsFontsModule) => {
-        pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
+    const pdfMakeModule = await import('pdfmake/build/pdfmake');
+    const pdfMake = pdfMakeModule.default || pdfMakeModule;
+    const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
+    pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
-        const tableRows = generateTableRows();
+    const tableRows = generateTableRows();
 
-        const docDefinition = {
-          pageSize: 'LEGAL',
-          pageOrientation: 'landscape',
-          pageMargins: [72, 120, 72, 40],
-          header: function () {
-            return {
-              stack: [
+    const docDefinition = {
+      pageSize: 'LEGAL',
+      pageOrientation: 'landscape',
+      pageMargins: [72, 120, 72, 40],
+      header: function () {
+        return {
+          stack: [
+            {
+              canvas: [
                 {
-                  canvas: [
+                  type: 'rect',
+                  x: (1008 - 936) / 2,
+                  y: 60,
+                  w: 936,
+                  h: 25,
+                  color: '#008000',
+                },
+              ],
+            },
+            {
+              margin: [72, -65, 72, 0],
+              columns: [
+                {
+                  width: 65,
+                  stack: [
                     {
-                      type: 'rect',
-                      x: (1008 - 936) / 2,
-                      y: 60,
-                      w: 936,
-                      h: 25,
-                      color: '#008000',
+                      canvas: [
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: 75,
+                          h: 80,
+                          color: '#ffffff',
+                        },
+                      ],
                     },
+                    ...(logoBase64
+                      ? [
+                          {
+                            image: logoBase64,
+                            width: 65,
+                            height: 65,
+                            absolutePosition: { x: 77, y: 22 },
+                          },
+                        ]
+                      : []),
                   ],
                 },
                 {
-                  margin: [72, -65, 72, 0],
-                  columns: [
+                  width: '*',
+                  margin: [15, -15, 0, 0],
+                  stack: [
                     {
-                      width: 65,
-                      stack: [
-                        {
-                          canvas: [
-                            {
-                              type: 'rect',
-                              x: 0,
-                              y: 0,
-                              w: 75,
-                              h: 80,
-                              color: '#ffffff',
-                            },
-                          ],
-                        },
-                        ...(logoBase64
-                          ? [
-                              {
-                                image: logoBase64,
-                                width: 65,
-                                height: 65,
-                                absolutePosition: { x: 77, y: 22 },
-                              },
-                            ]
-                          : []),
-                      ],
+                      text: 'REPUBLIC OF THE PHILIPPINES'.toUpperCase(),
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 20, 0, 2],
                     },
                     {
-                      width: '*',
-                      margin: [15, -15, 0, 0],
-                      stack: [
-                        {
-                          text: 'REPUBLIC OF THE PHILIPPINES'.toUpperCase(),
-                          fontSize: 8,
-                          color: '#00703c',
-                          alignment: 'left',
-                          margin: [0, 20, 0, 2],
-                        },
-                        {
-                          text: 'PROVINCE OF DAVAO DEL NORTE'.toUpperCase(),
-                          fontSize: 8,
-                          color: '#00703c',
-                          alignment: 'left',
-                          margin: [0, 0, 0, 2],
-                        },
-                        {
-                          text: 'CITY OF TAGUM'.toUpperCase(),
-                          fontSize: 10,
-                          bold: true,
-                          color: '#00703c',
-                          alignment: 'left',
-                        },
-                        {
-                          text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE'.toUpperCase(),
-                          fontSize: 13,
-                          bold: true,
-                          color: 'white',
-                          margin: [0, 5, 0, 0],
-                        },
-                      ],
+                      text: 'PROVINCE OF DAVAO DEL NORTE'.toUpperCase(),
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 0, 0, 2],
+                    },
+                    {
+                      text: 'CITY OF TAGUM'.toUpperCase(),
+                      fontSize: 10,
+                      bold: true,
+                      color: '#00703c',
+                      alignment: 'left',
+                    },
+                    {
+                      text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE'.toUpperCase(),
+                      fontSize: 13,
+                      bold: true,
+                      color: 'white',
+                      margin: [0, 5, 0, 0],
                     },
                   ],
                 },
               ],
-            };
-          },
-          content: [
-            {
-              text: (
-                reportData.value.Header || "APPLICANT'S UNQUALIFICATION STANDARDS"
-              ).toUpperCase(),
-              fontSize: 13,
-              bold: true,
-              alignment: 'center',
-              margin: [0, -20, 0, 0],
-            },
-            {
-              text: (reportData.value.Date || `${props.publicationDate} PUBLICATION`).toUpperCase(),
-              fontSize: 12,
-              bold: true,
-              alignment: 'center',
-              margin: [0, 0, 0, 30],
-            },
-            {
-              table: {
-                headerRows: 2,
-                widths: ['8%', '4%', '15%', '18%', '18%', '18%', '18%'],
-                body: [
-                  [
-                    { text: 'PLANTILLA CODE', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
-                    { text: 'SG', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
-                    {
-                      text: "POSITION TITLE WITH APPLICANT'S NAME",
-                      style: 'tableHeader',
-                      rowSpan: 2,
-                      fontSize: 7,
-                    },
-                    {
-                      text: 'QUALIFICATION STANDARDS',
-                      style: 'tableHeader',
-                      colSpan: 4,
-                      fontSize: 7,
-                    },
-                    {},
-                    {},
-                    {},
-                  ],
-                  [
-                    {},
-                    {},
-                    {},
-                    { text: 'EDUCATION', style: 'tableHeader', fontSize: 7 },
-                    { text: 'EXPERIENCE', style: 'tableHeader', fontSize: 7 },
-                    { text: 'TRAINING', style: 'tableHeader', fontSize: 7 },
-                    { text: 'ELIGIBILITY', style: 'tableHeader', fontSize: 7 },
-                  ],
-                  ...tableRows,
-                ],
-              },
-              layout: {
-                hLineWidth: () => 0.5,
-                vLineWidth: () => 0.5,
-                hLineColor: () => '#000000',
-                vLineColor: () => '#000000',
-                paddingLeft: () => 3,
-                paddingRight: () => 3,
-                paddingTop: () => 2,
-                paddingBottom: () => 2,
-                fillColor: (rowIndex) => (rowIndex === 0 || rowIndex === 1 ? '#ffc000' : null),
-              },
             },
           ],
-          styles: {
-            tableHeader: {
-              fontSize: 7,
-              bold: true,
-              alignment: 'center',
-            },
-            positionRow: {
-              fontSize: 6.5,
-              bold: true,
-              alignment: 'left',
-            },
-            applicantRow: {
-              fontSize: 7,
-              alignment: 'left',
-            },
-            applicantCell: {
-              fontSize: 6.5,
-              alignment: 'left',
-            },
-          },
-          defaultStyle: {
-            fontSize: 6.5,
-          },
         };
+      },
+      content: [
+        {
+          text: 'FOR QS VALIDATION APPLICANT REPORT'.toUpperCase(),
+          fontSize: 13,
+          bold: true,
+          alignment: 'center',
+          margin: [0, -20, 0, 0],
+        },
+        {
+          text: (reportData.value.Date || `${props.publicationDate} PUBLICATION`).toUpperCase(),
+          fontSize: 12,
+          bold: true,
+          alignment: 'center',
+          margin: [0, 0, 0, 30],
+        },
+        {
+          table: {
+            headerRows: 2,
+            widths: ['8%', '4%', '15%', '18%', '18%', '18%', '18%'],
+            body: [
+              [
+                { text: 'PLANTILLA CODE', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
+                { text: 'SG', style: 'tableHeader', rowSpan: 2, fontSize: 7 },
+                {
+                  text: "POSITION TITLE WITH APPLICANT'S NAME",
+                  style: 'tableHeader',
+                  rowSpan: 2,
+                  fontSize: 7,
+                },
+                {
+                  text: 'QUALIFICATION STANDARDS',
+                  style: 'tableHeader',
+                  colSpan: 4,
+                  fontSize: 7,
+                },
+                {},
+                {},
+                {},
+              ],
+              [
+                {},
+                {},
+                {},
+                { text: 'EDUCATION', style: 'tableHeader', fontSize: 7 },
+                { text: 'EXPERIENCE', style: 'tableHeader', fontSize: 7 },
+                { text: 'TRAINING', style: 'tableHeader', fontSize: 7 },
+                { text: 'ELIGIBILITY', style: 'tableHeader', fontSize: 7 },
+              ],
+              ...tableRows,
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => '#000000',
+            vLineColor: () => '#000000',
+            paddingLeft: () => 3,
+            paddingRight: () => 3,
+            paddingTop: () => 2,
+            paddingBottom: () => 2,
+            fillColor: (rowIndex) => (rowIndex === 0 || rowIndex === 1 ? '#ffc000' : null),
+          },
+        },
+      ],
+      styles: {
+        tableHeader: {
+          fontSize: 7,
+          bold: true,
+          alignment: 'center',
+        },
+        positionRow: {
+          fontSize: 6.5,
+          bold: true,
+          alignment: 'left',
+        },
+        applicantRow: {
+          fontSize: 7,
+          alignment: 'left',
+        },
+        applicantCell: {
+          fontSize: 6.5,
+          alignment: 'left',
+        },
+      },
+      defaultStyle: {
+        fontSize: 6.5,
+      },
+    };
 
-        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-        pdfDocGenerator.getBlob((blob) => {
-          pdfUrl.value = URL.createObjectURL(blob);
-        });
-      });
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+    pdfDocGenerator.getBlob((blob) => {
+      pdfUrl.value = URL.createObjectURL(blob);
     });
   }
 

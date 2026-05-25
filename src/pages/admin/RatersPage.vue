@@ -38,7 +38,6 @@
             </template>
           </q-input>
         </div>
-        <!-- Add Rater Button - Only show if user has modify permission -->
         <div v-if="canModifyRater">
           <q-btn
             rounded
@@ -82,10 +81,8 @@
             </q-td>
           </template>
 
-          <!-- Actions column -->
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <!-- View Button - Always visible -->
               <q-btn
                 flat
                 round
@@ -98,7 +95,6 @@
               >
                 <q-tooltip>View</q-tooltip>
               </q-btn>
-              <!-- Edit Button - Only show if user has modify permission -->
               <template v-if="canModifyRater">
                 <q-btn
                   flat
@@ -112,7 +108,6 @@
                 >
                   <q-tooltip>Edit</q-tooltip>
                 </q-btn>
-                <!-- Reset Password Button - Only show if user has modify permission and not self -->
                 <ButtonResetPassword
                   v-if="props.row.id !== authStore.user?.id"
                   :user-id="props.row.id"
@@ -135,7 +130,7 @@
       </q-card-section>
     </q-card>
 
-    <!-- Add/Edit Rater Modal - Only show if user has modify permission -->
+    <!-- Add/Edit Rater Modal -->
     <q-dialog v-if="canModifyRater" v-model="showModal" persistent>
       <q-card style="width: 600px; max-width: 90vw">
         <q-card-section class="row items-center justify-between bg-primary text-white">
@@ -154,7 +149,7 @@
             are required.
           </q-banner>
 
-          <!-- Select Positions (OPTIONAL + null-safe) -->
+          <!-- Select Positions -->
           <div class="q-mb-md">
             <div class="text-subtitle2 text-weight-medium">
               Select Job Positions to Rate
@@ -236,9 +231,7 @@
             </q-select>
           </div>
 
-          <!-- ==================== ADD MODE ==================== -->
           <template v-if="!isEditMode">
-            <!-- Select Office -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Office
@@ -262,7 +255,6 @@
               </q-select>
             </div>
 
-            <!-- Select Rater -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Select Rater
@@ -297,7 +289,42 @@
               </q-select>
             </div>
 
-            <!-- Representation (OPTIONAL) -->
+            <div class="q-mb-md">
+              <div class="text-subtitle2 text-weight-medium">
+                Honorific Title
+                <span class="text-grey-7 text-caption">(optional)</span>
+              </div>
+              <q-input
+                v-model="selectedPrefix"
+                label="Enter honorific title (e.g., Dr., Atty., Engr.)"
+                outlined
+                dense
+                clearable
+              >
+                <template v-slot:prepend>
+                  <q-icon name="title" />
+                </template>
+              </q-input>
+            </div>
+
+            <div class="q-mb-md">
+              <div class="text-subtitle2 text-weight-medium">
+                Post-Nominal
+                <span class="text-grey-7 text-caption">(optional)</span>
+              </div>
+              <q-input
+                v-model="selectedSuffix"
+                label="Enter post-nominal (e.g., PhD, RN, CPA)"
+                outlined
+                dense
+                clearable
+              >
+                <template v-slot:prepend>
+                  <q-icon name="verified" />
+                </template>
+              </q-input>
+            </div>
+
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Representation
@@ -315,7 +342,6 @@
               </q-input>
             </div>
 
-            <!-- Role -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Role
@@ -338,7 +364,6 @@
               </q-select>
             </div>
 
-            <!-- Active Toggle (Add Mode) -->
             <div class="q-mb-md">
               <q-toggle
                 v-model="activeStatus"
@@ -366,9 +391,7 @@
             </div>
           </template>
 
-          <!-- ==================== EDIT MODE ==================== -->
           <template v-else>
-            <!-- Select Office (Edit Mode) -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Select Office
@@ -393,7 +416,6 @@
 
             <q-separator class="q-mt-md q-mb-md" />
 
-            <!-- Rater Name (Edit Mode — readonly) -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">Rater</div>
               <q-select
@@ -420,7 +442,42 @@
               </div>
             </div>
 
-            <!-- Representation (OPTIONAL) -->
+            <div class="q-mb-md">
+              <div class="text-subtitle2 text-weight-medium">
+                Honorific Title
+                <span class="text-grey-7 text-caption">(optional)</span>
+              </div>
+              <q-input
+                v-model="selectedPrefix"
+                label="Enter honorific title (e.g., Dr., Atty., Engr.)"
+                outlined
+                dense
+                clearable
+              >
+                <template v-slot:prepend>
+                  <q-icon name="title" />
+                </template>
+              </q-input>
+            </div>
+
+            <div class="q-mb-md">
+              <div class="text-subtitle2 text-weight-medium">
+                Post-Nominal
+                <span class="text-grey-7 text-caption">(optional)</span>
+              </div>
+              <q-input
+                v-model="selectedSuffix"
+                label="Enter post-nominal (e.g., PhD, RN, CPA)"
+                outlined
+                dense
+                clearable
+              >
+                <template v-slot:prepend>
+                  <q-icon name="verified" />
+                </template>
+              </q-input>
+            </div>
+
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Representation
@@ -438,7 +495,6 @@
               </q-input>
             </div>
 
-            <!-- Role (Edit Mode) -->
             <div class="q-mb-md">
               <div class="text-subtitle2 text-weight-medium">
                 Role
@@ -461,7 +517,6 @@
               </q-select>
             </div>
 
-            <!-- Active Toggle (Edit Mode) -->
             <div class="q-mb-md">
               <q-toggle
                 v-model="activeStatus"
@@ -504,7 +559,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirmation Dialog - Only show if user has modify permission -->
+    <!-- Delete Confirmation Dialog -->
     <q-dialog v-if="canModifyRater" v-model="showDeleteDialog">
       <q-card>
         <q-card-section>
@@ -518,7 +573,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- View Rater Dialog - Always visible -->
+    <!-- View Rater Dialog -->
     <q-dialog v-model="showViewDialog" persistent>
       <q-card style="width: 800px; max-width: 95vw; display: flex; flex-direction: column">
         <q-card-section class="bg-grey-2 q-px-lg q-py-md sticky-header">
@@ -538,11 +593,19 @@
             <div class="col">
               <div class="text-subtitle1 q-mb-sm">
                 <strong>Rater:</strong>
-                {{ currentViewRater.name }}
+                {{ formattedRaterName }}
               </div>
               <div class="text-subtitle1 q-mb-sm">
                 <strong>Office:</strong>
                 {{ currentViewRater.office }}
+              </div>
+              <div class="text-subtitle1 q-mb-sm" v-if="currentViewRater.prefix">
+                <strong>Honorific Title:</strong>
+                {{ currentViewRater.prefix }}
+              </div>
+              <div class="text-subtitle1 q-mb-sm" v-if="currentViewRater.suffix">
+                <strong>Post-Nominal:</strong>
+                {{ formatSuffixDisplay(currentViewRater.suffix) }}
               </div>
               <div class="text-subtitle1 q-mb-sm">
                 <strong>Representation:</strong>
@@ -650,6 +713,23 @@
               </q-td>
             </template>
 
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props" class="text-center">
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="print"
+                  color="primary"
+                  @click="openRatingFormReport(props.row)"
+                  :loading="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                  :disable="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                >
+                  <q-tooltip>Print Rating Form</q-tooltip>
+                </q-btn>
+              </q-td>
+            </template>
+
             <template v-slot:no-data>
               <div class="full-width row flex-center q-gutter-sm text-grey">
                 <q-icon size="2em" name="inbox" />
@@ -693,6 +773,16 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Rating Form Report Dialog -->
+    <RatingFormReport
+      v-if="showRatingFormDialog"
+      v-model="showRatingFormDialog"
+      :job-batches-rsp-id="selectedJobId"
+      :rater-id="selectedRaterId"
+      :rating-data="ratingFormData"
+      @close="handleRatingFormClose"
+    />
   </q-page>
 </template>
 
@@ -701,7 +791,9 @@
   import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { usePlantillaStore } from 'stores/plantillaStore';
+  import { use_rating_form_store } from 'stores/ratingFormStore';
   import ButtonResetPassword from 'components/ButtonResetPassword.vue';
+  import RatingFormReport from 'components/Reports/RatingFormReport.vue';
   import { toast } from 'boot/toast';
   import { adminApi } from 'boot/axios_admin';
 
@@ -709,9 +801,7 @@
   const authStore = useAuthStore();
   const plantillaStore = usePlantillaStore();
 
-  // ============================================================================
-  // PERMISSION CHECK
-  // ============================================================================
+  // ==================== PERMISSION CHECK ====================
   const canModifyRater = computed(() => {
     return authStore.user?.permissions?.modifyRater === '1';
   });
@@ -727,6 +817,16 @@
   const jobLoadError = ref('');
   const isLoadingTable = ref(false);
 
+  // ==================== PRINTING STATE ====================
+  const printingJobId = ref(null);
+  const showRatingFormDialog = ref(false);
+  const selectedJobId = ref(null);
+  const selectedRaterId = ref(null);
+  const ratingFormData = ref(null);
+
+  // ==================== RATING FORM CACHE ====================
+  const ratingFormCache = ref(new Map());
+
   // ==================== MODAL STATE ====================
   const showModal = ref(false);
   const showError = ref(false);
@@ -734,7 +834,6 @@
   const isEditMode = ref(false);
   const currentRaterId = ref(null);
   const currentRaterName = ref('');
-
   const currentRaterOffice = ref('');
   const currentOfficeRaters = ref([]);
 
@@ -747,6 +846,8 @@
     office: '',
     representative: '',
     role: '',
+    prefix: null,
+    suffix: null,
   });
 
   // ==================== PAGINATION ====================
@@ -770,6 +871,8 @@
   const enable = ref(true);
   const representative = ref('');
   const selectedRole = ref(null);
+  const selectedPrefix = ref('');
+  const selectedSuffix = ref('');
 
   // ==================== ROLE OPTIONS ====================
   const roleOptions = [
@@ -783,66 +886,25 @@
   const filteredRatersByOffice = ref([]);
   const officeRatersRaw = ref([]);
   const isLoadingRaters = ref(false);
-
-  // ==================== btn select job post  ====================
   const positionSelect = ref(null);
-
-  // Helper function to get office abbreviation
-  const getOfficeAbbr = (officeName) => {
-    if (!officeName) return '';
-
-    // Common office abbreviations mapping
-    const officeMap = {
-      'OFFICE OF THE CITY MAYOR': 'OCM',
-      'OFFICE OF THE CITY ACCOUNTANT': 'CACCO',
-      'OFFICE OF THE CITY BUDGET OFFICER': 'OCBO',
-      'OFFICE OF THE CITY ASSESSOR': 'OCASS',
-      'OFFICE OF THE CITY TREASURER': 'OCT',
-      'OFFICE OF THE CITY PLANNING AND DEVELOPMENT OFFICER': 'OCPDO',
-      'OFFICE OF THE CITY LEGAL OFFICER': 'OCLO',
-      'OFFICE OF THE CITY ADMINISTRATOR': 'OCAD',
-      'OFFICE OF THE CITY GENERAL SERVICES OFFICER': 'OCGSO',
-      'OFFICE OF THE CITY INFORMATION AND COMMUNICATIONS TECHNOLOGY MANAGEMENT OFFICER': 'CICTMO',
-      'OFFICE OF THE CITY HUMAN RESOURCE MANAGEMENT OFFICER': 'CHRMO',
-      'OFFICE OF THE CITY AGRICULTURIST': 'OCA',
-      'OFFICE OF THE CITY VETERINARIAN': 'OCVET',
-      'OFFICE OF THE CITY ENGINEER': 'OCE',
-      'OFFICE OF THE CITY HEALTH OFFICER': 'OCHO',
-      'OFFICE OF THE CITY SOCIAL WELFARE AND DEVELOPMENT OFFICER': 'OCSWDO',
-      'OFFICE OF THE CITY TOURISM OFFICER': 'OCTO',
-    };
-
-    return officeMap[officeName] || officeName.substring(0, 4).toUpperCase();
-  };
-
-  // Get display name for position with office abbreviation
-  const getPositionDisplayName = (position) => {
-    if (!position) return '';
-    const abbr = position.office_abbr || getOfficeAbbr(position.office_name || position.name);
-    return `${position.name} (${abbr})`;
-  };
-
-  const closePositionSelect = async () => {
-    await nextTick();
-    if (positionSelect.value) {
-      positionSelect.value.hidePopup?.() ?? positionSelect.value.hide?.();
-    }
-  };
-
   const positionSnapshot = ref([]);
 
-  const snapshotPositions = () => {
-    positionSnapshot.value = Array.isArray(selectedPositions.value)
-      ? [...selectedPositions.value]
-      : [];
-  };
+  // ==================== JOB COLUMNS ====================
+  const jobColumns = [
+    { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 30%' },
+    { name: 'office', label: 'Office', field: 'Office', align: 'left', style: 'width: 30%' },
+    {
+      name: 'applicant',
+      label: 'Applicants',
+      field: 'applicant',
+      align: 'center',
+      style: 'width: 10%',
+    },
+    { name: 'status', label: 'Status', field: 'status', align: 'center', style: 'width: 15%' },
+    { name: 'actions', label: 'Actions', align: 'center', style: 'width: 15%' },
+  ];
 
-  const cancelPositionSelect = () => {
-    selectedPositions.value = [...positionSnapshot.value];
-    positionSelect.value?.hidePopup();
-  };
-
-  // ==================== COLUMNS (COMPUTED - includes action column conditionally) ====================
+  // ==================== COLUMNS ====================
   const columns = computed(() => {
     const baseColumns = [
       {
@@ -885,33 +947,31 @@
       },
     ];
 
-    // Only add actions column if user has modify permission
     if (canModifyRater.value) {
-      baseColumns.push({
-        name: 'actions',
-        label: 'Actions',
-        align: 'center',
-        style: 'width: 5%',
-      });
+      baseColumns.push({ name: 'actions', label: 'Actions', align: 'center', style: 'width: 5%' });
     }
 
     return baseColumns;
   });
 
-  const jobColumns = [
-    { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 35%' },
-    { name: 'office', label: 'Office', field: 'Office', align: 'left', style: 'width: 40%' },
-    {
-      name: 'applicant',
-      label: 'Applicants',
-      field: 'applicant',
-      align: 'center',
-      style: 'width: 10%',
-    },
-    { name: 'status', label: 'Status', field: 'status', align: 'center', style: 'width: 15%' },
-  ];
-
   // ==================== COMPUTED ====================
+  const formattedRaterName = computed(() => {
+    let name = currentViewRater.value.name || '';
+    const prefix = currentViewRater.value.prefix;
+    const suffix = currentViewRater.value.suffix;
+
+    let formatted = name;
+    if (prefix && prefix.trim()) {
+      formatted = `${prefix.trim()} ${name}`;
+    }
+    if (suffix && suffix.toString().trim()) {
+      const suffixStr = formatSuffixDisplay(suffix);
+      if (suffixStr) {
+        formatted = `${formatted}, ${suffixStr}`;
+      }
+    }
+    return formatted;
+  });
 
   const processedRaters = computed(() => {
     return raters.value.map((rater) => {
@@ -945,30 +1005,61 @@
   const filteredJobs = computed(() => {
     if (!jobSearch.value) return raterJobs.value;
     const searchTerm = jobSearch.value.toLowerCase();
-    return raterJobs.value.filter((job) => {
-      return (
+    return raterJobs.value.filter(
+      (job) =>
         job.Position.toLowerCase().includes(searchTerm) ||
-        job.Office.toLowerCase().includes(searchTerm)
-      );
-    });
+        job.Office.toLowerCase().includes(searchTerm),
+    );
   });
 
   const positionsWithAllOption = computed(() => {
     if (!positions.value.length) return [];
-    const allOption = {
-      id: 'all',
-      name: 'All Positions',
-      office_abbr: 'ALL',
-    };
-    return [allOption, ...positions.value];
+    return [{ id: 'all', name: 'All Positions', office_abbr: 'ALL' }, ...positions.value];
   });
 
   const totalApplicants = computed(() => {
     return raterJobs.value.reduce((total, job) => total + parseInt(job.applicant || 0), 0);
   });
 
-  // ==================== POSITION SELECTION METHODS ====================
+  // ==================== HELPER FUNCTIONS ====================
+  const getOfficeAbbr = (officeName) => {
+    if (!officeName) return '';
+    const officeMap = {
+      'OFFICE OF THE CITY MAYOR': 'OCM',
+      'OFFICE OF THE CITY ACCOUNTANT': 'CACCO',
+      'OFFICE OF THE CITY BUDGET OFFICER': 'OCBO',
+      'OFFICE OF THE CITY ASSESSOR': 'OCASS',
+      'OFFICE OF THE CITY TREASURER': 'OCT',
+      'OFFICE OF THE CITY PLANNING AND DEVELOPMENT OFFICER': 'OCPDO',
+      'OFFICE OF THE CITY LEGAL OFFICER': 'OCLO',
+      'OFFICE OF THE CITY ADMINISTRATOR': 'OCAD',
+      'OFFICE OF THE CITY GENERAL SERVICES OFFICER': 'OCGSO',
+      'OFFICE OF THE CITY INFORMATION AND COMMUNICATIONS TECHNOLOGY MANAGEMENT OFFICER': 'CICTMO',
+      'OFFICE OF THE CITY HUMAN RESOURCE MANAGEMENT OFFICER': 'CHRMO',
+      'OFFICE OF THE CITY AGRICULTURIST': 'OCA',
+      'OFFICE OF THE CITY VETERINARIAN': 'OCVET',
+      'OFFICE OF THE CITY ENGINEER': 'OCE',
+      'OFFICE OF THE CITY HEALTH OFFICER': 'OCHO',
+      'OFFICE OF THE CITY SOCIAL WELFARE AND DEVELOPMENT OFFICER': 'OCSWDO',
+      'OFFICE OF THE CITY TOURISM OFFICER': 'OCTO',
+    };
+    return officeMap[officeName] || officeName.substring(0, 4).toUpperCase();
+  };
 
+  const getPositionDisplayName = (position) => {
+    if (!position) return '';
+    const abbr = position.office_abbr || getOfficeAbbr(position.office_name || position.name);
+    return `${position.name} (${abbr})`;
+  };
+
+  const formatSuffixDisplay = (suffix) => {
+    if (!suffix) return '';
+    if (typeof suffix === 'string') return suffix;
+    if (Array.isArray(suffix)) return suffix.join(', ');
+    return String(suffix);
+  };
+
+  // ==================== POSITION SELECTION METHODS ====================
   const isPositionSelected = (id) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
     if (id === 'all') {
@@ -986,7 +1077,6 @@
       selectedPositions.value = checked ? positions.value.map((p) => p.id) : [];
       return;
     }
-
     if (checked) {
       if (!current.includes(id)) selectedPositions.value = [...current, id];
     } else {
@@ -996,16 +1086,30 @@
 
   const handlePositionSelection = (newSelection) => {
     const safeSelection = Array.isArray(newSelection) ? newSelection : [];
-    const filtered = safeSelection.filter((id) => id !== 'all');
-    selectedPositions.value = [...new Set(filtered)];
+    selectedPositions.value = [...new Set(safeSelection.filter((id) => id !== 'all'))];
+  };
+
+  const snapshotPositions = () => {
+    positionSnapshot.value = Array.isArray(selectedPositions.value)
+      ? [...selectedPositions.value]
+      : [];
+  };
+
+  const cancelPositionSelect = () => {
+    selectedPositions.value = [...positionSnapshot.value];
+    positionSelect.value?.hidePopup();
+  };
+
+  const closePositionSelect = async () => {
+    await nextTick();
+    if (positionSelect.value) {
+      positionSelect.value.hidePopup?.() ?? positionSelect.value.hide?.();
+    }
   };
 
   // ==================== OFFICE / RATER FETCH ====================
-
   const fetchEmployeesByOffice = async (officeName) => {
     isLoadingRaters.value = true;
-    filteredRatersByOffice.value = [];
-    officeRatersRaw.value = [];
     try {
       const resp = await adminApi.get('/active', { params: { office: officeName } });
       const list = (Array.isArray(resp.data) ? resp.data : [])
@@ -1021,7 +1125,7 @@
       filteredRatersByOffice.value = list;
       currentOfficeRaters.value = list;
     } catch (err) {
-      console.error('Failed to fetch employees for office:', err);
+      console.error('Failed to fetch employees:', err);
       toast.error('Failed to load employees for selected office');
     } finally {
       isLoadingRaters.value = false;
@@ -1053,8 +1157,70 @@
     });
   };
 
-  // ==================== FORM HELPERS ====================
+  // ==================== PRINT RATING FORM ====================
+  const ratingFormStore = use_rating_form_store();
 
+  const getCacheKey = (jobId, raterId) => {
+    return `${jobId}_${raterId}`;
+  };
+
+  const openRatingFormReport = async (job) => {
+    if (!currentViewRater.value?.id) {
+      toast.error('Rater information not available');
+      return;
+    }
+
+    const jobId = job.job_batches_rsp_id || job.id;
+    if (!jobId) {
+      toast.error('Job ID not found');
+      return;
+    }
+
+    const cacheKey = getCacheKey(jobId, currentViewRater.value.id);
+    const cachedData = ratingFormCache.value.get(cacheKey);
+
+    // Use cached data if available
+    if (cachedData) {
+      selectedJobId.value = jobId;
+      selectedRaterId.value = currentViewRater.value.id;
+      ratingFormData.value = cachedData;
+      printingJobId.value = null;
+      await nextTick();
+      showRatingFormDialog.value = true;
+      return;
+    }
+
+    printingJobId.value = jobId;
+
+    try {
+      await ratingFormStore.fetchRatingForm(jobId, currentViewRater.value.id);
+
+      if (ratingFormStore.data && ratingFormStore.ratingScores?.length > 0) {
+        // Cache the data
+        ratingFormCache.value.set(cacheKey, ratingFormStore.data);
+
+        selectedJobId.value = jobId;
+        selectedRaterId.value = currentViewRater.value.id;
+        ratingFormData.value = ratingFormStore.data;
+        await nextTick();
+        showRatingFormDialog.value = true;
+      } else {
+        toast.error('No rating data available for this job');
+      }
+    } catch (error) {
+      console.error('Error fetching rating form:', error);
+      toast.error(error.response?.data?.message || 'Failed to load rating form');
+    } finally {
+      printingJobId.value = null;
+    }
+  };
+
+  const handleRatingFormClose = () => {
+    // Dialog closed, keep data cached for reopening
+    showRatingFormDialog.value = false;
+  };
+
+  // ==================== FORM HELPERS ====================
   const resetForm = () => {
     selectedPositions.value = [];
     selectedRater.value = null;
@@ -1070,13 +1236,14 @@
     enable.value = false;
     representative.value = '';
     selectedRole.value = null;
+    selectedPrefix.value = '';
+    selectedSuffix.value = '';
   };
 
   const closeModal = () => {
     showModal.value = false;
     resetForm();
     isEditMode.value = false;
-
     loadPositions();
   };
 
@@ -1093,7 +1260,6 @@
     loadPositions();
   };
 
-  // Load positions with office abbreviations
   const loadPositions = () => {
     positions.value = (jobPostStore.jobPosts || []).map((post) => ({
       id: post.id,
@@ -1104,7 +1270,6 @@
   };
 
   // ==================== VIEW RATER ====================
-
   const viewRater = async (rater) => {
     currentViewRater.value = {
       id: rater.id,
@@ -1113,7 +1278,9 @@
       office: rater.office,
       status: rater.status,
       representative: rater.representative || rater.representation || '',
-      role: rater.role || '',
+      role: rater.role || rater.role_type || '',
+      prefix: rater.prefix || '',
+      suffix: rater.suffix || '',
     };
 
     isLoadingJobs.value = true;
@@ -1124,7 +1291,6 @@
 
     try {
       await jobPostStore.assign_job_list(rater.id);
-
       let jobsData = [];
 
       if (jobPostStore.jobPosts) {
@@ -1162,7 +1328,6 @@
   };
 
   // ==================== EDIT RATER ====================
-
   const editRater = async (rater) => {
     if (!canModifyRater.value) {
       toast.warning('You do not have permission to edit raters');
@@ -1178,6 +1343,19 @@
       representative.value = rater.representative || rater.representation || '';
       selectedRole.value = rater.role_type || rater.role || '';
       selectedOffice.value = rater.office || '';
+      selectedPrefix.value = rater.prefix || '';
+
+      if (rater.suffix) {
+        if (Array.isArray(rater.suffix)) {
+          selectedSuffix.value = rater.suffix.join(', ');
+        } else if (typeof rater.suffix === 'string') {
+          selectedSuffix.value = rater.suffix;
+        } else {
+          selectedSuffix.value = '';
+        }
+      } else {
+        selectedSuffix.value = '';
+      }
 
       if (selectedOffice.value) {
         await fetchEmployeesByOffice(selectedOffice.value);
@@ -1185,7 +1363,6 @@
       }
 
       await jobPostStore.fetchJobPostListEdit(rater.id);
-
       positions.value = (jobPostStore.jobPostListEdit || []).map((post) => ({
         id: post.id,
         name: post.Position,
@@ -1195,7 +1372,6 @@
 
       const jobBatchesArray = Array.isArray(rater.job_batches_rsp) ? rater.job_batches_rsp : [];
       selectedPositions.value = jobBatchesArray.map((job) => job.id).filter(Boolean);
-
       showModal.value = true;
     } catch (error) {
       console.error('Error setting up edit mode:', error);
@@ -1204,7 +1380,6 @@
   };
 
   // ==================== UPDATE RATER ====================
-
   const updateRater = async () => {
     if (!selectedOffice.value || !selectedRole.value) {
       showError.value = true;
@@ -1219,6 +1394,13 @@
       if (!raterId) throw new Error('No rater selected for editing');
 
       const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
+      let processedSuffix = selectedSuffix.value;
+      if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
+        processedSuffix = selectedSuffix.value
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s);
+      }
 
       const userData = {
         job_batches_rsp_id: safePositions.filter((id) => id !== 'all'),
@@ -1227,10 +1409,11 @@
         enable: enable.value,
         representative: representative.value,
         role: selectedRole.value,
+        prefix: selectedPrefix.value || null,
+        suffix: processedSuffix || null,
       };
 
       const result = await authStore.rater_edit(raterId, userData);
-
       if (result.success) {
         await loadRaters();
         closeModal();
@@ -1247,7 +1430,6 @@
   };
 
   // ==================== ADD RATER ====================
-
   const addRater = async () => {
     if (!selectedOffice.value || !selectedRater.value || !selectedRole.value) {
       showError.value = true;
@@ -1263,6 +1445,13 @@
 
       const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
       const jobBatchIds = safePositions.filter((id) => id !== 'all');
+      let processedSuffix = selectedSuffix.value;
+      if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
+        processedSuffix = selectedSuffix.value
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s);
+      }
 
       const userData = {
         name: raterData.name,
@@ -1275,10 +1464,11 @@
         enable: enable.value,
         representative: representative.value,
         role: selectedRole.value,
+        prefix: selectedPrefix.value || null,
+        suffix: processedSuffix || null,
       };
 
       const result = await authStore.Rater_register(userData);
-
       if (result.success) {
         await loadRaters();
         closeModal();
@@ -1296,7 +1486,6 @@
   };
 
   // ==================== LOAD / DELETE ====================
-
   const loadRaters = async () => {
     isLoadingTable.value = true;
     try {
@@ -1318,7 +1507,6 @@
   };
 
   // ==================== LIFECYCLE ====================
-
   onMounted(async () => {
     isLoadingTable.value = true;
     try {
@@ -1361,26 +1549,6 @@
     width: 100%;
   }
 
-  .position-cell {
-    max-width: 230px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 4px;
-    align-items: flex-start;
-    word-break: break-word;
-    margin: 2px 0;
-  }
-
-  .position-cell .q-badge {
-    white-space: normal;
-    max-width: 100%;
-    font-size: 12px;
-    line-height: 1.3;
-    padding-left: 8px;
-    padding-right: 8px;
-    box-sizing: border-box;
-  }
-
   .sticky-header-table .q-table__top,
   .sticky-header-table .q-table__bottom,
   .sticky-header-table thead tr:first-child th {
@@ -1409,12 +1577,12 @@
   }
 
   .position-column {
-    width: 35%;
+    width: 30%;
     max-width: 300px;
   }
 
   .office-column {
-    width: 40%;
+    width: 35%;
     max-width: 350px;
   }
 

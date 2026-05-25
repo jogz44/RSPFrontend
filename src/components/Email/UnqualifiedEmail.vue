@@ -10,151 +10,228 @@
         aria-labelledby="email-modal-heading"
       >
         <div class="modal-container">
-          <!-- Modal Header -->
-          <div class="modal-header">
-            <div class="modal-header-left">
-              <i class="ti ti-mail header-icon" aria-hidden="true"></i>
-              <span class="modal-title" id="email-modal-heading">
-                Send Notification — Unqualified Applicant
-              </span>
-            </div>
-            <button class="close-btn" @click="$emit('close')" aria-label="Close modal">
-              &times;
-            </button>
+          <!-- Loading -->
+          <div v-if="isLoading" class="state-box">
+            <q-spinner size="48px" color="primary" />
+            <p class="state-text">Loading applicant data...</p>
           </div>
 
-          <!-- Modal Body -->
-          <div class="modal-body">
-            <!-- Email fields row -->
-            <!-- <div class="email-fields-row">
-              <div class="field-group">
-                <label class="field-label" for="recipient-email">Recipient email</label>
-                <input
-                  id="recipient-email"
-                  v-model="recipientEmail"
-                  class="field-input"
-                  type="email"
-                  placeholder="e.g. applicant@email.com"
-                />
+          <!-- Error -->
+          <div v-else-if="error" class="state-box">
+            <q-icon name="error_outline" size="48px" color="negative" />
+            <p class="state-text">{{ error }}</p>
+            <div class="state-actions">
+              <q-btn flat label="Cancel" @click="$emit('close')" />
+              <q-btn color="primary" label="Retry" @click="fetchApplicantDetailsWithRetry" />
+            </div>
+          </div>
+
+          <!-- Content -->
+          <template v-else-if="applicantDetails">
+            <!-- Header -->
+            <div class="modal-header">
+              <div class="modal-header-left">
+                <i class="ti ti-mail" aria-hidden="true"></i>
+                <span id="email-modal-heading">Notification Preview — Unqualified Applicant</span>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="email-subject">Subject</label>
-                <input id="email-subject" v-model="emailSubject" class="field-input" type="text" />
-              </div>
-            </div> -->
+              <button class="close-btn" @click="$emit('close')" aria-label="Close modal">
+                &times;
+              </button>
+            </div>
 
-            <div class="divider" />
+            <!-- Scrollable body -->
+            <div class="modal-body">
+              <div class="letter-wrapper">
+                <div class="letter-container">
+                  <ReportHeader />
 
-            <!-- Letter Preview -->
-            <div class="letter-wrapper">
-              <div class="letter-container">
-                <!-- Shared report letterhead -->
-                <ReportHeader />
+                  <div class="letter-body">
+                    <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
-                <!-- Letter Body -->
-                <div class="letter-body">
-                  <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
+                    <p class="letter-addressee">
+                      MR./MRS.
+                      {{ applicantName }}
+                      <br />
+                      <span v-if="formattedAddress">{{ formattedAddress }}</span>
+                    </p>
 
-                  <p class="letter-greeting">
-                    Dear
-                    <strong>{{ applicantName }}</strong>
-                    ,
-                  </p>
+                    <p class="letter-greeting">
+                      Dear MR./MRS.
+                      <strong>{{ applicantName }}</strong>
+                      ,
+                    </p>
 
-                  <p class="letter-text">Greetings of Peace and Safety!</p>
+                    <p class="letter-text">Greetings of Peace and Safety!</p>
 
-                  <p class="letter-text">
-                    We wish to inform you that after careful evaluation of your application for the
-                    position of
-                    <strong>{{ position }}</strong>
-                    , Item No.
-                    <strong>{{ itemNo }}</strong>
-                    , in the
-                    <strong>{{ office }}</strong>
-                    , the Human Resource Merit Promotion and Selection Board (HRMPSB) has determined
-                    that you do not meet the Qualification Standards required for the said position.
-                  </p>
+                    <p class="letter-text">
+                      We wish to inform you that after careful evaluation of your application for
+                      the position of
+                      <strong>{{ applicantDetails.position }}</strong>
+                      , in the
+                      <strong>{{ applicantDetails.office }}</strong>
+                      , the Human Resource Merit Promotion and Selection Board (HRMPSB) has
+                      determined that you do not meet the Qualification Standards required for the
+                      said position.
+                    </p>
 
-                  <p class="letter-text">
-                    After a thorough review of the documents you submitted on
-                    <strong>{{ applicant.appliedDate || 'the date of your application' }}</strong>
-                    , the following deficiencies were noted that led to your disqualification:
-                  </p>
+                    <p class="letter-text">
+                      After a thorough review of the documents you submitted, the following
+                      deficiencies were noted that led to your disqualification:
+                    </p>
 
-                  <!-- Editable deficiency reasons -->
-                  <ul class="deficiency-list">
-                    <li
-                      v-for="(reason, index) in deficiencyReasons"
-                      :key="index"
-                      class="deficiency-item"
-                    >
-                      <strong>{{ reason.label }}:</strong>
-                      <span
-                        v-if="!reason.editing"
-                        class="deficiency-text"
-                        @click="reason.editing = true"
-                        title="Click to edit"
-                      >
-                        {{ reason.text }}
-                        <i class="ti ti-pencil edit-hint" aria-hidden="true"></i>
-                      </span>
-                      <input
-                        v-else
-                        v-model="reason.text"
-                        class="deficiency-input"
-                        @blur="reason.editing = false"
-                        @keyup.enter="reason.editing = false"
-                        autofocus
-                      />
-                    </li>
-                  </ul>
+                    <!-- QS Table -->
+                    <div class="table-section">
+                      <table class="qs-table">
+                        <thead>
+                          <tr>
+                            <th>Qualification Standard</th>
+                            <th>Required</th>
+                            <th>Your Records</th>
+                            <th>Assessment</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="row in qsRows" :key="row.key">
+                            <td>
+                              <strong>{{ row.label }}</strong>
+                            </td>
+                            <td>{{ row.required }}</td>
+                            <td v-html="row.record"></td>
+                            <td :class="row.meets ? 'text-success' : 'text-error'">
+                              {{ row.remark }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <p class="letter-text">
-                    We appreciate your interest in joining the City Government of Tagum and commend
-                    your effort in applying for the position. We encourage you to continue enhancing
-                    your qualifications and to apply for future vacancies that match your
-                    credentials.
-                  </p>
+                    <!-- Education Records -->
+                    <div v-if="applicantDetails.records?.education?.length" class="table-section">
+                      <p class="table-label">Education Records:</p>
+                      <table class="records-table">
+                        <thead>
+                          <tr>
+                            <th>Degree</th>
+                            <th>School</th>
+                            <th>Year Attended</th>
+                            <th>Graduated</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(edu, i) in applicantDetails.records.education" :key="i">
+                            <td>{{ edu.Degree }}</td>
+                            <td>{{ edu.School }}</td>
+                            <td>{{ edu.DateAttend }}</td>
+                            <td>{{ edu.Graduated }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <p class="letter-text">
-                    The City Government of Tagum upholds the principle of Equal Employment
-                    Opportunity and ensures that all applicants are evaluated fairly based on merit,
-                    fitness, and qualifications, without discrimination on the basis of gender, age,
-                    civil status, disability, religion, or other protected characteristics.
-                  </p>
+                    <!-- Experience Records -->
+                    <div v-if="applicantDetails.records?.experience?.length" class="table-section">
+                      <p class="table-label">Work Experience Records:</p>
+                      <table class="records-table">
+                        <thead>
+                          <tr>
+                            <th>Position</th>
+                            <th>Company</th>
+                            <th>From</th>
+                            <th>To</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(exp, i) in applicantDetails.records.experience" :key="i">
+                            <td>{{ exp.position || '-' }}</td>
+                            <td>{{ exp.company || '-' }}</td>
+                            <td>{{ exp.from || '-' }}</td>
+                            <td>{{ exp.to || '-' }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <p class="letter-text">
-                    If you have any questions or concerns, please do not hesitate to contact us at
-                    <strong>{{ contactNumber }}</strong>
-                    .
-                  </p>
+                    <!-- Training Records -->
+                    <div v-if="applicantDetails.records?.training?.length" class="table-section">
+                      <p class="table-label">Training Records:</p>
+                      <table class="records-table">
+                        <thead>
+                          <tr>
+                            <th>Training Title</th>
+                            <th>Date</th>
+                            <th>Hours</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(train, i) in applicantDetails.records.training" :key="i">
+                            <td>{{ train.Training }}</td>
+                            <td>{{ formatDate(train.DateFrom) }}</td>
+                            <td class="text-center">{{ train.NumHours }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <p class="letter-text">Thank you for your understanding.</p>
+                    <!-- Eligibility Records -->
+                    <div v-if="applicantDetails.records?.eligibility?.length" class="table-section">
+                      <p class="table-label">Eligibility Records:</p>
+                      <table class="records-table">
+                        <thead>
+                          <tr>
+                            <th>Eligibility</th>
+                            <th>Date</th>
+                            <th>Rating</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(elig, i) in applicantDetails.records.eligibility" :key="i">
+                            <td>{{ elig.CivilServe }}</td>
+                            <td>{{ formatDate(elig.Dates) }}</td>
+                            <td class="text-center">{{ elig.Rates }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <div class="signature-block">
-                    <div class="sig-name">{{ signatoryName }}</div>
-                    <div class="sig-title">{{ signatoryTitle }}</div>
-                    <div class="sig-sub">Authorized Representative of the City Mayor</div>
-                    <div class="sig-sub">Chairperson, HRMPSB</div>
+                    <p class="letter-text">
+                      We appreciate your interest in joining the City Government of Tagum and
+                      commend your effort in applying for the position. We encourage you to continue
+                      enhancing your qualifications and to apply for future vacancies that match
+                      your credentials.
+                    </p>
+
+                    <p class="letter-text">
+                      The City Government of Tagum upholds the principle of Equal Employment
+                      Opportunity and ensures that all applicants are evaluated fairly based on
+                      merit, fitness, and qualifications, without discrimination on the basis of
+                      gender, age, civil status, disability, religion, or other protected
+                      characteristics.
+                    </p>
+
+                    <p class="letter-text">
+                      If you have any questions or concerns, please do not hesitate to contact us at
+                      <strong>{{ contactNumber }}</strong>
+                      .
+                    </p>
+
+                    <p class="letter-text">Thank you for your understanding.</p>
+
+                    <div class="signature-block">
+                      <div class="sig-name">(SGD.) {{ signatoryName }}</div>
+                      <div class="sig-title">{{ signatoryTitle }}</div>
+                      <div class="sig-sub">Authorized Representative of the City Mayor</div>
+                      <div class="sig-sub">Chairperson</div>
+                    </div>
+
+                    <div class="system-notice">
+                      <i class="ti ti-device-desktop" aria-hidden="true"></i>
+                      This is a system-generated email.
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <p class="edit-hint-note">
-              <i class="ti ti-info-circle" aria-hidden="true"></i>
-              Click on any deficiency line to edit it before sending.
-            </p>
-          </div>
-
-          <!-- Modal Footer -->
-          <div class="modal-footer">
-            <button class="btn btn-cancel" @click="$emit('close')">Cancel</button>
-            <button class="btn btn-send" @click="handleSend" :disabled="isSending">
-              <i class="ti ti-send" aria-hidden="true"></i>
-              {{ isSending ? 'Sending...' : 'Send Notification' }}
-            </button>
-          </div>
+          </template>
         </div>
       </div>
     </Transition>
@@ -162,202 +239,278 @@
 </template>
 
 <script setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
+  import { useEmailTemplateStore } from 'stores/emailTemplateStore';
+  import { toast } from 'src/boot/toast';
   import ReportHeader from 'src/components/Reports/ReportHeaderEmail.vue';
 
+  // ── Props ────────────────────────────────────────────────
   const props = defineProps({
-    show: {
-      type: Boolean,
-      default: false,
-    },
+    show: { type: Boolean, default: false },
     applicant: {
       type: Object,
       default: () => ({
+        jobPostId: null,
+        submissionId: null,
         firstname: '',
         lastname: '',
         name_extension: '',
-        source: '',
-        appliedDate: '',
-        email: '',
       }),
     },
-    position: {
-      type: String,
-      default: 'Administrative Officer II',
-    },
-    itemNo: {
-      type: String,
-      default: '#',
-    },
-    office: {
-      type: String,
-      default: 'OFFICE',
-    },
-    contactNumber: {
-      type: String,
-      default: '0917-123-4567',
-    },
-    signatoryName: {
-      type: String,
-      default: 'EDGAR C. DE GUZMAN',
-    },
-    signatoryTitle: {
-      type: String,
-      default: 'City Administrator',
-    },
-    currentDate: {
-      type: [String, Date],
-      default: () => new Date(),
-    },
+    contactNumber: { type: String, default: '0917-123-4567' },
+    signatoryName: { type: String, default: 'EDGAR C. DE GUZMAN' },
+    signatoryTitle: { type: String, default: 'City Administrator' },
+    currentDate: { type: [String, Date], default: () => new Date() },
   });
 
-  const emit = defineEmits(['close', 'sent', 'update:show']);
+  defineEmits(['close']);
 
-  const isSending = ref(false);
-  const recipientEmail = ref('');
-  const emailSubject = ref('');
+  // ── Store ────────────────────────────────────────────────
+  const emailTemplateStore = useEmailTemplateStore();
 
-  const deficiencyReasons = ref([
-    {
-      label: 'Education',
-      text: 'Does not meet the minimum educational requirement for the position.',
-      editing: false,
-    },
-    { label: 'Experience', text: 'Relevant work experience is insufficient.', editing: false },
-    { label: 'Training', text: 'Required hours of relevant training are not met.', editing: false },
-  ]);
+  // ── State ────────────────────────────────────────────────
+  const isLoading = ref(false);
+  const error = ref(null);
+  const applicantDetails = ref(null);
+  const fetchAttempts = ref(0);
 
+  // ── Computed ─────────────────────────────────────────────
   const applicantName = computed(() => {
-    const parts = [
-      props.applicant.firstname,
-      props.applicant.lastname,
-      props.applicant.name_extension,
-    ];
-    return parts.filter(Boolean).join(' ') || 'Applicant Name';
+    const { firstname, lastname, name_extension } = props.applicant;
+    return [firstname, lastname, name_extension].filter(Boolean).join(' ') || 'Applicant';
   });
 
+  const formattedAddress = computed(() => {
+    const addr = applicantDetails.value?.address;
+    if (!addr) return '';
+    if (typeof addr === 'string') return addr;
+    return [
+      addr.purok ? ` ${addr.purok}` : '',
+      addr.street,
+      addr.barangay,
+      addr.city,
+      addr.province,
+    ]
+      .filter(Boolean)
+      .join(', ');
+  });
+
+  const qsRows = computed(() => {
+    const d = applicantDetails.value;
+    if (!d) return [];
+    const MEETS = 'Meets Qualification';
+    return [
+      {
+        key: 'education',
+        label: 'Education',
+        required: d.qs_jobpost?.education,
+        record: d.formatted?.education || '-',
+        remark: d.remarks?.education,
+        meets: d.remarks?.education === MEETS,
+      },
+      {
+        key: 'experience',
+        label: 'Experience',
+        required: d.qs_jobpost?.experience,
+        record: d.formatted?.experience || 'None',
+        remark: d.remarks?.experience,
+        meets: d.remarks?.experience === MEETS,
+      },
+      {
+        key: 'training',
+        label: 'Training',
+        required: d.qs_jobpost?.training,
+        record: truncateHtml(d.formatted?.training, 120),
+        remark: d.remarks?.training,
+        meets: d.remarks?.training === MEETS,
+      },
+      {
+        key: 'eligibility',
+        label: 'Eligibility',
+        required: d.qs_jobpost?.eligibility,
+        record: truncateHtml(d.formatted?.eligibility, 120),
+        remark: d.remarks?.eligibility,
+        meets: d.remarks?.eligibility === MEETS,
+      },
+    ];
+  });
+
+  // ── Helpers ──────────────────────────────────────────────
   const formatDateEnglish = (date) => {
     if (!date) return '';
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return isNaN(d.getTime())
+      ? ''
+      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const populateFields = () => {
-    recipientEmail.value = props.applicant.email || '';
-    emailSubject.value = `Notice of Disqualification – ${props.position} (Item No. ${props.itemNo})`;
-    deficiencyReasons.value = [
-      {
-        label: 'Education',
-        text: 'Does not meet the minimum educational requirement for the position.',
-        editing: false,
-      },
-      { label: 'Experience', text: 'Relevant work experience is insufficient.', editing: false },
-      {
-        label: 'Training',
-        text: 'Required hours of relevant training are not met.',
-        editing: false,
-      },
-    ];
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime())
+      ? dateStr
+      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const truncateHtml = (html, length = 120) => {
+    if (!html) return '';
+    const text = html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '');
+    return text.length > length ? `${text.substring(0, length)}…` : text;
+  };
+
+  // ── Data fetching ────────────────────────────────────────
+  const fetchApplicantDetails = async () => {
+    const { jobPostId, submissionId } = props.applicant;
+    if (!jobPostId || !submissionId) {
+      error.value = 'Missing required applicant information.';
+      return;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await emailTemplateStore.fetchQualificationRemarks(jobPostId, submissionId);
+      await nextTick();
+      applicantDetails.value = emailTemplateStore.qualificationRemarks;
+      if (!applicantDetails.value) throw new Error('No data returned from server.');
+    } catch (err) {
+      error.value = err.message || 'Failed to load applicant details.';
+      applicantDetails.value = null;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const fetchApplicantDetailsWithRetry = async (maxRetries = 3) => {
+    fetchAttempts.value = 0;
+    while (fetchAttempts.value < maxRetries) {
+      fetchAttempts.value++;
+      try {
+        await fetchApplicantDetails();
+        if (applicantDetails.value) return;
+      } catch {
+        if (fetchAttempts.value === maxRetries) {
+          error.value = `Failed to load data after ${maxRetries} attempts. Please try again.`;
+          toast.error(error.value);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 500 * fetchAttempts.value));
+      }
+    }
+  };
+
+  // ── Lifecycle ────────────────────────────────────────────
+  const resetState = () => {
+    applicantDetails.value = null;
+    error.value = null;
+    isLoading.value = false;
+    fetchAttempts.value = 0;
   };
 
   watch(
     () => props.show,
-    (val) => {
-      if (val) populateFields();
+    async (val) => {
+      if (val) {
+        resetState();
+        await fetchApplicantDetailsWithRetry();
+      } else {
+        resetState();
+      }
     },
     { immediate: true },
   );
+
   watch(
     () => props.applicant,
-    () => {
-      if (props.show) populateFields();
+    async (next, prev) => {
+      if (
+        props.show &&
+        next &&
+        (next.jobPostId !== prev?.jobPostId || next.submissionId !== prev?.submissionId)
+      ) {
+        resetState();
+        await fetchApplicantDetailsWithRetry();
+      }
     },
     { deep: true },
   );
-
-  const handleSend = async () => {
-    if (!recipientEmail.value) {
-      alert('Please enter a recipient email address.');
-      return;
-    }
-    isSending.value = true;
-    try {
-      // TODO: replace with actual API call
-      // await axios.post('/api/send-unqualified-email', {
-      //   to: recipientEmail.value,
-      //   subject: emailSubject.value,
-      //   applicant_id: props.applicant.nPersonalInfo_id,
-      //   submission_id: props.applicant.submission_id,
-      //   deficiencies: deficiencyReasons.value.map(r => ({ label: r.label, text: r.text })),
-      // });
-      await new Promise((r) => setTimeout(r, 800));
-      emit('sent', {
-        to: recipientEmail.value,
-        subject: emailSubject.value,
-        deficiencies: deficiencyReasons.value.map((r) => ({ label: r.label, text: r.text })),
-      });
-      emit('close');
-    } catch (err) {
-      console.error('Failed to send email:', err);
-      alert('Failed to send the notification. Please try again.');
-    } finally {
-      isSending.value = false;
-    }
-  };
 </script>
 
 <style scoped>
-  /* ── Overlay ─────────────────────────────────────── */
   .modal-overlay {
     position: fixed;
     inset: 0;
     z-index: 9999;
     background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
     overflow-y: auto;
+    /* FIX: Change to center and remove margin auto from container */
+    display: flex;
+    align-items: center; /* Changed from flex-start */
+    justify-content: center;
+    padding: 24px 16px;
   }
 
-  /* ── Modal shell ─────────────────────────────────── */
   .modal-container {
-    background: #ffffff;
+    background: #fff;
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     width: 100%;
-    max-width: 720px;
-    max-height: calc(100vh - 32px);
+    max-width: 800px;
+    /* FIX: Remove margin auto since parent handles centering */
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     color: #1a1a1a;
     font-family: system-ui, sans-serif;
+    /* Add max-height to prevent overflow */
+    max-height: calc(100vh - 48px);
+    /* Add this to handle internal scrolling */
+    overflow: hidden;
   }
 
-  /* ── Header ──────────────────────────────────────── */
+  /* ── Loading / Error states ──────────────────────────── */
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+    min-height: 320px;
+  }
+  .state-text {
+    margin-top: 14px;
+    color: #666;
+    font-size: 14px;
+  }
+  .state-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+
+  /* ── Header ──────────────────────────────────────────── */
   .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
     background: #15803d;
+
     flex-shrink: 0;
   }
   .modal-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .header-icon {
-    font-size: 18px;
     color: #fff;
-  }
-  .modal-title {
-    font-size: 20px;
+    font-size: 15px;
     font-weight: 500;
-    color: #fff;
+  }
+  .modal-header-left i {
+    font-size: 18px;
   }
   .close-btn {
     background: none;
@@ -368,115 +521,122 @@
     line-height: 1;
     opacity: 0.8;
     transition: opacity 0.15s;
+    padding: 0 4px;
   }
   .close-btn:hover {
     opacity: 1;
   }
 
-  /* ── Body ────────────────────────────────────────── */
+  /* ── Body ────────────────────────────────────────────── */
   .modal-body {
-    overflow-y: auto;
-    padding: 20px 24px 14px;
+    padding: 20px 24px;
     flex: 1;
+    overflow-y: auto; /* Add this */
+    min-height: 0; /* Add this - important for flex children scrolling */
   }
 
-  /* email fields */
-  .email-fields-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  /* ── Letter wrapper ──────────────────────────────── */
+  /* ── Letter wrapper ──────────────────────────────────── */
   .letter-wrapper {
     background: #f3f4f6;
     border-radius: 10px;
     padding: 16px;
   }
   .letter-container {
-    width: 100%;
-    background: #ffffff;
+    background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    color: #000;
     padding: 32px 40px 28px;
     box-sizing: border-box;
+    color: #000;
   }
 
-  /* letter body */
+  /* ── Letter typography (single-spaced) ───────────────── */
   .letter-body {
     padding-top: 4px;
   }
-
-  .letter-date {
-    font-size: 10pt;
-    margin: 18px 0 14px;
-    color: #000;
-  }
-  .letter-greeting {
-    font-size: 10pt;
-    margin-bottom: 14px;
-    color: #000;
-  }
+  .letter-date,
+  .letter-addressee,
+  .letter-greeting,
   .letter-text {
     font-size: 10pt;
-    line-height: 1.8;
-    margin-bottom: 13px;
+    line-height: 1.2;
+    color: #000;
+    margin: 0 0 10px;
+  }
+  .letter-text {
     text-align: justify;
-    color: #000;
   }
 
-  /* deficiency list */
-  .deficiency-list {
-    margin: 10px 0 14px 36px;
-    padding-left: 4px;
+  /* ── Tables ──────────────────────────────────────────── */
+  .table-section {
+    margin: 10px 0;
+    overflow-x: auto;
   }
-  .deficiency-item {
+  .table-label {
     font-size: 10pt;
-    line-height: 1.8;
+    font-weight: 700;
+    color: #000;
+    margin: 8px 0 4px;
+    line-height: 1.2;
+  }
+  .qs-table,
+  .records-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    line-height: 1.2;
+    border: 1px solid #d1d5db;
     margin-bottom: 6px;
-    color: #000;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
   }
-  .deficiency-text {
-    cursor: pointer;
-    border-bottom: 1px dashed #9ca3af;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+  .qs-table thead,
+  .records-table thead {
+    background: #f0f0f0;
   }
-  .deficiency-text:hover {
-    border-bottom-color: #185fa5;
-    color: #185fa5;
+  .qs-table th,
+  .records-table th {
+    padding: 5px 7px;
+    text-align: left;
+    font-weight: 700;
+    color: #1f2937;
+    border-right: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
   }
-  .edit-hint {
-    font-size: 10px;
-    color: #9ca3af;
+  .qs-table th:last-child,
+  .records-table th:last-child {
+    border-right: none;
   }
-  .deficiency-input {
-    flex: 1;
-    font-size: 10pt;
-    font-family: 'Times New Roman', Times, serif;
-    color: #000;
-    border: 1px solid #185fa5;
-    border-radius: 4px;
-    padding: 2px 8px;
-    outline: none;
-    min-width: 200px;
+  .qs-table td,
+  .records-table td {
+    padding: 5px 7px;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    word-break: break-word;
+  }
+  .qs-table td:last-child,
+  .records-table td:last-child {
+    border-right: none;
+  }
+  .qs-table tbody tr:hover,
+  .records-table tbody tr:hover {
+    background: #f9fafb;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .text-success {
+    color: #15803d;
+    font-weight: 600;
+  }
+  .text-error {
+    color: #dc2626;
+    font-weight: 600;
   }
 
-  /* signature */
+  /* ── Signature ───────────────────────────────────────── */
   .signature-block {
-    margin-top: 40px;
+    margin-top: 24px;
+    line-height: 1.2;
   }
   .sig-name {
     font-size: 10pt;
@@ -488,74 +648,28 @@
   .sig-title {
     font-size: 10pt;
     color: #000;
-    margin-top: 3px;
+    margin-top: 2px;
   }
   .sig-sub {
-    font-size: 10px;
+    font-size: 9pt;
     color: #374151;
-    margin-top: 2px;
-    font-family: system-ui, sans-serif;
+    margin-top: 1px;
   }
 
-  .edit-hint-note {
-    font-size: 10px;
-    color: #9ca3af;
+  /* ── System notice ───────────────────────────────────── */
+  .system-notice {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 9pt;
+    color: #6b7280;
     display: flex;
     align-items: center;
-    gap: 5px;
-    margin-top: 10px;
-  }
-  .edit-hint-note i {
-    font-size: 12px;
-  }
-
-  /* ── Footer ──────────────────────────────────────── */
-  .modal-footer {
-    border-top: 0.5px solid #e5e7eb;
-    padding: 12px 20px;
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    background: #f9fafb;
-    flex-shrink: 0;
-  }
-  .btn {
-    font-family: system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 8px 20px;
-    border-radius: 20px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
+    justify-content: center;
     gap: 6px;
-    transition:
-      background 0.15s,
-      border-color 0.15s;
-  }
-  .btn-cancel {
-    background: #fff;
-    border: 0.5px solid #d1d5db;
-    color: #374151;
-  }
-  .btn-cancel:hover {
-    background: #f3f4f6;
-  }
-  .btn-send {
-    background: #15803d;
-    border: 1px solid #15803d;
-    color: #fff;
-  }
-  .btn-send:hover {
-    background: #166534;
-    border-color: #166534;
-  }
-  .btn-send:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
-  /* ── Transition ──────────────────────────────────── */
+  /* ── Transition ──────────────────────────────────────── */
   .modal-fade-enter-active,
   .modal-fade-leave-active {
     transition: opacity 0.2s ease;
@@ -572,51 +686,50 @@
   }
   .modal-fade-enter-from .modal-container,
   .modal-fade-leave-to .modal-container {
-    transform: translateY(-12px);
+    transform: translateY(-10px);
     opacity: 0;
   }
 
-  /* ── Responsive ──────────────────────────────────── */
+  /* ── Responsive ──────────────────────────────────────── */
   @media (max-width: 600px) {
-    .email-fields-row {
-      grid-template-columns: 1fr;
+    .modal-overlay {
+      padding: 0;
+      align-items: flex-start;
+    }
+    .modal-container {
+      border-radius: 0;
+      min-height: 100dvh;
+    }
+    .modal-header {
+      border-radius: 0;
     }
     .modal-body {
-      padding: 16px;
+      padding: 14px;
+    }
+    .letter-wrapper {
+      padding: 10px;
     }
     .letter-container {
-      padding: 20px 18px;
-    }
-    .modal-footer {
-      flex-direction: column;
-    }
-    .btn {
-      width: 100%;
-      justify-content: center;
+      padding: 18px 14px;
     }
   }
 
-  /* ── Print ───────────────────────────────────────── */
+  /* ── Print ───────────────────────────────────────────── */
   @media print {
     .modal-overlay {
       position: static;
       background: none;
       padding: 0;
+      display: block;
     }
     .modal-container {
-      max-height: none;
       box-shadow: none;
       border-radius: 0;
     }
-    .modal-header,
-    .modal-footer,
-    .email-fields-row,
-    .divider,
-    .edit-hint-note {
+    .modal-header {
       display: none;
     }
     .modal-body {
-      overflow: visible;
       padding: 0;
     }
     .letter-wrapper {

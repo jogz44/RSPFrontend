@@ -74,7 +74,7 @@
             <q-icon name="work" class="q-mr-xs" />
             <span class="chip-label">
               Level:
-              <b>{{ selectedJob?.level }}</b>
+              <b>{{ selectedJob?.plantillalevel }}</b>
             </span>
           </q-chip>
           <q-chip class="chip-padding page-chip" dense>
@@ -248,7 +248,7 @@
 
                 <q-btn
                   v-if="canModifyJobPost && selectedJob?.status == 'assessed'"
-                  label="Unqualified"
+                  label="For QS Validation"
                   color="green-9"
                   icon="email"
                   rounded
@@ -326,7 +326,7 @@
                     "
                     class="text-caption q-px-sm"
                   >
-                    {{ props.row.status || '-' }}
+                    {{ getStatusLabel(props.row.status) }}
                   </q-badge>
                 </q-td>
               </template>
@@ -485,168 +485,169 @@
       </q-card-section>
     </q-card>
 
-    <!-- ===== Notify Unqualified Applicants Dialog ===== -->
+    <!-- ===== For QS Validation Dialog ===== -->
     <q-dialog v-model="sendEvalConfirmDialog" persistent>
       <q-card style="min-width: 900px; max-width: 1100px; width: 100%">
         <!-- Header -->
         <q-card-section class="bg-green-9 text-white row items-center q-py-sm">
           <q-icon name="email" size="1.4em" class="q-mr-sm" />
-          <div class="text-h6 text-bold">Notify Unqualified Applicants</div>
+          <div class="text-h6 text-bold">For QS Validation</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup color="white" :disable="isLoading" />
         </q-card-section>
 
         <q-card-section class="q-pt-md q-pb-xs">
-          <!-- Summary Banner -->
-          <q-banner class="bg-grey-2 rounded-borders q-pa-sm q-mb-md" dense>
-            <template v-slot:avatar>
-              <q-icon name="work" color="primary" />
-            </template>
-            <div class="text-caption text-grey-8 text-bold q-mb-xs">
-              {{ selectedJob?.Position || 'N/A' }}
-            </div>
-            <div class="text-caption text-grey-7 row q-gutter-md">
-              <span>
-                <b>Total:</b>
-                {{ totalApplicants }}
-              </span>
-              <span>
-                <b>Assessed:</b>
-                {{ assessedCount }}/{{ totalApplicants }}
-              </span>
-              <span>
-                <b>Unqualified:</b>
-                <span class="text-red-8 text-bold">{{ unqualifiedApplicants.length }}</span>
-              </span>
-            </div>
-          </q-banner>
-
-          <!-- Warning if not all assessed -->
-          <q-banner
-            v-if="assessedCount < totalApplicants"
-            class="bg-orange-1 text-orange-9 q-mb-md"
-            rounded
-            dense
-          >
-            <template v-slot:avatar>
-              <q-icon name="warning" color="orange" />
-            </template>
-            Warning: Not all applicants have been assessed yet.
-          </q-banner>
-
-          <!-- Unqualified List Header -->
-          <div class="row items-center justify-between q-mb-md">
-            <div class="text-subtitle2 text-grey-8 text-bold">
-              <q-icon name="person_off" class="q-mr-xs text-red-7" />
-              Unqualified Applicants to be Notified
-            </div>
-            <q-badge color="red" rounded class="q-px-sm">
-              {{ unqualifiedApplicants.length }}
-            </q-badge>
+          <!-- Loading state inside dialog -->
+          <div v-if="isDialogLoading" class="text-center q-pa-lg">
+            <q-spinner size="40px" color="primary" />
+            <div class="q-mt-sm">Loading applicants...</div>
           </div>
 
-          <!-- Empty State -->
-          <div
-            v-if="unqualifiedApplicants.length === 0"
-            class="text-center q-pa-lg bg-grey-1 rounded-borders"
-          >
-            <q-icon name="check_circle" color="green-6" size="2em" />
-            <div class="text-caption text-grey-6 q-mt-xs">No unqualified applicants found.</div>
-          </div>
+          <template v-else>
+            <!-- Summary Banner -->
+            <q-banner class="bg-grey-2 rounded-borders q-pa-sm q-mb-md" dense>
+              <template v-slot:avatar>
+                <q-icon name="work" color="primary" />
+              </template>
+              <div class="text-caption text-grey-8 text-bold q-mb-xs">
+                {{ selectedJob?.Position || 'N/A' }}
+              </div>
+              <div class="text-caption text-grey-7 row q-gutter-md">
+                <span>
+                  <b>Total:</b>
+                  {{ totalApplicants }}
+                </span>
+                <span>
+                  <b>Assessed:</b>
+                  {{ assessedCount }}/{{ totalApplicants }}
+                </span>
+                <span>
+                  <b>For QS Validation:</b>
+                  <span class="text-red-8 text-bold">{{ emailTemplateStoreData.length }}</span>
+                </span>
+              </div>
+            </q-banner>
 
-          <!-- Table of Unqualified Applicants -->
-          <div v-else>
-            <q-table
-              :rows="unqualifiedApplicantsWithSequence"
-              :columns="unqualifiedApplicantColumns"
-              row-key="id"
-              flat
-              bordered
-              class="unqualified-table"
+            <!-- Warning if not all assessed -->
+            <q-banner
+              v-if="assessedCount < totalApplicants"
+              class="bg-orange-1 text-orange-9 q-mb-md"
+              rounded
               dense
-              separator="cell"
-              color="primary"
             >
-              <template #body-cell-submission_id="props">
-                <q-td :props="props">
-                  {{ props.row.sequence }}
-                </q-td>
+              <template v-slot:avatar>
+                <q-icon name="warning" color="orange" />
               </template>
+              Warning: Not all applicants have been assessed yet.
+            </q-banner>
 
-              <template #body-cell-name="props">
-                <q-td :props="props">
-                  {{ props.row.firstname }} {{ props.row.lastname }}
-                  <span v-if="props.row.name_extension">{{ props.row.name_extension }}</span>
-                </q-td>
-              </template>
+            <!-- List Header -->
+            <div class="row items-center justify-between q-mb-md">
+              <div class="text-subtitle2 text-grey-8 text-bold">
+                <q-icon name="person_off" class="q-mr-xs text-red-7" />
+                Applicants For QS Validation
+              </div>
+              <q-badge color="red" rounded class="q-px-sm">
+                {{ emailTemplateStoreData.length }}
+              </q-badge>
+            </div>
 
-              <template #body-cell-appliedDate="props">
-                <q-td :props="props">
-                  {{ props.row.appliedDate || '-' }}
-                </q-td>
-              </template>
+            <!-- Empty State -->
+            <div
+              v-if="emailTemplateStoreData.length === 0"
+              class="text-center q-pa-lg bg-grey-1 rounded-borders"
+            >
+              <q-icon name="check_circle" color="green-6" size="2em" />
+              <div class="text-caption text-grey-6 q-mt-xs">
+                No applicants for QS Validation found.
+              </div>
+            </div>
 
-              <template #body-cell-source="props">
-                <q-td :props="props">
-                  <q-badge
-                    :color="props.row.source === 'Internal' ? 'blue' : 'orange'"
-                    rounded
-                    class="text-caption"
-                  >
-                    {{ props.row.source }}
-                  </q-badge>
-                </q-td>
-              </template>
+            <!-- Table of Applicants For QS Validation -->
+            <div v-else>
+              <q-table
+                :rows="emailTemplateStoreData"
+                :columns="unqualifiedApplicantColumns"
+                row-key="submissionId"
+                flat
+                bordered
+                class="unqualified-table"
+                dense
+                separator="cell"
+                color="primary"
+              >
+                <template #body-cell-sequence="props">
+                  <q-td :props="props">
+                    {{ props.rowIndex + 1 }}
+                  </q-td>
+                </template>
 
-              <template #body-cell-status="props">
-                <q-td :props="props">
-                  <q-badge color="red" rounded class="text-caption q-px-sm">
-                    {{ props.row.status }}
-                  </q-badge>
-                </q-td>
-              </template>
+                <template #body-cell-name="props">
+                  <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
+                </template>
 
-              <template #body-cell-action="props">
-                <q-td :props="props">
-                  <q-btn
-                    size="sm"
-                    flat
-                    icon="email"
-                    color="primary"
-                    @click="openUnqualifiedEmailModal(props.row)"
-                  >
-                    <q-tooltip>Send Email</q-tooltip>
-                  </q-btn>
-                  <q-btn
-                    size="sm"
-                    flat
-                    icon="visibility"
-                    color="blue"
-                    @click="viewApplicantDetails(props.row)"
-                  >
-                    <q-tooltip>View Details</q-tooltip>
-                  </q-btn>
-                </q-td>
-              </template>
-            </q-table>
-          </div>
+                <template #body-cell-applicant_status="props">
+                  <q-td :props="props">
+                    <q-badge
+                      :color="props.row.applicant_status === 'INTERNAL' ? 'blue' : 'orange'"
+                      rounded
+                      class="text-caption"
+                    >
+                      {{ props.row.applicant_status }}
+                    </q-badge>
+                  </q-td>
+                </template>
 
-          <div class="text-caption text-grey-5 q-mt-md">
-            <q-icon name="info" class="q-mr-xs" />
-            An email notification will be sent to each unqualified applicant listed above.
-          </div>
+                <template #body-cell-status="props">
+                  <q-td :props="props">
+                    <q-badge color="red" rounded class="text-caption q-px-sm">
+                      {{ props.row.status }}
+                    </q-badge>
+                  </q-td>
+                </template>
+
+                <template #body-cell-action="props">
+                  <q-td :props="props">
+                    <q-btn
+                      size="sm"
+                      flat
+                      icon="email"
+                      color="primary"
+                      @click="openUnqualifiedEmailModal(props.row)"
+                    >
+                      <q-tooltip>Send Email</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      size="sm"
+                      flat
+                      icon="visibility"
+                      color="blue"
+                      @click="viewUnqualifiedApplicantDetails(props.row)"
+                    >
+                      <q-tooltip>View Details</q-tooltip>
+                    </q-btn>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+
+            <div class="text-caption text-grey-5 q-mt-md">
+              <q-icon name="info" class="q-mr-xs" />
+              An email notification will be sent to each applicant listed above for QS Validation.
+            </div>
+          </template>
         </q-card-section>
 
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <q-btn flat label="Cancel" color="grey" v-close-popup :disable="isLoading" rounded />
           <q-btn
             unelevated
-            :label="`Send Notifications (${unqualifiedApplicants.length})`"
+            :label="`Send Notifications for QS Validation (${emailTemplateStoreData.length})`"
             color="green-9"
             icon-right="send"
             @click="confirmSendFinalEvaluation"
             :loading="isLoading"
-            :disable="isLoading || unqualifiedApplicants.length === 0"
+            :disable="isLoading || emailTemplateStoreData.length === 0"
             rounded
             no-caps
           />
@@ -764,8 +765,10 @@
       v-if="selectedUnqualifiedApplicant"
       :show="unqualifiedEmailModal"
       :applicant="selectedUnqualifiedApplicant"
+      :position="selectedJob?.Position || ''"
+      :office="selectedJob?.Office || ''"
       @update:show="unqualifiedEmailModal = $event"
-      @close="unqualifiedEmailModal = false"
+      @close="handleUnqualifiedEmailClose"
     />
   </div>
 </template>
@@ -774,7 +777,8 @@
   import { useRouter, useRoute } from 'vue-router';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { useAuthStore } from 'stores/authStore';
-  import { onMounted, ref, computed, watch } from 'vue';
+  import { useEmailTemplateStore } from 'stores/emailTemplateStore';
+  import { onMounted, ref, computed, watch, nextTick } from 'vue';
   import { date } from 'quasar';
   import axios from 'axios';
   import { toast } from 'src/boot/toast';
@@ -787,10 +791,12 @@
   const route = useRoute();
   const jobPostStore = useJobPostStore();
   const authStore = useAuthStore();
+  const emailTemplateStore = useEmailTemplateStore();
 
   const applicantSearch = ref('');
   const isLoading = ref(false);
   const sendEvalConfirmDialog = ref(false);
+  const isDialogLoading = ref(false);
 
   // Unqualified Email Modal
   const unqualifiedEmailModal = ref(false);
@@ -872,6 +878,13 @@
     return parseInt(raw.split('/')[0]) || 0;
   });
 
+  // FIXED: Get unqualified applicants from email template store with safety check
+  const emailTemplateStoreData = computed(() => {
+    const data = emailTemplateStore.unqualifiedApplicants;
+    // Ensure we always return an array
+    return Array.isArray(data) ? data : [];
+  });
+
   const applicantPagination = ref({
     page: 1,
     rowsPerPage: 10,
@@ -943,35 +956,110 @@
     }, 500);
   });
 
-  const unqualifiedApplicants = computed(() =>
-    formattedApplicants.value.filter(
-      (a) => a.status === 'Unqualified' || a.status === 'unqualified',
-    ),
-  );
-
   const unqualifiedApplicantColumns = ref([
-    { name: 'submission_id', label: 'No', field: 'sequence', align: 'center', sortable: false },
+    { name: 'sequence', label: 'No', field: 'sequence', align: 'center', sortable: false },
     { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
-    { name: 'appliedDate', label: 'Application Date', field: 'appliedDate', align: 'center' },
-    { name: 'source', label: 'Source', field: 'source', align: 'center', sortable: true },
+    {
+      name: 'applicant_status',
+      label: 'Source',
+      field: 'applicant_status',
+      align: 'center',
+      sortable: true,
+    },
     { name: 'status', label: 'Status', field: 'status', align: 'center' },
     { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
   ]);
 
-  const openNotifyUnqualifiedDialog = () => {
+  // FIXED: openNotifyUnqualifiedDialog with dialog loading state
+  const openNotifyUnqualifiedDialog = async () => {
+    isDialogLoading.value = true;
     sendEvalConfirmDialog.value = true;
+
+    try {
+      await emailTemplateStore.fetchUnqualifiedApplicants(selectedJob.value.id);
+    } catch (error) {
+      console.error('Error fetching unqualified applicants:', error);
+      toast.error('Failed to load unqualified applicants');
+      sendEvalConfirmDialog.value = false;
+    } finally {
+      isDialogLoading.value = false;
+    }
   };
 
-  const openUnqualifiedEmailModal = (row) => {
-    selectedUnqualifiedApplicant.value = {
-      nPersonalInfo_id: row.raw?.nPersonalInfo_id || row.nPersonalInfo_id,
-      ControlNo: row.raw?.ControlNo || row.ControlNo,
-      submission_id: row.raw?.submission_id || row.submission_id || row.id,
+  // FIXED: Improved openUnqualifiedEmailModal with pre-fetching
+  const openUnqualifiedEmailModal = async (row) => {
+    // Show loading state
+    isLoading.value = true;
+
+    try {
+      // Pre-fetch qualification remarks before opening modal
+      await emailTemplateStore.fetchQualificationRemarks(row.jobPostId, row.submissionId);
+
+      // Small delay to ensure store has processed the data
+      await nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Set the selected applicant with complete data
+      selectedUnqualifiedApplicant.value = {
+        jobPostId: row.jobPostId,
+        submissionId: row.submissionId,
+        firstname: row.firstname,
+        lastname: row.lastname,
+        name_extension: row.name_extension || '',
+        status: row.status,
+        applicant_status: row.applicant_status,
+        controlno: row.controlno,
+        email: row.email, // Include email if available
+      };
+
+      // Open the modal after data is ready
+      unqualifiedEmailModal.value = true;
+    } catch (error) {
+      console.error('Error pre-fetching applicant data:', error);
+      toast.error('Failed to load applicant data. Please try again.');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // Handle unqualified email modal close
+  const handleUnqualifiedEmailClose = () => {
+    unqualifiedEmailModal.value = false;
+    selectedUnqualifiedApplicant.value = null;
+    // Refresh the unqualified applicants list after modal closes
+    refreshUnqualifiedApplicants();
+  };
+
+  // Refresh unqualified applicants list
+  const refreshUnqualifiedApplicants = async () => {
+    if (selectedJob.value?.id) {
+      try {
+        await emailTemplateStore.fetchUnqualifiedApplicants(selectedJob.value.id);
+      } catch (error) {
+        console.error('Error refreshing unqualified applicants:', error);
+      }
+    }
+  };
+
+  const viewUnqualifiedApplicantDetails = (row) => {
+    selectedApplicantData.value = {
+      submissionId: row.submissionId,
+      controlno: row.controlno,
+      id: row.submissionId,
+      submission_id: row.submissionId,
+      job_batches_rsp_id: row.jobPostId,
+      status: row.status || 'Unqualified',
+      name: `${row.firstname} ${row.lastname}`,
+      position: selectedJob.value?.Position || 'N/A',
+      level: selectedJob.value?.level || 'N/A',
+      PositionID: selectedJob.value?.PositionID,
+      ItemNo: selectedJob.value?.ItemNo,
+      Jobstatus: selectedJob.value?.status,
       firstname: row.firstname,
       lastname: row.lastname,
-      name_extension: row.name_extension || '',
+      raw: row,
     };
-    unqualifiedEmailModal.value = true;
+    qualificationModalVisible.value = true;
   };
 
   const filteredApplicants = computed(() => {
@@ -1014,13 +1102,6 @@
 
   const applicantsWithSequence = computed(() => {
     return filteredApplicants.value.map((applicant, index) => ({
-      ...applicant,
-      sequence: index + 1,
-    }));
-  });
-
-  const unqualifiedApplicantsWithSequence = computed(() => {
-    return unqualifiedApplicants.value.map((applicant, index) => ({
       ...applicant,
       sequence: index + 1,
     }));
@@ -1353,6 +1434,13 @@
     };
   });
 
+  const getStatusLabel = (status) => {
+    if (!status) return '-';
+    const s = status.toLowerCase();
+    if (s === 'unqualified') return 'For QS Validation';
+    return status;
+  };
+
   const goBack = () => {
     router.back();
   };
@@ -1368,17 +1456,20 @@
     }
   };
 
+  // FIXED: Improved confirmSendFinalEvaluation with better error handling
   const confirmSendFinalEvaluation = async () => {
     if (!selectedJob.value?.id) {
       toast.error('Job ID not found. Cannot send final evaluation.');
       sendEvalConfirmDialog.value = false;
       return;
     }
+
     if (assessedCount.value === 0) {
       toast.warning('No applicants have been assessed yet.');
       sendEvalConfirmDialog.value = false;
       return;
     }
+
     isLoading.value = true;
     try {
       const payload = {
@@ -1387,10 +1478,15 @@
         total_applicants: totalApplicants.value,
         assessed_count: assessedCount.value,
       };
+
       const response = await jobPostStore.sendFinalEval(payload);
+
       if (response?.data?.success) {
         toast.success('Final evaluation emails sent successfully!');
         sendEvalConfirmDialog.value = false;
+
+        // Refresh the unqualified applicants list after sending
+        await refreshUnqualifiedApplicants();
         await refreshApplicantData();
       } else {
         toast.error(response?.data?.message || 'Failed to send final evaluation emails');
@@ -1687,6 +1783,21 @@
     console.log('View PDS requested for:', selectedApplicantData.value.name);
   };
 
+  // Watch for route changes
+  watch(
+    () => route.params.id,
+    async (newId, oldId) => {
+      if (isNavigating.value || newId === lastLoadedId.value || !newId) return;
+      console.log('Route changed:', oldId, '→', newId);
+      try {
+        await loadAllData(newId);
+      } catch (error) {
+        console.error('Error on route change:', error);
+        toast.error('Failed to load job details');
+      }
+    },
+  );
+
   onMounted(async () => {
     if (!jobId.value) {
       toast.error('No job ID provided');
@@ -1706,24 +1817,6 @@
       if (error.response?.status === 404) setTimeout(() => router.push('/job-post'), 2000);
     }
   });
-
-  watch(totalApplicants, (val) => {
-    applicantPagination.value.rowsNumber = val;
-  });
-
-  watch(
-    () => route.params.id,
-    async (newId, oldId) => {
-      if (isNavigating.value || newId === lastLoadedId.value || !newId) return;
-      console.log('Route changed:', oldId, '→', newId);
-      try {
-        await loadAllData(newId);
-      } catch (error) {
-        console.error('Error on route change:', error);
-        toast.error('Failed to load job details');
-      }
-    },
-  );
 </script>
 
 <style scoped>

@@ -13,7 +13,9 @@
         <div class="text-green-9 text-weight-bold padded-text">CITY OF TAGUM</div>
 
         <div class="green-banner">
-          <div class="text-subtitle3 padded-text">HUMAN RESOURCE MANAGEMENT OFFICE</div>
+          <div class="text-subtitle3 padded-text">
+            HUMAN RESOURCE MERIT PROMOTION AND SELECTION BOARD
+          </div>
         </div>
       </div>
     </div>

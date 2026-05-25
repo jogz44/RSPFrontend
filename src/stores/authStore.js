@@ -73,6 +73,8 @@ export const useAuthStore = defineStore('auth', {
           enable: userData.enable,
           role_type: userData.role,
           representative: userData.representative,
+          prefix: userData.prefix || null,
+          suffix: userData.suffix || null,
         };
 
         if (Array.isArray(userData.job_batches_rsp_id) && userData.job_batches_rsp_id.length > 0) {
@@ -430,6 +432,8 @@ export const useAuthStore = defineStore('auth', {
           controlNo: userData.controlNo,
           representative: userData.representative || '',
           role: userData.role || '',
+          prefix: userData.prefix || null,
+          suffix: userData.suffix || null,
         };
 
         const response = await adminApi.post('rater/register', formattedData, {

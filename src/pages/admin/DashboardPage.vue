@@ -11,8 +11,9 @@
         <q-card class="stat-card ct-light-blue bg-white">
           <q-card-section class="card-content">
             <!-- Total Positions -->
-            <div class="row justify-between items-center q-mb-md">
-              <span class="card-label text-bold text-grey-8">TOTAL PLANTILLA POSITIONS:</span>
+            <div class="stat-row q-mb-md">
+              <span class="card-label text-bold text-grey-8">TOTAL PLANTILLA POSITIONS</span>
+              <span class="colon text-grey-8">:</span>
               <span class="card-number text-blue-4">
                 {{ Number(dashboardStore.total_positions).toLocaleString() }}
               </span>
@@ -24,15 +25,16 @@
             <div class="row">
               <!-- Left Column -->
               <div class="col-12 col-md-5">
-                <div class="row justify-between items-center q-mb-sm">
-                  <span class="card-label text-bold text-grey-8">Funded Positions:</span>
+                <div class="stat-row q-mb-sm">
+                  <span class="card-label text-bold text-grey-8">Funded Positions</span>
+                  <span class="colon text-grey-8">:</span>
                   <span class="card-number text-blue-6">
                     {{ Number(dashboardStore.funded).toLocaleString() }}
                   </span>
                 </div>
-                <div class="row justify-between items-center">
+                <div class="stat-row">
                   <span class="card-label text-bold text-grey-8">Unfunded Positions</span>
-                  <span class="card-label text-bold text-grey-8">:</span>
+                  <span class="colon text-grey-8">:</span>
                   <span class="card-number text-amber-6">
                     {{ Number(dashboardStore.unfunded).toLocaleString() }}
                   </span>
@@ -51,14 +53,16 @@
 
               <!-- Right Column -->
               <div class="col-12 col-md">
-                <div class="row justify-between items-center q-mb-sm">
-                  <span class="card-label text-bold text-grey-7">Filled-up Positions:</span>
+                <div class="stat-row q-mb-sm">
+                  <span class="card-label text-bold text-grey-7">Filled-up Positions</span>
+                  <span class="colon text-grey-7">:</span>
                   <span class="card-number text-teal-6">
                     {{ Number(dashboardStore.filled).toLocaleString() }}
                   </span>
                 </div>
-                <div class="row justify-between items-center">
-                  <span class="card-label text-bold text-grey-7">Vacant Funded Positions:</span>
+                <div class="stat-row">
+                  <span class="card-label text-bold text-grey-7">Vacant Funded Positions</span>
+                  <span class="colon text-grey-7">:</span>
                   <span class="card-number text-deep-purple-4">
                     {{ Number(dashboardStore.vacant).toLocaleString() }}
                   </span>
@@ -780,6 +784,30 @@
     word-break: break-word;
   }
 
+  /* ─── STAT ROW WITH PERFECT COLON ALIGNMENT ─────────────────────────── */
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-row .card-label {
+    flex: 1;
+    text-align: left;
+  }
+
+  .stat-row .colon {
+    flex-shrink: 0;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .stat-row .card-number {
+    flex-shrink: 0;
+    text-align: right;
+    min-width: 60px;
+  }
+
   /* ─── BADGES ROW ─────────────────────────────────────── */
   .badges-row {
     display: flex;
@@ -862,6 +890,20 @@
       padding: 8px 14px !important;
       font-size: 0.82rem !important;
       min-height: 34px;
+    }
+
+    /* Mobile colon alignment adjustments */
+    .stat-row {
+      gap: 6px;
+    }
+
+    .stat-row .card-label {
+      font-size: 12px;
+    }
+
+    .stat-row .card-number {
+      font-size: 16px;
+      min-width: 50px;
     }
   }
 
