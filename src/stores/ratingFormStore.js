@@ -1,6 +1,7 @@
 // stores/ratingFormStore.js
 import { defineStore } from 'pinia';
-import { raterApi } from 'src/boot/axios_rater';
+// import { raterApi } from 'src/boot/axios_rater';
+import { adminApi } from 'boot/axios_admin';
 import { getApplicantScore, raterListWithJob } from 'src/service/raterService';
 
 export const use_rating_form_store = defineStore('rating_form_store', {
@@ -30,7 +31,7 @@ export const use_rating_form_store = defineStore('rating_form_store', {
           raterId: rater_id,
         };
 
-        const { data } = await raterApi.post('/report/rating-form', payload);
+        const { data } = await adminApi.post('/report/rating-form', payload);
 
         this.data = data;
         return data;

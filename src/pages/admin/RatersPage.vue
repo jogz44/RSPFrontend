@@ -774,7 +774,10 @@
       </q-card>
     </q-dialog>
 
-    <!-- Rating Form Report Dialog -->
+    <!--
+      KEY FIX: Pass ratingData (the already-fetched object from the cache/store) directly
+      into the child. The child no longer fetches — it just renders what it receives.
+    -->
     <RatingFormReport
       v-if="showRatingFormDialog"
       v-model="showRatingFormDialog"
@@ -800,6 +803,7 @@
   const jobPostStore = useJobPostStore();
   const authStore = useAuthStore();
   const plantillaStore = usePlantillaStore();
+  const ratingFormStore = use_rating_form_store();
 
   // ==================== PERMISSION CHECK ====================
   const canModifyRater = computed(() => {
@@ -817,14 +821,20 @@
   const jobLoadError = ref('');
   const isLoadingTable = ref(false);
 
-  // ==================== PRINTING STATE ====================
+  // ==================== PRINTING / REPORT STATE ====================
   const printingJobId = ref(null);
   const showRatingFormDialog = ref(false);
   const selectedJobId = ref(null);
   const selectedRaterId = ref(null);
+  /**
+   * ratingFormData holds the raw API response object.
+   * It is passed directly to <RatingFormReport> via the :rating-data prop.
+   * The child component reads this prop and generates the PDF — no extra fetch needed.
+   */
   const ratingFormData = ref(null);
 
   // ==================== RATING FORM CACHE ====================
+  // Key: `${jobId}_${raterId}` → cached API response object
   const ratingFormCache = ref(new Map());
 
   // ==================== MODAL STATE ====================
@@ -950,7 +960,6 @@
     if (canModifyRater.value) {
       baseColumns.push({ name: 'actions', label: 'Actions', align: 'center', style: 'width: 5%' });
     }
-
     return baseColumns;
   });
 
@@ -959,16 +968,11 @@
     let name = currentViewRater.value.name || '';
     const prefix = currentViewRater.value.prefix;
     const suffix = currentViewRater.value.suffix;
-
     let formatted = name;
-    if (prefix && prefix.trim()) {
-      formatted = `${prefix.trim()} ${name}`;
-    }
+    if (prefix && prefix.trim()) formatted = `${prefix.trim()} ${name}`;
     if (suffix && suffix.toString().trim()) {
       const suffixStr = formatSuffixDisplay(suffix);
-      if (suffixStr) {
-        formatted = `${formatted}, ${suffixStr}`;
-      }
+      if (suffixStr) formatted = `${formatted}, ${suffixStr}`;
     }
     return formatted;
   });
@@ -1059,7 +1063,7 @@
     return String(suffix);
   };
 
-  // ==================== POSITION SELECTION METHODS ====================
+  // ==================== POSITION SELECTION ====================
   const isPositionSelected = (id) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
     if (id === 'all') {
@@ -1157,13 +1161,17 @@
     });
   };
 
-  // ==================== PRINT RATING FORM ====================
-  const ratingFormStore = use_rating_form_store();
-
-  const getCacheKey = (jobId, raterId) => {
-    return `${jobId}_${raterId}`;
-  };
-
+  // ==================== OPEN RATING FORM REPORT ====================
+  /**
+   * Flow:
+   * 1. Check cache by `${jobId}_${raterId}`.
+   * 2. On cache hit  → set ratingFormData directly from cache, open dialog.
+   * 3. On cache miss → call store.fetchRatingForm(jobId, raterId), cache the result,
+   *                    then set ratingFormData and open dialog.
+   *
+   * The child component <RatingFormReport> receives ratingFormData via :rating-data prop
+   * and generates the PDF on its own — the parent never touches pdfmake.
+   */
   const openRatingFormReport = async (job) => {
     if (!currentViewRater.value?.id) {
       toast.error('Rater information not available');
@@ -1176,37 +1184,38 @@
       return;
     }
 
-    const cacheKey = getCacheKey(jobId, currentViewRater.value.id);
+    const raterId = currentViewRater.value.id;
+    const cacheKey = `${jobId}_${raterId}`;
     const cachedData = ratingFormCache.value.get(cacheKey);
 
-    // Use cached data if available
-    if (cachedData) {
+    // ── Helper: set data FIRST, wait a tick, then open the dialog.
+    // This guarantees the child component receives a populated :rating-data
+    // prop on its very first render / onMounted call.
+    const openWithData = async (data) => {
       selectedJobId.value = jobId;
-      selectedRaterId.value = currentViewRater.value.id;
-      ratingFormData.value = cachedData;
-      printingJobId.value = null;
-      await nextTick();
-      showRatingFormDialog.value = true;
+      selectedRaterId.value = raterId;
+      ratingFormData.value = data; // prop set BEFORE dialog opens
+      await nextTick(); // let Vue propagate the new prop value
+      showRatingFormDialog.value = true; // NOW open — child mounts with data ready
+    };
+
+    if (cachedData) {
+      await openWithData(cachedData);
       return;
     }
 
+    // Fetch fresh data
     printingJobId.value = jobId;
-
     try {
-      await ratingFormStore.fetchRatingForm(jobId, currentViewRater.value.id);
+      const data = await ratingFormStore.fetchRatingForm(jobId, raterId);
 
-      if (ratingFormStore.data && ratingFormStore.ratingScores?.length > 0) {
-        // Cache the data
-        ratingFormCache.value.set(cacheKey, ratingFormStore.data);
-
-        selectedJobId.value = jobId;
-        selectedRaterId.value = currentViewRater.value.id;
-        ratingFormData.value = ratingFormStore.data;
-        await nextTick();
-        showRatingFormDialog.value = true;
-      } else {
+      if (!data || !ratingFormStore.hasApplicants) {
         toast.error('No rating data available for this job');
+        return;
       }
+
+      ratingFormCache.value.set(cacheKey, data);
+      await openWithData(data);
     } catch (error) {
       console.error('Error fetching rating form:', error);
       toast.error(error.response?.data?.message || 'Failed to load rating form');
@@ -1216,8 +1225,8 @@
   };
 
   const handleRatingFormClose = () => {
-    // Dialog closed, keep data cached for reopening
     showRatingFormDialog.value = false;
+    // ratingFormData is intentionally kept so the cache still works if the dialog reopens
   };
 
   // ==================== FORM HELPERS ====================
