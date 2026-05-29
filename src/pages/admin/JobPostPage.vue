@@ -1017,7 +1017,7 @@
     {
       name: 'applicants',
       align: 'center',
-      label: 'Applicant',
+      label: 'Applicantion',
       field: 'applicants',
       sortable: true,
       style: 'width: 8%',
@@ -1025,7 +1025,7 @@
     {
       name: 'pending',
       align: 'center',
-      label: 'Pending',
+      label: 'For Assessment',
       field: 'pending',
       sortable: true,
       style: 'width: 8%',
@@ -1033,7 +1033,7 @@
     {
       name: 'qualified',
       align: 'center',
-      label: 'Qualified',
+      label: 'Prequalified',
       field: 'qualified',
       sortable: true,
       style: 'width: 8%',
@@ -1041,7 +1041,7 @@
     {
       name: 'unqualified',
       align: 'center',
-      label: 'Unqualified',
+      label: 'For QS Validation',
       field: 'unqualified',
       sortable: true,
       style: 'width: 8%',
