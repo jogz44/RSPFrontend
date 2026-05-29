@@ -1,45 +1,61 @@
 <template>
   <q-toolbar class="q-mb-none header">
-    <div class="row items-center justify-between full-width">
-      <div class="grid justify-start items-start q-pa-sm">
-        <h5 class="text-h6 q-ma-none">
+    <div class="row items-center justify-between full-width no-wrap">
+      <!-- Left: Hamburger (mobile) + Title -->
+      <div class="row items-center no-wrap">
+        <!-- Hamburger — only visible when drawer is hidden (mobile/tablet) -->
+        <q-btn
+          flat
+          round
+          dense
+          icon="menu"
+          class="hamburger-btn q-mr-sm"
+          @click="$emit('toggle-drawer')"
+        />
+
+        <h5 class="header-title q-ma-none">
           <b>Welcome to Recruitment, Selection and Placement System!</b>
         </h5>
       </div>
 
-      <div class="row items-center">
-        <!-- <q-btn round flat dense icon="notifications" class="q-mr-md" /> -->
-        <q-btn-dropdown flat :ripple="false">
-          <template v-slot:label>
+      <!-- Right: User dropdown -->
+      <div class="row items-center no-wrap">
+        <q-btn-dropdown flat :ripple="false" no-icon-animation>
+          <template #label>
+            <!-- Avatar -->
             <div>
-              <div v-if="authStore.user" class="text-bold text-body1" style="font-size: 13px">
-                <q-avatar size="40px" color="black" text-color="white">
+              <div v-if="authStore.user">
+                <q-avatar size="36px" color="black" text-color="white" class="avatar">
                   {{ authStore.user?.name?.charAt(0).toUpperCase() }}
                 </q-avatar>
               </div>
-              <div v-else class="text-bold text-body1" style="width: 40px">
+              <div v-else style="width: 36px">
                 <q-skeleton type="circle" />
               </div>
             </div>
 
-            <div class="q-ml-sm column justify-start items-start">
-              <!-- username -->
-              <div>
-                <div v-if="authStore.user" class="text-bold text-body1" style="font-size: 13px">
-                  {{ authStore.user?.name || 'Guest' }}
-                </div>
-                <div v-else class="text-bold text-body1" style="width: 100px">
-                  <q-skeleton type="text" />
-                </div>
+            <!-- Name + Position (hidden on xs screens) -->
+            <div class="q-ml-sm column justify-start items-start user-info-text">
+              <div
+                v-if="authStore.user"
+                class="text-bold"
+                style="font-size: 13px; line-height: 1.2"
+              >
+                {{ authStore.user?.name || 'Guest' }}
               </div>
-              <!-- roles -->
-              <div>
-                <div v-if="authStore.user" class="text-caption" style="font-size: 11px">
-                  {{ authStore.user?.position || 'Guest' }}
-                </div>
-                <div v-else class="text-caption" style="width: 100px">
-                  <q-skeleton type="text" />
-                </div>
+              <div v-else style="width: 100px">
+                <q-skeleton type="text" />
+              </div>
+
+              <div
+                v-if="authStore.user"
+                class="text-caption text-grey-6"
+                style="font-size: 11px; line-height: 1.2"
+              >
+                {{ authStore.user?.position || 'Guest' }}
+              </div>
+              <div v-else style="width: 80px">
+                <q-skeleton type="text" />
               </div>
             </div>
           </template>
@@ -55,13 +71,14 @@
             </q-item>
 
             <q-item clickable @click.prevent="onLogout">
-              <q-item-section v-if="authStore.loading" avatar>
-                <q-avatar color="negative">
-                  <q-spinner color="white" />
+              <q-item-section avatar>
+                <q-avatar
+                  :icon="authStore.loading ? undefined : 'logout'"
+                  color="negative"
+                  text-color="white"
+                >
+                  <q-spinner v-if="authStore.loading" color="white" />
                 </q-avatar>
-              </q-item-section>
-              <q-item-section v-else avatar>
-                <q-avatar icon="logout" color="negative" text-color="white" />
               </q-item-section>
               <q-item-section>
                 <q-item-label>Logout</q-item-label>
@@ -78,16 +95,13 @@
   import { useRouter } from 'vue-router';
   import { useAuthStore } from 'src/stores/authStore';
 
-  // import { useLogsStore } from 'stores/logsStore';
-
-  // const logStore = useLogsStore();
+  defineEmits(['toggle-drawer']);
 
   const router = useRouter();
   const authStore = useAuthStore();
 
   const onLogout = async () => {
-    // await logStore.logAction('Logged Out');
-    await authStore.logout(); // Call the logout action from authStore
+    await authStore.logout();
   };
 
   const onSetting = () => {
@@ -100,21 +114,46 @@
     background: white;
     border-bottom: 1px solid #eee;
     height: 70px;
+    padding: 0 12px;
   }
 
-  .q-mb-none {
-    margin-bottom: 0 !important;
+  /* Hamburger: always rendered, visibility controlled by CSS */
+  .hamburger-btn {
+    display: none;
   }
 
-  .text-h5 {
-    font-size: 20px;
+  /* Show hamburger on screens where the drawer is hidden (< 1024px by default in Quasar) */
+  @media (max-width: 1023px) {
+    .hamburger-btn {
+      display: inline-flex;
+    }
   }
 
-  .q-ml-sm {
-    margin-left: 8px !important;
+  /* Title: truncate on small screens */
+  .header-title {
+    font-size: clamp(12px, 2vw, 18px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 55vw;
+    line-height: 1.2;
   }
 
-  .q-mr-md {
-    margin-right: 8px !important;
+  /* Hide name/position text on very small screens — avatar alone is enough */
+  @media (max-width: 479px) {
+    .user-info-text {
+      display: none;
+    }
+
+    .header-title {
+      max-width: 42vw;
+    }
+  }
+
+  /* Shrink title on medium screens */
+  @media (max-width: 767px) {
+    .header-title {
+      font-size: clamp(11px, 2.5vw, 14px);
+    }
   }
 </style>

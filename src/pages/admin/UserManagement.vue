@@ -531,7 +531,7 @@
                     </div>
                   </div>
 
-                  <!-- Rater Management -->
+                  <!-- Rater Management (Raters & Criteria only) -->
                   <div class="perm-group">
                     <div class="perm-group-title">
                       <q-icon name="assignment_ind" size="14px" class="q-mr-xs" />
@@ -578,6 +578,14 @@
                         @update:model-value="() => onChildToggle('modifyCriteria')"
                       />
                     </div>
+                  </div>
+
+                  <!-- Reports — standalone, view only -->
+                  <div class="perm-group">
+                    <div class="perm-group-title">
+                      <q-icon name="assessment" size="14px" class="q-mr-xs" />
+                      Reports
+                    </div>
                     <div class="perm-row">
                       <q-toggle
                         true-value="1"
@@ -586,7 +594,7 @@
                         label="View Reports"
                         dense
                         color="primary"
-                        @update:model-value="() => onChildToggle('viewReport')"
+                        @update:model-value="syncSelectAll"
                       />
                     </div>
                   </div>
@@ -672,7 +680,8 @@
   import ButtonResetPassword from 'components/ButtonResetPassword.vue';
   import ButtonDelete from 'components/ButtonDelete.vue';
 
-  // ── All permission keys ─────────────────────────────────────
+  // ── All permission keys ─────────────────────────────────────────────────────
+  // viewReport is standalone — no longer a child of viewRater
   const ALL_PERMISSION_KEYS = [
     'viewDashboardstat',
     'viewPlantillaAccess',
@@ -694,12 +703,13 @@
     'modifyRater',
     'viewCriteria',
     'modifyCriteria',
-    'viewReport',
+    'viewReport', // standalone — not under viewRater
     'userManagement',
     'viewActivityLogs',
   ];
 
-  // ── Child permissions that require their parent "View" permission ──
+  // ── Child permissions that require their parent "View" permission ───────────
+  // viewReport is intentionally OMITTED — it is now standalone with no parent
   const CHILD_PERMISSIONS_MAP = {
     modifyPlantillaAccess: 'viewPlantillaAccess',
     requestPublication: 'viewPlantillaAccess',
@@ -713,21 +723,19 @@
     modifyRater: 'viewRater',
     viewCriteria: 'viewRater',
     modifyCriteria: 'viewRater',
-    viewReport: 'viewRater',
+    // viewReport — removed; it no longer belongs to viewRater
   };
 
-  // ── Get all child permissions for a given view permission ──
+  // ── Get all child permissions for a given view permission ───────────────────
   function getChildPermissionsForView(viewKey) {
     const children = [];
     for (const [child, parent] of Object.entries(CHILD_PERMISSIONS_MAP)) {
-      if (parent === viewKey) {
-        children.push(child);
-      }
+      if (parent === viewKey) children.push(child);
     }
     return children;
   }
 
-  // ── Badge color based on role name ───────────────────────────────────
+  // ── Badge color based on role name ──────────────────────────────────────────
   const ROLE_COLORS = ['teal', 'blue', 'green', 'orange', 'pink', 'cyan', 'indigo', 'brown'];
 
   function hashRoleColor(roleName) {
@@ -784,12 +792,12 @@
         { name: 'actions', align: 'center', label: 'Actions', field: 'actions', sortable: false },
       ];
 
-      // ── Badge color helper (used in table) ───────────────────────────
+      // ── Badge color helper ───────────────────────────────────────────────────
       function getRoleBadgeColor(roleName) {
         return hashRoleColor(roleName);
       }
 
-      // ── Permission helpers ───────────────────────────────────────────
+      // ── Permission helpers ───────────────────────────────────────────────────
       const defaultPermissions = () => {
         const p = {};
         ALL_PERMISSION_KEYS.forEach((k) => (p[k] = '0'));
@@ -800,37 +808,26 @@
         return ALL_PERMISSION_KEYS.every((k) => permissions[k] === '1');
       }
 
-      // ── Check if view permission can be toggled OFF ──
+      // ── Check if a view permission can be toggled OFF ────────────────────────
       function canToggleView(viewKey) {
-        // If view is currently ON and we're trying to turn it OFF
         if (form.value.permissions[viewKey] === '1') {
-          // Check if any child permissions are ON
           const children = getChildPermissionsForView(viewKey);
           const hasChildOn = children.some((child) => form.value.permissions[child] === '1');
-
-          // If there are child permissions ON, prevent toggling OFF
-          if (hasChildOn) {
-            return false;
-          }
+          if (hasChildOn) return false;
         }
         return true;
       }
 
-      // ── Handle View toggle (prevent turning OFF if children exist) ──
+      // ── Handle View toggle ───────────────────────────────────────────────────
       function onViewToggle(viewKey) {
-        // If trying to turn OFF but can't, revert
+        // If tried to turn OFF but children still ON, revert to ON
         if (form.value.permissions[viewKey] === '0' && !canToggleView(viewKey)) {
-          // Show notification to user
           form.value.permissions[viewKey] = '1';
-          // Optional: Show a message
-          setTimeout(() => {
-            // You can add a toast notification here if needed
-          }, 100);
         }
         syncSelectAll();
       }
 
-      // ── Form state ───────────────────────────────────────────────────
+      // ── Form state ───────────────────────────────────────────────────────────
       const dialog = ref(false);
       const isEditing = ref(false);
       const form = ref({
@@ -843,17 +840,16 @@
         permissions: defaultPermissions(),
       });
 
-      // ── Handle Child toggle - Auto-enable parent View permission ──────
+      // ── Handle Child toggle — auto-enable parent View permission ─────────────
       function onChildToggle(childKey) {
         const parentKey = CHILD_PERMISSIONS_MAP[childKey];
         if (parentKey && form.value.permissions[childKey] === '1') {
-          // If child is being turned ON, also turn ON the parent view permission
           form.value.permissions[parentKey] = '1';
         }
         syncSelectAll();
       }
 
-      // ── Select All toggle ────────────────────────────────────────────
+      // ── Select All toggle ────────────────────────────────────────────────────
       function onSelectAllToggle(val) {
         const newVal = val ? '1' : '0';
         ALL_PERMISSION_KEYS.forEach((k) => {
@@ -872,18 +868,17 @@
         }
       }
 
-      // ── Role input handler ───────────────────────────────────────────
+      // ── Role input handler ───────────────────────────────────────────────────
       function onRoleInput() {
         selectAll.value = checkAllOn(form.value.permissions);
       }
 
-      // Clear role field
       function clearRole() {
         form.value.user_role = '';
         selectAll.value = checkAllOn(form.value.permissions);
       }
 
-      // ── Reset ────────────────────────────────────────────────────────
+      // ── Reset ────────────────────────────────────────────────────────────────
       const resetForm = () => {
         form.value = {
           name: '',
@@ -898,7 +893,7 @@
         authStore.errors = {};
       };
 
-      // ── Open dialogs ─────────────────────────────────────────────────
+      // ── Open dialogs ─────────────────────────────────────────────────────────
       const openAddDialog = () => {
         resetForm();
         isEditing.value = false;
@@ -935,7 +930,7 @@
           modifyRater: p.modifyRater || '0',
           viewCriteria: p.viewCriteria || '0',
           modifyCriteria: p.modifyCriteria || '0',
-          viewReport: p.viewReport || '0',
+          viewReport: p.viewReport || '0', // standalone
           userManagement: p.userManagement || '0',
           viewActivityLogs: p.viewActivityLogs || '0',
         };
@@ -956,7 +951,7 @@
         selectAll.value = allOn;
       };
 
-      // ── Submit ───────────────────────────────────────────────────────
+      // ── Submit ───────────────────────────────────────────────────────────────
       const submitForm = async () => {
         const userData = {
           ...form.value,

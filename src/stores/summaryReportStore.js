@@ -236,6 +236,139 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    // ==================== EXCEL REPORT GENERATION METHODS ====================
+
+    /**
+     * Format date to YYYY-MM-DD
+     * @param {string} date - Date string in any format
+     * @returns {string} Formatted date in YYYY-MM-DD
+     */
+    formatDateToYYYYMMDD(date) {
+      if (!date) return '';
+
+      // If it's already in YYYY-MM-DD format, return as is
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+      }
+
+      try {
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+          console.warn('Invalid date:', date);
+          return date;
+        }
+
+        const year = parsedDate.getFullYear();
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        return date;
+      }
+    },
+
+    /**
+     * Generate List of Position Excel Report
+     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
+     * @returns {Promise<Blob>} Excel file blob
+     */
+    async generateListOfPositionExcel(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/list/jobPost',
+          { post_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating List of Position Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Generate Prequalified Applicant Excel Report
+     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
+     * @returns {Promise<Blob>} Excel file blob
+     */
+    async generatePrequalifiedApplicantExcel(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/applicant/qualified',
+          { post_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating Prequalified Applicant Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Generate Unqualified (For QS Validation) Applicant Excel Report
+     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
+     * @returns {Promise<Blob>} Excel file blob
+     */
+    async generateUnqualifiedApplicantExcel(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/applicant/unqualified',
+          { post_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating Unqualified Applicant Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Generate All Applicant with Demographics Excel Report
+     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
+     * @returns {Promise<Blob>} Excel file blob
+     */
+    async generateAllApplicantExcel(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/applicant',
+          { post_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating All Applicant Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     // Delete application by submission ID
     async deleteApplication({ id }) {
       this.loading = true;

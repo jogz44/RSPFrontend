@@ -12,8 +12,31 @@
       </q-breadcrumbs>
     </div>
 
-    <!-- Main Reports Table -->
-    <q-table :rows="reports" :columns="columns" row-key="id" :pagination="pagination">
+    <!-- Search Bar -->
+    <div class="q-mb-md">
+      <q-input
+        v-model="searchQuery"
+        outlined
+        dense
+        placeholder="Search reports..."
+        clearable
+        class="search-input"
+      >
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
+    </div>
+
+    <!-- Main Reports Table with Category Grouping -->
+    <q-table
+      :rows="filteredReports"
+      :columns="columns"
+      row-key="id"
+      :pagination="pagination"
+      :rows-per-page-options="[10, 25, 50]"
+      binary-state-sort
+    >
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">
           <q-btn round dense color="primary" icon="edit" size="sm" @click="handleAction(props.row)">
@@ -22,6 +45,74 @@
         </q-td>
       </template>
     </q-table>
+
+    <!-- ==================== PUBLICATION DATE MODAL (Reusable for Excel Reports) ==================== -->
+    <q-dialog v-model="showPublicationDateModal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">{{ selectedReport?.name }} - Select Publication Date</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingPublicationDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedPublicationDate"
+              :options="filteredPublicationDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              @filter="filterPublicationDates"
+              :dropdown-icon="'arrow_drop_down'"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closePublicationDateModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="!selectedPublicationDate"
+            @click="generateExcelReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- ==================== FINAL SUMMARY / APPLICANT PER POSITION / BEI SUMMARY MODAL ==================== -->
     <q-dialog v-model="showReportModal" persistent>
@@ -33,7 +124,9 @@
                 ? 'Applicant per Position Filters'
                 : selectedReport?.id === 6
                   ? 'BEI Summary Report Filters'
-                  : 'Final Summary Report Filters'
+                  : selectedReport?.id === 1
+                    ? 'Final Summary Report Filters'
+                    : selectedReport?.name
             }}
           </div>
         </q-card-section>
@@ -113,66 +206,75 @@
 
             <q-separator class="q-mb-md" />
 
-            <!-- Position Filter -->
-            <div class="text-subtitle2 q-mb-sm">Select Positions</div>
-            <q-select
-              v-model="selectedPositions"
-              :options="filteredPositionOptions"
-              label="Select Positions"
-              outlined
-              multiple
-              use-chips
-              option-value="value"
-              option-label="label"
-              emit-value
-              map-options
-              :dropdown-icon="'arrow_drop_down'"
-              :display-value="displayPositions"
+            <!-- Position Filter (only for reports that need positions) -->
+            <div
+              v-if="
+                selectedReport?.id === 1 || selectedReport?.id === 3 || selectedReport?.id === 6
+              "
             >
-              <template v-slot:option="scope">
-                <q-item
-                  v-if="scope.opt.value === 'select_all'"
-                  clickable
-                  @click.stop="toggleSelectAll"
-                >
-                  <q-item-section>
-                    <q-checkbox
-                      :model-value="allSelected"
-                      label="Select All"
-                      @update:model-value="toggleSelectAll"
-                    />
-                  </q-item-section>
-                </q-item>
-                <q-item
-                  v-else
-                  :key="scope.opt.value"
-                  clickable
-                  @click.stop="togglePosition(scope.opt.value)"
-                >
-                  <q-item-section>
-                    <q-checkbox
-                      :label="scope.opt.label"
-                      :model-value="isPositionSelected(scope.opt.value)"
-                      @update:model-value="togglePosition(scope.opt.value)"
-                    />
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-grey">
-                    No positions found for the selected date(s)
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              <div class="text-subtitle2 q-mb-sm">Select Positions</div>
+              <q-select
+                v-model="selectedPositions"
+                :options="filteredPositionOptions"
+                label="Select Positions"
+                outlined
+                multiple
+                use-chips
+                option-value="value"
+                option-label="label"
+                emit-value
+                map-options
+                :dropdown-icon="'arrow_drop_down'"
+                :display-value="displayPositions"
+              >
+                <template v-slot:option="scope">
+                  <q-item
+                    v-if="scope.opt.value === 'select_all'"
+                    clickable
+                    @click.stop="toggleSelectAll"
+                  >
+                    <q-item-section>
+                      <q-checkbox
+                        :model-value="allSelected"
+                        label="Select All"
+                        @update:model-value="toggleSelectAll"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-item
+                    v-else
+                    :key="scope.opt.value"
+                    clickable
+                    @click.stop="togglePosition(scope.opt.value)"
+                  >
+                    <q-item-section>
+                      <q-checkbox
+                        :label="scope.opt.label"
+                        :model-value="isPositionSelected(scope.opt.value)"
+                        @update:model-value="togglePosition(scope.opt.value)"
+                      />
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">
+                      No positions found for the selected date(s)
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
 
-            <div v-if="filteredPositionOptions.length <= 1" class="q-mt-sm text-caption text-grey">
-              {{
-                dateFilterType === 'all'
-                  ? 'No positions available'
-                  : 'No positions found for the selected date filter. Try selecting a different date or date range.'
-              }}
+              <div
+                v-if="filteredPositionOptions.length <= 1"
+                class="q-mt-sm text-caption text-grey"
+              >
+                {{
+                  dateFilterType === 'all'
+                    ? 'No positions available'
+                    : 'No positions found for the selected date filter. Try selecting a different date or date range.'
+                }}
+              </div>
             </div>
           </div>
         </q-card-section>
@@ -182,14 +284,17 @@
           <q-btn
             color="primary"
             label="Generate Report"
-            :disable="selectedPositions.length === 0"
+            :disable="
+              (selectedReport?.id === 1 || selectedReport?.id === 3 || selectedReport?.id === 6) &&
+              selectedPositions.length === 0
+            "
             @click="openReport"
           />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- 2. Top 5 Ranking Applicants Modal -->
+    <!-- Top 5 Ranking Applicants Modal -->
     <q-dialog v-model="showTop5Modal" persistent>
       <q-card style="min-width: 450px; max-width: 90vw">
         <q-card-section>
@@ -260,78 +365,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- 3. List of Position Modal -->
-    <q-dialog v-model="showListOfPositionModal" persistent>
-      <q-card style="min-width: 450px; max-width: 90vw">
-        <q-card-section>
-          <div class="text-h6">List of Position Report Filter</div>
-        </q-card-section>
-
-        <q-card-section>
-          <div v-if="loadingListOfPositionDates" class="text-center">
-            <q-spinner color="primary" size="32px" />
-            <div class="q-mt-sm">Loading publication dates...</div>
-          </div>
-
-          <div v-else>
-            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
-            <q-select
-              v-model="selectedListOfPositionPublicationDate"
-              :options="filteredListOfPositionDateOptions"
-              label="Publication Date"
-              outlined
-              use-input
-              input-debounce="300"
-              @filter="filterListOfPositionDates"
-              :dropdown-icon="'arrow_drop_down'"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-grey">No publication dates found</q-item-section>
-                </q-item>
-              </template>
-
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>
-                      <q-icon name="event" size="xs" class="q-mr-sm" />
-                      {{ scope.opt }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-
-              <template v-slot:selected>
-                <span v-if="selectedListOfPositionPublicationDate">
-                  <q-icon name="event" size="xs" class="q-mr-sm" />
-                  {{ selectedListOfPositionPublicationDate }}
-                </span>
-              </template>
-            </q-select>
-
-            <div
-              v-if="listOfPositionDateOptions.length === 0"
-              class="q-mt-sm text-caption text-grey"
-            >
-              No publication dates available
-            </div>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" @click="closeListOfPositionModal" />
-          <q-btn
-            color="primary"
-            label="Generate Report"
-            :disable="!selectedListOfPositionPublicationDate"
-            @click="generateListOfPositionReport"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- 4. Newly Appointed and Promoted Permanent Employees Modal -->
+    <!-- Newly Appointed and Promoted Permanent Employees Modal -->
     <q-dialog v-model="showNewEmployeeModal" persistent>
       <q-card style="min-width: 450px; max-width: 90vw">
         <q-card-section>
@@ -478,19 +512,6 @@
       <ApplicantPosition :jobpostId="selectedPositions[0]" />
     </q-dialog>
 
-    <!-- List of Position Report Viewer -->
-    <q-dialog v-model="showListOfPositionReportViewer" maximized>
-      <ListOfPositionReport :publicationDate="selectedListOfPositionPublicationDate" />
-    </q-dialog>
-
-    <!-- Newly Appointed Report Viewer -->
-    <q-dialog v-model="showNewEmployeeReportViewer" maximized>
-      <NewEmployeeReport
-        :publicationDate="selectedNewEmployeePublicationDate"
-        :effectiveDate="selectedNewEmployeeEffectiveDate"
-      />
-    </q-dialog>
-
     <!-- BEI Summary Report Viewer -->
     <q-dialog v-model="showBEISummaryReportViewer" maximized>
       <BEISummaryReport :positions="selectedPositions" />
@@ -504,8 +525,6 @@
   import BEISummaryReport from 'components/reports/BEISummaryReport.vue';
   import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
   import ApplicantPosition from 'components/reports/ApplicantPositionReport.vue';
-  import ListOfPositionReport from 'components/reports/ListPositionReport.vue';
-  import NewEmployeeReport from 'components/reports/NewEmployeeReport.vue';
 
   export default {
     name: 'ReportManagementPage',
@@ -515,16 +534,25 @@
       FinalSummaryReport,
       TopApplicantReport,
       ApplicantPosition,
-      ListOfPositionReport,
-      NewEmployeeReport,
     },
 
     data() {
       return {
+        // Search query
+        searchQuery: '',
+
         // ==================== TABLE CONFIGURATION ====================
         columns: [
           { name: 'id', label: 'ID', align: 'left', field: 'id', sortable: true },
+          { name: 'category', label: 'Category', align: 'left', field: 'category', sortable: true },
           { name: 'name', label: 'Report Name', align: 'left', field: 'name', sortable: true },
+          {
+            name: 'type',
+            label: 'Type',
+            align: 'left',
+            field: 'type',
+            sortable: true,
+          },
           {
             name: 'description',
             label: 'Description',
@@ -536,35 +564,99 @@
         ],
 
         reports: [
+          // ID 1: Rating Category
           {
             id: 1,
             name: 'Final Summary of Rating',
+            category: 'Rating',
+            type: 'PDF',
             description: 'By Publication Date and Position',
+            apiEndpoint: null,
           },
+          // ID 2: Rating Category
           {
             id: 2,
             name: 'Top 5 Ranking Applicants',
+            category: 'Rating',
+            type: 'PDF',
             description: 'By Publication Date',
+            apiEndpoint: null,
           },
+          // ID 3: Applicant Category
           {
             id: 3,
             name: 'Applicant per Position',
+            category: 'Applicant',
+            type: 'PDF',
             description: 'By Publication Date and Position',
+            apiEndpoint: null,
           },
+          // ID 4: Publication Category
           {
             id: 4,
             name: 'Newly Appointed and Promoted Permanent Employees',
+            category: 'Publication',
+            type: 'PDF',
             description: 'By Publication Date',
+            apiEndpoint: null,
           },
+          // ID 5: Publication Category (PDF)
           {
             id: 5,
             name: 'List of Position',
+            category: 'Publication',
+            type: 'PDF',
             description: 'By Publication Date',
+            apiEndpoint: null,
           },
+          // ID 6: Rating Category
           {
             id: 6,
             name: 'BEI Summary Report',
+            category: 'Rating',
+            type: 'PDF',
             description: 'By Publication Date and Position',
+            apiEndpoint: null,
+          },
+          // ID 11: Publication Category (Excel)
+          {
+            id: 11,
+            name: 'List of Position (Excel)',
+            category: 'Publication',
+            type: 'Excel',
+            description: 'List of Position Report - Excel Format',
+            apiEndpoint: '/api/generate/list/jobPost',
+            needsDateOnly: true,
+          },
+          // ID 12: Applicant Category (Excel)
+          {
+            id: 12,
+            name: 'List of Prequalified Applicant',
+            category: 'Applicant',
+            type: 'Excel',
+            description: 'List of Prequalified Applicants - Excel Format',
+            apiEndpoint: '/api/generate/applicant/qualified',
+            needsDateOnly: true,
+          },
+          // ID 13: Applicant Category (Excel)
+          {
+            id: 13,
+            name: 'List of For QS Validation Applicant',
+            category: 'Applicant',
+            type: 'Excel',
+            description: 'List of Applicants for QS Validation - Excel Format',
+            apiEndpoint: '/api/generate/applicant/unqualified',
+            needsDateOnly: true,
+          },
+          // ID 14: Applicant Category (Excel)
+          {
+            id: 14,
+            name: 'List of All Applicant with Demographics',
+            category: 'Applicant',
+            type: 'Excel',
+            description: 'List of All Applicants with Demographics - Excel Format',
+            apiEndpoint: '/api/generate/applicant',
+            needsDateOnly: true,
           },
         ],
 
@@ -573,12 +665,10 @@
         // ==================== MODAL VISIBILITY STATES ====================
         selectedReport: null,
         showReportModal: false,
+        showPublicationDateModal: false, // For Excel reports that only need date
 
         // Top 5 Ranking Modal
         showTop5Modal: false,
-
-        // List of Position Modal
-        showListOfPositionModal: false,
 
         // Newly Appointed Modal
         showNewEmployeeModal: false,
@@ -587,14 +677,12 @@
         showFinalSummaryReportViewer: false,
         showTop5ReportViewer: false,
         showApplicantReportViewer: false,
-        showListOfPositionReportViewer: false,
-        showNewEmployeeReportViewer: false,
         showBEISummaryReportViewer: false,
 
         // ==================== POSITIONS DATA ====================
         loadingPositions: false,
-        finalSummaryPositionsData: [], // For Final Summary Report (fetchPositionWithRating)
-        beiPositionsData: [], // For BEI Summary Report (fetchPositionWithBEI)
+        finalSummaryPositionsData: [],
+        beiPositionsData: [],
         positionOptions: [],
         selectedPositions: [],
 
@@ -612,25 +700,37 @@
         filteredTop5PublicationDateOptions: [],
         selectedTop5PublicationDate: null,
 
-        // ==================== LIST OF POSITION DATA ====================
-        loadingListOfPositionDates: false,
-        listOfPositionDateOptions: [],
-        filteredListOfPositionDateOptions: [],
-        selectedListOfPositionPublicationDate: null,
-
         // ==================== NEWLY APPOINTED DATA ====================
         loadingNewEmployeeDates: false,
         newEmployeeDateOptions: [],
         filteredNewEmployeeDateOptions: [],
         selectedNewEmployeePublicationDate: null,
         selectedNewEmployeeEffectiveDate: null,
+
+        // ==================== PUBLICATION DATE MODAL DATA (For Excel Reports) ====================
+        publicationDateOptions: [],
+        filteredPublicationDateOptions: [],
+        selectedPublicationDate: null,
+        loadingPublicationDatesForExcel: false,
       };
     },
 
     computed: {
+      filteredReports() {
+        if (!this.searchQuery) {
+          return this.reports;
+        }
+        const query = this.searchQuery.toLowerCase();
+        return this.reports.filter(
+          (report) =>
+            report.name.toLowerCase().includes(query) ||
+            report.category.toLowerCase().includes(query) ||
+            report.description.toLowerCase().includes(query),
+        );
+      },
+
       // ==================== POSITION FILTER COMPUTED PROPERTIES ====================
       currentPositionsData() {
-        // Return the appropriate data based on selected report type
         if (this.selectedReport?.id === 6) {
           return this.beiPositionsData;
         } else {
@@ -677,7 +777,6 @@
           });
         }
 
-        // Use jobpostId for Final Summary and id for BEI
         const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
         const labelKey = 'Position';
 
@@ -714,12 +813,11 @@
         }
       },
 
-      // Watch for report modal opening to load appropriate data
       showReportModal(newVal) {
         if (newVal && this.selectedReport) {
           if (this.selectedReport.id === 6) {
             this.loadBEIPositions();
-          } else {
+          } else if (this.selectedReport.id === 1 || this.selectedReport.id === 3) {
             this.loadFinalSummaryPositions();
           }
         }
@@ -733,9 +831,6 @@
     methods: {
       // ==================== DATA LOADING METHODS ====================
 
-      /**
-       * Load positions for Final Summary Report (fetchPositionWithRating)
-       */
       async loadFinalSummaryPositions() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingPositions = true;
@@ -755,9 +850,6 @@
         }
       },
 
-      /**
-       * Load positions for BEI Summary Report (fetchPositionWithBEI)
-       */
       async loadBEIPositions() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingPositions = true;
@@ -777,9 +869,6 @@
         }
       },
 
-      /**
-       * Update position options based on current data source
-       */
       updatePositionOptions() {
         const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
         const labelKey = 'Position';
@@ -794,9 +883,6 @@
         ];
       },
 
-      /**
-       * Load publication dates for Top 5 Ranking report
-       */
       async loadTop5PublicationDates() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingPublicationDates = true;
@@ -816,31 +902,6 @@
         }
       },
 
-      /**
-       * Load publication dates for List of Position report
-       */
-      async loadListOfPositionDates() {
-        const summaryReportStore = useSummaryReportStore();
-        this.loadingListOfPositionDates = true;
-        try {
-          const response = await summaryReportStore.fetchPublicationDateList();
-          this.listOfPositionDateOptions = response.map((item) => item.date);
-          this.filteredListOfPositionDateOptions = [...this.listOfPositionDateOptions];
-        } catch (error) {
-          console.error('Error loading List of Position publication dates:', error);
-          this.$q.notify({
-            type: 'negative',
-            message: 'Failed to load publication dates',
-            position: 'top',
-          });
-        } finally {
-          this.loadingListOfPositionDates = false;
-        }
-      },
-
-      /**
-       * Load publication dates for Newly Appointed report
-       */
       async loadNewEmployeeDates() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingNewEmployeeDates = true;
@@ -861,13 +922,35 @@
         }
       },
 
+      async loadPublicationDatesForExcel() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingPublicationDatesForExcel = true;
+        try {
+          const response = await summaryReportStore.fetchPublicationDateList();
+          this.publicationDateOptions = response.map((item) => item.date);
+          this.filteredPublicationDateOptions = [...this.publicationDateOptions];
+        } catch (error) {
+          console.error('Error loading publication dates for Excel report:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to load publication dates',
+            position: 'top',
+          });
+        } finally {
+          this.loadingPublicationDatesForExcel = false;
+        }
+      },
+
       // ==================== ACTION HANDLERS ====================
 
-      /**
-       * Handle report action button click
-       */
       async handleAction(row) {
         this.selectedReport = row;
+
+        // Check if report is Excel type and needs date only
+        if (row.type === 'Excel' && row.needsDateOnly) {
+          this.openPublicationDateModal();
+          return;
+        }
 
         switch (row.id) {
           case 1: // Final Summary of Rating
@@ -884,12 +967,121 @@
             this.openNewEmployeeModal();
             break;
 
-          case 5: // List of Position
-            this.openListOfPositionModal();
+          case 5: // List of Position (PDF)
+            // For PDF version of List of Position
+            this.$q.notify({
+              type: 'info',
+              message: 'PDF report generation coming soon...',
+              position: 'top',
+            });
+            break;
+
+          case 11: // List of Position (Excel) - should be handled above
+          case 12: // List of Prequalified Applicant
+          case 13: // List of For QS Validation Applicant
+          case 14: // List of All Applicant with Demographics
+            // These are handled by the Excel condition above
             break;
 
           default:
             console.warn('Unknown report type:', row.id);
+        }
+      },
+
+      // ==================== PUBLICATION DATE MODAL METHODS (For Excel Reports) ====================
+
+      async openPublicationDateModal() {
+        this.showPublicationDateModal = true;
+        this.selectedPublicationDate = null;
+        await this.loadPublicationDatesForExcel();
+      },
+
+      closePublicationDateModal() {
+        this.showPublicationDateModal = false;
+        this.selectedPublicationDate = null;
+        this.publicationDateOptions = [];
+        this.filteredPublicationDateOptions = [];
+      },
+
+      filterPublicationDates(val, update) {
+        update(() => {
+          if (val === '') {
+            this.filteredPublicationDateOptions = [...this.publicationDateOptions];
+          } else {
+            const needle = val.toLowerCase();
+            this.filteredPublicationDateOptions = this.publicationDateOptions.filter((date) =>
+              date.toLowerCase().includes(needle),
+            );
+          }
+        });
+      },
+
+      async generateExcelReport() {
+        if (!this.selectedReport?.apiEndpoint || !this.selectedPublicationDate) {
+          return;
+        }
+
+        const summaryReportStore = useSummaryReportStore();
+        this.$q.loading.show({
+          message: 'Generating report...',
+        });
+
+        try {
+          let response;
+          switch (this.selectedReport.id) {
+            case 11: // List of Position
+              response = await summaryReportStore.generateListOfPositionExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            case 12: // List of Prequalified Applicant
+              response = await summaryReportStore.generatePrequalifiedApplicantExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            case 13: // List of For QS Validation Applicant
+              response = await summaryReportStore.generateUnqualifiedApplicantExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            case 14: // List of All Applicant with Demographics
+              response = await summaryReportStore.generateAllApplicantExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            default:
+              throw new Error('Unknown Excel report type');
+          }
+
+          // Create blob and download
+          const blob = new Blob([response], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${this.selectedReport.name}_${this.selectedPublicationDate}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+
+          this.$q.notify({
+            type: 'positive',
+            message: 'Report generated successfully!',
+            position: 'top',
+          });
+
+          this.closePublicationDateModal();
+        } catch (error) {
+          console.error('Error generating Excel report:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to generate report',
+            position: 'top',
+          });
+        } finally {
+          this.$q.loading.hide();
         }
       },
 
@@ -911,7 +1103,6 @@
       closeReportModal() {
         this.showReportModal = false;
         this.resetFilters();
-        // Clear data when closing to free memory
         this.finalSummaryPositionsData = [];
         this.beiPositionsData = [];
         this.positionOptions = [];
@@ -957,13 +1148,10 @@
         this.showReportModal = false;
 
         if (this.selectedReport?.id === 3) {
-          // Applicant per Position
           this.showApplicantReportViewer = true;
         } else if (this.selectedReport?.id === 6) {
-          // BEI Summary Report
           this.showBEISummaryReportViewer = true;
         } else {
-          // Final Summary of Rating
           this.showFinalSummaryReportViewer = true;
         }
       },
@@ -1003,43 +1191,6 @@
       generateTop5Report() {
         this.showTop5Modal = false;
         this.showTop5ReportViewer = true;
-      },
-
-      // ==================== LIST OF POSITION METHODS ====================
-
-      async openListOfPositionModal() {
-        this.showListOfPositionModal = true;
-        this.resetListOfPositionFilters();
-        await this.loadListOfPositionDates();
-      },
-
-      resetListOfPositionFilters() {
-        this.selectedListOfPositionPublicationDate = null;
-      },
-
-      closeListOfPositionModal() {
-        this.showListOfPositionModal = false;
-        this.resetListOfPositionFilters();
-        this.listOfPositionDateOptions = [];
-        this.filteredListOfPositionDateOptions = [];
-      },
-
-      filterListOfPositionDates(val, update) {
-        update(() => {
-          if (val === '') {
-            this.filteredListOfPositionDateOptions = [...this.listOfPositionDateOptions];
-          } else {
-            const needle = val.toLowerCase();
-            this.filteredListOfPositionDateOptions = this.listOfPositionDateOptions.filter((date) =>
-              date.toLowerCase().includes(needle),
-            );
-          }
-        });
-      },
-
-      generateListOfPositionReport() {
-        this.showListOfPositionModal = false;
-        this.showListOfPositionReportViewer = true;
       },
 
       // ==================== NEWLY APPOINTED METHODS ====================
@@ -1089,7 +1240,11 @@
 
       generateNewEmployeeReport() {
         this.showNewEmployeeModal = false;
-        this.showNewEmployeeReportViewer = true;
+        this.$q.notify({
+          type: 'info',
+          message: 'Opening PDF report...',
+          position: 'top',
+        });
       },
 
       // ==================== UTILITY METHODS ====================
@@ -1116,4 +1271,8 @@
   };
 </script>
 
-<style scoped></style>
+<style scoped>
+  .search-input {
+    max-width: 400px;
+  }
+</style>

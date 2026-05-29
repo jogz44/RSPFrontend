@@ -86,6 +86,7 @@
     }
   }
 
+  // FALLBACK: Only used when experience_text is not available
   function calculateTotalExperience(applicant) {
     if (!applicant.experience || applicant.experience.length === 0) {
       return '';
@@ -97,22 +98,24 @@
       let fromDate, toDate;
 
       if (exp.WFrom) {
-        const [day, month, year] = exp.WFrom.split('/');
+        const [month, day, year] = exp.WFrom.split('/');
         fromDate = new Date(`${year}-${month}-${day}`);
       } else if (exp.work_date_from) {
-        fromDate = new Date(exp.work_date_from);
+        const [day, month, year] = exp.work_date_from.split('/');
+        fromDate = new Date(`${year}-${month}-${day}`);
       }
 
       if (exp.WTo) {
-        const [day, month, year] = exp.WTo.split('/');
+        const [month, day, year] = exp.WTo.split('/');
         toDate = new Date(`${year}-${month}-${day}`);
       } else if (exp.work_date_to) {
-        toDate = new Date(exp.work_date_to);
+        const [day, month, year] = exp.work_date_to.split('/');
+        toDate = new Date(`${year}-${month}-${day}`);
       }
 
       if (fromDate && toDate && !isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
         const diffTime = Math.abs(toDate - fromDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
         totalDays += diffDays;
       }
     });
@@ -136,6 +139,37 @@
     return result ? `${result} of relevant experience` : '';
   }
 
+  // FALLBACK: Only used when training_text is not available
+  function calculateTotalTraining(applicant) {
+    if (!applicant.training || applicant.training.length === 0) {
+      return 0;
+    }
+
+    let totalHours = 0;
+    applicant.training.forEach((training) => {
+      const hours = parseFloat(training.NumHours) || 0;
+      totalHours += hours;
+    });
+
+    return totalHours;
+  }
+
+  // Helper function to convert experience text to decimal years
+  function convertExperienceToDecimalYears(experienceText) {
+    if (!experienceText) return 0;
+
+    const yearsMatch = experienceText.match(/(\d+)\s*years?/i);
+    const monthsMatch = experienceText.match(/(\d+)\s*months?/i);
+    const daysMatch = experienceText.match(/(\d+)\s*days?/i);
+
+    let totalYears = 0;
+    if (yearsMatch) totalYears += parseInt(yearsMatch[1]);
+    if (monthsMatch) totalYears += parseInt(monthsMatch[1]) / 12;
+    if (daysMatch) totalYears += parseInt(daysMatch[1]) / 365;
+
+    return totalYears;
+  }
+
   function getCriteriaRatingDescription(jobPost, applicant, type) {
     const criteriaRating = jobPost.criteria_rating?.[0];
     if (!criteriaRating) return null;
@@ -143,28 +177,60 @@
     const requiredValue = jobPost.criteria?.[type.charAt(0).toUpperCase() + type.slice(1)] || '';
 
     let requiredYears = 0;
+    let requiredHours = 0;
+    let applicantTotalYears = 0;
+    let applicantHours = 0;
 
     if (type === 'experience') {
       const yearMatch = requiredValue.match(/(\d+)\s*Years?/i);
       requiredYears = yearMatch ? parseInt(yearMatch[1]) : 0;
-    }
 
-    let applicantYears = 0;
+      // PRIORITY: Use experience_text if available
+      let experienceText = applicant.experience_text || '';
+      applicantTotalYears = convertExperienceToDecimalYears(experienceText);
 
-    if (type === 'experience') {
-      const calculatedExperience = calculateTotalExperience(applicant);
-      const yearMatch = calculatedExperience.match(/(\d+)\s*years?/i);
-      applicantYears = yearMatch ? parseInt(yearMatch[1]) : 0;
-
-      if (applicantYears === 0) {
-        const applicantText = applicant.experience_text || '';
-        const fallbackYearMatch = applicantText.match(/(\d+)\s*years?/i);
-        applicantYears = fallbackYearMatch ? parseInt(fallbackYearMatch[1]) : 0;
+      // FALLBACK: Calculate if experience_text is not available or parsing failed
+      if (applicantTotalYears === 0 && applicant.experience && applicant.experience.length > 0) {
+        const calculatedExperience = calculateTotalExperience(applicant);
+        applicantTotalYears = convertExperienceToDecimalYears(calculatedExperience);
       }
     }
 
+    if (type === 'training') {
+      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
+      requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
+
+      // PRIORITY: Use training_text if available
+      let trainingText = applicant.training_text || '';
+      const hourMatchFromText = trainingText.match(/(\d+)\s*hours?/i);
+
+      if (hourMatchFromText) {
+        applicantHours = parseInt(hourMatchFromText[1]);
+      } else {
+        // FALLBACK: Calculate if training_text is not available
+        applicantHours = calculateTotalTraining(applicant);
+      }
+    }
+
+    // Handle training criteria
+    if (type === 'training' && criteriaRating.trainings && requiredHours > 0) {
+      if (applicantHours > requiredHours) {
+        const trainingRating = criteriaRating.trainings.find((t) =>
+          t.description.includes('More than the Minimum Hours'),
+        );
+        return trainingRating ? trainingRating.description : null;
+      } else if (applicantHours >= requiredHours) {
+        const trainingRating = criteriaRating.trainings.find((t) =>
+          t.description.includes('Within the Minimum Hours'),
+        );
+        return trainingRating ? trainingRating.description : null;
+      }
+      return null;
+    }
+
+    // Handle experience criteria - FIXED with decimal years
     if (type === 'experience' && criteriaRating.experiences && requiredYears > 0) {
-      const percentageOfRequired = (applicantYears / requiredYears) * 100;
+      const percentageOfRequired = (applicantTotalYears / requiredYears) * 100;
 
       for (const exp of criteriaRating.experiences) {
         const desc = exp.description;
@@ -263,18 +329,6 @@
     cleanText = cleanText.replace(/<br\s*\/?>/gi, '\n');
     cleanText = cleanText.replace(/•\s*/g, '');
 
-    if (type === 'experience') {
-      const calculatedExperience = calculateTotalExperience(applicant);
-      if (calculatedExperience) {
-        return calculatedExperience;
-      }
-      return cleanText.trim();
-    }
-
-    if (type === 'training') {
-      return cleanText.trim();
-    }
-
     return cleanText.trim();
   }
 
@@ -294,22 +348,13 @@
         result += applicantQual.toUpperCase();
       }
     } else if (type === 'training') {
+      const criteriaRatingDesc = getCriteriaRatingDescription(jobPost, applicant, type);
       const applicantQual = getApplicantQualification(applicantText, type, applicant);
-      const requiredValue = requiredText || '';
-      const hourMatch = requiredValue.match(/(\d+)\s*Hours?/i);
-      const requiredHours = hourMatch ? parseInt(hourMatch[1]) : 0;
 
-      const applicantHourMatch = applicantText?.match(/(\d+)\s*hours?/i);
-      const applicantHours = applicantHourMatch ? parseInt(applicantHourMatch[1]) : 0;
-
-      if (applicantHours >= requiredHours && requiredHours > 0) {
-        result += 'MEETS TRAINING REQUIREMENT';
+      if (criteriaRatingDesc) {
+        result += criteriaRatingDesc.toUpperCase();
         if (applicantQual) {
           result += '\n' + applicantQual.toUpperCase();
-        }
-      } else if (requiredValue.toLowerCase().includes('none required')) {
-        if (applicantQual) {
-          result += applicantQual.toUpperCase();
         }
       } else if (applicantQual) {
         result += applicantQual.toUpperCase();
@@ -318,15 +363,11 @@
       const applicantQual = getApplicantQualification(applicantText, type, applicant);
       if (applicantQual) {
         result += applicantQual.toUpperCase();
-      } else {
-        result += '';
       }
     } else if (type === 'eligibility') {
       const applicantQual = getApplicantQualification(applicantText, type, applicant);
       if (applicantQual) {
         result += applicantQual.toUpperCase();
-      } else {
-        result += '';
       }
     }
 

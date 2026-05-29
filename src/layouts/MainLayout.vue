@@ -1,10 +1,14 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <!-- Sidebar -->
-    <SidebarPage />
+    <SidebarPage v-model:drawer="drawer" />
+
+    <!-- Header -->
     <q-header class="text-black">
-      <NavBarPage />
+      <NavBarPage @toggle-drawer="drawer = !drawer" />
     </q-header>
+
+    <!-- Page -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -12,11 +16,11 @@
 </template>
 
 <script setup>
-import SidebarPage from 'src/components/SidebarPage.vue'
-import NavBarPage from 'src/components/NavBar.vue'
-import { onMounted } from 'vue';
+  import { ref, onMounted } from 'vue';
+  import SidebarPage from 'src/components/SidebarPage.vue';
+  import NavBarPage from 'src/components/NavBar.vue';
 
-onMounted(async()=> {
+  const drawer = ref(true);
 
-})
+  onMounted(async () => {});
 </script>

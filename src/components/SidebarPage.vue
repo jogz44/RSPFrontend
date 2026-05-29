@@ -52,21 +52,6 @@
         <q-item-section>Exam Score</q-item-section>
       </q-item>
 
-      <!-- <q-item
-        dense
-        class="q-mx-xs q-my-xs"
-        style="border-radius: 17px; padding: 8px 11px"
-        clickable
-        v-ripple
-        to="/exam-score"
-        active-class="active-menu"
-      >
-        <q-item-section avatar>
-          <q-icon name="grading" size="sm" />
-        </q-item-section>
-        <q-item-section>Exam Score</q-item-section>
-      </q-item> -->
-
       <!-- ================================================================ -->
       <!-- SCHEDULE — standalone, guarded by viewSchedule / modifySchedule  -->
       <!-- ================================================================ -->
@@ -86,24 +71,9 @@
         <q-item-section>Schedule</q-item-section>
       </q-item>
 
-      <!-- <q-item
-        dense
-        class="q-mx-xs q-my-xs"
-        style="border-radius: 17px; padding: 8px 11px"
-        clickable
-        v-ripple
-        to="/schedule"
-        active-class="active-menu"
-      >
-        <q-item-section avatar>
-          <q-icon name="event" size="sm" />
-        </q-item-section>
-        <q-item-section>Schedule</q-item-section>
-      </q-item> -->
-
       <!-- ================================================================ -->
       <!-- RATER MANAGEMENT — expandable, if permitted                      -->
-      <!-- Sub-items: Raters, Criteria, Reports                             -->
+      <!-- Sub-items: Raters, Criteria (Reports moved to standalone)        -->
       <!-- ================================================================ -->
       <q-expansion-item
         v-if="hasRaterManagementAccess"
@@ -134,6 +104,28 @@
         </q-card>
       </q-expansion-item>
 
+      <!-- ================================================================ -->
+      <!-- REPORTS — standalone, guarded by viewReport                      -->
+      <!-- ================================================================ -->
+      <q-item
+        v-if="hasReportsAccess"
+        dense
+        class="q-mx-xs q-my-xs"
+        style="border-radius: 17px; padding: 8px 11px"
+        clickable
+        v-ripple
+        to="/reports"
+        active-class="active-menu"
+      >
+        <q-item-section avatar>
+          <q-icon name="assessment" size="sm" />
+        </q-item-section>
+        <q-item-section>Reports</q-item-section>
+      </q-item>
+
+      <!-- ================================================================ -->
+      <!-- LIBRARY — standalone, guarded by viewLibraryAccess               -->
+      <!-- ================================================================ -->
       <q-item
         v-if="hasLibraryAccess"
         dense
@@ -199,7 +191,8 @@
   const authStore = useAuthStore();
   const route = useRoute();
 
-  const drawer = ref(true);
+  // Controlled by the parent layout via v-model:drawer
+  const drawer = defineModel('drawer', { default: true });
   const raterExpanded = ref(false);
 
   // ============================================================================
@@ -246,7 +239,7 @@
   );
 
   // ============================================================================
-  // SCHEDULE PERMISSIONS
+  // LIBRARY PERMISSIONS
   // ============================================================================
 
   const hasLibraryAccess = computed(
@@ -257,6 +250,7 @@
 
   // ============================================================================
   // RATER MANAGEMENT PERMISSIONS
+  // Sub-items: Raters, Criteria only (Reports is now standalone)
   // ============================================================================
 
   const hasRatersAccess = computed(
@@ -271,12 +265,14 @@
       authStore.user?.permissions?.modifyCriteria === '1',
   );
 
-  const hasReportsAccess = computed(() => authStore.user?.permissions?.viewReport === '1');
+  /** Show Rater Management expansion if user has access to Raters or Criteria */
+  const hasRaterManagementAccess = computed(() => hasRatersAccess.value || hasCriteriaAccess.value);
 
-  /** Show Rater Management expansion if user has access to at least one sub-module */
-  const hasRaterManagementAccess = computed(
-    () => hasRatersAccess.value || hasCriteriaAccess.value || hasReportsAccess.value,
-  );
+  // ============================================================================
+  // REPORTS — now standalone, guarded by viewReport only
+  // ============================================================================
+
+  const hasReportsAccess = computed(() => authStore.user?.permissions?.viewReport === '1');
 
   // ============================================================================
   // USER MANAGEMENT PERMISSION
@@ -297,8 +293,6 @@
   // ============================================================================
   // TOP-LEVEL MENU ITEMS
   // Order: Dashboard → Plantilla → Job Posts → Applicant
-  // Exam Score and Rater Management rendered separately
-  // User Management always visible | Activity Log permission-guarded
   // ============================================================================
 
   const filteredMenuItems = computed(() => [
@@ -315,14 +309,13 @@
   ]);
 
   // ============================================================================
-  // RATER MANAGEMENT SUB-ITEMS
+  // RATER MANAGEMENT SUB-ITEMS (Raters & Criteria only — Reports is standalone)
   // ============================================================================
 
   const filteredRatersManage = computed(() =>
     [
       { label: 'Raters', route: '/raters', icon: 'groups', permission: hasRatersAccess },
       { label: 'Criteria', route: '/criteria', icon: 'rule', permission: hasCriteriaAccess },
-      { label: 'Reports', route: '/reports', icon: 'assessment', permission: hasReportsAccess },
     ].filter((item) => item.permission.value),
   );
 
@@ -330,11 +323,10 @@
   // AUTO-EXPAND ACTIVE SECTION ON MOUNT
   // ============================================================================
 
-  const raterRoutes = ['/raters', '/criteria', '/reports'];
+  const raterRoutes = ['/raters', '/criteria'];
 
   onMounted(() => {
     const currentRoute = route.path;
-
     if (raterRoutes.includes(currentRoute)) {
       raterExpanded.value = true;
     }
