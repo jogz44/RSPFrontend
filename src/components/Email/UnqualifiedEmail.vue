@@ -231,6 +231,21 @@
                 </div>
               </div>
             </div>
+
+            <!-- Sticky Footer -->
+            <div class="modal-footer">
+              <q-btn flat label="Close" @click="$emit('close')" class="footer-close-btn" />
+              <q-btn
+                color="primary"
+                :loading="isPrinting"
+                :disable="isPrinting"
+                @click="handlePrint"
+                class="footer-print-btn"
+              >
+                <i class="ti ti-printer" style="margin-right: 6px"></i>
+                {{ isPrinting ? 'Generating PDF...' : 'Print' }}
+              </q-btn>
+            </div>
           </template>
         </div>
       </div>
@@ -273,6 +288,7 @@
   const error = ref(null);
   const applicantDetails = ref(null);
   const fetchAttempts = ref(0);
+  const isPrinting = ref(false);
 
   // ── Computed ─────────────────────────────────────────────
   const applicantName = computed(() => {
@@ -356,6 +372,426 @@
     if (!html) return '';
     const text = html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '');
     return text.length > length ? `${text.substring(0, length)}…` : text;
+  };
+
+  // ── Image helper ─────────────────────────────────────────
+  const getImageBase64 = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // ── PDF Generation ───────────────────────────────────────
+  const buildQsTableBody = () => {
+    const header = [
+      { text: 'Qualification Standard', style: 'tableHeader' },
+      { text: 'Required', style: 'tableHeader' },
+      { text: 'Your Records', style: 'tableHeader' },
+      { text: 'Assessment', style: 'tableHeader' },
+    ];
+
+    const rows = qsRows.value.map((row) => [
+      { text: row.label, fontSize: 8, bold: true },
+      { text: row.required || '-', fontSize: 8 },
+      { text: truncateHtml(row.record, 200) || '-', fontSize: 8 },
+      {
+        text: row.remark || '-',
+        fontSize: 8,
+        color: row.meets ? '#15803d' : '#dc2626',
+        bold: true,
+      },
+    ]);
+
+    return [header, ...rows];
+  };
+
+  const buildEducationTable = () => {
+    const edu = applicantDetails.value?.records?.education;
+    if (!edu?.length) return null;
+    return {
+      stack: [
+        { text: 'Education Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['25%', '40%', '20%', '15%'],
+            body: [
+              [
+                { text: 'Degree', style: 'tableHeader' },
+                { text: 'School', style: 'tableHeader' },
+                { text: 'Year Attended', style: 'tableHeader' },
+                { text: 'Graduated', style: 'tableHeader' },
+              ],
+              ...edu.map((e) => [
+                { text: e.Degree || '-', fontSize: 8 },
+                { text: e.School || '-', fontSize: 8 },
+                { text: e.DateAttend || '-', fontSize: 8 },
+                { text: e.Graduated || '-', fontSize: 8 },
+              ]),
+            ],
+          },
+          margin: [0, 0, 0, 6],
+        },
+      ],
+    };
+  };
+
+  const buildExperienceTable = () => {
+    const exp = applicantDetails.value?.records?.experience;
+    if (!exp?.length) return null;
+    return {
+      stack: [
+        { text: 'Work Experience Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['30%', '40%', '15%', '15%'],
+            body: [
+              [
+                { text: 'Position', style: 'tableHeader' },
+                { text: 'Company', style: 'tableHeader' },
+                { text: 'From', style: 'tableHeader' },
+                { text: 'To', style: 'tableHeader' },
+              ],
+              ...exp.map((e) => [
+                { text: e.position || '-', fontSize: 8 },
+                { text: e.company || '-', fontSize: 8 },
+                { text: e.from || '-', fontSize: 8 },
+                { text: e.to || '-', fontSize: 8 },
+              ]),
+            ],
+          },
+          margin: [0, 0, 0, 6],
+        },
+      ],
+    };
+  };
+
+  const buildTrainingTable = () => {
+    const training = applicantDetails.value?.records?.training;
+    if (!training?.length) return null;
+    return {
+      stack: [
+        { text: 'Training Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['65%', '25%', '10%'],
+            body: [
+              [
+                { text: 'Training Title', style: 'tableHeader' },
+                { text: 'Date', style: 'tableHeader' },
+                { text: 'Hours', style: 'tableHeader', alignment: 'center' },
+              ],
+              ...training.map((t) => [
+                { text: t.Training || '-', fontSize: 8 },
+                { text: formatDate(t.DateFrom), fontSize: 8 },
+                { text: t.NumHours?.toString() || '-', fontSize: 8, alignment: 'center' },
+              ]),
+            ],
+          },
+          margin: [0, 0, 0, 6],
+        },
+      ],
+    };
+  };
+
+  const buildEligibilityTable = () => {
+    const elig = applicantDetails.value?.records?.eligibility;
+    if (!elig?.length) return null;
+    return {
+      stack: [
+        { text: 'Eligibility Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['60%', '25%', '15%'],
+            body: [
+              [
+                { text: 'Eligibility', style: 'tableHeader' },
+                { text: 'Date', style: 'tableHeader' },
+                { text: 'Rating', style: 'tableHeader', alignment: 'center' },
+              ],
+              ...elig.map((e) => [
+                { text: e.CivilServe || '-', fontSize: 8 },
+                { text: formatDate(e.Dates), fontSize: 8 },
+                { text: e.Rates?.toString() || '-', fontSize: 8, alignment: 'center' },
+              ]),
+            ],
+          },
+          margin: [0, 0, 0, 6],
+        },
+      ],
+    };
+  };
+
+  const handlePrint = async () => {
+    if (isPrinting.value) return;
+    isPrinting.value = true;
+
+    try {
+      const logoBase64 = await getImageBase64('/logo.png');
+
+      const [pdfMakeModule, vfsFontsModule] = await Promise.all([
+        import('pdfmake/build/pdfmake'),
+        import('pdfmake/build/vfs_fonts'),
+      ]);
+
+      const pdfMake = pdfMakeModule.default || pdfMakeModule;
+      pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
+
+      const d = applicantDetails.value;
+      const name = applicantName.value;
+      const address = formattedAddress.value;
+      const dateStr = formatDateEnglish(props.currentDate);
+
+      const recordTables = [
+        buildEducationTable(),
+        buildExperienceTable(),
+        buildTrainingTable(),
+        buildEligibilityTable(),
+      ].filter(Boolean);
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'portrait',
+        pageMargins: [60, 120, 60, 50],
+
+        // ── Header (matches Top 5 report style) ─────────────
+        header: () => ({
+          stack: [
+            {
+              canvas: [
+                {
+                  type: 'rect',
+                  x: (595.28 - 523.28) / 2,
+                  y: 60,
+                  w: 523.28,
+                  h: 25,
+                  color: '#008000',
+                },
+              ],
+            },
+            {
+              margin: [72, -65, 72, 0],
+              columns: [
+                {
+                  width: 65,
+                  stack: [
+                    {
+                      canvas: [{ type: 'rect', x: 0, y: 0, w: 75, h: 80, color: '#ffffff' }],
+                    },
+                    ...(logoBase64
+                      ? [
+                          {
+                            image: logoBase64,
+                            width: 65,
+                            height: 65,
+                            absolutePosition: { x: 77, y: 22 },
+                          },
+                        ]
+                      : []),
+                  ],
+                },
+                {
+                  width: '*',
+                  margin: [15, -15, 0, 0],
+                  stack: [
+                    {
+                      text: 'REPUBLIC OF THE PHILIPPINES',
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 20, 0, 2],
+                    },
+                    {
+                      text: 'PROVINCE OF DAVAO DEL NORTE',
+                      fontSize: 8,
+                      color: '#00703c',
+                      alignment: 'left',
+                      margin: [0, 0, 0, 2],
+                    },
+                    {
+                      text: 'CITY OF TAGUM',
+                      fontSize: 10,
+                      bold: true,
+                      color: '#00703c',
+                      alignment: 'left',
+                    },
+                    {
+                      text: 'HUMAN RESOURCE MERIT PROMOTION AND SELECTION BOARD',
+                      fontSize: 11,
+                      bold: true,
+                      color: 'white',
+                      margin: [0, 7, 0, 0],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+
+        // ── Footer ───────────────────────────────────────────
+        footer: (currentPage, pageCount) => ({
+          text: `Page ${currentPage} of ${pageCount}`,
+          alignment: 'right',
+          fontSize: 8,
+          margin: [0, 10, 30, 0],
+        }),
+
+        // ── Content ──────────────────────────────────────────
+        content: [
+          // Date
+          { text: dateStr, fontSize: 10, margin: [0, 0, 0, 10] },
+
+          // Addressee
+          {
+            stack: [
+              { text: `MR./MRS. ${name}`, fontSize: 10, bold: false },
+              ...(address ? [{ text: address, fontSize: 10 }] : []),
+            ],
+            margin: [0, 0, 0, 12],
+          },
+
+          // Greeting
+          {
+            text: [{ text: `Dear MR./MRS. ` }, { text: name, bold: true }, { text: ',' }],
+            fontSize: 10,
+            margin: [0, 0, 0, 10],
+          },
+
+          { text: 'Greetings of Peace and Safety!', fontSize: 10, margin: [0, 0, 0, 10] },
+
+          {
+            text: [
+              'We wish to inform you that after careful evaluation of your application for the position of ',
+              { text: d.position || 'N/A', bold: true },
+              ', in the ',
+              { text: d.office || 'N/A', bold: true },
+              ', the Human Resource Merit Promotion and Selection Board (HRMPSB) has determined that you do not meet the Qualification Standards required for the said position.',
+            ],
+            fontSize: 10,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+
+          {
+            text: 'After a thorough review of the documents you submitted, the following deficiencies were noted that led to your disqualification:',
+            fontSize: 10,
+            alignment: 'justify',
+            margin: [0, 0, 0, 8],
+          },
+
+          // QS Table
+          {
+            table: {
+              headerRows: 1,
+              widths: ['20%', '25%', '35%', '20%'],
+              body: buildQsTableBody(),
+            },
+            layout: {
+              fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
+            },
+            margin: [0, 0, 0, 8],
+          },
+
+          // Dynamic record tables
+          ...recordTables,
+
+          {
+            text: 'We appreciate your interest in joining the City Government of Tagum and commend your effort in applying for the position. We encourage you to continue enhancing your qualifications and to apply for future vacancies that match your credentials.',
+            fontSize: 10,
+            alignment: 'justify',
+            margin: [0, 10, 0, 10],
+          },
+
+          {
+            text: 'The City Government of Tagum upholds the principle of Equal Employment Opportunity and ensures that all applicants are evaluated fairly based on merit, fitness, and qualifications, without discrimination on the basis of gender, age, civil status, disability, religion, or other protected characteristics.',
+            fontSize: 10,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+
+          {
+            text: [
+              'If you have any questions or concerns, please do not hesitate to contact us at ',
+              { text: props.contactNumber, bold: true },
+              '.',
+            ],
+            fontSize: 10,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+
+          { text: 'Thank you for your understanding.', fontSize: 10, margin: [0, 0, 0, 30] },
+
+          // Signature block
+          {
+            stack: [
+              {
+                text: `(SGD.) ${props.signatoryName}`,
+                fontSize: 10,
+                bold: true,
+                decoration: 'underline',
+              },
+              { text: props.signatoryTitle, fontSize: 10, margin: [0, 2, 0, 0] },
+              {
+                text: 'Authorized Representative of the City Mayor',
+                fontSize: 9,
+                color: '#374151',
+                margin: [0, 1, 0, 0],
+              },
+              { text: 'Chairperson', fontSize: 9, color: '#374151', margin: [0, 1, 0, 0] },
+            ],
+            margin: [0, 0, 0, 20],
+          },
+
+          // System notice
+          {
+            text: 'This is a system-generated email.',
+            fontSize: 8,
+            color: '#6b7280',
+            alignment: 'center',
+            margin: [0, 10, 0, 0],
+          },
+        ],
+
+        styles: {
+          tableHeader: {
+            fontSize: 8,
+            bold: true,
+            fillColor: '#f0f0f0',
+          },
+        },
+
+        defaultStyle: {
+          fontSize: 10,
+        },
+      };
+
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      pdfDocGenerator.getBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Revoke after a short delay to allow the tab to load
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      });
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      isPrinting.value = false;
+    }
   };
 
   // ── Data fetching ────────────────────────────────────────
@@ -445,9 +881,8 @@
     z-index: 9999;
     background: rgba(0, 0, 0, 0.55);
     overflow-y: auto;
-    /* FIX: Change to center and remove margin auto from container */
     display: flex;
-    align-items: center; /* Changed from flex-start */
+    align-items: center;
     justify-content: center;
     padding: 24px 16px;
   }
@@ -458,14 +893,11 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     width: 100%;
     max-width: 800px;
-    /* FIX: Remove margin auto since parent handles centering */
     display: flex;
     flex-direction: column;
     color: #1a1a1a;
     font-family: system-ui, sans-serif;
-    /* Add max-height to prevent overflow */
     max-height: calc(100vh - 48px);
-    /* Add this to handle internal scrolling */
     overflow: hidden;
   }
 
@@ -498,7 +930,6 @@
     justify-content: space-between;
     padding: 12px 20px;
     background: #15803d;
-
     flex-shrink: 0;
   }
   .modal-header-left {
@@ -531,8 +962,30 @@
   .modal-body {
     padding: 20px 24px;
     flex: 1;
-    overflow-y: auto; /* Add this */
-    min-height: 0; /* Add this - important for flex children scrolling */
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  /* ── Sticky Footer ───────────────────────────────────── */
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 20px;
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .footer-close-btn {
+    color: #6b7280;
+  }
+
+  .footer-print-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   /* ── Letter wrapper ──────────────────────────────────── */
@@ -550,7 +1003,7 @@
     color: #000;
   }
 
-  /* ── Letter typography (single-spaced) ───────────────── */
+  /* ── Letter typography ───────────────────────────────── */
   .letter-body {
     padding-top: 4px;
   }
@@ -726,7 +1179,8 @@
       box-shadow: none;
       border-radius: 0;
     }
-    .modal-header {
+    .modal-header,
+    .modal-footer {
       display: none;
     }
     .modal-body {

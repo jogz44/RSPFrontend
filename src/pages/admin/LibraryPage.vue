@@ -129,63 +129,139 @@
       transition-show="slide-up"
       transition-hide="slide-down"
     >
-      <q-card style="width: 560px; max-width: 95vw; border-radius: 12px">
-        <q-card-section class="dialog-header-light">
-          <q-icon name="comment" color="primary" size="24px" class="q-mr-sm gt-xs" />
-          <div>
-            <div class="text-h6 text-bold text-grey-9">Add Remark</div>
-            <div class="text-caption text-grey-6">Fill in the details below</div>
+      <q-card style="width: 600px; max-width: 96vw; border-radius: 16px; overflow: hidden">
+        <!-- ── Header ── -->
+        <div class="add-dialog-header">
+          <div class="row items-center q-gutter-sm">
+            <div class="add-dialog-icon-wrap">
+              <q-icon name="comment" color="white" size="20px" />
+            </div>
+            <div>
+              <div class="text-subtitle1 text-bold text-white">Add New Remark</div>
+              <div class="text-caption" style="color: rgba(255, 255, 255, 0.65)">
+                Fill in the remark details below
+              </div>
+            </div>
           </div>
           <q-space />
-          <q-btn flat round dense icon="close" color="grey-7" v-close-popup />
-        </q-card-section>
+          <q-btn flat round dense icon="close" color="white" style="opacity: 0.75" v-close-popup />
+        </div>
 
-        <q-separator />
+        <!-- ── Body ── -->
+        <q-card-section
+          class="q-pa-lg"
+          style="max-height: 68vh; overflow-y: auto; background: #fff"
+        >
+          <!-- Step 1 — Remark Text -->
+          <div class="add-section-block q-mb-lg">
+            <div class="add-section-label">
+              <q-icon name="edit_note" size="15px" class="q-mr-xs" />
+              Remark Content
+            </div>
+            <q-input
+              v-model="addForm.remarks"
+              placeholder="Type your remark here..."
+              outlined
+              dense
+              type="textarea"
+              autogrow
+              :input-style="{ minHeight: '90px', fontSize: '13.5px' }"
+              :rules="[(v) => !!v || 'Remark is required']"
+              class="add-remark-input"
+            />
+          </div>
 
-        <q-card-section class="q-pa-lg" style="max-height: 65vh; overflow-y: auto">
-          <div class="row q-col-gutter-md">
-            <div class="col-12">
-              <q-select
-                v-model="addForm.category"
-                label="Category *"
-                outlined
-                dense
-                :options="categoryOptions"
-                emit-value
-                map-options
-                :rules="[(v) => !!v || 'Category is required']"
-              >
-                <template #prepend><q-icon name="category" size="18px" /></template>
-              </q-select>
+          <!-- Step 2 — Category Selection -->
+          <div class="add-section-block">
+            <div class="add-section-label">
+              <q-icon name="category" size="15px" class="q-mr-xs" />
+              Select Category
+              <span class="add-section-hint">— choose one or more</span>
             </div>
 
-            <div class="col-12">
-              <q-input
-                v-model="addForm.remarks"
-                label="Remark *"
-                outlined
-                dense
-                type="textarea"
-                autogrow
-                :input-style="{ minHeight: '80px' }"
-                :rules="[(v) => !!v || 'Remark is required']"
+            <!-- Category Cards Grid -->
+            <div class="category-card-grid">
+              <div
+                v-for="cat in categoryOptions"
+                :key="cat.value"
+                class="category-card"
+                :class="{
+                  'category-card--active': addForm.categories.includes(cat.value),
+                  [`category-card--${cat.value.toLowerCase()}`]: true,
+                }"
+                @click="toggleCategory(cat.value)"
               >
-                <template #prepend><q-icon name="comment" size="18px" /></template>
-              </q-input>
+                <div class="category-card-inner">
+                  <div class="category-card-check">
+                    <q-icon
+                      :name="
+                        addForm.categories.includes(cat.value)
+                          ? 'check_circle'
+                          : 'radio_button_unchecked'
+                      "
+                      :color="
+                        addForm.categories.includes(cat.value)
+                          ? getCategoryColor(cat.value)
+                          : 'grey-4'
+                      "
+                      size="20px"
+                    />
+                  </div>
+                  <div class="category-card-icon">
+                    <q-icon
+                      :name="getCategoryIcon(cat.value)"
+                      size="22px"
+                      :color="getCategoryColor(cat.value)"
+                    />
+                  </div>
+                  <div class="category-card-label">{{ cat.label }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Validation -->
+            <div v-if="addCategoryError" class="text-negative text-caption q-mt-sm q-ml-xs">
+              <q-icon name="error_outline" size="13px" class="q-mr-xs" />
+              Please select at least one category.
             </div>
           </div>
         </q-card-section>
 
+        <!-- ── Summary Banner (shows when ready) ── -->
+        <div v-if="addForm.categories.length > 0 && addForm.remarks" class="add-summary-bar">
+          <q-icon name="info_outline" size="15px" class="q-mr-xs" style="opacity: 0.8" />
+          <span>
+            Will create
+            <strong>{{ addForm.categories.length }}</strong>
+            remark{{ addForm.categories.length > 1 ? 's' : '' }} under:
+          </span>
+          <q-badge
+            v-for="cat in addForm.categories"
+            :key="cat"
+            :color="getCategoryColor(cat)"
+            class="q-ml-xs"
+            style="font-size: 10px; padding: 3px 7px"
+          >
+            {{ cat }}
+          </q-badge>
+        </div>
+
         <q-separator />
 
-        <q-card-actions align="right" class="q-px-lg q-py-sm bg-grey-1">
-          <q-btn flat label="Cancel" color="grey-7" v-close-popup />
+        <!-- ── Footer ── -->
+        <q-card-actions align="right" class="q-px-lg q-py-md bg-grey-1">
+          <q-btn flat label="Cancel" color="grey-7" v-close-popup class="q-mr-xs" />
           <q-btn
             unelevated
-            label="Save"
+            :label="
+              addForm.categories.length > 1
+                ? `Save ${addForm.categories.length} Remarks`
+                : 'Save Remark'
+            "
             color="primary"
             icon="save"
             :loading="store.loading"
+            style="border-radius: 8px; min-width: 130px"
             @click="submitAdd"
           />
         </q-card-actions>
@@ -313,8 +389,11 @@
         editDialog: false,
         selectedRemark: null,
 
+        // Validation flags
+        addCategoryError: false,
+
         addForm: {
-          category: '',
+          categories: [], // <-- array for multi-checkbox
           remarks: '',
         },
 
@@ -326,7 +405,6 @@
     },
 
     computed: {
-      // Check if user has modify permission
       hasModifyPermission() {
         return this.authStore.user?.permissions?.modifyLibraryAccess === '1';
       },
@@ -335,12 +413,10 @@
         let search = (this.globalSearch || '').toLowerCase().trim();
         let filtered = this.store.remarks || [];
 
-        // Apply category filter
         if (this.categoryFilter) {
           filtered = filtered.filter((r) => r.category === this.categoryFilter);
         }
 
-        // Apply search filter
         if (search) {
           filtered = filtered.filter((r) => {
             return [r.remarks, r.category, r.created_at]
@@ -353,7 +429,7 @@
       },
 
       columns() {
-        const cols = [
+        return [
           {
             name: 'remarks',
             label: 'Remark',
@@ -376,8 +452,15 @@
             sortable: false,
           },
         ];
+      },
+    },
 
-        return cols;
+    watch: {
+      // Clear category error as soon as user selects at least one
+      'addForm.categories'(val) {
+        if (val.length > 0) {
+          this.addCategoryError = false;
+        }
       },
     },
 
@@ -392,6 +475,91 @@
         return colors[category] || 'primary';
       },
 
+      getCategoryIcon(category) {
+        const icons = {
+          EDUCATION: 'school',
+          EXPERIENCE: 'work',
+          TRAINING: 'fitness_center',
+          ELIGIBILITY: 'verified',
+        };
+        return icons[category] || 'label';
+      },
+
+      toggleCategory(value) {
+        const idx = this.addForm.categories.indexOf(value);
+        if (idx === -1) {
+          this.addForm.categories.push(value);
+        } else {
+          this.addForm.categories.splice(idx, 1);
+        }
+        if (this.addForm.categories.length > 0) {
+          this.addCategoryError = false;
+        }
+      },
+
+      openAddDialog() {
+        this.addForm = { categories: [], remarks: '' };
+        this.addCategoryError = false;
+        this.addDialog = true;
+      },
+
+      /**
+       * Submit Add — fires one API request per selected category.
+       * e.g. if EDUCATION + TRAINING are checked → 2 requests.
+       */
+      async submitAdd() {
+        // Validate categories
+        if (this.addForm.categories.length === 0) {
+          this.addCategoryError = true;
+          this.$q.notify({
+            type: 'negative',
+            message: 'Please select at least one category.',
+            position: 'top',
+          });
+          return;
+        }
+
+        // Validate remarks
+        if (!this.addForm.remarks || !this.addForm.remarks.trim()) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Remark is required.',
+            position: 'top',
+          });
+          return;
+        }
+
+        try {
+          // Fire one request per selected category
+          const requests = this.addForm.categories.map((category) =>
+            this.store.storeRemark({
+              category,
+              remarks: this.addForm.remarks.trim(),
+            }),
+          );
+
+          await Promise.all(requests);
+
+          const count = this.addForm.categories.length;
+          this.$q.notify({
+            type: 'positive',
+            message:
+              count > 1 ? `${count} remarks added successfully.` : 'Remark added successfully.',
+            position: 'top',
+          });
+
+          this.addDialog = false;
+          this.addForm = { categories: [], remarks: '' };
+          this.addCategoryError = false;
+        } catch (e) {
+          this.$q.notify({
+            type: 'negative',
+            message: e?.response?.data?.message || 'Failed to add remark(s).',
+            position: 'top',
+          });
+        }
+      },
+
       editRemark(row) {
         this.selectedRemark = row;
         this.editForm = {
@@ -401,63 +569,20 @@
         this.editDialog = true;
       },
 
-      openAddDialog() {
-        this.addForm = { category: '', remarks: '' };
-        this.addDialog = true;
-      },
-
-      async submitAdd() {
-        if (!this.addForm.category) {
-          this.$q.notify({
-            type: 'negative',
-            message: 'Category is required',
-            position: 'top',
-          });
-          return;
-        }
-
-        if (!this.addForm.remarks) {
-          this.$q.notify({
-            type: 'negative',
-            message: 'Remark is required',
-            position: 'top',
-          });
-          return;
-        }
-
-        try {
-          await this.store.storeRemark(this.addForm);
-          this.$q.notify({
-            type: 'positive',
-            message: 'Remark added successfully.',
-            position: 'top',
-          });
-          this.addDialog = false;
-          // Reset form
-          this.addForm = { category: '', remarks: '' };
-        } catch (e) {
-          this.$q.notify({
-            type: 'negative',
-            message: e?.response?.data?.message || 'Failed to add remark.',
-            position: 'top',
-          });
-        }
-      },
-
       async submitEdit() {
         if (!this.editForm.category) {
           this.$q.notify({
             type: 'negative',
-            message: 'Category is required',
+            message: 'Category is required.',
             position: 'top',
           });
           return;
         }
 
-        if (!this.editForm.remarks) {
+        if (!this.editForm.remarks || !this.editForm.remarks.trim()) {
           this.$q.notify({
             type: 'negative',
-            message: 'Remark is required',
+            message: 'Remark is required.',
             position: 'top',
           });
           return;
@@ -514,23 +639,11 @@
 </script>
 
 <style scoped>
+  /* ── Page ── */
   .table-scroll-wrapper {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-  }
-
-  .dialog-header-light {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    background: #fff;
-    flex-shrink: 0;
-  }
-
-  .dialog-footer {
-    background: #fff;
-    flex-shrink: 0;
   }
 
   .category-badge {
@@ -543,5 +656,142 @@
     padding: 6px 12px;
     font-size: 11px;
     font-weight: 500;
+  }
+
+  /* ── Add Dialog Header ── */
+  .add-dialog-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #43a047 0%, #5db461 100%);
+    flex-shrink: 0;
+  }
+
+  .add-dialog-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Section labels ── */
+  .add-section-block {
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fafbfc;
+  }
+
+  .add-section-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #607080;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  .add-section-hint {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #aab0b8;
+    margin-left: 4px;
+    font-size: 11px;
+  }
+
+  .add-remark-input :deep(.q-field__control) {
+    background: #fff;
+    border-radius: 8px;
+  }
+
+  /* ── Category Cards ── */
+  .category-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .category-card {
+    border: 2px solid #e8eaed;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 0.18s,
+      box-shadow 0.18s,
+      background 0.18s;
+    user-select: none;
+  }
+
+  .category-card:hover {
+    border-color: #c0c8d0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  }
+
+  .category-card--active {
+    background: #f4f8ff;
+    box-shadow: 0 2px 10px rgba(25, 118, 210, 0.12);
+  }
+
+  .category-card--education.category-card--active {
+    border-color: #1976d2;
+  }
+  .category-card--experience.category-card--active {
+    border-color: #43a047;
+  }
+  .category-card--training.category-card--active {
+    border-color: #ef6c00;
+  }
+  .category-card--eligibility.category-card--active {
+    border-color: #7b1fa2;
+  }
+
+  .category-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .category-card-check {
+    flex-shrink: 0;
+  }
+
+  .category-card-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .category-card-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3a4550;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Summary bar ── */
+  .add-summary-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 20px;
+    background: #e8f4fd;
+    font-size: 12px;
+    color: #1565c0;
+    border-top: 1px solid #c9e2f7;
   }
 </style>

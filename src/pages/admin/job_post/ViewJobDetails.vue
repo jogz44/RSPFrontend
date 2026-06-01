@@ -615,7 +615,7 @@
                       color="primary"
                       @click="openUnqualifiedEmailModal(props.row)"
                     >
-                      <q-tooltip>Send Email</q-tooltip>
+                      <q-tooltip>Preview Email</q-tooltip>
                     </q-btn>
                     <q-btn
                       size="sm"
@@ -624,7 +624,7 @@
                       color="blue"
                       @click="viewUnqualifiedApplicantDetails(props.row)"
                     >
-                      <q-tooltip>View Details</q-tooltip>
+                      <q-tooltip>View Applicant QS</q-tooltip>
                     </q-btn>
                   </q-td>
                 </template>
