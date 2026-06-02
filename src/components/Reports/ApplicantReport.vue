@@ -402,8 +402,7 @@
             return {
               margin: [40, 0, 40, 20],
               columns: [
-                { text: '', width: '*' },
-                { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', fontSize: 7 },
+                { text: `Page ${currentPage} of ${pageCount}`, alignment: 'center', fontSize: 7 },
               ],
             };
           },
