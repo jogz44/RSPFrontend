@@ -9,7 +9,7 @@
     <!-- Job Details Card -->
     <q-card class="q-mb-lg shadow-3" flat bordered style="max-width: 1300px; margin: auto">
       <q-card-section v-if="!isLoading" class="q-pa-lg">
-        <!-- Header Row: Back + History + View M.O. -->
+        <!-- Header Row: Back + History + View M.O. + Email Preview -->
         <div class="row items-center justify-between q-mb-lg">
           <q-btn icon="arrow_back" round flat color="primary" @click="goBack" size="md" dense />
           <div class="row items-center q-gutter-sm">
@@ -50,6 +50,18 @@
               @click="viewFundedDocument"
               icon="description"
               label="View M.O."
+              size="md"
+              no-caps
+              flat
+              dense
+            />
+
+            <q-btn
+              rounded
+              color="primary"
+              @click="openApplicationReceivedModal"
+              icon="email"
+              label="Email Preview"
               size="md"
               no-caps
               flat
@@ -770,6 +782,21 @@
       @update:show="unqualifiedEmailModal = $event"
       @close="handleUnqualifiedEmailClose"
     />
+
+    <!-- Application Received Email Modal -->
+    <ApplicationReceivedEmail
+      :show="applicationReceivedModal"
+      :applicant="selectedApplicantForEmail"
+      :position="selectedJob?.Position || ''"
+      :item-number="selectedJob?.ItemNo || ''"
+      :office="selectedJob?.Office || ''"
+      :contact-number="contactNumber"
+      :signatory-name="signatoryName"
+      :signatory-title="signatoryTitle"
+      :current-date="currentDate"
+      @update:show="applicationReceivedModal = $event"
+      @close="closeApplicationReceivedModal"
+    />
   </div>
 </template>
 
@@ -786,6 +813,7 @@
   import ScoreModal from 'src/components/Rater/ApplicantScore.vue';
   import ImportApplicantsModal from 'src/components/ImportApplicant.vue';
   import UnqualifiedEmail from 'src/components/Email/UnqualifiedEmail.vue';
+  import ApplicationReceivedEmail from 'src/components/Email/ApplicationReceivedEmail.vue';
 
   const router = useRouter();
   const route = useRoute();
@@ -797,6 +825,21 @@
   const isLoading = ref(false);
   const sendEvalConfirmDialog = ref(false);
   const isDialogLoading = ref(false);
+
+  // Application Received Email Modal
+  const applicationReceivedModal = ref(false);
+  const selectedApplicantForEmail = ref({
+    firstname: 'Applicant',
+    lastname: 'Name',
+    name_extension: '',
+    email: 'sample@example.com',
+  });
+
+  // Email constants
+  const contactNumber = ref('0917-123-4567');
+  const signatoryName = ref('EDGAR C. DE GUZMAN');
+  const signatoryTitle = ref('City Administrator');
+  const currentDate = ref(new Date());
 
   // Unqualified Email Modal
   const unqualifiedEmailModal = ref(false);
@@ -969,6 +1012,28 @@
     { name: 'status', label: 'Status', field: 'status', align: 'center' },
     { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
   ]);
+
+  // Open Application Received Email Modal
+  const openApplicationReceivedModal = () => {
+    selectedApplicantForEmail.value = {
+      firstname: 'Applicant',
+      lastname: 'Name',
+      name_extension: '',
+      email: 'sample@example.com',
+    };
+    applicationReceivedModal.value = true;
+  };
+
+  // Close application received modal
+  const closeApplicationReceivedModal = () => {
+    applicationReceivedModal.value = false;
+    selectedApplicantForEmail.value = {
+      firstname: 'Applicant',
+      lastname: 'Name',
+      name_extension: '',
+      email: 'sample@example.com',
+    };
+  };
 
   // FIXED: openNotifyUnqualifiedDialog with dialog loading state
   const openNotifyUnqualifiedDialog = async () => {
