@@ -632,6 +632,15 @@
           ],
         };
       },
+      footer: function (currentPage, pageCount) {
+        return {
+          margin: [40, 0, 40, 20],
+          columns: [
+            { text: '', width: '*' },
+            { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', fontSize: 7 },
+          ],
+        };
+      },
       content: [
         {
           text: 'PREQUALIFIED APPLICANT REPORT'.toUpperCase(),

@@ -7,14 +7,14 @@
         @click.self="$emit('close')"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="email-modal-heading"
+        aria-labelledby="exam-modal-heading"
       >
         <div class="modal-container">
           <!-- Header -->
           <div class="modal-header">
             <div class="modal-header-left">
               <i class="ti ti-assignment" aria-hidden="true"></i>
-              <span id="email-modal-heading">Exam Cancellation Notification Preview</span>
+              <span id="exam-modal-heading">Exam Cancellation Notification Preview</span>
             </div>
             <button class="close-btn" @click="$emit('close')" aria-label="Close modal">
               &times;
@@ -50,7 +50,7 @@
                     .
                   </p>
 
-                  <!-- ✅ Cancellation Notice Box -->
+                  <!-- Cancellation Notice Box -->
                   <div class="notice-box">
                     <p>⚠ NOTICE: Your scheduled examination has been CANCELLED.</p>
                   </div>
@@ -128,7 +128,7 @@
 
                   <div class="system-notice">
                     <i class="ti ti-device-desktop" aria-hidden="true"></i>
-                    This document is system generated.
+                    This is a system-generated email.
                   </div>
                 </div>
               </div>
@@ -137,7 +137,17 @@
 
           <!-- Footer Actions -->
           <div class="modal-footer">
-            <q-btn flat label="Close" @click="$emit('close')" color="red" />
+            <q-btn flat label="Close" @click="$emit('close')" class="footer-close-btn" />
+            <q-btn
+              color="negative"
+              :loading="isPrinting"
+              :disable="isPrinting"
+              @click="handlePrint"
+              class="footer-print-btn"
+            >
+              <i class="ti ti-printer" style="margin-right: 6px"></i>
+              {{ isPrinting ? 'Generating PDF...' : 'Print' }}
+            </q-btn>
           </div>
         </div>
       </div>
@@ -147,28 +157,25 @@
 
 <script setup>
   import { ref, computed, watch } from 'vue';
-
+  import { toast } from 'src/boot/toast';
   import ReportHeader from 'src/components/Reports/ReportHeaderEmail.vue';
+
+  const FONT_SIZE = 10;
 
   // ── Props ────────────────────────────────────────────────
   const props = defineProps({
     show: { type: Boolean, default: false },
-    applicant: {
-      type: Object,
-      default: null,
-    },
-    examDetails: {
-      type: Object,
-      default: null,
-    },
+    applicant: { type: Object, default: null },
+    examDetails: { type: Object, default: null },
     contactNumber: { type: String, default: '09973962684' },
-    signatoryName: { type: String, default: 'EDGARD C. DE GUZMAN' },
+    signatoryName: { type: String, default: 'EDGAR C. DE GUZMAN' },
     signatoryTitle: { type: String, default: 'City Administrator' },
     currentDate: { type: [String, Date], default: () => new Date() },
   });
 
   defineEmits(['close']);
 
+  const isPrinting = ref(false);
   const dialogVisible = ref(false);
 
   watch(
@@ -178,17 +185,11 @@
     },
   );
 
-  // ── Helper functions to extract data from various structures ──
+  // ── Helpers ──────────────────────────────────────────────
   const extractPosition = (applicant) => {
     if (!applicant) return 'N/A';
     if (applicant.position) return applicant.position;
-    if (
-      applicant.positions &&
-      Array.isArray(applicant.positions) &&
-      applicant.positions.length > 0
-    ) {
-      return applicant.positions[0];
-    }
+    if (applicant.positions?.length) return applicant.positions[0];
     if (applicant.job_batch_rsp?.Position) return applicant.job_batch_rsp.Position;
     return 'N/A';
   };
@@ -196,9 +197,7 @@
   const extractOffice = (applicant) => {
     if (!applicant) return 'N/A';
     if (applicant.office) return applicant.office;
-    if (applicant.offices && Array.isArray(applicant.offices) && applicant.offices.length > 0) {
-      return applicant.offices[0];
-    }
+    if (applicant.offices?.length) return applicant.offices[0];
     if (applicant.job_batch_rsp?.Office) return applicant.job_batch_rsp.Office;
     return 'N/A';
   };
@@ -210,68 +209,24 @@
     return null;
   };
 
-  // ── Time formatting helper for SQL Server time format ──
   const formatTime = (timeStr) => {
     if (!timeStr) return 'Not specified';
-
-    // Handle SQL Server time format (HH:MM:SS.sssssss)
     let cleanTime = timeStr;
-
-    // If it's a string and contains microseconds, remove them
-    if (typeof timeStr === 'string') {
-      if (timeStr.includes('.') && timeStr.includes(':')) {
-        cleanTime = timeStr.split('.')[0];
-      }
+    if (typeof timeStr === 'string' && timeStr.includes('.') && timeStr.includes(':')) {
+      cleanTime = timeStr.split('.')[0];
     }
-
-    // Parse HH:MM:SS or HH:MM format
     const parts = cleanTime.split(':');
     if (parts.length >= 2) {
       let hours = parseInt(parts[0]);
       const minutes = parts[1];
-
-      // Validate hours
       if (isNaN(hours) || hours < 0 || hours > 23) return timeStr;
-
       const ampm = hours >= 12 ? 'PM' : 'AM';
       hours = hours % 12 || 12;
       return `${hours}:${minutes} ${ampm}`;
     }
-
     return timeStr;
   };
 
-  // ── Computed ─────────────────────────────────────────────
-  const applicantName = computed(() => {
-    if (!props.applicant) return 'Applicant';
-
-    let firstname = props.applicant.firstname || '';
-    let lastname = props.applicant.lastname || '';
-    let nameExtension = props.applicant.name_extension || '';
-
-    // Handle view modal format (applicant_name)
-    if (!firstname && !lastname && props.applicant.applicant_name) {
-      const nameParts = props.applicant.applicant_name.split(' ');
-      firstname = nameParts[0] || '';
-      lastname = nameParts.slice(1).join(' ') || '';
-    }
-
-    return [firstname, lastname, nameExtension].filter(Boolean).join(' ') || 'Applicant';
-  });
-
-  const displayPosition = computed(() => {
-    return extractPosition(props.applicant) || props.examDetails?.position || 'N/A';
-  });
-
-  const displayOffice = computed(() => {
-    return extractOffice(props.applicant) || props.examDetails?.office || 'N/A';
-  });
-
-  const displayItemNo = computed(() => {
-    return extractItemNo(props.applicant) || props.examDetails?.itemNo || null;
-  });
-
-  // ── Methods ──────────────────────────────────────────────
   const formatDateEnglish = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -286,6 +241,322 @@
     return isNaN(d.getTime())
       ? dateStr
       : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const getImageBase64 = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // ── Computed ─────────────────────────────────────────────
+  const applicantName = computed(() => {
+    if (!props.applicant) return 'Applicant';
+    let firstname = props.applicant.firstname || '';
+    let lastname = props.applicant.lastname || '';
+    let nameExtension = props.applicant.name_extension || '';
+    if (!firstname && !lastname && props.applicant.applicant_name) {
+      const parts = props.applicant.applicant_name.split(' ');
+      firstname = parts[0] || '';
+      lastname = parts.slice(1).join(' ') || '';
+    }
+    return [firstname, lastname, nameExtension].filter(Boolean).join(' ') || 'Applicant';
+  });
+
+  const displayPosition = computed(
+    () => extractPosition(props.applicant) || props.examDetails?.position || 'N/A',
+  );
+  const displayOffice = computed(
+    () => extractOffice(props.applicant) || props.examDetails?.office || 'N/A',
+  );
+  const displayItemNo = computed(
+    () => extractItemNo(props.applicant) || props.examDetails?.itemNo || null,
+  );
+
+  // ── PDF Header ───────────────────────────────────────────
+  const buildPdfHeader = (logoBase64) => ({
+    stack: [
+      {
+        canvas: [
+          { type: 'rect', x: (595.28 - 523.28) / 2, y: 60, w: 523.28, h: 25, color: '#008000' },
+        ],
+      },
+      {
+        margin: [72, -65, 72, 0],
+        columns: [
+          {
+            width: 65,
+            stack: [
+              { canvas: [{ type: 'rect', x: 0, y: 0, w: 75, h: 80, color: '#ffffff' }] },
+              ...(logoBase64
+                ? [{ image: logoBase64, width: 65, height: 65, absolutePosition: { x: 77, y: 22 } }]
+                : []),
+            ],
+          },
+          {
+            width: '*',
+            margin: [15, -15, 0, 0],
+            stack: [
+              {
+                text: 'REPUBLIC OF THE PHILIPPINES',
+                fontSize: 8,
+                color: '#00703c',
+                alignment: 'left',
+                margin: [0, 20, 0, 2],
+              },
+              {
+                text: 'PROVINCE OF DAVAO DEL NORTE',
+                fontSize: 8,
+                color: '#00703c',
+                alignment: 'left',
+                margin: [0, 0, 0, 2],
+              },
+              {
+                text: 'CITY OF TAGUM',
+                fontSize: 10,
+                bold: true,
+                color: '#00703c',
+                alignment: 'left',
+              },
+              {
+                text: 'HUMAN RESOURCE MERIT PROMOTION AND SELECTION BOARD',
+                fontSize: 11,
+                bold: true,
+                color: 'white',
+                margin: [0, 7, 0, 0],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  // ── PDF Generation ───────────────────────────────────────
+  const handlePrint = async () => {
+    if (isPrinting.value) return;
+    isPrinting.value = true;
+    try {
+      const logoBase64 = await getImageBase64('/logo.png');
+      const [pdfMakeModule, vfsFontsModule] = await Promise.all([
+        import('pdfmake/build/pdfmake'),
+        import('pdfmake/build/vfs_fonts'),
+      ]);
+      const pdfMake = pdfMakeModule.default || pdfMakeModule;
+      pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
+
+      const name = applicantName.value;
+      const dateStr = formatDateEnglish(props.currentDate);
+      const ed = props.examDetails;
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'portrait',
+        pageMargins: [60, 120, 60, 60],
+        header: () => buildPdfHeader(logoBase64),
+        footer: () => ({
+          stack: [
+            {
+              text: 'This is a system-generated email.',
+              fontSize: 8,
+              color: '#6b7280',
+              alignment: 'center',
+              margin: [60, 8, 60, 2],
+            },
+          ],
+        }),
+        content: [
+          { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
+          {
+            text: [{ text: 'Dear ' }, { text: name, bold: true }, { text: ',' }],
+            fontSize: FONT_SIZE,
+            margin: [0, 0, 0, 10],
+          },
+          { text: 'Greetings of Peace and Safety!', fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
+          {
+            text: [
+              'This pertains to your application for the ',
+              { text: displayPosition.value, bold: true },
+              ...(displayItemNo.value
+                ? [', Item No. ', { text: displayItemNo.value, bold: true }]
+                : []),
+              ' in the ',
+              { text: displayOffice.value, bold: true },
+              '.',
+            ],
+            fontSize: FONT_SIZE,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+          // Cancellation notice box
+          {
+            table: {
+              widths: ['100%'],
+              body: [
+                [
+                  {
+                    text: '⚠ NOTICE: Your scheduled examination has been CANCELLED.',
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    color: '#c0392b',
+                    fillColor: '#fff5f5',
+                    margin: [12, 10, 12, 10],
+                    border: [true, true, true, true],
+                  },
+                ],
+              ],
+            },
+            layout: {
+              hLineColor: () => '#c0392b',
+              vLineColor: () => '#c0392b',
+              hLineWidth: (i) => (i === 0 ? 1 : 1),
+              vLineWidth: (i) => (i === 0 ? 4 : 1),
+            },
+            margin: [0, 8, 0, 12],
+          },
+          {
+            text: 'Please be informed that the Competency-Based Examination with the Human Resource Merit Promotion and Selection Board (HRMPSB) originally scheduled on:',
+            fontSize: FONT_SIZE,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+          // Cancelled exam details
+          {
+            text: 'Cancelled Examination Details:',
+            fontSize: FONT_SIZE,
+            bold: true,
+            margin: [0, 0, 0, 4],
+          },
+          {
+            table: {
+              widths: ['15%', '85%'],
+              body: [
+                [
+                  {
+                    text: 'Date:',
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                  {
+                    text: formatDate(ed?.date_exam),
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                ],
+                [
+                  {
+                    text: 'Time:',
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                  {
+                    text: formatTime(ed?.time_exam),
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                ],
+                [
+                  {
+                    text: 'Venue:',
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                  {
+                    text: ed?.venue_exam || 'Not specified',
+                    fontSize: FONT_SIZE,
+                    bold: true,
+                    border: [false, false, false, false],
+                  },
+                ],
+              ],
+            },
+            margin: [20, 0, 0, 10],
+          },
+          {
+            text: 'has been cancelled. We sincerely apologize for any inconvenience this may have caused. Please be patient and wait for the updated examination schedule. Thank you.',
+            fontSize: FONT_SIZE,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+          // Reminders
+          { text: 'Important Reminders:', fontSize: FONT_SIZE, bold: true, margin: [0, 0, 0, 4] },
+          {
+            ul: [
+              'Please disregard any previous notice regarding the above examination schedule.',
+              'You will receive a new notification once a reschedule has been set.',
+              {
+                text: [
+                  'If you have any clarifications, you may reach us through our mobile no. ',
+                  { text: props.contactNumber, bold: true },
+                  '.',
+                ],
+              },
+            ],
+            fontSize: FONT_SIZE,
+            margin: [20, 0, 0, 10],
+          },
+          {
+            text: 'The City Government of Tagum through the Human Resource Merit Promotion and Selection Board (HRMPSB) upholds the principle of Equal Employment Opportunity. All applicants are treated fairly and evaluated based on merit, fitness, and qualifications, without discrimination of any kind.',
+            fontSize: FONT_SIZE,
+            alignment: 'justify',
+            margin: [0, 0, 0, 10],
+          },
+          {
+            text: 'We appreciate your patience and understanding.',
+            fontSize: FONT_SIZE,
+            margin: [0, 0, 0, 10],
+          },
+          { text: 'Thank you.', fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
+          { text: 'Sincerely,', fontSize: FONT_SIZE, margin: [0, 0, 0, 30] },
+          {
+            stack: [
+              {
+                text: `(SGD.) ${props.signatoryName}`,
+                fontSize: FONT_SIZE,
+                bold: true,
+                decoration: 'underline',
+              },
+              { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
+              {
+                text: 'Authorized Representative of the City Mayor',
+                fontSize: FONT_SIZE,
+                color: '#374151',
+                margin: [0, 1, 0, 0],
+              },
+              { text: 'Chairperson', fontSize: FONT_SIZE, color: '#374151', margin: [0, 1, 0, 0] },
+            ],
+            margin: [0, 0, 0, 20],
+          },
+        ],
+        defaultStyle: { fontSize: FONT_SIZE },
+      };
+
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      pdfDocGenerator.getBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      });
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      isPrinting.value = false;
+    }
   };
 </script>
 
@@ -359,11 +630,22 @@
 
   .modal-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    padding: 16px 24px;
+    gap: 10px;
+    padding: 12px 20px;
     border-top: 1px solid #e5e7eb;
-    background: #f9fafb;
+    background: #fff;
     flex-shrink: 0;
+  }
+
+  .footer-close-btn {
+    color: #6b7280;
+  }
+  .footer-print-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .letter-wrapper {
@@ -431,12 +713,14 @@
   }
 
   .details-label {
+    font-size: 10pt;
     font-weight: 600;
     padding-right: 16px;
     vertical-align: top;
   }
 
   .details-value {
+    font-size: 10pt;
     font-weight: normal;
   }
 
@@ -471,7 +755,7 @@
   }
 
   .sig-sub {
-    font-size: 9pt;
+    font-size: 10pt;
     color: #374151;
     margin-top: 1px;
   }

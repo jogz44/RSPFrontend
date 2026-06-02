@@ -59,6 +59,8 @@ export const useApplicantStore = defineStore('applicant', {
             // Map ALL job applications from the array with submission ID
             job_post: res.data.data.map((item) => ({
               id: item.id, // submission ID
+              PageNo: item.job_post?.PageNo,
+              ItemNo: item.job_post?.ItemNo,
               Position: item.job_post?.Position,
               Office: item.job_post?.Office,
               SalaryGrade: item.job_post?.SalaryGrade,

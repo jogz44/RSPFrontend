@@ -713,6 +713,8 @@
   const jobColumns = computed(() => {
     const cols = [
       { name: 'submission_id', label: 'Submission ID', field: 'submission_id', align: 'left' },
+      { name: 'PageNo', label: 'Page No.', field: 'PageNo', align: 'center' },
+      { name: 'ItemNo', label: 'Item No.', field: 'ItemNo', align: 'center' },
       { name: 'position', label: 'Position', field: 'position', align: 'left' },
       { name: 'office', label: 'Office', field: 'office', align: 'left' },
       { name: 'status', label: 'Status', field: 'status', align: 'center' },
@@ -735,6 +737,8 @@
     if (Array.isArray(jobPosts) && jobPosts.length > 0) {
       return jobPosts.map((job, idx) => ({
         submission_id: job.id || idx + 1,
+        PageNo: job.PageNo || 'N/A',
+        ItemNo: job.ItemNo || 'N/A',
         position: job.Position || 'N/A',
         office: job.Office || 'N/A',
         status: job.status || 'N/A',
@@ -744,6 +748,8 @@
       return [
         {
           submission_id: jobPosts.id || 1,
+          PageNo: jobPosts.PageNo || 'N/A',
+          ItemNo: jobPosts.ItemNo || 'N/A',
           position: jobPosts.Position || 'N/A',
           office: jobPosts.Office || 'N/A',
           status: jobPosts.status || selectedApplicant.value.status || 'N/A',

@@ -48,13 +48,6 @@
                   <div class="letter-body">
                     <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
-                    <p class="letter-addressee">
-                      MR./MRS.
-                      {{ applicantName }}
-                      <br />
-                      <span v-if="formattedAddress">{{ formattedAddress }}</span>
-                    </p>
-
                     <p class="letter-greeting">
                       Dear MR./MRS.
                       <strong>{{ applicantName }}</strong>
@@ -97,7 +90,7 @@
                             </td>
                             <td>{{ row.required }}</td>
                             <td v-html="row.record"></td>
-                            <td :class="row.meets ? 'text-success' : 'text-error'">
+                            <td>
                               {{ row.remark }}
                             </td>
                           </tr>
@@ -216,6 +209,8 @@
 
                     <p class="letter-text">Thank you for your understanding.</p>
 
+                    <p class="letter-text">Sincerely,</p>
+
                     <div class="signature-block">
                       <div class="sig-name">(SGD.) {{ signatoryName }}</div>
                       <div class="sig-title">{{ signatoryTitle }}</div>
@@ -294,21 +289,6 @@
   const applicantName = computed(() => {
     const { firstname, lastname, name_extension } = props.applicant;
     return [firstname, lastname, name_extension].filter(Boolean).join(' ') || 'Applicant';
-  });
-
-  const formattedAddress = computed(() => {
-    const addr = applicantDetails.value?.address;
-    if (!addr) return '';
-    if (typeof addr === 'string') return addr;
-    return [
-      addr.purok ? ` ${addr.purok}` : '',
-      addr.street,
-      addr.barangay,
-      addr.city,
-      addr.province,
-    ]
-      .filter(Boolean)
-      .join(', ');
   });
 
   const qsRows = computed(() => {
@@ -391,6 +371,10 @@
   };
 
   // ── PDF Generation ───────────────────────────────────────
+  // All font sizes use 10 to match the letter body (10pt preview)
+  const FONT_SIZE = 10;
+  const FONT_SIZE_HEADER = 10; // table header same size as body, distinguished by bold + fill
+
   const buildQsTableBody = () => {
     const header = [
       { text: 'Qualification Standard', style: 'tableHeader' },
@@ -400,13 +384,13 @@
     ];
 
     const rows = qsRows.value.map((row) => [
-      { text: row.label, fontSize: 8, bold: true },
-      { text: row.required || '-', fontSize: 8 },
-      { text: truncateHtml(row.record, 200) || '-', fontSize: 8 },
+      { text: row.label, fontSize: FONT_SIZE, bold: true },
+      { text: row.required || '-', fontSize: FONT_SIZE },
+      { text: truncateHtml(row.record, 200) || '-', fontSize: FONT_SIZE },
       {
         text: row.remark || '-',
-        fontSize: 8,
-        color: row.meets ? '#15803d' : '#dc2626',
+        fontSize: FONT_SIZE,
+        color: '#000000',
         bold: true,
       },
     ]);
@@ -419,7 +403,7 @@
     if (!edu?.length) return null;
     return {
       stack: [
-        { text: 'Education Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        { text: 'Education Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
         {
           table: {
             headerRows: 1,
@@ -432,12 +416,15 @@
                 { text: 'Graduated', style: 'tableHeader' },
               ],
               ...edu.map((e) => [
-                { text: e.Degree || '-', fontSize: 8 },
-                { text: e.School || '-', fontSize: 8 },
-                { text: e.DateAttend || '-', fontSize: 8 },
-                { text: e.Graduated || '-', fontSize: 8 },
+                { text: e.Degree || '-', fontSize: FONT_SIZE },
+                { text: e.School || '-', fontSize: FONT_SIZE },
+                { text: e.DateAttend || '-', fontSize: FONT_SIZE },
+                { text: e.Graduated || '-', fontSize: FONT_SIZE },
               ]),
             ],
+          },
+          layout: {
+            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
           },
           margin: [0, 0, 0, 6],
         },
@@ -450,7 +437,12 @@
     if (!exp?.length) return null;
     return {
       stack: [
-        { text: 'Work Experience Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        {
+          text: 'Work Experience Records:',
+          fontSize: FONT_SIZE,
+          bold: true,
+          margin: [0, 8, 0, 3],
+        },
         {
           table: {
             headerRows: 1,
@@ -463,12 +455,15 @@
                 { text: 'To', style: 'tableHeader' },
               ],
               ...exp.map((e) => [
-                { text: e.position || '-', fontSize: 8 },
-                { text: e.company || '-', fontSize: 8 },
-                { text: e.from || '-', fontSize: 8 },
-                { text: e.to || '-', fontSize: 8 },
+                { text: e.position || '-', fontSize: FONT_SIZE },
+                { text: e.company || '-', fontSize: FONT_SIZE },
+                { text: e.from || '-', fontSize: FONT_SIZE },
+                { text: e.to || '-', fontSize: FONT_SIZE },
               ]),
             ],
+          },
+          layout: {
+            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
           },
           margin: [0, 0, 0, 6],
         },
@@ -481,7 +476,7 @@
     if (!training?.length) return null;
     return {
       stack: [
-        { text: 'Training Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        { text: 'Training Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
         {
           table: {
             headerRows: 1,
@@ -493,11 +488,18 @@
                 { text: 'Hours', style: 'tableHeader', alignment: 'center' },
               ],
               ...training.map((t) => [
-                { text: t.Training || '-', fontSize: 8 },
-                { text: formatDate(t.DateFrom), fontSize: 8 },
-                { text: t.NumHours?.toString() || '-', fontSize: 8, alignment: 'center' },
+                { text: t.Training || '-', fontSize: FONT_SIZE },
+                { text: formatDate(t.DateFrom), fontSize: FONT_SIZE },
+                {
+                  text: t.NumHours?.toString() || '-',
+                  fontSize: FONT_SIZE,
+                  alignment: 'center',
+                },
               ]),
             ],
+          },
+          layout: {
+            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
           },
           margin: [0, 0, 0, 6],
         },
@@ -510,7 +512,7 @@
     if (!elig?.length) return null;
     return {
       stack: [
-        { text: 'Eligibility Records:', fontSize: 8, bold: true, margin: [0, 8, 0, 3] },
+        { text: 'Eligibility Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
         {
           table: {
             headerRows: 1,
@@ -522,11 +524,14 @@
                 { text: 'Rating', style: 'tableHeader', alignment: 'center' },
               ],
               ...elig.map((e) => [
-                { text: e.CivilServe || '-', fontSize: 8 },
-                { text: formatDate(e.Dates), fontSize: 8 },
-                { text: e.Rates?.toString() || '-', fontSize: 8, alignment: 'center' },
+                { text: e.CivilServe || '-', fontSize: FONT_SIZE },
+                { text: formatDate(e.Dates), fontSize: FONT_SIZE },
+                { text: e.Rates?.toString() || '-', fontSize: FONT_SIZE, alignment: 'center' },
               ]),
             ],
+          },
+          layout: {
+            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
           },
           margin: [0, 0, 0, 6],
         },
@@ -551,7 +556,6 @@
 
       const d = applicantDetails.value;
       const name = applicantName.value;
-      const address = formattedAddress.value;
       const dateStr = formatDateEnglish(props.currentDate);
 
       const recordTables = [
@@ -566,7 +570,7 @@
         pageOrientation: 'portrait',
         pageMargins: [60, 120, 60, 50],
 
-        // ── Header (matches Top 5 report style) ─────────────
+        // ── Header ───────────────────────────────────────────
         header: () => ({
           stack: [
             {
@@ -642,35 +646,31 @@
         }),
 
         // ── Footer ───────────────────────────────────────────
-        footer: (currentPage, pageCount) => ({
-          text: `Page ${currentPage} of ${pageCount}`,
-          alignment: 'right',
-          fontSize: 8,
-          margin: [0, 10, 30, 0],
+        footer: () => ({
+          stack: [
+            {
+              text: 'This is a system-generated email.',
+              fontSize: 8,
+              color: '#6b7280',
+              alignment: 'center',
+              margin: [60, 8, 60, 2],
+            },
+          ],
         }),
 
         // ── Content ──────────────────────────────────────────
         content: [
           // Date
-          { text: dateStr, fontSize: 10, margin: [0, 0, 0, 10] },
+          { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
 
-          // Addressee
+          // Salutation
           {
-            stack: [
-              { text: `MR./MRS. ${name}`, fontSize: 10, bold: false },
-              ...(address ? [{ text: address, fontSize: 10 }] : []),
-            ],
-            margin: [0, 0, 0, 12],
-          },
-
-          // Greeting
-          {
-            text: [{ text: `Dear MR./MRS. ` }, { text: name, bold: true }, { text: ',' }],
-            fontSize: 10,
+            text: [{ text: 'Dear MR./MRS. ' }, { text: name, bold: true }, { text: ',' }],
+            fontSize: FONT_SIZE,
             margin: [0, 0, 0, 10],
           },
 
-          { text: 'Greetings of Peace and Safety!', fontSize: 10, margin: [0, 0, 0, 10] },
+          { text: 'Greetings of Peace and Safety!', fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
 
           {
             text: [
@@ -680,23 +680,23 @@
               { text: d.office || 'N/A', bold: true },
               ', the Human Resource Merit Promotion and Selection Board (HRMPSB) has determined that you do not meet the Qualification Standards required for the said position.',
             ],
-            fontSize: 10,
+            fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
 
           {
             text: 'After a thorough review of the documents you submitted, the following deficiencies were noted that led to your disqualification:',
-            fontSize: 10,
+            fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 8],
           },
 
-          // QS Table
+          // QS Table — widths slightly adjusted so 10pt text fits cleanly
           {
             table: {
               headerRows: 1,
-              widths: ['20%', '25%', '35%', '20%'],
+              widths: ['18%', '24%', '36%', '22%'],
               body: buildQsTableBody(),
             },
             layout: {
@@ -710,14 +710,14 @@
 
           {
             text: 'We appreciate your interest in joining the City Government of Tagum and commend your effort in applying for the position. We encourage you to continue enhancing your qualifications and to apply for future vacancies that match your credentials.',
-            fontSize: 10,
+            fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 10, 0, 10],
           },
 
           {
             text: 'The City Government of Tagum upholds the principle of Equal Employment Opportunity and ensures that all applicants are evaluated fairly based on merit, fitness, and qualifications, without discrimination on the basis of gender, age, civil status, disability, religion, or other protected characteristics.',
-            fontSize: 10,
+            fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
@@ -728,54 +728,55 @@
               { text: props.contactNumber, bold: true },
               '.',
             ],
-            fontSize: 10,
+            fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
 
-          { text: 'Thank you for your understanding.', fontSize: 10, margin: [0, 0, 0, 30] },
+          {
+            text: 'Thank you for your understanding.',
+            fontSize: FONT_SIZE,
+            margin: [0, 0, 0, 30],
+          },
+          { text: 'Sincerely,', fontSize: FONT_SIZE, margin: [0, 0, 0, 30] },
 
           // Signature block
           {
             stack: [
               {
                 text: `(SGD.) ${props.signatoryName}`,
-                fontSize: 10,
+                fontSize: FONT_SIZE,
                 bold: true,
                 decoration: 'underline',
               },
-              { text: props.signatoryTitle, fontSize: 10, margin: [0, 2, 0, 0] },
+              { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
               {
                 text: 'Authorized Representative of the City Mayor',
-                fontSize: 9,
+                fontSize: FONT_SIZE,
                 color: '#374151',
                 margin: [0, 1, 0, 0],
               },
-              { text: 'Chairperson', fontSize: 9, color: '#374151', margin: [0, 1, 0, 0] },
+              {
+                text: 'Chairperson',
+                fontSize: FONT_SIZE,
+                color: '#374151',
+                margin: [0, 1, 0, 0],
+              },
             ],
             margin: [0, 0, 0, 20],
-          },
-
-          // System notice
-          {
-            text: 'This is a system-generated email.',
-            fontSize: 8,
-            color: '#6b7280',
-            alignment: 'center',
-            margin: [0, 10, 0, 0],
           },
         ],
 
         styles: {
           tableHeader: {
-            fontSize: 8,
+            fontSize: FONT_SIZE_HEADER, // 10pt — same as letter body, bold + fill distinguishes it
             bold: true,
             fillColor: '#f0f0f0',
           },
         },
 
         defaultStyle: {
-          fontSize: 10,
+          fontSize: FONT_SIZE,
         },
       };
 
@@ -783,7 +784,6 @@
       pdfDocGenerator.getBlob((blob) => {
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
-        // Revoke after a short delay to allow the tab to load
         setTimeout(() => URL.revokeObjectURL(url), 10000);
       });
     } catch (err) {
@@ -1036,7 +1036,7 @@
   .records-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 9pt;
+    font-size: 10pt; /* ← matched to letter body */
     line-height: 1.2;
     border: 1px solid #d1d5db;
     margin-bottom: 6px;
@@ -1049,6 +1049,7 @@
   .records-table th {
     padding: 5px 7px;
     text-align: left;
+    font-size: 10pt; /* ← matched to letter body */
     font-weight: 700;
     color: #1f2937;
     border-right: 1px solid #d1d5db;
@@ -1061,6 +1062,7 @@
   .qs-table td,
   .records-table td {
     padding: 5px 7px;
+    font-size: 10pt; /* ← matched to letter body */
     border-right: 1px solid #e5e7eb;
     border-bottom: 1px solid #e5e7eb;
     color: #1f2937;
@@ -1104,7 +1106,7 @@
     margin-top: 2px;
   }
   .sig-sub {
-    font-size: 9pt;
+    font-size: 10pt; /* ← unified to 10pt */
     color: #374151;
     margin-top: 1px;
   }

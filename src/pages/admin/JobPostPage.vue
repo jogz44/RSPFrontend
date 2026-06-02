@@ -107,6 +107,13 @@
         :loading="jobPostStore.loading"
         table-style="min-width: 100%"
       >
+        <template v-slot:body-cell-itemNo="props">
+          <q-td :props="props" class="itemno-column">
+            <div class="text-center text-body2 text-weight-medium text-black">
+              {{ props.row.ItemNo || '—' }}
+            </div>
+          </q-td>
+        </template>
         <template v-slot:body-cell-Office="props">
           <q-td :props="props" class="office-column">
             <div class="text-body2 text-weight-medium text-black">
@@ -991,12 +998,20 @@
 
   const columns = [
     {
+      name: 'itemNo',
+      label: 'Item No.',
+      align: 'center',
+      field: 'ItemNo',
+      sortable: true,
+      style: 'width: 8%',
+    },
+    {
       name: 'Office',
       label: 'Office',
       align: 'left',
       field: 'Office',
       sortable: true,
-      style: 'width: 18%',
+      style: 'width: 16%',
     },
     {
       name: 'position',
@@ -1004,23 +1019,24 @@
       align: 'left',
       field: 'Position',
       sortable: true,
-      style: 'width: 22%',
+      style: 'width: 20%',
     },
+
     {
       name: 'post_date',
       align: 'center',
       label: 'Posted Date',
       field: 'post_date',
       sortable: true,
-      style: 'width: 12%',
+      style: 'width: 10%',
     },
     {
       name: 'applicants',
       align: 'center',
-      label: 'Applicantion',
+      label: 'Application',
       field: 'applicants',
       sortable: true,
-      style: 'width: 8%',
+      style: 'width: 7%',
     },
     {
       name: 'pending',
@@ -1052,7 +1068,7 @@
       field: 'status',
       align: 'center',
       sortable: true,
-      style: 'width: 5%',
+      style: 'width: 7%',
     },
     {
       name: 'action',
@@ -1060,7 +1076,7 @@
       label: 'Actions',
       field: 'action',
       sortable: false,
-      style: 'width: 11%',
+      style: 'width: 8%',
     },
   ];
 
