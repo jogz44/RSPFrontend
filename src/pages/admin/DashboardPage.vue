@@ -13,8 +13,7 @@
             <!-- Total Positions -->
             <div class="stat-row q-mb-md">
               <span class="card-label text-bold text-grey-8">TOTAL PLANTILLA POSITIONS</span>
-              <span class="colon text-grey-8">:</span>
-              <span class="card-number text-blue-4">
+              <span class="card-number text-blue-4 text-center" style="flex: 1; text-align: left">
                 {{ Number(dashboardStore.total_positions).toLocaleString() }}
               </span>
             </div>
