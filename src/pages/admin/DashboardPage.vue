@@ -90,7 +90,7 @@
       </div>
 
       <!-- BADGES ROW -->
-      <div class="badges-row q-mx-md q-mb-sm">
+      <!-- <div class="badges-row q-mx-md q-mb-sm">
         <div class="badges-group">
           <q-badge outline color="green" class="badge-large">
             <q-icon name="people" size="sm" class="q-mr-xs" />
@@ -105,10 +105,34 @@
             External: {{ Number(dashboardStore.external_applicant).toLocaleString() }}
           </q-badge>
         </div>
-      </div>
+      </div> -->
 
       <!-- STAT CARDS: responsive grid - equal width for bottom row -->
       <div class="stat-grid-bottom q-mx-md q-mb-sm">
+        <q-card class="stat-card ct-total-applicants bg-white">
+          <q-card-section class="card-content">
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Total Applicants</div>
+            <div class="card-number text-green-9">
+              {{ Number(dashboardStore.total_applicant).toLocaleString() }}
+            </div>
+            <q-separator class="q-my-sm" />
+            <div class="row">
+              <div class="col-6 pair-left">
+                <div class="card-label text-grey-7 text-bold">Internal</div>
+                <div class="card-number text-green-9">
+                  {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
+                </div>
+              </div>
+              <div class="col-6 pair-right">
+                <div class="card-label text-grey-7 text-bold">External</div>
+                <div class="card-number text-negative">
+                  {{ Number(dashboardStore.external_applicant).toLocaleString() }}
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+
         <!-- Total Applications -->
         <q-card class="stat-card ct-green bg-white">
           <q-card-section class="card-content">
@@ -126,7 +150,7 @@
               </div>
               <div class="col-6 pair-right">
                 <div class="card-label text-grey-7 text-bold">External</div>
-                <div class="card-number text-green-9">
+                <div class="card-number text-negative">
                   {{ Number(dashboardStore.external_application).toLocaleString() }}
                 </div>
               </div>
@@ -853,7 +877,7 @@
   /* ─── STAT CARDS GRID - BOTTOM ROW (Equal width) ────────── */
   .stat-grid-bottom {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 0.5fr;
     gap: 12px;
   }
 
@@ -942,6 +966,10 @@
 
   .ct-purple {
     border-top-color: #4527a0;
+  }
+
+  .ct-total-applicants {
+    border-top-color: #2196f3;
   }
 
   .card-content {
