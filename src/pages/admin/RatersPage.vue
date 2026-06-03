@@ -1299,38 +1299,46 @@
     showViewDialog.value = true;
 
     try {
-      await jobPostStore.assign_job_list(rater.id);
-      let jobsData = [];
+      // Call the API to get jobs for this rater
+      const response = await jobPostStore.assign_job_list(rater.id);
 
-      if (jobPostStore.jobPosts) {
+      // Check where the data is actually stored
+      // Option 1: If the store returns the data directly
+      if (response && response.data) {
+        raterJobs.value = Array.isArray(response.data) ? response.data : [];
+      }
+      // Option 2: If the store stores it in a specific property
+      else if (jobPostStore.assignedJobs) {
+        raterJobs.value = Array.isArray(jobPostStore.assignedJobs) ? jobPostStore.assignedJobs : [];
+      }
+      // Option 3: If it's stored in jobPosts (your original approach but cleaner)
+      else if (jobPostStore.jobPosts) {
+        // Handle different possible structures
         if (Array.isArray(jobPostStore.jobPosts)) {
-          jobsData = jobPostStore.jobPosts;
+          raterJobs.value = jobPostStore.jobPosts;
         } else if (
           jobPostStore.jobPosts.job_batches_rsp &&
           Array.isArray(jobPostStore.jobPosts.job_batches_rsp)
         ) {
-          jobsData = jobPostStore.jobPosts.job_batches_rsp;
-        } else if (
-          typeof jobPostStore.jobPosts === 'object' &&
-          jobPostStore.jobPosts.job_batches_rsp
-        ) {
-          jobsData = Array.isArray(jobPostStore.jobPosts.job_batches_rsp)
-            ? jobPostStore.jobPosts.job_batches_rsp
-            : [jobPostStore.jobPosts.job_batches_rsp];
+          raterJobs.value = jobPostStore.jobPosts.job_batches_rsp;
+        } else {
+          raterJobs.value = [];
         }
-      }
-
-      if (jobsData.length > 0) {
-        raterJobs.value = jobsData;
-        pagination.value.rowsNumber = jobsData.length;
       } else {
         raterJobs.value = [];
+      }
+
+      // Validate we got data
+      if (raterJobs.value.length === 0) {
         jobLoadError.value = 'No jobs assigned to this rater';
       }
+
+      pagination.value.rowsNumber = raterJobs.value.length;
     } catch (error) {
       console.error('Error fetching rater jobs:', error);
       jobLoadError.value = error.response?.data?.message || 'Failed to load assigned jobs';
       toast.error('Failed to load assigned jobs for this rater');
+      raterJobs.value = [];
     } finally {
       isLoadingJobs.value = false;
     }

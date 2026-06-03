@@ -86,19 +86,39 @@
   const position = computed(() => reportData.value?.position || '');
   const salaryGrade = computed(() => reportData.value?.salary_grade || '');
   const plantillaItemNo = computed(() => reportData.value?.item_no || '');
-  const signatoryName = computed(() => reportData.value?.rater_assigned?.name || '');
-  const signatoryPosition = computed(() => reportData.value?.rater_assigned?.position || '');
-  const signatoryRepresentative = computed(
-    () => reportData.value?.rater_assigned?.representative || '',
-  );
-  const signatoryRole = computed(() => reportData.value?.rater_assigned?.role_type || '');
+
+  // Rater information with prefix and suffix support
+  const raterAssigned = computed(() => reportData.value?.rater_assigned || {});
+  const raterPrefix = computed(() => raterAssigned.value?.prefix || '');
+  const raterName = computed(() => raterAssigned.value?.name || '');
+  const raterSuffix = computed(() => {
+    const suffix = raterAssigned.value?.suffix;
+    if (!suffix) return '';
+    if (typeof suffix === 'string') return suffix;
+    if (Array.isArray(suffix)) return suffix.join(', ');
+    return String(suffix);
+  });
+  const raterPosition = computed(() => raterAssigned.value?.position || '');
+  const raterRepresentative = computed(() => raterAssigned.value?.representative || '');
+  const raterRole = computed(() => raterAssigned.value?.role_type || '');
+
+  // Format full name with prefix and suffix
+  const formattedSignatoryName = computed(() => {
+    let name = raterName.value;
+    if (raterPrefix.value && raterPrefix.value.trim()) {
+      name = `${raterPrefix.value.trim()} ${name}`;
+    }
+    if (raterSuffix.value && raterSuffix.value.trim()) {
+      name = `${name}, ${raterSuffix.value.trim()}`;
+    }
+    return name || '_________________________';
+  });
 
   // ==================== TRIGGER PDF GENERATION ====================
-  // Called whenever we want to (re)build the PDF.
   async function tryGenerate() {
-    if (!props.ratingData) return; // data not ready yet
-    if (!hasApplicants.value) return; // nothing to render
-    if (isGenerating.value) return; // already running
+    if (!props.ratingData) return;
+    if (!hasApplicants.value) return;
+    if (isGenerating.value) return;
 
     if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
@@ -108,7 +128,6 @@
     await generatePdfContent();
   }
 
-  // On mount: if dialog is already open and data is already set, generate immediately.
   onMounted(async () => {
     if (props.modelValue && props.ratingData) {
       await nextTick();
@@ -116,18 +135,16 @@
     }
   });
 
-  // When dialog opens (modelValue flips to true) AND data is present → generate.
   watch(
     () => props.modelValue,
     async (isVisible) => {
       if (isVisible) {
-        await nextTick(); // let Vue propagate the ratingData prop first
+        await nextTick();
         await tryGenerate();
       }
     },
   );
 
-  // If ratingData arrives/changes while dialog is already open → regenerate.
   watch(
     () => props.ratingData,
     async (newData) => {
@@ -605,19 +622,19 @@
             unbreakable: true,
             margin: [0, 20, 0, 0],
             stack: [
-              { text: signatoryName.value, alignment: 'center', bold: true, fontSize: 9 },
+              { text: formattedSignatoryName.value, alignment: 'center', bold: true, fontSize: 9 },
               {
                 canvas: [{ type: 'line', x1: 345, y1: 0, x2: 520, y2: 0, lineWidth: 1 }],
                 margin: [0, 4, 0, 4],
               },
-              { text: signatoryPosition.value, alignment: 'center', fontSize: 8 },
+              { text: raterPosition.value, alignment: 'center', fontSize: 8 },
               {
-                text: signatoryRepresentative.value,
+                text: raterRepresentative.value,
                 alignment: 'center',
                 fontSize: 8,
                 margin: [0, 2, 0, 0],
               },
-              { text: signatoryRole.value, alignment: 'center', fontSize: 8, margin: [0, 2, 0, 0] },
+              { text: raterRole.value, alignment: 'center', fontSize: 8, margin: [0, 2, 0, 0] },
             ],
           },
         ],

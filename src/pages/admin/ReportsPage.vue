@@ -731,11 +731,8 @@
 
       // ==================== POSITION FILTER COMPUTED PROPERTIES ====================
       currentPositionsData() {
-        if (this.selectedReport?.id === 6) {
-          return this.beiPositionsData;
-        } else {
-          return this.finalSummaryPositionsData;
-        }
+        // Use the same data for both Final Summary and BEI
+        return this.finalSummaryPositionsData;
       },
 
       allPositions() {
@@ -777,7 +774,7 @@
           });
         }
 
-        const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
+        const valueKey = 'jobpostId';
         const labelKey = 'Position';
 
         return [
@@ -815,9 +812,12 @@
 
       showReportModal(newVal) {
         if (newVal && this.selectedReport) {
-          if (this.selectedReport.id === 6) {
-            this.loadBEIPositions();
-          } else if (this.selectedReport.id === 1 || this.selectedReport.id === 3) {
+          // Load the same positions for Final Summary, Applicant per Position, and BEI
+          if (
+            this.selectedReport.id === 1 ||
+            this.selectedReport.id === 3 ||
+            this.selectedReport.id === 6
+          ) {
             this.loadFinalSummaryPositions();
           }
         }
@@ -870,7 +870,8 @@
       },
 
       updatePositionOptions() {
-        const valueKey = this.selectedReport?.id === 6 ? 'id' : 'jobpostId';
+        // Use jobpostId for all report types
+        const valueKey = 'jobpostId';
         const labelKey = 'Position';
 
         this.positionOptions = [

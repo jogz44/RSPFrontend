@@ -44,6 +44,7 @@
               flat
               dense
               hide-pagination
+              :rows-per-page-options="[0]"
               separator="cell"
               wrap-cells
               :hide-header="false"

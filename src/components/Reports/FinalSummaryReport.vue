@@ -141,6 +141,18 @@
     return last.toUpperCase();
   }
 
+  // Format full name with prefix and suffix
+  function formatFullName(prefix, name, suffix) {
+    let formattedName = name || '';
+    if (prefix && prefix.trim()) {
+      formattedName = `${prefix.trim()} ${formattedName}`;
+    }
+    if (suffix && suffix.trim()) {
+      formattedName = `${formattedName}, ${suffix.trim()}`;
+    }
+    return formattedName.toUpperCase();
+  }
+
   function hasBehavioralCriteria(reportData) {
     const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
     if (!Array.isArray(criteria)) return false;
@@ -323,26 +335,31 @@
     for (let i = 0; i < signatories.length; i += MAX_PER_ROW) {
       const rowItems = signatories.slice(i, i + MAX_PER_ROW);
 
-      const columns = rowItems.map((r) => ({
-        width: '*',
-        stack: [
-          {
-            text: (r.rater_name || '').toUpperCase(),
-            fontSize: 10,
-            bold: true,
-            alignment: 'center',
-            margin: [0, 0, 0, 2],
-          },
-          {
-            canvas: [{ type: 'line', x1: 0, y1: 0, x2: 120, y2: 0, lineWidth: 1 }],
-            alignment: 'center',
-            margin: [0, 0, 0, 4],
-          },
-          { text: r.position || 'Position', fontSize: 9, alignment: 'center', italics: true },
-          { text: r.representative || '', fontSize: 9, alignment: 'center', italics: true },
-          { text: r.role_type || '', fontSize: 9, alignment: 'center', italics: true },
-        ],
-      }));
+      const columns = rowItems.map((r) => {
+        // Format full name with prefix and suffix
+        const formattedName = formatFullName(r.prefix, r.rater_name, r.suffix);
+
+        return {
+          width: '*',
+          stack: [
+            {
+              text: formattedName,
+              fontSize: 10,
+              bold: true,
+              alignment: 'center',
+              margin: [0, 0, 0, 2],
+            },
+            {
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 120, y2: 0, lineWidth: 1 }],
+              alignment: 'center',
+              margin: [0, 0, 0, 4],
+            },
+            { text: r.position || 'Position', fontSize: 9, alignment: 'center', italics: true },
+            { text: r.representative || '', fontSize: 9, alignment: 'center', italics: true },
+            { text: r.role_type || '', fontSize: 9, alignment: 'center', italics: true },
+          ],
+        };
+      });
 
       const missing = MAX_PER_ROW - columns.length;
       const leftPads = Math.floor(missing / 2);
@@ -556,7 +573,7 @@
 
     // Calculate column widths
     const raterColumnWidth = maxRaters > 0 && allRaters.length > 0 ? 50 : 0;
-    const widths = [30, '*']; // No. and Name
+    const widths = [20, 150]; // No. and Name
 
     // Add widths for rater columns
     if (maxRaters > 0 && allRaters.length > 0) {

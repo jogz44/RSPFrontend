@@ -251,7 +251,6 @@
       return 0;
     },
   };
-
   async function generatePdfContent() {
     if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
@@ -267,18 +266,28 @@
 
     const imageMap = {};
 
+    // Store images using a unique key (ControlNo or nPersonalInfo_id)
     await Promise.all(
       applicantsArray.map(async function (ap) {
+        // Use ControlNo if available, otherwise use nPersonalInfo_id
+        const uniqueKey = ap.ControlNo || ap.nPersonalInfo_id;
+
+        // Skip if no valid key
+        if (!uniqueKey) {
+          console.warn(`No unique identifier for applicant: ${ap.firstname} ${ap.lastname}`);
+          return;
+        }
+
         if (ap.image_url) {
           try {
             const b64 = await summaryReportStore.fetchImageBase64(ap.image_url);
             if (b64 && isSupportedImageDataUrl(b64)) {
-              imageMap[ap.nPersonalInfo_id] = b64;
+              imageMap[uniqueKey] = b64;
             } else {
-              console.warn(`Invalid or missing image for applicant ${ap.nPersonalInfo_id}`);
+              console.warn(`Invalid or missing image for applicant ${uniqueKey}`);
             }
           } catch (error) {
-            console.error(`Failed to load image for applicant ${ap.nPersonalInfo_id}:`, error);
+            console.error(`Failed to load image for applicant ${uniqueKey}:`, error);
           }
         }
       }),
@@ -341,7 +350,6 @@
         {
           text: rd.Plantilla_Item_No || 'N/A',
           fontSize: 8,
-
           margin: [0, 0, 2, 0],
         },
       ],
@@ -357,7 +365,6 @@
         {
           text: divisionOrSection,
           fontSize: 8,
-
           margin: [0, 0, 2, 0],
         },
       ]);
@@ -382,7 +389,11 @@
       const fullName =
         ((applicant.firstname || '') + ' ' + (applicant.lastname || '')).trim() || 'N/A';
 
-      const photoData = safeImageOrPlaceholder(imageMap[applicant.nPersonalInfo_id]);
+      // Use the same unique key for retrieving the image
+      const uniqueKey = applicant.ControlNo || applicant.nPersonalInfo_id;
+      const photoData = uniqueKey
+        ? safeImageOrPlaceholder(imageMap[uniqueKey])
+        : placeholderImage();
 
       let infoStack;
       if (isInternal) {
