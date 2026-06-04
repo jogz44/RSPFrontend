@@ -1,7 +1,7 @@
 <template>
   <q-card class="modal-card">
     <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">Top 5 Ranking Applicants Report</div>
+      <div class="text-h6">All Ranking Applicants Report</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -280,35 +280,33 @@
 
     const topApplicants = jobPost['Top Applicant'] || jobPost['Top 5 Applicant'] || [];
 
+    // If there are no applicants, display a single empty row
     if (topApplicants.length === 0) {
-      for (let i = 1; i <= 5; i++) {
-        tableBody.push([
-          { text: i.toString(), alignment: 'center', fontSize: 8 },
-          { text: '', alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
-        ]);
-      }
+      tableBody.push([
+        { text: '', alignment: 'center', fontSize: 8 },
+        { text: '', alignment: 'left', fontSize: 8 },
+        { text: '', alignment: 'center', fontSize: 8 },
+      ]);
     } else {
-      const applicantsToShow = topApplicants.slice(0, 5);
+      // Display ALL applicants (not just top 5)
+      topApplicants.forEach((applicant) => {
+        let fullName = '';
+        if (applicant.firstname && applicant.lastname) {
+          fullName = `${applicant.firstname} ${applicant.lastname}`.trim();
+        } else if (applicant.firstname) {
+          fullName = applicant.firstname;
+        } else if (applicant.lastname) {
+          fullName = applicant.lastname;
+        } else {
+          fullName = '-';
+        }
 
-      applicantsToShow.forEach((applicant) => {
-        const fullName = `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim();
         tableBody.push([
           { text: applicant.rank?.toString() || '-', alignment: 'center', fontSize: 8 },
           { text: fullName, alignment: 'left', fontSize: 8 },
           { text: '', alignment: 'center', fontSize: 8 },
         ]);
       });
-
-      const remainingRows = 5 - applicantsToShow.length;
-      for (let i = 0; i < remainingRows; i++) {
-        const nextRank = applicantsToShow.length + i + 1;
-        tableBody.push([
-          { text: nextRank.toString(), alignment: 'center', fontSize: 8 },
-          { text: '', alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
-        ]);
-      }
     }
 
     content.push({
@@ -355,7 +353,7 @@
                 {
                   stack: [
                     {
-                      text: reportData.value.Header?.toUpperCase() || 'TOP 5 RANKING APPLICANTS',
+                      text: reportData.value.Header?.toUpperCase() || 'ALL RANKING APPLICANTS',
                       fontSize: 13,
                       bold: true,
                       alignment: 'center',

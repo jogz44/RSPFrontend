@@ -30,11 +30,7 @@
                 <div class="letter-body">
                   <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
-                  <p class="letter-greeting">
-                    Dear
-                    <strong>{{ applicantName }}</strong>
-                    ,
-                  </p>
+                  <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                   <p class="letter-text">Greetings of Peace and Safety!</p>
 
@@ -185,6 +181,16 @@
     },
   );
 
+  // ── Helper to capitalize name properly ───────────────────
+  const capitalizeName = (name) => {
+    if (!name) return '';
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // ── Helpers ──────────────────────────────────────────────
   const extractPosition = (applicant) => {
     if (!applicant) return 'N/A';
@@ -269,7 +275,8 @@
       firstname = parts[0] || '';
       lastname = parts.slice(1).join(' ') || '';
     }
-    return [firstname, lastname, nameExtension].filter(Boolean).join(' ') || 'Applicant';
+    const fullName = [firstname, lastname, nameExtension].filter(Boolean).join(' ') || 'Applicant';
+    return capitalizeName(fullName);
   });
 
   const displayPosition = computed(
@@ -377,7 +384,7 @@
         content: [
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
           {
-            text: [{ text: 'Dear ' }, { text: name, bold: true }, { text: ',' }],
+            text: `Dear ${name},`,
             fontSize: FONT_SIZE,
             margin: [0, 0, 0, 10],
           },
@@ -528,7 +535,6 @@
                 text: `(SGD.) ${props.signatoryName}`,
                 fontSize: FONT_SIZE,
                 bold: true,
-                decoration: 'underline',
               },
               { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
               {
@@ -743,7 +749,6 @@
   .sig-name {
     font-size: 10pt;
     font-weight: 700;
-    text-decoration: underline;
     text-transform: uppercase;
     color: #000;
   }

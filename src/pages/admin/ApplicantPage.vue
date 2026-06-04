@@ -28,7 +28,7 @@
         </template>
       </q-input>
 
-      <!-- Report Buttons - Only show if user has report permission -->
+      <!-- Report Buttons -->
       <div class="row q-gutter-sm">
         <q-btn
           v-if="canReportApplicant"
@@ -121,7 +121,6 @@
     <!-- ================================================================ -->
     <q-dialog v-model="showDetailDialog" persistent maximized-mobile>
       <q-card class="detail-dialog-card">
-        <!-- Header -->
         <q-card-section class="dialog-header header-view">
           <div class="row items-center no-wrap">
             <q-icon name="person" size="28px" class="q-mr-sm" />
@@ -135,13 +134,11 @@
 
         <q-separator />
 
-        <!-- Loading -->
         <q-card-section v-if="loadingApplicantDetails" class="text-center q-pa-xl">
           <q-spinner color="primary" size="48px" />
           <div class="q-mt-sm text-body2 text-grey-6">Loading applicant details...</div>
         </q-card-section>
 
-        <!-- Content -->
         <q-card-section
           v-else-if="selectedApplicant"
           class="dialog-body q-pa-lg"
@@ -268,7 +265,6 @@
               </q-td>
             </template>
 
-            <!-- Delete Action Column - Only show if user has modify permission -->
             <template #body-cell-action="p">
               <q-td :props="p">
                 <q-btn
@@ -302,7 +298,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirmation Dialog - Only show if user has modify permission -->
+    <!-- Delete Confirmation Dialog -->
     <q-dialog v-if="canModifyApplicant" v-model="showDeleteConfirmDialog" persistent>
       <q-card>
         <q-card-section class="row items-center q-pb-none">
@@ -350,7 +346,7 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- Qualified Report Modal - Only show if user has report permission -->
+    <!-- QUALIFIED REPORT MODAL                                           -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showQualifiedModal" persistent>
       <q-card class="report-select-card">
@@ -359,7 +355,7 @@
             <q-icon name="article" size="28px" class="q-mr-sm" />
             <div>
               <div class="text-h6 text-bold">Qualified Applicants Report</div>
-              <div class="text-caption opacity-80">Select a publication date to generate</div>
+              <div class="text-caption opacity-80">Select options to generate</div>
             </div>
           </div>
           <q-btn flat round dense icon="close" class="close-btn" @click="closeQualifiedModal" />
@@ -372,43 +368,70 @@
             <q-spinner color="primary" size="32px" />
             <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
           </div>
-          <div v-else>
-            <div class="section-label q-mb-md">
-              <q-icon name="event" size="16px" class="q-mr-xs" />
-              Publication Date
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedQualifiedPublicationDate"
+                :options="filteredQualifiedPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterQualifiedPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedQualifiedPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedQualifiedPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
             </div>
-            <q-select
-              v-model="selectedQualifiedPublicationDate"
-              :options="filteredQualifiedPublicationDateOptions"
-              label="Select Publication Date"
-              outlined
-              dense
-              use-input
-              input-debounce="300"
-              @filter="filterQualifiedPublicationDates"
-            >
-              <template v-slot:no-option>
-                <q-item><q-item-section class="text-grey">No dates found</q-item-section></q-item>
-              </template>
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>
-                      <q-icon name="event" size="xs" class="q-mr-sm" />
-                      {{ scope.opt }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:selected>
-                <span v-if="selectedQualifiedPublicationDate">
-                  <q-icon name="event" size="xs" class="q-mr-sm" />
-                  {{ selectedQualifiedPublicationDate }}
-                </span>
-              </template>
-            </q-select>
-            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
-              No publication dates available
+
+            <!-- Applicant Type -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="people" size="16px" class="q-mr-xs" />
+                Applicant Type
+              </div>
+              <q-btn-toggle
+                v-model="selectedQualifiedApplicantType"
+                spread
+                no-caps
+                unelevated
+                rounded
+                toggle-color="primary"
+                color="grey-2"
+                text-color="grey-8"
+                :options="applicantTypeOptions"
+              />
             </div>
           </div>
         </q-card-section>
@@ -430,7 +453,7 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- Unqualified Report Modal - Only show if user has report permission -->
+    <!-- UNQUALIFIED REPORT MODAL                                         -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showUnqualifiedModal" persistent>
       <q-card class="report-select-card">
@@ -439,7 +462,7 @@
             <q-icon name="article" size="28px" class="q-mr-sm" />
             <div>
               <div class="text-h6 text-bold">Unqualified Applicants Report</div>
-              <div class="text-caption opacity-80">Select a publication date to generate</div>
+              <div class="text-caption opacity-80">Select options to generate</div>
             </div>
           </div>
           <q-btn flat round dense icon="close" class="close-btn" @click="closeUnqualifiedModal" />
@@ -452,40 +475,70 @@
             <q-spinner color="primary" size="32px" />
             <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
           </div>
-          <div v-else>
-            <div class="section-label q-mb-md">
-              <q-icon name="event" size="16px" class="q-mr-xs" />
-              Publication Date
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedUnqualifiedPublicationDate"
+                :options="filteredUnqualifiedPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterUnqualifiedPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedUnqualifiedPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedUnqualifiedPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
             </div>
-            <q-select
-              v-model="selectedUnqualifiedPublicationDate"
-              :options="filteredUnqualifiedPublicationDateOptions"
-              label="Select Publication Date"
-              outlined
-              dense
-              use-input
-              input-debounce="300"
-              @filter="filterUnqualifiedPublicationDates"
-            >
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>
-                      <q-icon name="event" size="xs" class="q-mr-sm" />
-                      {{ scope.opt }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:selected>
-                <span v-if="selectedUnqualifiedPublicationDate">
-                  <q-icon name="event" size="xs" class="q-mr-sm" />
-                  {{ selectedUnqualifiedPublicationDate }}
-                </span>
-              </template>
-            </q-select>
-            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
-              No publication dates available
+
+            <!-- Applicant Type -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="people" size="16px" class="q-mr-xs" />
+                Applicant Type
+              </div>
+              <q-btn-toggle
+                v-model="selectedUnqualifiedApplicantType"
+                spread
+                no-caps
+                unelevated
+                rounded
+                toggle-color="primary"
+                color="grey-2"
+                text-color="grey-8"
+                :options="applicantTypeOptions"
+              />
             </div>
           </div>
         </q-card-section>
@@ -507,7 +560,7 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- All Applicants Report Modal - Only show if user has report permission -->
+    <!-- ALL APPLICANTS REPORT MODAL                                      -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsModal" persistent>
       <q-card class="report-select-card">
@@ -530,7 +583,7 @@
             <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
           </div>
           <div v-else>
-            <div class="section-label q-mb-md">
+            <div class="section-label q-mb-sm">
               <q-icon name="event" size="16px" class="q-mr-xs" />
               Publication Date
             </div>
@@ -545,7 +598,9 @@
               @filter="filterAllApplicantsPublicationDates"
             >
               <template v-slot:no-option>
-                <q-item><q-item-section class="text-grey">No dates found</q-item-section></q-item>
+                <q-item>
+                  <q-item-section class="text-grey">No dates found</q-item-section>
+                </q-item>
               </template>
               <template v-slot:option="scope">
                 <q-item v-bind="scope.itemProps">
@@ -586,16 +641,57 @@
       </q-card>
     </q-dialog>
 
-    <!-- Report sub-dialogs -->
+    <!-- ================================================================ -->
+    <!-- Report Sub-Dialogs                                               -->
+    <!-- ================================================================ -->
+
+    <!-- Qualified: Both -->
     <q-dialog v-if="canReportApplicant" v-model="showQualifiedReportDialog" persistent>
       <QualifiedReport :publicationDate="selectedQualifiedPublicationDate" />
     </q-dialog>
+
+    <!-- Qualified: Internal only -->
+    <q-dialog v-if="canReportApplicant" v-model="showInternalQualifiedReportDialog" persistent>
+      <InternalQualifiedReport
+        :publicationDate="selectedQualifiedPublicationDate"
+        applicantType="internal"
+      />
+    </q-dialog>
+
+    <!-- Qualified: External only -->
+    <q-dialog v-if="canReportApplicant" v-model="showExternalQualifiedReportDialog" persistent>
+      <ExternalQualifiedReport
+        :publicationDate="selectedQualifiedPublicationDate"
+        applicantType="external"
+      />
+    </q-dialog>
+
+    <!-- Unqualified: Both -->
     <q-dialog v-if="canReportApplicant" v-model="showUnqualifiedReportDialog" persistent>
       <UnqualifiedReport :publicationDate="selectedUnqualifiedPublicationDate" />
     </q-dialog>
+
+    <!-- Unqualified: Internal only -->
+    <q-dialog v-if="canReportApplicant" v-model="showInternalUnqualifiedReportDialog" persistent>
+      <InternalUnqualifiedReport
+        :publicationDate="selectedUnqualifiedPublicationDate"
+        applicantType="internal"
+      />
+    </q-dialog>
+
+    <!-- Unqualified: External only -->
+    <q-dialog v-if="canReportApplicant" v-model="showExternalUnqualifiedReportDialog" persistent>
+      <ExternalUnqualifiedReport
+        :publicationDate="selectedUnqualifiedPublicationDate"
+        applicantType="external"
+      />
+    </q-dialog>
+
+    <!-- All Applicants -->
     <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsReportDialog" persistent>
       <ApplicantReport :publicationDate="selectedAllApplicantsPublicationDate" />
     </q-dialog>
+
     <q-dialog v-model="showPrintDialog" persistent>
       <ApplicantReport
         :filterType="dateFilterType"
@@ -611,7 +707,11 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import ApplicantReport from 'src/components/Reports/ApplicantReport.vue';
   import QualifiedReport from 'src/components/Reports/QualifiedReport.vue';
+  import InternalQualifiedReport from 'src/components/Reports/InternalQualifiedReport.vue';
+  import ExternalQualifiedReport from 'src/components/Reports/ExternalQualifiedReport.vue';
   import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
+  import InternalUnqualifiedReport from 'src/components/Reports/InternalUnqualifiedReport.vue';
+  import ExternalUnqualifiedReport from 'src/components/Reports/ExternalUnqualifiedReport.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import { useAuthStore } from 'stores/authStore';
@@ -627,13 +727,27 @@
   // PERMISSION CHECKS
   // ============================================================================
 
-  const canModifyApplicant = computed(() => {
-    return authStore.user?.permissions?.modifyApplicantAccess === '1';
-  });
+  const canModifyApplicant = computed(
+    () => authStore.user?.permissions?.modifyApplicantAccess === '1',
+  );
 
-  const canReportApplicant = computed(() => {
-    return authStore.user?.permissions?.reportApplicantAccess === '1';
-  });
+  const canReportApplicant = computed(
+    () => authStore.user?.permissions?.reportApplicantAccess === '1',
+  );
+
+  // ============================================================================
+  // APPLICANT TYPE OPTIONS (shared by Qualified & Unqualified modals)
+  // ============================================================================
+
+  const applicantTypeOptions = [
+    { label: 'Both', value: 'both' },
+    { label: 'Internal', value: 'internal' },
+    { label: 'External', value: 'external' },
+  ];
+
+  // ============================================================================
+  // GENERAL STATE
+  // ============================================================================
 
   const globalSearch = ref('');
   const showDetailDialog = ref(false);
@@ -645,31 +759,61 @@
   const selectedPositions = ref([]);
   const showPrintDialog = ref(false);
 
-  // Qualified report refs
+  // ============================================================================
+  // QUALIFIED REPORT STATE
+  // ============================================================================
+
   const showQualifiedModal = ref(false);
   const selectedQualifiedPublicationDate = ref(null);
+  const selectedQualifiedApplicantType = ref('both');
   const filteredQualifiedPublicationDateOptions = ref([]);
-  const showQualifiedReportDialog = ref(false);
 
-  // Unqualified report refs
+  // Sub-dialogs — one per type
+  const showQualifiedReportDialog = ref(false);
+  const showInternalQualifiedReportDialog = ref(false);
+  const showExternalQualifiedReportDialog = ref(false);
+
+  // ============================================================================
+  // UNQUALIFIED REPORT STATE
+  // ============================================================================
+
   const showUnqualifiedModal = ref(false);
   const selectedUnqualifiedPublicationDate = ref(null);
+  const selectedUnqualifiedApplicantType = ref('both');
   const filteredUnqualifiedPublicationDateOptions = ref([]);
-  const showUnqualifiedReportDialog = ref(false);
 
-  // All Applicants report refs
+  // Sub-dialogs — one per type
+  const showUnqualifiedReportDialog = ref(false);
+  const showInternalUnqualifiedReportDialog = ref(false);
+  const showExternalUnqualifiedReportDialog = ref(false);
+
+  // ============================================================================
+  // ALL APPLICANTS REPORT STATE
+  // ============================================================================
+
   const showAllApplicantsModal = ref(false);
   const selectedAllApplicantsPublicationDate = ref(null);
   const filteredAllApplicantsPublicationDateOptions = ref([]);
   const showAllApplicantsReportDialog = ref(false);
 
+  // ============================================================================
+  // SHARED PUBLICATION DATES
+  // ============================================================================
+
   const loadingPublicationDates = ref(false);
   const publicationDateOptions = ref([]);
 
-  // Delete related refs
+  // ============================================================================
+  // DELETE STATE
+  // ============================================================================
+
   const showDeleteConfirmDialog = ref(false);
   const deletingApplicationInfo = ref(null);
   const deletingSubmissionId = ref(null);
+
+  // ============================================================================
+  // PAGINATION
+  // ============================================================================
 
   const pagination = ref({
     sortBy: 'name',
@@ -678,6 +822,10 @@
     rowsPerPage: 10,
     rowsNumber: 0,
   });
+
+  // ============================================================================
+  // HELPERS
+  // ============================================================================
 
   const getJobPostCount = (applicant) => {
     if (Array.isArray(applicant.job_post)) return applicant.job_post.length;
@@ -697,6 +845,10 @@
     if (s === 'completed' || s === 'finished') return 'teal';
     return 'grey';
   };
+
+  // ============================================================================
+  // COLUMNS
+  // ============================================================================
 
   const columns = computed(() => [
     { name: 'name', label: 'Name', align: 'left', field: 'name', sortable: true },
@@ -759,6 +911,10 @@
     return [];
   });
 
+  // ============================================================================
+  // TABLE REQUEST / SEARCH
+  // ============================================================================
+
   const onRequest = async (props) => {
     const { page, rowsPerPage } = props.pagination;
     await applicantStore.fetchApplicants({
@@ -785,8 +941,9 @@
   });
 
   // ============================================================================
-  // SHARED: Fetch publication dates (used by all three report modals)
+  // SHARED: Fetch publication dates
   // ============================================================================
+
   const fetchPublicationDates = async () => {
     loadingPublicationDates.value = true;
     try {
@@ -807,8 +964,9 @@
   };
 
   // ============================================================================
-  // QUALIFIED REPORT
+  // QUALIFIED REPORT ACTIONS
   // ============================================================================
+
   const openQualifiedReportDialog = async () => {
     if (!canReportApplicant.value) {
       $q.notify({
@@ -818,8 +976,9 @@
       });
       return;
     }
-    showQualifiedModal.value = true;
     selectedQualifiedPublicationDate.value = null;
+    selectedQualifiedApplicantType.value = 'both';
+    showQualifiedModal.value = true;
     await fetchPublicationDates();
   };
 
@@ -835,16 +994,25 @@
   const closeQualifiedModal = () => {
     showQualifiedModal.value = false;
     selectedQualifiedPublicationDate.value = null;
+    selectedQualifiedApplicantType.value = 'both';
   };
 
   const generateQualifiedReport = () => {
     showQualifiedModal.value = false;
-    showQualifiedReportDialog.value = true;
+    if (selectedQualifiedApplicantType.value === 'internal') {
+      showInternalQualifiedReportDialog.value = true;
+    } else if (selectedQualifiedApplicantType.value === 'external') {
+      showExternalQualifiedReportDialog.value = true;
+    } else {
+      // 'both' — use existing QualifiedReport (no applicantType param)
+      showQualifiedReportDialog.value = true;
+    }
   };
 
   // ============================================================================
-  // UNQUALIFIED REPORT
+  // UNQUALIFIED REPORT ACTIONS
   // ============================================================================
+
   const openUnqualifiedReportDialog = async () => {
     if (!canReportApplicant.value) {
       $q.notify({
@@ -854,8 +1022,9 @@
       });
       return;
     }
-    showUnqualifiedModal.value = true;
     selectedUnqualifiedPublicationDate.value = null;
+    selectedUnqualifiedApplicantType.value = 'both';
+    showUnqualifiedModal.value = true;
     await fetchPublicationDates();
   };
 
@@ -871,16 +1040,25 @@
   const closeUnqualifiedModal = () => {
     showUnqualifiedModal.value = false;
     selectedUnqualifiedPublicationDate.value = null;
+    selectedUnqualifiedApplicantType.value = 'both';
   };
 
   const generateUnqualifiedReport = () => {
     showUnqualifiedModal.value = false;
-    showUnqualifiedReportDialog.value = true;
+    if (selectedUnqualifiedApplicantType.value === 'internal') {
+      showInternalUnqualifiedReportDialog.value = true;
+    } else if (selectedUnqualifiedApplicantType.value === 'external') {
+      showExternalUnqualifiedReportDialog.value = true;
+    } else {
+      // 'both' — use existing UnqualifiedReport (no applicantType param)
+      showUnqualifiedReportDialog.value = true;
+    }
   };
 
   // ============================================================================
-  // ALL APPLICANTS REPORT
+  // ALL APPLICANTS REPORT ACTIONS
   // ============================================================================
+
   const openAllApplicantsReportDialog = async () => {
     if (!canReportApplicant.value) {
       $q.notify({
@@ -890,8 +1068,8 @@
       });
       return;
     }
-    showAllApplicantsModal.value = true;
     selectedAllApplicantsPublicationDate.value = null;
+    showAllApplicantsModal.value = true;
     await fetchPublicationDates();
   };
 
@@ -917,6 +1095,7 @@
   // ============================================================================
   // VIEW APPLICANT
   // ============================================================================
+
   const viewApplicant = async (applicant) => {
     selectedApplicant.value = applicant;
     showDetailDialog.value = true;
@@ -936,7 +1115,6 @@
         applicant.date_of_birth;
 
       const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
-
       if (details) {
         selectedApplicant.value = {
           ...selectedApplicant.value,
@@ -955,6 +1133,7 @@
   // ============================================================================
   // DELETE APPLICATION
   // ============================================================================
+
   const confirmDeleteApplication = (jobRow) => {
     if (!canModifyApplicant.value) {
       $q.notify({
@@ -970,19 +1149,14 @@
 
   const deleteApplication = async () => {
     if (!deletingApplicationInfo.value) return;
-
     const submissionId = deletingApplicationInfo.value.submission_id;
-
     if (!submissionId) {
       $q.notify({ type: 'negative', message: 'Invalid submission ID', position: 'top' });
       return;
     }
-
     deletingSubmissionId.value = submissionId;
-
     try {
       await summaryReportStore.deleteApplication({ id: submissionId });
-
       $q.notify({
         type: 'positive',
         message: `Application #${submissionId} deleted successfully`,
@@ -1007,7 +1181,6 @@
           selectedApplicant.value.date_of_birth;
 
         const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
-
         if (details) {
           selectedApplicant.value = {
             ...selectedApplicant.value,
@@ -1033,6 +1206,10 @@
     }
   };
 
+  // ============================================================================
+  // MOUNT
+  // ============================================================================
+
   onMounted(async () => {
     await applicantStore.fetchApplicants({
       page: 1,
@@ -1044,7 +1221,6 @@
 </script>
 
 <style scoped>
-  /* ── Dialog Card ── */
   .detail-dialog-card,
   .report-select-card {
     width: 90vw;
@@ -1057,7 +1233,6 @@
     max-width: 480px;
   }
 
-  /* ── Header ── */
   .dialog-header {
     display: flex;
     align-items: center;
@@ -1075,10 +1250,10 @@
   .header-view {
     background: #1565c0;
   }
-  /* New header color for All Applicants modal */
   .header-all {
     background: #6a1b9a;
   }
+
   .close-btn {
     color: rgba(255, 255, 255, 0.8);
   }
@@ -1086,7 +1261,6 @@
     color: white;
   }
 
-  /* ── Section Labels ── */
   .section-label {
     font-size: 11px;
     font-weight: 700;
@@ -1097,7 +1271,6 @@
     align-items: center;
   }
 
-  /* ── Info Fields ── */
   .info-group {
     border: 1px solid #eeeeee;
     border-radius: 8px;
@@ -1121,7 +1294,6 @@
     color: #212121;
   }
 
-  /* ── Footer ── */
   .dialog-footer {
     flex-shrink: 0;
     background: #fafafa;

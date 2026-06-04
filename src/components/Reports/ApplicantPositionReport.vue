@@ -251,6 +251,31 @@
       return 0;
     },
   };
+
+  // Helper function to format publication date from the report data
+  function getFormattedPublicationDate() {
+    if (!reportData.value || !reportData.value.publication_date) {
+      return '';
+    }
+
+    const pubDate = reportData.value.publication_date;
+    // Expected format: "April 27, 2026 - May 14, 2026"
+    // Extract the first date (start date) or use the whole string
+    let startDateStr = pubDate.split(' - ')[0] || pubDate;
+
+    // Parse the date string (e.g., "April 27, 2026")
+    const dateParts = startDateStr.match(/(\w+)\s+(\d+),\s+(\d+)/);
+    if (!dateParts) return '';
+
+    const month = dateParts[1];
+    const day = dateParts[2];
+    const year = dateParts[3];
+
+    // Create a date object and format to "MONTH DD, YYYY" in uppercase
+    const formattedDate = `${month.toUpperCase()} ${day}, ${year}`;
+    return formattedDate;
+  }
+
   async function generatePdfContent() {
     if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
@@ -488,6 +513,13 @@
       dontBreakRows: true,
     });
 
+    // Format the publication date for the header
+    const publicationDateText = getFormattedPublicationDate();
+    let headerTitleText = 'APPLICANTS PER POSITION';
+    if (publicationDateText) {
+      headerTitleText = `APPLICANTS PER POSITION - ${publicationDateText} PUBLICATION`;
+    }
+
     const docDefinition = {
       pageSize: 'A4',
       pageOrientation: 'portrait',
@@ -534,7 +566,7 @@
                       margin: [0, 22, 0, 0],
                     },
                     {
-                      text: 'APPLICANTS PER POSITION',
+                      text: headerTitleText,
                       color: 'white',
                       fontSize: 11,
                       bold: true,

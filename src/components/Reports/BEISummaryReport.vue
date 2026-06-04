@@ -153,6 +153,22 @@
     return formattedName.toUpperCase();
   }
 
+  // Check if position has BEI (behaviorals criteria)
+  function hasBeiCriteria(reportData) {
+    const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
+    if (!Array.isArray(criteria)) return false;
+
+    for (const c of criteria) {
+      if (Array.isArray(c.behaviorals) && c.behaviorals.length > 0) {
+        return true;
+      }
+      if (Array.isArray(c.behavioral) && c.behavioral.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Get BEI weight from criteria
   function getBeiWeight(reportData) {
     const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
@@ -326,13 +342,14 @@
 
     for (let i = 0; i < signatories.length; i += MAX_PER_ROW) {
       const rowItems = signatories.slice(i, i + MAX_PER_ROW);
+      const itemCount = rowItems.length;
 
       const columns = rowItems.map((r) => {
         // Format full name with prefix and suffix
         const formattedName = formatFullName(r.prefix, r.rater_name, r.suffix);
 
         return {
-          width: '*',
+          width: 'auto',
           stack: [
             {
               text: formattedName,
@@ -342,7 +359,7 @@
               margin: [0, 0, 0, 2],
             },
             {
-              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 120, y2: 0, lineWidth: 1 }],
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }],
               alignment: 'center',
               margin: [0, 0, 0, 4],
             },
@@ -353,19 +370,19 @@
         };
       });
 
-      const missing = MAX_PER_ROW - columns.length;
-      const leftPads = Math.floor(missing / 2);
-      const rightPads = missing - leftPads;
+      // Calculate widths for centering
+      // Each column gets equal width based on count
+      const columnWidth = `${100 / itemCount}%`;
 
-      const paddedColumns = [
-        ...Array.from({ length: leftPads }, () => ({ width: '*', text: '' })),
-        ...columns,
-        ...Array.from({ length: rightPads }, () => ({ width: '*', text: '' })),
-      ];
+      // Apply width to each column
+      const columnsWithWidth = columns.map((col) => ({
+        ...col,
+        width: columnWidth,
+      }));
 
       footerContent.push({
         unbreakable: true,
-        columns: paddedColumns,
+        columns: columnsWithWidth,
         columnGap: 30,
         margin: i === 0 ? [0, 30, 0, 0] : [0, 20, 0, 0],
       });
@@ -375,6 +392,81 @@
   }
 
   function generatePositionTable(reportData) {
+    // Check if position has BEI criteria
+    const hasBei = hasBeiCriteria(reportData);
+
+    if (!hasBei) {
+      const jobPost = reportData.jobPost || reportData || {};
+      const office = jobPost.Office || reportData.office || 'N/A';
+      const position = jobPost.Position || reportData.position || 'N/A';
+      const salaryGrade = jobPost.SalaryGrade || reportData.Salary_Grade || 'N/A';
+      const plantillaItemNo = jobPost['Plantilla Item No'] || reportData.Plantilla_Item_No || 'N/A';
+
+      return [
+        {
+          text: 'BEI SUMMARY OF RATING',
+          fontSize: 12,
+          bold: true,
+          margin: [0, 0, 0, 2],
+          alignment: 'center',
+        },
+        {
+          text: 'QUALIFICATION STANDARDS',
+          fontSize: 10,
+          bold: true,
+          margin: [0, 0, 0, 16],
+          alignment: 'center',
+        },
+        {
+          table: {
+            widths: ['15%', '85%'],
+            body: [
+              [
+                { text: 'Office:   ', fontSize: 10, border: [false, false, false, false] },
+                { text: office, fontSize: 10, bold: true, border: [false, false, false, false] },
+              ],
+              [
+                { text: 'Position:   ', fontSize: 10, border: [false, false, false, false] },
+                { text: position, fontSize: 10, bold: true, border: [false, false, false, false] },
+              ],
+              [
+                { text: 'Salary Grade:  ', fontSize: 10, border: [false, false, false, false] },
+                {
+                  text: salaryGrade,
+                  fontSize: 10,
+                  bold: true,
+                  border: [false, false, false, false],
+                },
+              ],
+              [
+                {
+                  text: 'Plantilla Item No.:    ',
+                  fontSize: 10,
+                  border: [false, false, false, false],
+                },
+                {
+                  text: plantillaItemNo,
+                  fontSize: 10,
+                  bold: true,
+                  border: [false, false, false, false],
+                },
+              ],
+            ],
+          },
+          margin: [0, 0, 0, 30],
+        },
+        {
+          text: 'This position has no interview category.',
+          fontSize: 11,
+          bold: true,
+          alignment: 'center',
+          color: '#c0392b',
+          margin: [0, 50, 0, 50],
+        },
+        ...generateSignatoryFooter(reportData),
+      ];
+    }
+
     const applicants = getApplicants(reportData);
     const maxRaters = getMaxRatersCount(reportData);
     const allRaters = getAllRaters(reportData);

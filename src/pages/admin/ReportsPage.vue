@@ -54,7 +54,7 @@
         </q-card-section>
 
         <q-card-section>
-          <div v-if="loadingPublicationDates" class="text-center">
+          <div v-if="loadingPublicationDatesForExcel" class="text-center">
             <q-spinner color="primary" size="32px" />
             <div class="q-mt-sm">Loading publication dates...</div>
           </div>
@@ -365,6 +365,77 @@
       </q-card>
     </q-dialog>
 
+    <!-- List of Position PDF Modal -->
+    <q-dialog v-model="showListPositionModal" persistent>
+      <q-card style="min-width: 450px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">List of Position Report Filter</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div v-if="loadingListPositionDates" class="text-center">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm">Loading publication dates...</div>
+          </div>
+
+          <div v-else>
+            <div class="text-subtitle2 q-mb-sm">Select Publication Date</div>
+            <q-select
+              v-model="selectedListPositionPublicationDate"
+              :options="filteredListPositionDateOptions"
+              label="Publication Date"
+              outlined
+              use-input
+              input-debounce="300"
+              @filter="filterListPositionDates"
+              :dropdown-icon="'arrow_drop_down'"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey">No publication dates found</q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="event" size="xs" class="q-mr-sm" />
+                      {{ scope.opt }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+
+              <template v-slot:selected>
+                <span v-if="selectedListPositionPublicationDate">
+                  <q-icon name="event" size="xs" class="q-mr-sm" />
+                  {{ selectedListPositionPublicationDate }}
+                </span>
+              </template>
+            </q-select>
+
+            <div
+              v-if="listPositionPublicationDateOptions.length === 0"
+              class="q-mt-sm text-caption text-grey"
+            >
+              No publication dates available
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="closeListPositionModal" />
+          <q-btn
+            color="primary"
+            label="Generate Report"
+            :disable="!selectedListPositionPublicationDate"
+            @click="generateListPositionReport"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Newly Appointed and Promoted Permanent Employees Modal -->
     <q-dialog v-model="showNewEmployeeModal" persistent>
       <q-card style="min-width: 450px; max-width: 90vw">
@@ -516,6 +587,11 @@
     <q-dialog v-model="showBEISummaryReportViewer" maximized>
       <BEISummaryReport :positions="selectedPositions" />
     </q-dialog>
+
+    <!-- List of Position Report Viewer -->
+    <q-dialog v-model="showListPositionReportViewer" maximized>
+      <ListPositionReport :publicationDate="selectedListPositionPublicationDate" />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -525,6 +601,7 @@
   import BEISummaryReport from 'components/reports/BEISummaryReport.vue';
   import TopApplicantReport from 'components/reports/TopApplicantReport.vue';
   import ApplicantPosition from 'components/reports/ApplicantPositionReport.vue';
+  import ListPositionReport from 'components/reports/ListPositionReport.vue';
 
   export default {
     name: 'ReportManagementPage',
@@ -534,6 +611,7 @@
       FinalSummaryReport,
       TopApplicantReport,
       ApplicantPosition,
+      ListPositionReport,
     },
 
     data() {
@@ -670,6 +748,9 @@
         // Top 5 Ranking Modal
         showTop5Modal: false,
 
+        // List of Position PDF Modal
+        showListPositionModal: false,
+
         // Newly Appointed Modal
         showNewEmployeeModal: false,
 
@@ -678,6 +759,7 @@
         showTop5ReportViewer: false,
         showApplicantReportViewer: false,
         showBEISummaryReportViewer: false,
+        showListPositionReportViewer: false,
 
         // ==================== POSITIONS DATA ====================
         loadingPositions: false,
@@ -699,6 +781,12 @@
         top5PublicationDateOptions: [],
         filteredTop5PublicationDateOptions: [],
         selectedTop5PublicationDate: null,
+
+        // ==================== LIST OF POSITION PDF DATA ====================
+        loadingListPositionDates: false,
+        listPositionPublicationDateOptions: [],
+        filteredListPositionDateOptions: [],
+        selectedListPositionPublicationDate: null,
 
         // ==================== NEWLY APPOINTED DATA ====================
         loadingNewEmployeeDates: false,
@@ -903,6 +991,25 @@
         }
       },
 
+      async loadListPositionPublicationDates() {
+        const summaryReportStore = useSummaryReportStore();
+        this.loadingListPositionDates = true;
+        try {
+          const response = await summaryReportStore.fetchPublicationDateList();
+          this.listPositionPublicationDateOptions = response.map((item) => item.date);
+          this.filteredListPositionDateOptions = [...this.listPositionPublicationDateOptions];
+        } catch (error) {
+          console.error('Error loading publication dates for List of Position:', error);
+          this.$q.notify({
+            type: 'negative',
+            message: 'Failed to load publication dates',
+            position: 'top',
+          });
+        } finally {
+          this.loadingListPositionDates = false;
+        }
+      },
+
       async loadNewEmployeeDates() {
         const summaryReportStore = useSummaryReportStore();
         this.loadingNewEmployeeDates = true;
@@ -969,12 +1076,7 @@
             break;
 
           case 5: // List of Position (PDF)
-            // For PDF version of List of Position
-            this.$q.notify({
-              type: 'info',
-              message: 'PDF report generation coming soon...',
-              position: 'top',
-            });
+            this.openListPositionModal();
             break;
 
           case 11: // List of Position (Excel) - should be handled above
@@ -1192,6 +1294,43 @@
       generateTop5Report() {
         this.showTop5Modal = false;
         this.showTop5ReportViewer = true;
+      },
+
+      // ==================== LIST OF POSITION PDF METHODS ====================
+
+      async openListPositionModal() {
+        this.showListPositionModal = true;
+        this.resetListPositionFilters();
+        await this.loadListPositionPublicationDates();
+      },
+
+      resetListPositionFilters() {
+        this.selectedListPositionPublicationDate = null;
+      },
+
+      closeListPositionModal() {
+        this.showListPositionModal = false;
+        this.resetListPositionFilters();
+        this.listPositionPublicationDateOptions = [];
+        this.filteredListPositionDateOptions = [];
+      },
+
+      filterListPositionDates(val, update) {
+        update(() => {
+          if (val === '') {
+            this.filteredListPositionDateOptions = [...this.listPositionPublicationDateOptions];
+          } else {
+            const needle = val.toLowerCase();
+            this.filteredListPositionDateOptions = this.listPositionPublicationDateOptions.filter(
+              (date) => date.toLowerCase().includes(needle),
+            );
+          }
+        });
+      },
+
+      generateListPositionReport() {
+        this.showListPositionModal = false;
+        this.showListPositionReportViewer = true;
       },
 
       // ==================== NEWLY APPOINTED METHODS ====================

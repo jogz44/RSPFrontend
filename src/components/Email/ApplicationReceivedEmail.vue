@@ -48,11 +48,7 @@
                   <div class="letter-body">
                     <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
-                    <p class="letter-greeting">
-                      Dear
-                      <strong>{{ applicantName }}</strong>
-                      ,
-                    </p>
+                    <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                     <p class="letter-text">Greetings of Peace and Safety!</p>
 
@@ -132,7 +128,7 @@
                 class="footer-print-btn"
               >
                 <i class="ti ti-printer" style="margin-right: 6px"></i>
-                {{ isPrinting ? 'Generating PDF...' : 'Print / Save PDF' }}
+                {{ isPrinting ? 'Generating PDF...' : 'Print' }}
               </q-btn>
             </div>
           </template>
@@ -175,12 +171,23 @@
   const error = ref(null);
   const isPrinting = ref(false);
 
+  // ── Helper to capitalize name properly ───────────────────
+  const capitalizeName = (name) => {
+    if (!name) return '';
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // ── Computed ─────────────────────────────────────────────
   const applicantName = computed(() => {
     const { firstname, lastname, name_extension } = props.applicant;
     const name = [firstname, lastname].filter(Boolean).join(' ');
     const extension = name_extension ? ` ${name_extension}` : '';
-    return name ? name + extension : 'Applicant';
+    const fullName = name ? name + extension : 'Applicant';
+    return capitalizeName(fullName);
   });
 
   // ── Helpers ──────────────────────────────────────────────
@@ -346,7 +353,7 @@
 
           // Salutation
           {
-            text: [{ text: 'Dear ' }, { text: name, bold: true }, { text: ',' }],
+            text: `Dear ${name},`,
             fontSize: FONT_SIZE,
             margin: [0, 0, 0, 10],
           },
@@ -424,7 +431,6 @@
                 text: `(SGD.) ${props.signatoryName}`,
                 fontSize: FONT_SIZE,
                 bold: true,
-                decoration: 'underline',
               },
               { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
               {
@@ -645,7 +651,6 @@
   .sig-name {
     font-size: 10pt;
     font-weight: 700;
-    text-decoration: underline;
     text-transform: uppercase;
     color: #000;
   }

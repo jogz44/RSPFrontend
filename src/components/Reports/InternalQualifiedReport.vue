@@ -1,7 +1,7 @@
 <template>
   <q-card class="modal-card">
     <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">Qualified Applicants Report</div>
+      <div class="text-h6">Qualified Internal Applicants Report</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -72,7 +72,7 @@
   async function fetchReportData() {
     try {
       isLoading.value = true;
-      const response = await summaryReportStore.fetchQualifiedReport(props.publicationDate);
+      const response = await summaryReportStore.fetchInternalQualifiedReport(props.publicationDate);
       reportData.value = response;
       console.log('Report data:', response);
     } catch (error) {
@@ -642,7 +642,7 @@
       },
       content: [
         {
-          text: 'PREQUALIFIED ALL APPLICANT REPORT'.toUpperCase(),
+          text: 'PREQUALIFIED INTERNAL APPLICANT REPORT'.toUpperCase(),
           fontSize: 14,
           bold: true,
           alignment: 'center',

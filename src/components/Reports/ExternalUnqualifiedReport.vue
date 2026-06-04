@@ -1,7 +1,7 @@
 <template>
   <q-card class="modal-card">
     <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">Qualified Applicants Report</div>
+      <div class="text-h6">Unqualified Applicants Report</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -72,14 +72,16 @@
   async function fetchReportData() {
     try {
       isLoading.value = true;
-      const response = await summaryReportStore.fetchQualifiedReport(props.publicationDate);
+      const response = await summaryReportStore.fetchExternalUnqualifiedReport(
+        props.publicationDate,
+      );
       reportData.value = response;
       console.log('Report data:', response);
     } catch (error) {
-      console.error('Error fetching qualified report:', error);
+      console.error('Error fetching unqualified report:', error);
       $q.notify({
         type: 'negative',
-        message: 'Failed to load qualified applicants report',
+        message: 'Failed to load unqualified applicants report',
       });
     } finally {
       isLoading.value = false;
@@ -642,15 +644,15 @@
       },
       content: [
         {
-          text: 'PREQUALIFIED ALL APPLICANT REPORT'.toUpperCase(),
-          fontSize: 14,
+          text: 'FOR QS VALIDATION EXTERNAL APPLICANT REPORT'.toUpperCase(),
+          fontSize: 13,
           bold: true,
           alignment: 'center',
           margin: [0, -20, 0, 0],
         },
         {
           text: (reportData.value.Date || `${props.publicationDate} PUBLICATION`).toUpperCase(),
-          fontSize: 14,
+          fontSize: 12,
           bold: true,
           alignment: 'center',
           margin: [0, 0, 0, 30],
@@ -669,7 +671,12 @@
                   rowSpan: 2,
                   fontSize: 7,
                 },
-                { text: 'QUALIFICATION STANDARDS', style: 'tableHeader', colSpan: 4, fontSize: 7 },
+                {
+                  text: 'QUALIFICATION STANDARDS',
+                  style: 'tableHeader',
+                  colSpan: 4,
+                  fontSize: 7,
+                },
                 {},
                 {},
                 {},
@@ -695,10 +702,7 @@
             paddingRight: () => 3,
             paddingTop: () => 2,
             paddingBottom: () => 2,
-            fillColor: (rowIndex) => {
-              if (rowIndex === 0 || rowIndex === 1) return '#ffc000';
-              return null;
-            },
+            fillColor: (rowIndex) => (rowIndex === 0 || rowIndex === 1 ? '#ffc000' : null),
           },
         },
       ],

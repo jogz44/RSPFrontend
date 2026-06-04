@@ -190,10 +190,19 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    async fetchQualifiedReport(date) {
+    // ============================================================================
+    // QUALIFIED REPORT
+    // applicantType: 'both' | 'internal' | 'external'
+    // - 'both'     → no query param (existing behavior)
+    // - 'internal' → ?applicantType=internal
+    // - 'external' → ?applicantType=external
+    // ============================================================================
+
+    async fetchQualifiedReport(date, applicantType = 'both') {
       try {
         this.loading = true;
-        const response = await adminApi.get(`/report/applicant/qualified/${date}`);
+        const params = applicantType !== 'both' ? { applicantType } : {};
+        const response = await adminApi.get(`/report/applicant/qualified/${date}`, { params });
         this.error = null;
         return response.data;
       } catch (err) {
@@ -205,10 +214,24 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    async fetchUnqualifiedReport(date) {
+    async fetchInternalQualifiedReport(date) {
+      return this.fetchQualifiedReport(date, 'internal');
+    },
+
+    async fetchExternalQualifiedReport(date) {
+      return this.fetchQualifiedReport(date, 'external');
+    },
+
+    // ============================================================================
+    // UNQUALIFIED REPORT
+    // Same applicantType logic as qualified
+    // ============================================================================
+
+    async fetchUnqualifiedReport(date, applicantType = 'both') {
       try {
         this.loading = true;
-        const response = await adminApi.get(`/report/applicant/unqualified/${date}`);
+        const params = applicantType !== 'both' ? { applicantType } : {};
+        const response = await adminApi.get(`/report/applicant/unqualified/${date}`, { params });
         this.error = null;
         return response.data;
       } catch (err) {
@@ -218,6 +241,14 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       } finally {
         this.loading = false;
       }
+    },
+
+    async fetchInternalUnqualifiedReport(date) {
+      return this.fetchUnqualifiedReport(date, 'internal');
+    },
+
+    async fetchExternalUnqualifiedReport(date) {
+      return this.fetchUnqualifiedReport(date, 'external');
     },
 
     async fetchTopQualifiedReport(date) {
@@ -240,28 +271,19 @@ export const useSummaryReportStore = defineStore('summaryReport', {
 
     /**
      * Format date to YYYY-MM-DD
-     * @param {string} date - Date string in any format
-     * @returns {string} Formatted date in YYYY-MM-DD
      */
     formatDateToYYYYMMDD(date) {
       if (!date) return '';
-
-      // If it's already in YYYY-MM-DD format, return as is
-      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return date;
-      }
-
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
       try {
         const parsedDate = new Date(date);
         if (isNaN(parsedDate.getTime())) {
           console.warn('Invalid date:', date);
           return date;
         }
-
         const year = parsedDate.getFullYear();
         const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
         const day = String(parsedDate.getDate()).padStart(2, '0');
-
         return `${year}-${month}-${day}`;
       } catch (error) {
         console.error('Error formatting date:', error);
@@ -269,11 +291,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    /**
-     * Generate List of Position Excel Report
-     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
-     * @returns {Promise<Blob>} Excel file blob
-     */
     async generateListOfPositionExcel(publicationDate) {
       try {
         this.loading = true;
@@ -294,11 +311,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    /**
-     * Generate Prequalified Applicant Excel Report
-     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
-     * @returns {Promise<Blob>} Excel file blob
-     */
     async generatePrequalifiedApplicantExcel(publicationDate) {
       try {
         this.loading = true;
@@ -319,11 +331,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    /**
-     * Generate Unqualified (For QS Validation) Applicant Excel Report
-     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
-     * @returns {Promise<Blob>} Excel file blob
-     */
     async generateUnqualifiedApplicantExcel(publicationDate) {
       try {
         this.loading = true;
@@ -344,11 +351,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    /**
-     * Generate All Applicant with Demographics Excel Report
-     * @param {string} publicationDate - Publication date (will be formatted to YYYY-MM-DD)
-     * @returns {Promise<Blob>} Excel file blob
-     */
     async generateAllApplicantExcel(publicationDate) {
       try {
         this.loading = true;
@@ -369,7 +371,6 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // Delete application by submission ID
     async deleteApplication({ id }) {
       this.loading = true;
       try {
@@ -385,17 +386,12 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
-    // Fetch image with auth token via adminApi and return base64
     async fetchImageBase64(imageUrl) {
       try {
         const response = await adminApi.get(imageUrl, { responseType: 'blob' });
         const blob = response.data;
-
         if (!blob || blob.size === 0) return null;
-
-        // only allow png/jpg/jpeg
         if (!['image/png', 'image/jpeg', 'image/jpg'].includes(blob.type)) return null;
-
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);

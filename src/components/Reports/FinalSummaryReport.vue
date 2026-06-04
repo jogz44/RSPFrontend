@@ -334,13 +334,14 @@
 
     for (let i = 0; i < signatories.length; i += MAX_PER_ROW) {
       const rowItems = signatories.slice(i, i + MAX_PER_ROW);
+      const itemCount = rowItems.length;
 
       const columns = rowItems.map((r) => {
         // Format full name with prefix and suffix
         const formattedName = formatFullName(r.prefix, r.rater_name, r.suffix);
 
         return {
-          width: '*',
+          width: 'auto',
           stack: [
             {
               text: formattedName,
@@ -350,7 +351,7 @@
               margin: [0, 0, 0, 2],
             },
             {
-              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 120, y2: 0, lineWidth: 1 }],
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 1 }],
               alignment: 'center',
               margin: [0, 0, 0, 4],
             },
@@ -361,19 +362,19 @@
         };
       });
 
-      const missing = MAX_PER_ROW - columns.length;
-      const leftPads = Math.floor(missing / 2);
-      const rightPads = missing - leftPads;
+      // Calculate widths for centering
+      // Each column gets equal width based on count
+      const columnWidth = `${100 / itemCount}%`;
 
-      const paddedColumns = [
-        ...Array.from({ length: leftPads }, () => ({ width: '*', text: '' })),
-        ...columns,
-        ...Array.from({ length: rightPads }, () => ({ width: '*', text: '' })),
-      ];
+      // Apply width to each column
+      const columnsWithWidth = columns.map((col) => ({
+        ...col,
+        width: columnWidth,
+      }));
 
       footerContent.push({
         unbreakable: true,
-        columns: paddedColumns,
+        columns: columnsWithWidth,
         columnGap: 30,
         margin: i === 0 ? [0, 30, 0, 0] : [0, 20, 0, 0],
       });
@@ -572,7 +573,7 @@
     const rows = [headerRow, subHeaderRow, ...dataRows];
 
     // Calculate column widths
-    const raterColumnWidth = maxRaters > 0 && allRaters.length > 0 ? 50 : 0;
+    const raterColumnWidth = maxRaters > 0 && allRaters.length > 0 ? '*' : 0;
     const widths = [20, 150]; // No. and Name
 
     // Add widths for rater columns

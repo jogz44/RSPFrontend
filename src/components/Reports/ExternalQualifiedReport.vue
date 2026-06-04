@@ -72,7 +72,7 @@
   async function fetchReportData() {
     try {
       isLoading.value = true;
-      const response = await summaryReportStore.fetchQualifiedReport(props.publicationDate);
+      const response = await summaryReportStore.fetchExternalQualifiedReport(props.publicationDate);
       reportData.value = response;
       console.log('Report data:', response);
     } catch (error) {
@@ -642,7 +642,7 @@
       },
       content: [
         {
-          text: 'PREQUALIFIED ALL APPLICANT REPORT'.toUpperCase(),
+          text: 'PREQUALIFIED EXTERNAL APPLICANT REPORT'.toUpperCase(),
           fontSize: 14,
           bold: true,
           alignment: 'center',

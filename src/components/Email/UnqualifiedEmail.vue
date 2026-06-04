@@ -48,11 +48,7 @@
                   <div class="letter-body">
                     <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
-                    <p class="letter-greeting">
-                      Dear MR./MRS.
-                      <strong>{{ applicantName }}</strong>
-                      ,
-                    </p>
+                    <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                     <p class="letter-text">Greetings of Peace and Safety!</p>
 
@@ -77,9 +73,8 @@
                       <table class="qs-table">
                         <thead>
                           <tr>
-                            <th>Qualification Standard</th>
-                            <th>Required</th>
-                            <th>Your Records</th>
+                            <th>Prescribed QS</th>
+                            <th>Position Requirements</th>
                             <th>Assessment</th>
                           </tr>
                         </thead>
@@ -89,98 +84,9 @@
                               <strong>{{ row.label }}</strong>
                             </td>
                             <td>{{ row.required }}</td>
-                            <td v-html="row.record"></td>
                             <td>
                               {{ row.remark }}
                             </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <!-- Education Records -->
-                    <div v-if="applicantDetails.records?.education?.length" class="table-section">
-                      <p class="table-label">Education Records:</p>
-                      <table class="records-table">
-                        <thead>
-                          <tr>
-                            <th>Degree</th>
-                            <th>School</th>
-                            <th>Year Attended</th>
-                            <th>Graduated</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(edu, i) in applicantDetails.records.education" :key="i">
-                            <td>{{ edu.Degree }}</td>
-                            <td>{{ edu.School }}</td>
-                            <td>{{ edu.DateAttend }}</td>
-                            <td>{{ edu.Graduated }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <!-- Experience Records -->
-                    <div v-if="applicantDetails.records?.experience?.length" class="table-section">
-                      <p class="table-label">Work Experience Records:</p>
-                      <table class="records-table">
-                        <thead>
-                          <tr>
-                            <th>Position</th>
-                            <th>Company</th>
-                            <th>From</th>
-                            <th>To</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(exp, i) in applicantDetails.records.experience" :key="i">
-                            <td>{{ exp.position || '-' }}</td>
-                            <td>{{ exp.company || '-' }}</td>
-                            <td>{{ exp.from || '-' }}</td>
-                            <td>{{ exp.to || '-' }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <!-- Training Records -->
-                    <div v-if="applicantDetails.records?.training?.length" class="table-section">
-                      <p class="table-label">Training Records:</p>
-                      <table class="records-table">
-                        <thead>
-                          <tr>
-                            <th>Training Title</th>
-                            <th>Date</th>
-                            <th>Hours</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(train, i) in applicantDetails.records.training" :key="i">
-                            <td>{{ train.Training }}</td>
-                            <td>{{ formatDate(train.DateFrom) }}</td>
-                            <td class="text-center">{{ train.NumHours }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <!-- Eligibility Records -->
-                    <div v-if="applicantDetails.records?.eligibility?.length" class="table-section">
-                      <p class="table-label">Eligibility Records:</p>
-                      <table class="records-table">
-                        <thead>
-                          <tr>
-                            <th>Eligibility</th>
-                            <th>Date</th>
-                            <th>Rating</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(elig, i) in applicantDetails.records.eligibility" :key="i">
-                            <td>{{ elig.CivilServe }}</td>
-                            <td>{{ formatDate(elig.Dates) }}</td>
-                            <td class="text-center">{{ elig.Rates }}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -288,7 +194,22 @@
   // ── Computed ─────────────────────────────────────────────
   const applicantName = computed(() => {
     const { firstname, lastname, name_extension } = props.applicant;
-    return [firstname, lastname, name_extension].filter(Boolean).join(' ') || 'Applicant';
+    // Capitalize each part properly (first letter uppercase, rest lowercase)
+    const capitalizeName = (name) => {
+      if (!name) return '';
+      return name
+        .toLowerCase()
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+
+    const fullName = [firstname, lastname, name_extension]
+      .filter(Boolean)
+      .map(capitalizeName)
+      .join(' ');
+
+    return fullName || 'Applicant';
   });
 
   const qsRows = computed(() => {
@@ -300,7 +221,6 @@
         key: 'education',
         label: 'Education',
         required: d.qs_jobpost?.education,
-        record: d.formatted?.education || '-',
         remark: d.remarks?.education,
         meets: d.remarks?.education === MEETS,
       },
@@ -308,7 +228,6 @@
         key: 'experience',
         label: 'Experience',
         required: d.qs_jobpost?.experience,
-        record: d.formatted?.experience || 'None',
         remark: d.remarks?.experience,
         meets: d.remarks?.experience === MEETS,
       },
@@ -316,7 +235,6 @@
         key: 'training',
         label: 'Training',
         required: d.qs_jobpost?.training,
-        record: truncateHtml(d.formatted?.training, 120),
         remark: d.remarks?.training,
         meets: d.remarks?.training === MEETS,
       },
@@ -324,7 +242,6 @@
         key: 'eligibility',
         label: 'Eligibility',
         required: d.qs_jobpost?.eligibility,
-        record: truncateHtml(d.formatted?.eligibility, 120),
         remark: d.remarks?.eligibility,
         meets: d.remarks?.eligibility === MEETS,
       },
@@ -338,20 +255,6 @@
     return isNaN(d.getTime())
       ? ''
       : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return isNaN(d.getTime())
-      ? dateStr
-      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  const truncateHtml = (html, length = 120) => {
-    if (!html) return '';
-    const text = html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '');
-    return text.length > length ? `${text.substring(0, length)}…` : text;
   };
 
   // ── Image helper ─────────────────────────────────────────
@@ -371,172 +274,27 @@
   };
 
   // ── PDF Generation ───────────────────────────────────────
-  // All font sizes use 10 to match the letter body (10pt preview)
   const FONT_SIZE = 10;
-  const FONT_SIZE_HEADER = 10; // table header same size as body, distinguished by bold + fill
+  const FONT_SIZE_HEADER = 10;
 
   const buildQsTableBody = () => {
     const header = [
-      { text: 'Qualification Standard', style: 'tableHeader' },
-      { text: 'Required', style: 'tableHeader' },
-      { text: 'Your Records', style: 'tableHeader' },
+      { text: 'Prescribed QS', style: 'tableHeader' },
+      { text: 'Position Requirements', style: 'tableHeader' },
       { text: 'Assessment', style: 'tableHeader' },
     ];
 
     const rows = qsRows.value.map((row) => [
       { text: row.label, fontSize: FONT_SIZE, bold: true },
       { text: row.required || '-', fontSize: FONT_SIZE },
-      { text: truncateHtml(row.record, 200) || '-', fontSize: FONT_SIZE },
       {
         text: row.remark || '-',
         fontSize: FONT_SIZE,
         color: '#000000',
-        bold: true,
       },
     ]);
 
     return [header, ...rows];
-  };
-
-  const buildEducationTable = () => {
-    const edu = applicantDetails.value?.records?.education;
-    if (!edu?.length) return null;
-    return {
-      stack: [
-        { text: 'Education Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['25%', '40%', '20%', '15%'],
-            body: [
-              [
-                { text: 'Degree', style: 'tableHeader' },
-                { text: 'School', style: 'tableHeader' },
-                { text: 'Year Attended', style: 'tableHeader' },
-                { text: 'Graduated', style: 'tableHeader' },
-              ],
-              ...edu.map((e) => [
-                { text: e.Degree || '-', fontSize: FONT_SIZE },
-                { text: e.School || '-', fontSize: FONT_SIZE },
-                { text: e.DateAttend || '-', fontSize: FONT_SIZE },
-                { text: e.Graduated || '-', fontSize: FONT_SIZE },
-              ]),
-            ],
-          },
-          layout: {
-            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
-          },
-          margin: [0, 0, 0, 6],
-        },
-      ],
-    };
-  };
-
-  const buildExperienceTable = () => {
-    const exp = applicantDetails.value?.records?.experience;
-    if (!exp?.length) return null;
-    return {
-      stack: [
-        {
-          text: 'Work Experience Records:',
-          fontSize: FONT_SIZE,
-          bold: true,
-          margin: [0, 8, 0, 3],
-        },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['30%', '40%', '15%', '15%'],
-            body: [
-              [
-                { text: 'Position', style: 'tableHeader' },
-                { text: 'Company', style: 'tableHeader' },
-                { text: 'From', style: 'tableHeader' },
-                { text: 'To', style: 'tableHeader' },
-              ],
-              ...exp.map((e) => [
-                { text: e.position || '-', fontSize: FONT_SIZE },
-                { text: e.company || '-', fontSize: FONT_SIZE },
-                { text: e.from || '-', fontSize: FONT_SIZE },
-                { text: e.to || '-', fontSize: FONT_SIZE },
-              ]),
-            ],
-          },
-          layout: {
-            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
-          },
-          margin: [0, 0, 0, 6],
-        },
-      ],
-    };
-  };
-
-  const buildTrainingTable = () => {
-    const training = applicantDetails.value?.records?.training;
-    if (!training?.length) return null;
-    return {
-      stack: [
-        { text: 'Training Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['65%', '25%', '10%'],
-            body: [
-              [
-                { text: 'Training Title', style: 'tableHeader' },
-                { text: 'Date', style: 'tableHeader' },
-                { text: 'Hours', style: 'tableHeader', alignment: 'center' },
-              ],
-              ...training.map((t) => [
-                { text: t.Training || '-', fontSize: FONT_SIZE },
-                { text: formatDate(t.DateFrom), fontSize: FONT_SIZE },
-                {
-                  text: t.NumHours?.toString() || '-',
-                  fontSize: FONT_SIZE,
-                  alignment: 'center',
-                },
-              ]),
-            ],
-          },
-          layout: {
-            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
-          },
-          margin: [0, 0, 0, 6],
-        },
-      ],
-    };
-  };
-
-  const buildEligibilityTable = () => {
-    const elig = applicantDetails.value?.records?.eligibility;
-    if (!elig?.length) return null;
-    return {
-      stack: [
-        { text: 'Eligibility Records:', fontSize: FONT_SIZE, bold: true, margin: [0, 8, 0, 3] },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['60%', '25%', '15%'],
-            body: [
-              [
-                { text: 'Eligibility', style: 'tableHeader' },
-                { text: 'Date', style: 'tableHeader' },
-                { text: 'Rating', style: 'tableHeader', alignment: 'center' },
-              ],
-              ...elig.map((e) => [
-                { text: e.CivilServe || '-', fontSize: FONT_SIZE },
-                { text: formatDate(e.Dates), fontSize: FONT_SIZE },
-                { text: e.Rates?.toString() || '-', fontSize: FONT_SIZE, alignment: 'center' },
-              ]),
-            ],
-          },
-          layout: {
-            fillColor: (rowIndex) => (rowIndex === 0 ? '#f0f0f0' : null),
-          },
-          margin: [0, 0, 0, 6],
-        },
-      ],
-    };
   };
 
   const handlePrint = async () => {
@@ -558,19 +316,11 @@
       const name = applicantName.value;
       const dateStr = formatDateEnglish(props.currentDate);
 
-      const recordTables = [
-        buildEducationTable(),
-        buildExperienceTable(),
-        buildTrainingTable(),
-        buildEligibilityTable(),
-      ].filter(Boolean);
-
       const docDefinition = {
         pageSize: 'A4',
         pageOrientation: 'portrait',
         pageMargins: [60, 120, 60, 50],
 
-        // ── Header ───────────────────────────────────────────
         header: () => ({
           stack: [
             {
@@ -645,7 +395,6 @@
           ],
         }),
 
-        // ── Footer ───────────────────────────────────────────
         footer: () => ({
           stack: [
             {
@@ -658,14 +407,11 @@
           ],
         }),
 
-        // ── Content ──────────────────────────────────────────
         content: [
-          // Date
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
 
-          // Salutation
           {
-            text: [{ text: 'Dear MR./MRS. ' }, { text: name, bold: true }, { text: ',' }],
+            text: `Dear ${name},`,
             fontSize: FONT_SIZE,
             margin: [0, 0, 0, 10],
           },
@@ -692,11 +438,10 @@
             margin: [0, 0, 0, 8],
           },
 
-          // QS Table — widths slightly adjusted so 10pt text fits cleanly
           {
             table: {
               headerRows: 1,
-              widths: ['18%', '24%', '36%', '22%'],
+              widths: ['30%', '40%', '30%'],
               body: buildQsTableBody(),
             },
             layout: {
@@ -704,9 +449,6 @@
             },
             margin: [0, 0, 0, 8],
           },
-
-          // Dynamic record tables
-          ...recordTables,
 
           {
             text: 'We appreciate your interest in joining the City Government of Tagum and commend your effort in applying for the position. We encourage you to continue enhancing your qualifications and to apply for future vacancies that match your credentials.',
@@ -740,14 +482,12 @@
           },
           { text: 'Sincerely,', fontSize: FONT_SIZE, margin: [0, 0, 0, 30] },
 
-          // Signature block
           {
             stack: [
               {
                 text: `(SGD.) ${props.signatoryName}`,
                 fontSize: FONT_SIZE,
                 bold: true,
-                decoration: 'underline',
               },
               { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
               {
@@ -769,7 +509,7 @@
 
         styles: {
           tableHeader: {
-            fontSize: FONT_SIZE_HEADER, // 10pt — same as letter body, bold + fill distinguishes it
+            fontSize: FONT_SIZE_HEADER,
             bold: true,
             fillColor: '#f0f0f0',
           },
@@ -901,7 +641,6 @@
     overflow: hidden;
   }
 
-  /* ── Loading / Error states ──────────────────────────── */
   .state-box {
     display: flex;
     flex-direction: column;
@@ -923,7 +662,6 @@
     justify-content: center;
   }
 
-  /* ── Header ──────────────────────────────────────────── */
   .modal-header {
     display: flex;
     align-items: center;
@@ -958,7 +696,6 @@
     opacity: 1;
   }
 
-  /* ── Body ────────────────────────────────────────────── */
   .modal-body {
     padding: 20px 24px;
     flex: 1;
@@ -966,7 +703,6 @@
     min-height: 0;
   }
 
-  /* ── Sticky Footer ───────────────────────────────────── */
   .modal-footer {
     display: flex;
     align-items: center;
@@ -988,7 +724,6 @@
     gap: 4px;
   }
 
-  /* ── Letter wrapper ──────────────────────────────────── */
   .letter-wrapper {
     background: #f3f4f6;
     border-radius: 10px;
@@ -1003,7 +738,6 @@
     color: #000;
   }
 
-  /* ── Letter typography ───────────────────────────────── */
   .letter-body {
     padding-top: 4px;
   }
@@ -1020,75 +754,48 @@
     text-align: justify;
   }
 
-  /* ── Tables ──────────────────────────────────────────── */
   .table-section {
     margin: 10px 0;
     overflow-x: auto;
   }
-  .table-label {
-    font-size: 10pt;
-    font-weight: 700;
-    color: #000;
-    margin: 8px 0 4px;
-    line-height: 1.2;
-  }
-  .qs-table,
-  .records-table {
+  .qs-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 10pt; /* ← matched to letter body */
+    font-size: 10pt;
     line-height: 1.2;
     border: 1px solid #d1d5db;
     margin-bottom: 6px;
   }
-  .qs-table thead,
-  .records-table thead {
+  .qs-table thead {
     background: #f0f0f0;
   }
-  .qs-table th,
-  .records-table th {
+  .qs-table th {
     padding: 5px 7px;
     text-align: left;
-    font-size: 10pt; /* ← matched to letter body */
+    font-size: 10pt;
     font-weight: 700;
     color: #1f2937;
     border-right: 1px solid #d1d5db;
     border-bottom: 1px solid #d1d5db;
   }
-  .qs-table th:last-child,
-  .records-table th:last-child {
+  .qs-table th:last-child {
     border-right: none;
   }
-  .qs-table td,
-  .records-table td {
+  .qs-table td {
     padding: 5px 7px;
-    font-size: 10pt; /* ← matched to letter body */
+    font-size: 10pt;
     border-right: 1px solid #e5e7eb;
     border-bottom: 1px solid #e5e7eb;
     color: #1f2937;
     word-break: break-word;
   }
-  .qs-table td:last-child,
-  .records-table td:last-child {
+  .qs-table td:last-child {
     border-right: none;
   }
-  .qs-table tbody tr:hover,
-  .records-table tbody tr:hover {
+  .qs-table tbody tr:hover {
     background: #f9fafb;
   }
-  .text-center {
-    text-align: center;
-  }
-  .text-success {
-    color: #15803d;
-    font-weight: 600;
-  }
-  .text-error {
-    color: #dc2626;
-    font-weight: 600;
-  }
 
-  /* ── Signature ───────────────────────────────────────── */
   .signature-block {
     margin-top: 24px;
     line-height: 1.2;
@@ -1096,7 +803,6 @@
   .sig-name {
     font-size: 10pt;
     font-weight: 700;
-    text-decoration: underline;
     text-transform: uppercase;
     color: #000;
   }
@@ -1106,12 +812,11 @@
     margin-top: 2px;
   }
   .sig-sub {
-    font-size: 10pt; /* ← unified to 10pt */
+    font-size: 10pt;
     color: #374151;
     margin-top: 1px;
   }
 
-  /* ── System notice ───────────────────────────────────── */
   .system-notice {
     margin-top: 20px;
     padding-top: 10px;
@@ -1124,7 +829,6 @@
     gap: 6px;
   }
 
-  /* ── Transition ──────────────────────────────────────── */
   .modal-fade-enter-active,
   .modal-fade-leave-active {
     transition: opacity 0.2s ease;
@@ -1145,7 +849,6 @@
     opacity: 0;
   }
 
-  /* ── Responsive ──────────────────────────────────────── */
   @media (max-width: 600px) {
     .modal-overlay {
       padding: 0;
@@ -1169,7 +872,6 @@
     }
   }
 
-  /* ── Print ───────────────────────────────────────────── */
   @media print {
     .modal-overlay {
       position: static;

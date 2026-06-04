@@ -642,7 +642,7 @@
       },
       content: [
         {
-          text: 'FOR QS VALIDATION APPLICANT REPORT'.toUpperCase(),
+          text: 'FOR QS VALIDATION ALL APPLICANT REPORT'.toUpperCase(),
           fontSize: 13,
           bold: true,
           alignment: 'center',
