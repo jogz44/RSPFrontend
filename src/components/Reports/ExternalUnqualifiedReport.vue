@@ -621,7 +621,7 @@
                       alignment: 'left',
                     },
                     {
-                      text: 'CITY HUMAN RESOURCE MANAGEMENT OFFICE'.toUpperCase(),
+                      text: 'HUMAN RESOURCE MERIT PROMOTION AND SELECTION BOARD'.toUpperCase(),
                       fontSize: 13,
                       bold: true,
                       color: 'white',
