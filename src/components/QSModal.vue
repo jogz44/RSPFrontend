@@ -138,7 +138,7 @@
                         <q-th :props="props">
                           <q-checkbox
                             :model-value="isAllEducationSelected"
-                            @update:model-value="toggleSelectAllEducation"
+                            disable
                             dense
                             indeterminate-value="some"
                           />
@@ -148,7 +148,7 @@
                         <q-td :props="props" class="text-center">
                           <q-checkbox
                             :model-value="selectedEducationIds.includes(props.row.uniqueId)"
-                            @update:model-value="toggleEducationSelection(props.row.uniqueId)"
+                            disable
                             dense
                           />
                         </q-td>
@@ -222,7 +222,7 @@
                             >
                               <q-checkbox
                                 :model-value="selectedExperienceIds.includes(exp.uniqueId)"
-                                @update:model-value="toggleExperienceSelection(exp.uniqueId)"
+                                disable
                                 dense
                                 size="sm"
                                 class="q-mr-xs"
@@ -263,7 +263,7 @@
                         <q-th :props="props">
                           <q-checkbox
                             :model-value="isAllExperienceSelected"
-                            @update:model-value="toggleSelectAllExperience"
+                            disable
                             dense
                             indeterminate-value="some"
                           />
@@ -273,7 +273,7 @@
                         <q-td :props="props">
                           <q-checkbox
                             :model-value="selectedExperienceIds.includes(props.row.uniqueId)"
-                            @update:model-value="toggleExperienceSelection(props.row.uniqueId)"
+                            disable
                             dense
                           />
                         </q-td>
@@ -374,7 +374,7 @@
                             >
                               <q-checkbox
                                 :model-value="selectedTrainingIds.includes(training.uniqueId)"
-                                @update:model-value="toggleTrainingSelection(training.uniqueId)"
+                                disable
                                 dense
                                 size="sm"
                                 class="q-mr-xs"
@@ -414,7 +414,7 @@
                         <q-th :props="props">
                           <q-checkbox
                             :model-value="isAllTrainingSelected"
-                            @update:model-value="toggleSelectAllTraining"
+                            disable
                             dense
                             indeterminate-value="some"
                           />
@@ -424,7 +424,7 @@
                         <q-td :props="props">
                           <q-checkbox
                             :model-value="selectedTrainingIds.includes(props.row.uniqueId)"
-                            @update:model-value="toggleTrainingSelection(props.row.uniqueId)"
+                            disable
                             dense
                           />
                         </q-td>
@@ -514,7 +514,7 @@
                         <q-th :props="props">
                           <q-checkbox
                             :model-value="isAllEligibilitySelected"
-                            @update:model-value="toggleSelectAllEligibility"
+                            disable
                             dense
                             indeterminate-value="some"
                           />
@@ -524,7 +524,7 @@
                         <q-td :props="props">
                           <q-checkbox
                             :model-value="selectedEligibilityIds.includes(props.row.uniqueId)"
-                            @update:model-value="toggleEligibilitySelection(props.row.uniqueId)"
+                            disable
                             dense
                           />
                         </q-td>
@@ -590,7 +590,6 @@
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
-  // import { useRemarkStore } from 'stores/remarkStore';
   import PDSModalApplicant from './PDSModalApplicant.vue';
   import SupportingDocumentsModal from './SuppDocs.vue';
   import WESModal from './WESModal.vue';
@@ -623,16 +622,6 @@
     eligibility_images: [],
     experience_images: [],
   });
-
-  // ── Remark store & filtered options ──────────────────────────────────────────
-
-  // const remarkStore = useRemarkStore();
-
-  /**
-   * Raw remarks list loaded from the store.
-   * Each entry: { remarks_id, remarks, category, ... }
-   */
-  // const allRemarks = computed(() => remarkStore.remarks || []);
 
   // ── Stores ────────────────────────────────────────────────────────────────────
 
@@ -823,62 +812,29 @@
     });
   };
 
-  // ── Select all / toggle helpers ───────────────────────────────────────────────
+  // ── Select all / toggle helpers (kept for display but not used for interaction) ──
 
   const isAllEducationSelected = computed(
     () =>
       formattedEducation.value.length > 0 &&
       selectedEducationIds.value.length === formattedEducation.value.length,
   );
-  const toggleSelectAllEducation = (val) => {
-    selectedEducationIds.value = val ? formattedEducation.value.map((i) => i.uniqueId) : [];
-  };
 
   const isAllExperienceSelected = computed(
     () =>
       experienceWithDuration.value.length > 0 &&
       selectedExperienceIds.value.length === experienceWithDuration.value.length,
   );
-  const toggleSelectAllExperience = (val) => {
-    selectedExperienceIds.value = val ? experienceWithDuration.value.map((i) => i.uniqueId) : [];
-  };
 
   const isAllTrainingSelected = computed(
     () => xTraining.value.length > 0 && selectedTrainingIds.value.length === xTraining.value.length,
   );
-  const toggleSelectAllTraining = (val) => {
-    selectedTrainingIds.value = val ? xTraining.value.map((i) => i.uniqueId) : [];
-  };
 
   const isAllEligibilitySelected = computed(
     () =>
       xEligibility.value.length > 0 &&
       selectedEligibilityIds.value.length === xEligibility.value.length,
   );
-  const toggleSelectAllEligibility = (val) => {
-    selectedEligibilityIds.value = val ? xEligibility.value.map((i) => i.uniqueId) : [];
-  };
-
-  const toggleEducationSelection = (uid) => {
-    const idx = selectedEducationIds.value.indexOf(uid);
-    if (idx > -1) selectedEducationIds.value.splice(idx, 1);
-    else selectedEducationIds.value.push(uid);
-  };
-  const toggleExperienceSelection = (uid) => {
-    const idx = selectedExperienceIds.value.indexOf(uid);
-    if (idx > -1) selectedExperienceIds.value.splice(idx, 1);
-    else selectedExperienceIds.value.push(uid);
-  };
-  const toggleTrainingSelection = (uid) => {
-    const idx = selectedTrainingIds.value.indexOf(uid);
-    if (idx > -1) selectedTrainingIds.value.splice(idx, 1);
-    else selectedTrainingIds.value.push(uid);
-  };
-  const toggleEligibilitySelection = (uid) => {
-    const idx = selectedEligibilityIds.value.indexOf(uid);
-    if (idx > -1) selectedEligibilityIds.value.splice(idx, 1);
-    else selectedEligibilityIds.value.push(uid);
-  };
 
   // ── Date / Duration helpers ───────────────────────────────────────────────────
 
@@ -1501,19 +1457,6 @@
     background-color: #e0e0e0;
   }
 
-  .radio-button {
-    padding: 8px 12px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-  }
-  .radio-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  .radio-button .q-radio__label {
-    margin-left: 8px;
-    font-weight: 500;
-  }
-
   /* ── Tab label sizing ── */
   .qs-tab {
     font-size: 0.7rem;
@@ -1576,9 +1519,6 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
-    }
-    .radio-button {
-      padding: 4px 8px;
     }
     .qs-info-box {
       padding: 6px 10px;
