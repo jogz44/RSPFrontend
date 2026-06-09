@@ -16,7 +16,7 @@
         <div>Loading report...</div>
       </div>
       <div
-        v-else-if="!pdfUrl && !isLoading && internalRows.length === 0 && externalRows.length === 0"
+        v-else-if="!pdfUrl && !isLoading && filteredRows.length === 0"
         class="column items-center justify-center text-grey q-gutter-sm"
         style="height: 100%"
       >
@@ -35,13 +35,17 @@
 </template>
 
 <script setup>
-  import { ref, watch, onUnmounted } from 'vue';
+  import { ref, watch, onUnmounted, computed } from 'vue';
   import { useReportStore } from 'stores/reportStore';
 
   const props = defineProps({
     publicationDate: {
       type: String,
       default: null,
+    },
+    applicantType: {
+      type: String,
+      default: 'both', // 'both', 'internal', 'external'
     },
   });
 
@@ -51,6 +55,18 @@
   const reportData = ref(null);
   const internalRows = ref([]);
   const externalRows = ref([]);
+
+  // Filter rows based on applicantType prop
+  const filteredRows = computed(() => {
+    if (props.applicantType === 'internal') {
+      return internalRows.value;
+    } else if (props.applicantType === 'external') {
+      return externalRows.value;
+    } else {
+      // 'both' - combine both arrays
+      return [...internalRows.value, ...externalRows.value];
+    }
+  });
 
   // Watch for changes in publication date (immediate handles initial load)
   watch(
@@ -234,7 +250,7 @@
       URL.revokeObjectURL(pdfUrl.value);
     }
 
-    if (internalRows.value.length === 0 && externalRows.value.length === 0) {
+    if (filteredRows.value.length === 0) {
       console.log('No data to generate PDF');
       pdfUrl.value = null;
       return;
@@ -306,9 +322,24 @@
           });
         }
 
-        // Add Internal section first then External section
-        addSectionRows(internalRows.value, 'INTERNAL APPLICANTS');
-        addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
+        // Add sections based on applicantType prop
+        if (props.applicantType === 'internal') {
+          addSectionRows(internalRows.value, 'INTERNAL APPLICANTS');
+        } else if (props.applicantType === 'external') {
+          addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
+        } else {
+          // 'both' - add Internal section first then External section
+          addSectionRows(internalRows.value, 'INTERNAL APPLICANTS');
+          addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
+        }
+
+        // Generate title based on applicant type
+        let reportTitle = 'List of All Applicants';
+        if (props.applicantType === 'internal') {
+          reportTitle = 'List of Internal Applicants';
+        } else if (props.applicantType === 'external') {
+          reportTitle = 'List of External Applicants';
+        }
 
         const docDefinition = {
           pageSize: 'LEGAL',
@@ -408,7 +439,7 @@
           },
           content: [
             {
-              text: `List of All Applicants - ${props.publicationDate || ''}`,
+              text: `${reportTitle} - ${props.publicationDate || ''}`,
               fontSize: 14,
               bold: true,
               margin: [0, -20, 0, 16],

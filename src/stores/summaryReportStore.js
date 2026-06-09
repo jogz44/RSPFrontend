@@ -371,6 +371,26 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async generateInternalPrequalifiedApplicantExcel(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/internal/applicant/designation',
+          { post_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating All Applicant Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async deleteApplication({ id }) {
       this.loading = true;
       try {

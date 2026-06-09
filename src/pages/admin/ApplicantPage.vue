@@ -560,7 +560,7 @@
     </q-dialog>
 
     <!-- ================================================================ -->
-    <!-- ALL APPLICANTS REPORT MODAL                                      -->
+    <!-- ALL APPLICANTS REPORT MODAL (with Applicant Type)                -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsModal" persistent>
       <q-card class="report-select-card">
@@ -569,7 +569,7 @@
             <q-icon name="article" size="28px" class="q-mr-sm" />
             <div>
               <div class="text-h6 text-bold">All Applicants Report</div>
-              <div class="text-caption opacity-80">Select a publication date to generate</div>
+              <div class="text-caption opacity-80">Select options to generate</div>
             </div>
           </div>
           <q-btn flat round dense icon="close" class="close-btn" @click="closeAllApplicantsModal" />
@@ -582,45 +582,70 @@
             <q-spinner color="primary" size="32px" />
             <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
           </div>
-          <div v-else>
-            <div class="section-label q-mb-sm">
-              <q-icon name="event" size="16px" class="q-mr-xs" />
-              Publication Date
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedAllApplicantsPublicationDate"
+                :options="filteredAllApplicantsPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterAllApplicantsPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedAllApplicantsPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedAllApplicantsPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
             </div>
-            <q-select
-              v-model="selectedAllApplicantsPublicationDate"
-              :options="filteredAllApplicantsPublicationDateOptions"
-              label="Select Publication Date"
-              outlined
-              dense
-              use-input
-              input-debounce="300"
-              @filter="filterAllApplicantsPublicationDates"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-grey">No dates found</q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>
-                      <q-icon name="event" size="xs" class="q-mr-sm" />
-                      {{ scope.opt }}
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:selected>
-                <span v-if="selectedAllApplicantsPublicationDate">
-                  <q-icon name="event" size="xs" class="q-mr-sm" />
-                  {{ selectedAllApplicantsPublicationDate }}
-                </span>
-              </template>
-            </q-select>
-            <div v-if="publicationDateOptions.length === 0" class="q-mt-sm text-caption text-grey">
-              No publication dates available
+
+            <!-- Applicant Type -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="people" size="16px" class="q-mr-xs" />
+                Applicant Type
+              </div>
+              <q-btn-toggle
+                v-model="selectedAllApplicantsApplicantType"
+                spread
+                no-caps
+                unelevated
+                rounded
+                toggle-color="primary"
+                color="grey-2"
+                text-color="grey-8"
+                :options="applicantTypeOptions"
+              />
             </div>
           </div>
         </q-card-section>
@@ -687,9 +712,12 @@
       />
     </q-dialog>
 
-    <!-- All Applicants -->
+    <!-- All Applicants Report Display -->
     <q-dialog v-if="canReportApplicant" v-model="showAllApplicantsReportDialog" persistent>
-      <ApplicantReport :publicationDate="selectedAllApplicantsPublicationDate" />
+      <ApplicantReport
+        :publicationDate="selectedAllApplicantsPublicationDate"
+        :applicantType="selectedAllApplicantsApplicantType"
+      />
     </q-dialog>
 
     <q-dialog v-model="showPrintDialog" persistent>
@@ -793,6 +821,7 @@
 
   const showAllApplicantsModal = ref(false);
   const selectedAllApplicantsPublicationDate = ref(null);
+  const selectedAllApplicantsApplicantType = ref('both');
   const filteredAllApplicantsPublicationDateOptions = ref([]);
   const showAllApplicantsReportDialog = ref(false);
 
@@ -1004,7 +1033,6 @@
     } else if (selectedQualifiedApplicantType.value === 'external') {
       showExternalQualifiedReportDialog.value = true;
     } else {
-      // 'both' — use existing QualifiedReport (no applicantType param)
       showQualifiedReportDialog.value = true;
     }
   };
@@ -1050,7 +1078,6 @@
     } else if (selectedUnqualifiedApplicantType.value === 'external') {
       showExternalUnqualifiedReportDialog.value = true;
     } else {
-      // 'both' — use existing UnqualifiedReport (no applicantType param)
       showUnqualifiedReportDialog.value = true;
     }
   };
@@ -1069,6 +1096,7 @@
       return;
     }
     selectedAllApplicantsPublicationDate.value = null;
+    selectedAllApplicantsApplicantType.value = 'both';
     showAllApplicantsModal.value = true;
     await fetchPublicationDates();
   };
@@ -1085,6 +1113,7 @@
   const closeAllApplicantsModal = () => {
     showAllApplicantsModal.value = false;
     selectedAllApplicantsPublicationDate.value = null;
+    selectedAllApplicantsApplicantType.value = 'both';
   };
 
   const generateAllApplicantsReport = () => {

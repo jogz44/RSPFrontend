@@ -709,7 +709,7 @@
           // ID 12: Applicant Category (Excel)
           {
             id: 12,
-            name: 'List of Prequalified Applicant',
+            name: 'List of Prequalified Applicantions',
             category: 'Applicant',
             type: 'Excel',
             description: 'List of Prequalified Applicants - Excel Format',
@@ -719,7 +719,7 @@
           // ID 13: Applicant Category (Excel)
           {
             id: 13,
-            name: 'List of For QS Validation Applicant',
+            name: 'List of For QS Validation Applicantions',
             category: 'Applicant',
             type: 'Excel',
             description: 'List of Applicants for QS Validation - Excel Format',
@@ -729,11 +729,21 @@
           // ID 14: Applicant Category (Excel)
           {
             id: 14,
-            name: 'List of All Applicant with Demographics',
+            name: 'List of All Applicantions with Demographics',
             category: 'Applicant',
             type: 'Excel',
             description: 'List of All Applicants with Demographics - Excel Format',
             apiEndpoint: '/api/generate/applicant',
+            needsDateOnly: true,
+          },
+          // ID 15: Applicant Category (Excel) - NEW REPORT
+          {
+            id: 15,
+            name: 'List of Internal Applicants',
+            category: 'Applicant',
+            type: 'Excel',
+            description: 'List of Internal Prequalified Applicants - Excel Format',
+            apiEndpoint: '/api/generate/internal/applicant/designation',
             needsDateOnly: true,
           },
         ],
@@ -1083,6 +1093,7 @@
           case 12: // List of Prequalified Applicant
           case 13: // List of For QS Validation Applicant
           case 14: // List of All Applicant with Demographics
+          case 15: // List of Internal Applicants - handled above
             // These are handled by the Excel condition above
             break;
 
@@ -1149,6 +1160,11 @@
               break;
             case 14: // List of All Applicant with Demographics
               response = await summaryReportStore.generateAllApplicantExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            case 15: // List of Internal Applicants
+              response = await summaryReportStore.generateInternalPrequalifiedApplicantExcel(
                 this.selectedPublicationDate,
               );
               break;
