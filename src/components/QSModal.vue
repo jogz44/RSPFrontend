@@ -588,11 +588,11 @@
 <script setup>
   import { ref, computed, watch } from 'vue';
   import { usePlantillaStore } from 'stores/plantillaStore';
-  import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
+  import { raterApi } from 'boot/axios_rater';
   import PDSModalApplicant from './PDSModalApplicant.vue';
   import SupportingDocumentsModal from './SuppDocs.vue';
-  import WESModal from './WESModal.vue';
+  import WESModal from './WESModalRater.vue';
 
   // ── State ────────────────────────────────────────────────────────────────────
 
@@ -625,7 +625,6 @@
 
   // ── Stores ────────────────────────────────────────────────────────────────────
 
-  const authStore = useAuthStore();
   const jobPostStore = useJobPostStore();
   const usePlantilla = usePlantillaStore();
 
@@ -1123,24 +1122,31 @@
       applicantImageUrl.value = '';
       return;
     }
+
+    // If it's already a full storage URL, use it directly
     if (imageUrl.includes('/storage/')) {
       applicantImageUrl.value = imageUrl;
       return;
     }
+
     try {
-      const token = authStore.token || authStore.user?.token || localStorage.getItem('token');
-      const response = await fetch(imageUrl, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'image/*' },
+      // Use raterApi instead of fetch with auth token
+      const response = await raterApi.get(imageUrl, {
+        responseType: 'blob',
       });
-      if (response.ok) {
-        const blob = await response.blob();
-        if (applicantImageUrl.value?.startsWith('blob:'))
+
+      if (response.status === 200) {
+        // Revoke old blob URL if it exists
+        if (applicantImageUrl.value?.startsWith('blob:')) {
           URL.revokeObjectURL(applicantImageUrl.value);
+        }
+        const blob = response.data;
         applicantImageUrl.value = URL.createObjectURL(blob);
       } else {
         applicantImageUrl.value = '';
       }
-    } catch {
+    } catch (error) {
+      console.error('Error loading applicant image:', error);
       applicantImageUrl.value = '';
     }
   };

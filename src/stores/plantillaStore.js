@@ -274,6 +274,22 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
+    async fetchEmployeeWESRater(ControlNo) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await raterApi.get(`/applicant/wes/${ControlNo}`);
+        this.vice = response.data;
+        return response.data;
+      } catch (err) {
+        this.error = err;
+        toast.error('Failed to fetch job post: ' + (err.response?.data?.message || err.message));
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchAllEmployee({ page = 1, perPage = 10, search = '' } = {}) {
       this.loading = true;
       this.error = null;
