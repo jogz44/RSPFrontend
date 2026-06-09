@@ -1189,9 +1189,9 @@
   const refreshQSData = async () => {
     try {
       if (props.applicantData?.submission_id)
-        await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+        await jobPostStore.fetchApplicantPDSRater(props.applicantData.submission_id);
       if (props.applicantData?.PositionID) {
-        await usePlantilla.fetchQsData(props.applicantData.PositionID);
+        await usePlantilla.fetchQsDataRater(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
       const pdsData = jobPostStore.applicantPDS;
@@ -1214,10 +1214,10 @@
     try {
       let pdsData = null;
       if (props.applicantData?.submission_id)
-        pdsData = await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+        pdsData = await jobPostStore.fetchApplicantPDSRater(props.applicantData.submission_id);
 
       if (props.applicantData?.PositionID) {
-        await usePlantilla.fetchQsData(props.applicantData.PositionID);
+        await usePlantilla.fetchQsDataRater(props.applicantData.PositionID);
         positionQS.value = usePlantilla.qsData || [];
       }
 
@@ -1309,7 +1309,7 @@
   const onViewPDS = async () => {
     try {
       if (props.applicantData?.submission_id)
-        await jobPostStore.fetchApplicantPDS(props.applicantData.submission_id);
+        await jobPostStore.fetchApplicantPDSRater(props.applicantData.submission_id);
       showPDSModal.value = true;
       emit('view-pds');
     } catch {
