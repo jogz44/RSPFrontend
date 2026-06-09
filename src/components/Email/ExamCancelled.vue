@@ -163,7 +163,7 @@
     show: { type: Boolean, default: false },
     applicant: { type: Object, default: null },
     examDetails: { type: Object, default: null },
-    contactNumber: { type: String, default: '09973962684' },
+    contactNumber: { type: String, default: '09178659351' },
     signatoryName: { type: String, default: 'EDGAR C. DE GUZMAN' },
     signatoryTitle: { type: String, default: 'City Administrator' },
     currentDate: { type: [String, Date], default: () => new Date() },

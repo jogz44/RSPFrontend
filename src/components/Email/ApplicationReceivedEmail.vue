@@ -158,7 +158,7 @@
     position: { type: String, default: '' },
     itemNumber: { type: String, default: '' },
     office: { type: String, default: '' },
-    contactNumber: { type: String, default: '0917-123-4567' },
+    contactNumber: { type: String, default: '09178659351' },
     signatoryName: { type: String, default: 'EDGAR C. DE GUZMAN' },
     signatoryTitle: { type: String, default: 'City Administrator' },
     currentDate: { type: [String, Date], default: () => new Date() },
