@@ -1,5 +1,3 @@
-//src\components\RatingFormApplicant.vue
-
 <template>
   <q-dialog v-model="isOpen" persistent :maximized="$q.screen.lt.md" full-width full-height>
     <q-card class="rating-modal">
@@ -172,7 +170,17 @@
                           size="xs"
                           :icon="expandedApplicant === applicant.id ? 'expand_less' : 'expand_more'"
                         />
-                        <span class="text-caption ellipsis">
+                        <span
+                          class="text-caption ellipsis applicant-name"
+                          :style="
+                            applicant.tag_color
+                              ? {
+                                  color: TAG_COLOR_MAP[applicant.tag_color] ?? applicant.tag_color,
+                                  fontWeight: '700',
+                                }
+                              : {}
+                          "
+                        >
                           {{ applicant.firstname }} {{ applicant.lastname }}
                         </span>
                         <q-btn
@@ -495,6 +503,12 @@
   import QualificationStandardModal from 'src/components/QSModal.vue';
 
   const $q = useQuasar();
+
+  // Tag color map — add more entries here as needed
+  const TAG_COLOR_MAP = {
+    yellow: '#f9a825',
+    green: '#2e7d32',
+  };
 
   // Props
   const props = defineProps({
@@ -1333,6 +1347,10 @@
     &.expanded {
       background-color: #d0ffd6;
     }
+  }
+
+  .applicant-name {
+    transition: color 0.2s;
   }
 
   .score-input {

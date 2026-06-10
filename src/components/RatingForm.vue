@@ -116,7 +116,7 @@
                 <td>
                   <div class="text-weight-bold text-caption">Criteria</div>
                 </td>
-                <!-- Education criteria items — no heading label -->
+                <!-- Education criteria items -->
                 <td>
                   <div
                     v-for="(item, index) in education.items"
@@ -127,7 +127,7 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Experience criteria items — no heading label -->
+                <!-- Experience criteria items -->
                 <td>
                   <div
                     v-for="(item, index) in experience.items"
@@ -138,7 +138,7 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Training criteria items — no heading label -->
+                <!-- Training criteria items -->
                 <td>
                   <div
                     v-for="(item, index) in training.items"
@@ -149,7 +149,7 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Performance criteria items — no heading label -->
+                <!-- Performance criteria items -->
                 <td>
                   <div
                     v-for="(item, index) in performance.items"
@@ -198,7 +198,17 @@
                         size="xs"
                         :icon="expandedApplicant === applicant.id ? 'expand_less' : 'expand_more'"
                       />
-                      <span class="text-caption ellipsis">
+                      <span
+                        class="text-caption ellipsis applicant-name"
+                        :style="
+                          applicant.tag_color
+                            ? {
+                                color: TAG_COLOR_MAP[applicant.tag_color] ?? applicant.tag_color,
+                                fontWeight: '700',
+                              }
+                            : {}
+                        "
+                      >
                         {{ applicant.firstname }} {{ applicant.lastname }}
                       </span>
                     </div>
@@ -489,7 +499,6 @@
             dense
             v-if="isRaterEnabled"
           />
-
           <q-btn color="primary" label="Save as Draft" icon-right="save" @click="saveDraft" dense />
           <q-btn
             v-if="allApplicantsRated"
@@ -569,8 +578,16 @@
   import QualificationStandardModal from 'src/components/QSModal.vue';
   import { use_rating_form_store } from 'stores/ratingFormStore';
   import { useRaterAuthStore } from 'stores/authStore_raters';
+
   const $q = useQuasar();
   const useRatingStore = use_rating_form_store();
+
+  // Tag color map — add more entries here as needed
+  const TAG_COLOR_MAP = {
+    yellow: '#f9a825',
+    green: '#2e7d32',
+  };
+
   // Props
   const props = defineProps({
     modelValue: Boolean,
@@ -580,11 +597,9 @@
     applicants: { type: Array, default: () => [] },
     loading: Boolean,
   });
+
   const isSubmittingRater = ref(false);
-
   const useRater = useRaterAuthStore();
-
-  // Replace with this
   const isRaterEnabled = computed(() => useRater.user?.enable === true);
 
   // Emits
@@ -601,7 +616,6 @@
     if (props.rawCriteria && props.rawCriteria.job_batch) {
       return props.rawCriteria.job_batch.PositionID;
     }
-    // Fallback to position data
     return props.position.tblStructureDetails_ID || null;
   });
 
@@ -633,11 +647,9 @@
 
   const exam = computed(() => {
     const ex = props.rawCriteria?.exams || props.criteria?.exams || props.criteria?.exam || [];
-
     if (Array.isArray(ex)) {
       return { Rate: ex[0]?.weight || '0', items: ex };
     }
-
     return { Rate: ex?.weight || '0', items: ex?.items || [] };
   });
 
@@ -666,7 +678,6 @@
   );
   const hasExam = computed(() => exam.value.items.length > 0 && examMaxRate.value > 0);
 
-  // QS only includes the 4 core criteria
   const qsMaxRate = computed(
     () =>
       educationMaxRate.value +
@@ -675,7 +686,6 @@
       performanceMaxRate.value,
   );
 
-  // Grand total includes QS + BEI + Exam
   const totalMaxRate = computed(
     () =>
       qsMaxRate.value +
@@ -684,15 +694,12 @@
   );
 
   const detailsColspan = computed(() => {
-    let count = 1 + 4 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1)
+    let count = 1 + 4 + 1 + 1;
     if (hasExam.value) count += 1;
     if (hasBehavioral.value) count += 1;
     return count;
   });
 
-  // Dynamic column widths ranked by longest criteria description.
-  // All 6 scored columns are compared together so the column with the longest
-  // description text gets the widest width, shortest gets the narrowest.
   const COL_MIN = 180;
   const COL_MAX = 500;
 
@@ -716,9 +723,6 @@
     const activeLens = allLens.filter((l) => l > 0);
     const minLen = activeLens.length ? Math.min(...activeLens) : 0;
     const range = maxLen - minLen || 1;
-
-    // Non-widest columns are capped at 3/4 of COL_MAX so they don't
-    // over-expand when their content is noticeably shorter than the widest.
     const COL_SECONDARY = Math.round(COL_MAX * 0.5);
 
     const toWidth = (len) => {
@@ -746,12 +750,8 @@
   const formatNumber = (num) => {
     const number = parseFloat(num);
     if (isNaN(number)) return num;
-
-    if (number % 1 === 0) {
-      return String(Math.round(number));
-    } else {
-      return number.toFixed(2);
-    }
+    if (number % 1 === 0) return String(Math.round(number));
+    return number.toFixed(2);
   };
 
   const getExamRatio = (applicant) => {
@@ -776,39 +776,32 @@
     return ratio * 100;
   };
 
-  // Check if all applicants have been rated
   const allApplicantsRated = computed(() => {
     if (!applicantsData.value || applicantsData.value.length === 0) return false;
-
     return applicantsData.value.every((applicant) => {
       const requiredFieldsValid =
         isValidScore(applicant.educationScore, false) &&
         isValidScore(applicant.experienceScore, false) &&
         isValidScore(applicant.trainingScore, false) &&
         isValidScore(applicant.performanceScore, false);
-
       const behavioralValid = hasBehavioral.value
         ? isValidScore(applicant.behavioralScore, true)
         : true;
-
       return requiredFieldsValid && behavioralValid;
     });
   });
 
   const ratedApplicantsCount = computed(() => {
     if (!applicantsData.value || applicantsData.value.length === 0) return 0;
-
     return applicantsData.value.filter((applicant) => {
       const requiredFieldsValid =
         isValidScore(applicant.educationScore, false) &&
         isValidScore(applicant.experienceScore, false) &&
         isValidScore(applicant.trainingScore, false) &&
         isValidScore(applicant.performanceScore, false);
-
       const behavioralValid = hasBehavioral.value
         ? isValidScore(applicant.behavioralScore, true)
         : true;
-
       return requiredFieldsValid && behavioralValid;
     }).length;
   });
@@ -987,10 +980,7 @@
     if (!applicant) return '-';
 
     const qsScore = calculateQS(applicant);
-
-    if (qsScore === '-') {
-      return '-';
-    }
+    if (qsScore === '-') return '-';
 
     const qsScoreNum = parseFloat(qsScore);
     const beiScore = hasBehavioral.value
@@ -998,7 +988,6 @@
         ? 0
         : parseFloat(applicant.behavioralScore) || 0
       : 0;
-
     const examScore = hasExam.value ? (getExamScore(applicant) ?? 0) : 0;
 
     const result = Math.min(qsScoreNum + beiScore + examScore, totalMaxRate.value);
@@ -1021,10 +1010,7 @@
     sortedApplicants.forEach((applicant, index) => {
       const totalScore = calculateTotal(applicant);
       if (!scoreMap[totalScore]) {
-        scoreMap[totalScore] = {
-          firstPosition: index,
-          count: 0,
-        };
+        scoreMap[totalScore] = { firstPosition: index, count: 0 };
       }
       scoreMap[totalScore].count++;
     });
@@ -1036,7 +1022,6 @@
     sortedApplicants.forEach((applicant) => {
       const totalScore = calculateTotal(applicant);
       const position = scoreMap[totalScore].firstPosition;
-
       const originalApplicant = applicantsData.value.find((a) => a.id === applicant.id);
       if (originalApplicant) {
         originalApplicant.ranking = position + 1;
@@ -1129,7 +1114,6 @@
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString();
@@ -1138,7 +1122,6 @@
     }
   };
 
-  // QS Modal Methods
   const openQSModal = async (applicant) => {
     try {
       selectedApplicantForQS.value = {
@@ -1151,17 +1134,14 @@
         office: props.position.office,
         appliedDate: formatDate(applicant.created_at),
         status: applicant.status || 'PENDING',
-
         education: applicant.education || [],
         work_experience: applicant.work_experience || [],
         training: applicant.training || [],
         eligibity: applicant.eligibity || [],
         eligibility: applicant.eligibity || [],
-
         nPersonalInfo_id: applicant.nPersonalInfo_id,
         ControlNo: applicant.ControlNo,
       };
-
       showQSModal.value = true;
     } catch {
       $q.notify({
@@ -1310,7 +1290,6 @@
   const assignSelectedRater = ref(null);
   const assignSelectedJob = ref(null);
 
-  // Opens the modal
   const showModal = () => {
     const jobPostId = props.position?.id;
     assignSelectedRater.value = null;
@@ -1319,31 +1298,23 @@
     showAssignModal.value = true;
   };
 
-  // Build rater dropdown options from store
   const raterOptions = computed(() => {
     const raters = useRatingStore.rater;
     if (!Array.isArray(raters)) return [];
-    return raters.map((r) => ({
-      label: r.name,
-      value: r.id,
-    }));
+    return raters.map((r) => ({ label: r.name, value: r.id }));
   });
 
-  // Build job dropdown options for the selected rater
   const assignJobOptions = computed(() => {
     const raters = useRatingStore.rater;
     if (!Array.isArray(raters) || !assignSelectedRater.value) return [];
-
     const rater = raters.find((r) => r.id === assignSelectedRater.value);
     if (!rater || !Array.isArray(rater.job_batches_rsp)) return [];
-
     return rater.job_batches_rsp.map((job) => ({
       label: `${job.position} (${job.post_date} – ${job.end_date})`,
       value: job.id,
     }));
   });
 
-  // Reset job when rater changes
   const onRaterChange = () => {
     assignSelectedJob.value = null;
   };
@@ -1370,10 +1341,8 @@
       result.applicants.forEach((raterApplicant) => {
         const applicant = applicantsData.value.find((a) => a.id === raterApplicant.id);
         if (!applicant) return;
-
         const score = raterApplicant.rating_score;
         if (!score) return;
-
         applicant.educationScore =
           score.education_score != null ? formatNumber(score.education_score) : '';
         applicant.experienceScore =
@@ -1486,13 +1455,11 @@
     border-left: 2px solid #1976d2 !important;
     border-right: 2px solid #1976d2 !important;
 
-    // Header variant
     thead & {
       color: #1565c0;
       font-weight: 600 !important;
     }
 
-    // Criteria description row — keep blank but preserve highlight
     .criteria-description & {
       background-color: #ddeefa !important;
     }
@@ -1504,13 +1471,11 @@
     border-left: 2px solid #388e3c !important;
     border-right: 2px solid #388e3c !important;
 
-    // Header variant
     thead & {
       color: #2e7d32;
       font-weight: 600 !important;
     }
 
-    // Criteria description row — keep blank but preserve highlight
     .criteria-description & {
       background-color: #d6edd8 !important;
     }
@@ -1553,6 +1518,10 @@
     }
   }
 
+  .applicant-name {
+    transition: color 0.2s;
+  }
+
   .score-input {
     width: 100%;
 
@@ -1578,7 +1547,6 @@
 
   .total-score {
     font-weight: bold;
-    // col-grand-total provides the green background; keep text bold
     color: #2e7d32;
   }
 

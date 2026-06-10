@@ -63,6 +63,18 @@
         >
           <q-tooltip>List of All Applicants</q-tooltip>
         </q-btn>
+        <!-- Mark Application Button -->
+        <q-btn
+          v-if="canReportApplicant"
+          rounded
+          unelevated
+          color="purple"
+          icon="check_circle"
+          label="Mark Application"
+          @click="openMarkingModal"
+        >
+          <q-tooltip>Mark qualified applicants for publication</q-tooltip>
+        </q-btn>
       </div>
     </div>
 
@@ -667,6 +679,94 @@
     </q-dialog>
 
     <!-- ================================================================ -->
+    <!-- MARK APPLICATION MODAL                                            -->
+    <!-- ================================================================ -->
+    <q-dialog v-if="canReportApplicant" v-model="showMarkingModal" persistent>
+      <q-card class="report-select-card">
+        <q-card-section class="dialog-header header-mark">
+          <div class="row items-center no-wrap">
+            <q-icon name="check_circle" size="28px" class="q-mr-sm" />
+            <div>
+              <div class="text-h6 text-bold">Mark Application</div>
+              <div class="text-caption opacity-80">Select publication date to mark applicants</div>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" class="close-btn" @click="closeMarkingModal" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-lg">
+          <div v-if="loadingPublicationDates" class="text-center q-pa-md">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
+          </div>
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedMarkingPublicationDate"
+                :options="filteredMarkingPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterMarkingPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedMarkingPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedMarkingPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+        <div class="dialog-footer row justify-end items-center q-pa-md q-gutter-sm">
+          <q-btn rounded flat label="Cancel" color="grey-7" @click="closeMarkingModal" />
+          <q-btn
+            rounded
+            unelevated
+            color="purple"
+            label="Open Marking"
+            icon="check_circle"
+            :disable="!selectedMarkingPublicationDate"
+            @click="openMarkingApplication"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================================================================ -->
     <!-- Report Sub-Dialogs                                               -->
     <!-- ================================================================ -->
 
@@ -720,6 +820,14 @@
       />
     </q-dialog>
 
+    <!-- Marking Application Component -->
+    <MarkingApplication
+      v-if="showMarkingApplicationDialog"
+      :date="selectedMarkingPublicationDate"
+      @close="closeMarkingApplication"
+      @generate="handleMarkingGenerate"
+    />
+
     <q-dialog v-model="showPrintDialog" persistent>
       <ApplicantReport
         :filterType="dateFilterType"
@@ -740,6 +848,7 @@
   import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
   import InternalUnqualifiedReport from 'src/components/Reports/InternalUnqualifiedReport.vue';
   import ExternalUnqualifiedReport from 'src/components/Reports/ExternalUnqualifiedReport.vue';
+  import MarkingApplication from 'src/components/MarkingApplication.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
   import { useAuthStore } from 'stores/authStore';
@@ -824,6 +933,15 @@
   const selectedAllApplicantsApplicantType = ref('both');
   const filteredAllApplicantsPublicationDateOptions = ref([]);
   const showAllApplicantsReportDialog = ref(false);
+
+  // ============================================================================
+  // MARK APPLICATION STATE
+  // ============================================================================
+
+  const showMarkingModal = ref(false);
+  const selectedMarkingPublicationDate = ref(null);
+  const filteredMarkingPublicationDateOptions = ref([]);
+  const showMarkingApplicationDialog = ref(false);
 
   // ============================================================================
   // SHARED PUBLICATION DATES
@@ -981,12 +1099,14 @@
       filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredAllApplicantsPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredMarkingPublicationDateOptions.value = [...publicationDateOptions.value];
     } catch {
       $q.notify({ type: 'negative', message: 'Failed to load publication dates' });
       publicationDateOptions.value = [];
       filteredQualifiedPublicationDateOptions.value = [];
       filteredUnqualifiedPublicationDateOptions.value = [];
       filteredAllApplicantsPublicationDateOptions.value = [];
+      filteredMarkingPublicationDateOptions.value = [];
     } finally {
       loadingPublicationDates.value = false;
     }
@@ -1119,6 +1239,58 @@
   const generateAllApplicantsReport = () => {
     showAllApplicantsModal.value = false;
     showAllApplicantsReportDialog.value = true;
+  };
+
+  // ============================================================================
+  // MARK APPLICATION ACTIONS
+  // ============================================================================
+
+  const openMarkingModal = async () => {
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to mark applications',
+        position: 'top',
+      });
+      return;
+    }
+    selectedMarkingPublicationDate.value = null;
+    showMarkingModal.value = true;
+    await fetchPublicationDates();
+  };
+
+  const filterMarkingPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredMarkingPublicationDateOptions.value = publicationDateOptions.value.filter((v) =>
+        v.toLowerCase().includes(needle),
+      );
+    });
+  };
+
+  const closeMarkingModal = () => {
+    showMarkingModal.value = false;
+    selectedMarkingPublicationDate.value = null;
+  };
+
+  const openMarkingApplication = () => {
+    showMarkingModal.value = false;
+    showMarkingApplicationDialog.value = true;
+  };
+
+  const closeMarkingApplication = () => {
+    showMarkingApplicationDialog.value = false;
+    selectedMarkingPublicationDate.value = null;
+  };
+
+  const handleMarkingGenerate = (data) => {
+    $q.notify({
+      type: 'positive',
+      message: `Marking completed for ${data.applicants?.length || 0} applicant(s)`,
+      position: 'top',
+    });
+    showMarkingApplicationDialog.value = false;
+    selectedMarkingPublicationDate.value = null;
   };
 
   // ============================================================================
@@ -1281,6 +1453,9 @@
   }
   .header-all {
     background: #6a1b9a;
+  }
+  .header-mark {
+    background: #9c27b0;
   }
 
   .close-btn {

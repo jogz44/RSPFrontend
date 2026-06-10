@@ -59,14 +59,25 @@
                       , in the
                       <strong>{{ applicantDetails.office }}</strong>
                       , the Human Resource Merit Promotion and Selection Board (HRMPSB) has
-                      determined that you do not meet the Qualification Standards required for the
-                      said position.
+                      determined that you do not meet either of the minimum Qualification Standard
+                      (QS) of the position to wit:
                     </p>
 
-                    <p class="letter-text">
+                    <!-- <p class="letter-text">
+                      We wish to inform you that after careful evaluation of your application for
+                      the position of
+                      <strong>{{ applicantDetails.position }}</strong>
+                      , in the
+                      <strong>{{ applicantDetails.office }}</strong>
+                      , the Human Resource Merit Promotion and Selection Board (HRMPSB) has
+                      determined that you do not meet the Qualification Standards required for the
+                      said position.
+                    </p> -->
+
+                    <!-- <p class="letter-text">
                       After a thorough review of the documents you submitted, the following
                       deficiencies were noted that led to your disqualification:
-                    </p>
+                    </p> -->
 
                     <!-- QS Table -->
                     <div class="table-section">
@@ -395,18 +406,6 @@
           ],
         }),
 
-        footer: () => ({
-          stack: [
-            {
-              text: 'This is a system-generated email.',
-              fontSize: 8,
-              color: '#6b7280',
-              alignment: 'center',
-              margin: [60, 8, 60, 2],
-            },
-          ],
-        }),
-
         content: [
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
 
@@ -424,18 +423,11 @@
               { text: d.position || 'N/A', bold: true },
               ', in the ',
               { text: d.office || 'N/A', bold: true },
-              ', the Human Resource Merit Promotion and Selection Board (HRMPSB) has determined that you do not meet the Qualification Standards required for the said position.',
+              ', the Human Resource Merit Promotion and Selection Board (HRMPSB) has determined that you do not meet either of the minimum Qualification Standard (QS) of the position to wit:',
             ],
             fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 10],
-          },
-
-          {
-            text: 'After a thorough review of the documents you submitted, the following deficiencies were noted that led to your disqualification:',
-            fontSize: FONT_SIZE,
-            alignment: 'justify',
-            margin: [0, 0, 0, 8],
           },
 
           {
@@ -485,7 +477,7 @@
           {
             stack: [
               {
-                text: `(SGD.) ${props.signatoryName}`,
+                text: `${props.signatoryName}`,
                 fontSize: FONT_SIZE,
                 bold: true,
               },

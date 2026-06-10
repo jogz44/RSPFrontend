@@ -116,7 +116,6 @@
                 <td>
                   <div class="text-weight-bold text-caption">Criteria</div>
                 </td>
-                <!-- Education criteria items — no heading label -->
                 <td>
                   <div
                     v-for="(item, index) in education.items"
@@ -127,7 +126,6 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Experience criteria items — no heading label -->
                 <td>
                   <div
                     v-for="(item, index) in experience.items"
@@ -138,7 +136,6 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Training criteria items — no heading label -->
                 <td>
                   <div
                     v-for="(item, index) in training.items"
@@ -149,7 +146,6 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Performance criteria items — no heading label -->
                 <td>
                   <div
                     v-for="(item, index) in performance.items"
@@ -160,7 +156,6 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- QS Total: intentionally blank -->
                 <td class="col-qs-total"></td>
                 <td v-if="hasExam">
                   <div
@@ -182,14 +177,17 @@
                     - {{ item.description }}
                   </div>
                 </td>
-                <!-- Grand Total: intentionally blank -->
                 <td class="col-grand-total"></td>
               </tr>
             </thead>
             <tbody>
               <template v-for="applicant in filteredApplicants" :key="applicant.id">
-                <tr class="applicant-row" :class="{ expanded: expandedApplicant === applicant.id }">
-                  <td style="width: 200px" @click="toggleApplicant(applicant.id)">
+                <tr
+                  class="applicant-row"
+                  :class="{ expanded: expandedApplicant === applicant.id }"
+                  @click="toggleApplicant(applicant.id)"
+                >
+                  <td style="width: 200px">
                     <div class="row items-center no-wrap">
                       <q-btn
                         flat
@@ -198,13 +196,22 @@
                         size="xs"
                         :icon="expandedApplicant === applicant.id ? 'expand_less' : 'expand_more'"
                       />
-                      <span class="text-caption ellipsis">
+                      <span
+                        class="text-caption ellipsis applicant-name"
+                        :style="
+                          applicant.tag_color
+                            ? {
+                                color: TAG_COLOR_MAP[applicant.tag_color] ?? applicant.tag_color,
+                                fontWeight: '700',
+                              }
+                            : {}
+                        "
+                      >
                         {{ applicant.firstname }} {{ applicant.lastname }}
                       </span>
                     </div>
                   </td>
 
-                  <!-- Display scores as read-only text (view mode) -->
                   <td class="text-center">
                     {{ formatScoreDisplay(applicant.educationScore) }}
                   </td>
@@ -391,6 +398,12 @@
 
   const $q = useQuasar();
 
+  // Tag color map — add more entries here as needed
+  const TAG_COLOR_MAP = {
+    yellow: '#f9a825',
+    green: '#2e7d32',
+  };
+
   // Props
   const props = defineProps({
     modelValue: Boolean,
@@ -415,7 +428,6 @@
     if (props.rawCriteria && props.rawCriteria.job_batch) {
       return props.rawCriteria.job_batch.PositionID;
     }
-    // Fallback to position data
     return props.position.tblStructureDetails_ID || null;
   });
 
@@ -447,11 +459,9 @@
 
   const exam = computed(() => {
     const ex = props.rawCriteria?.exams || props.criteria?.exams || props.criteria?.exam || [];
-
     if (Array.isArray(ex)) {
       return { Rate: ex[0]?.weight || '0', items: ex };
     }
-
     return { Rate: ex?.weight || '0', items: ex?.items || [] };
   });
 
@@ -467,7 +477,6 @@
   );
   const hasExam = computed(() => exam.value.items.length > 0 && examMaxRate.value > 0);
 
-  // QS only includes the 4 core criteria
   const qsMaxRate = computed(
     () =>
       educationMaxRate.value +
@@ -476,7 +485,6 @@
       performanceMaxRate.value,
   );
 
-  // Grand total includes QS + BEI + Exam
   const totalMaxRate = computed(
     () =>
       qsMaxRate.value +
@@ -485,25 +493,19 @@
   );
 
   const detailsColspan = computed(() => {
-    let count = 1 + 4 + 1 + 1; // Name (1) + Core criteria (4) + QS Total (1) + Grand Total (1)
+    let count = 1 + 4 + 1 + 1;
     if (hasExam.value) count += 1;
     if (hasBehavioral.value) count += 1;
     return count;
   });
 
-  // Helper function to check if a value is empty or just '-'
   const isEmpty = (value) => !value || value === '' || value === '-';
 
-  // Helper function to format number for display
   const formatNumber = (num) => {
     const number = parseFloat(num);
     if (isNaN(number)) return num;
-
-    if (number % 1 === 0) {
-      return String(Math.round(number));
-    } else {
-      return number.toFixed(2);
-    }
+    if (number % 1 === 0) return String(Math.round(number));
+    return number.toFixed(2);
   };
 
   const formatScoreDisplay = (score) => {
@@ -527,9 +529,6 @@
     return ratio * examMaxRate.value;
   };
 
-  // Dynamic column widths ranked by longest criteria description.
-  // All 6 scored columns are compared together so the column with the longest
-  // description text gets the widest width, shortest gets the narrowest.
   const COL_MIN = 180;
   const COL_MAX = 500;
 
@@ -553,9 +552,6 @@
     const activeLens = allLens.filter((l) => l > 0);
     const minLen = activeLens.length ? Math.min(...activeLens) : 0;
     const range = maxLen - minLen || 1;
-
-    // Non-widest columns are capped at 3/4 of COL_MAX so they don't
-    // over-expand when their content is noticeably shorter than the widest.
     const COL_SECONDARY = Math.round(COL_MAX * 0.5);
 
     const toWidth = (len) => {
@@ -645,11 +641,9 @@
   const initializeApplicants = () => {
     if (props.applicants?.length > 0) {
       applicantsData.value = props.applicants.map((applicant) => {
-        // Get scores from rating_score (submitted ratings) or fallback to draft_score
         const ratingScore = applicant.rating_score || {};
         const draftScore = applicant.draft_score || {};
 
-        // Use rating_score first (submitted), then draft_score if available
         const educationScore =
           ratingScore.education_score !== null && ratingScore.education_score !== undefined
             ? ratingScore.education_score
@@ -675,11 +669,9 @@
             ? ratingScore.behavioral_score
             : draftScore.behavioral_score;
 
-        // For exam score, check if there's an applicant_exam_score or use rating_score
         const computedExamScore = getExamScore(applicant);
         const examScoreFromRating = ratingScore.exam_score;
 
-        // For display in view mode, format numbers properly
         return {
           ...applicant,
           educationScore:
@@ -768,10 +760,7 @@
     if (!applicant) return '-';
 
     const qsScore = calculateQS(applicant);
-
-    if (qsScore === '-') {
-      return '-';
-    }
+    if (qsScore === '-') return '-';
 
     const qsScoreNum = parseFloat(qsScore);
     const beiScore = hasBehavioral.value
@@ -779,7 +768,6 @@
         ? 0
         : parseFloat(applicant.behavioralScore) || 0
       : 0;
-
     const examScore = hasExam.value ? (getExamScore(applicant) ?? 0) : 0;
 
     const result = Math.min(qsScoreNum + beiScore + examScore, totalMaxRate.value);
@@ -792,7 +780,6 @@
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString();
@@ -801,7 +788,6 @@
     }
   };
 
-  // QS Modal Methods
   const openQSModal = async (applicant) => {
     try {
       selectedApplicantForQS.value = {
@@ -814,17 +800,14 @@
         office: props.position.office,
         appliedDate: formatDate(applicant.created_at),
         status: applicant.status || 'PENDING',
-
         education: applicant.education || [],
         work_experience: applicant.work_experience || [],
         training: applicant.training || [],
         eligibity: applicant.eligibity || [],
         eligibility: applicant.eligibity || [],
-
         nPersonalInfo_id: applicant.nPersonalInfo_id,
         ControlNo: applicant.ControlNo,
       };
-
       showQSModal.value = true;
     } catch {
       $q.notify({
@@ -933,13 +916,11 @@
     border-left: 2px solid #1976d2 !important;
     border-right: 2px solid #1976d2 !important;
 
-    // Header variant
     thead & {
       color: #1565c0;
       font-weight: 600 !important;
     }
 
-    // Criteria description row — keep blank but preserve highlight
     .criteria-description & {
       background-color: #ddeefa !important;
     }
@@ -951,13 +932,11 @@
     border-left: 2px solid #388e3c !important;
     border-right: 2px solid #388e3c !important;
 
-    // Header variant
     thead & {
       color: #2e7d32;
       font-weight: 600 !important;
     }
 
-    // Criteria description row — keep blank but preserve highlight
     .criteria-description & {
       background-color: #d6edd8 !important;
     }
@@ -1000,13 +979,16 @@
     }
   }
 
+  .applicant-name {
+    transition: color 0.2s;
+  }
+
   .result-value {
     font-size: 0.85rem;
   }
 
   .total-score {
     font-weight: bold;
-    // col-grand-total provides the green background; keep text bold
     color: #2e7d32;
   }
 
