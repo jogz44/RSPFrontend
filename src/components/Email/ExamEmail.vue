@@ -108,12 +108,10 @@
                   </p>
 
                   <p class="letter-text">
-                    If you have any clarifications, you may reach us through our mobile no.
-                    <strong>{{ contactNumber }}</strong>
-                    .
+                    To confirm your attendance kindly send your Full Name to this number
+                    <strong>09998387221</strong>
+                    , non confirmation would be presumed non attendance to the exam.
                   </p>
-
-                  <p class="letter-text">Kindly reply to this email to confirm your attendance.</p>
 
                   <p class="letter-text">Thank you.</p>
 
@@ -489,17 +487,12 @@
           },
           {
             text: [
-              'If you have any clarifications, you may reach us through our mobile no. ',
-              { text: props.contactNumber, bold: true },
-              '.',
+              'To confirm your attendance kindly send your Full Name to this number ',
+              { text: '09998387221', bold: true },
+              ', non confirmation would be presumed non attendance to the exam.',
             ],
             fontSize: FONT_SIZE,
             alignment: 'justify',
-            margin: [0, 0, 0, 10],
-          },
-          {
-            text: 'Kindly reply to this email to confirm your attendance.',
-            fontSize: FONT_SIZE,
             margin: [0, 0, 0, 10],
           },
           { text: 'Thank you.', fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
