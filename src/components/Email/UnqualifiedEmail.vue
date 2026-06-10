@@ -47,7 +47,11 @@
 
                   <div class="letter-body">
                     <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
-
+                    <p class="letter-addressee">
+                      {{ applicantName }}
+                      <br />
+                      <span v-if="formattedAddress">{{ formattedAddress }}</span>
+                    </p>
                     <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                     <p class="letter-text">Greetings of Peace and Safety!</p>
@@ -62,22 +66,6 @@
                       determined that you do not meet either of the minimum Qualification Standard
                       (QS) of the position to wit:
                     </p>
-
-                    <!-- <p class="letter-text">
-                      We wish to inform you that after careful evaluation of your application for
-                      the position of
-                      <strong>{{ applicantDetails.position }}</strong>
-                      , in the
-                      <strong>{{ applicantDetails.office }}</strong>
-                      , the Human Resource Merit Promotion and Selection Board (HRMPSB) has
-                      determined that you do not meet the Qualification Standards required for the
-                      said position.
-                    </p> -->
-
-                    <!-- <p class="letter-text">
-                      After a thorough review of the documents you submitted, the following
-                      deficiencies were noted that led to your disqualification:
-                    </p> -->
 
                     <!-- QS Table -->
                     <div class="table-section">
@@ -95,9 +83,7 @@
                               <strong>{{ row.label }}</strong>
                             </td>
                             <td>{{ row.required }}</td>
-                            <td>
-                              {{ row.remark }}
-                            </td>
+                            <td>{{ row.remark }}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -222,7 +208,20 @@
 
     return fullName || 'Applicant';
   });
-
+  const formattedAddress = computed(() => {
+    const addr = applicantDetails.value?.address;
+    if (!addr) return '';
+    if (typeof addr === 'string') return addr;
+    return [
+      addr.purok ? ` ${addr.purok}` : '',
+      addr.street,
+      addr.barangay,
+      addr.city,
+      addr.province,
+    ]
+      .filter(Boolean)
+      .join(', ');
+  });
   const qsRows = computed(() => {
     const d = applicantDetails.value;
     if (!d) return [];
@@ -326,6 +325,7 @@
       const d = applicantDetails.value;
       const name = applicantName.value;
       const dateStr = formatDateEnglish(props.currentDate);
+      const addressStr = formattedAddress.value;
 
       const docDefinition = {
         pageSize: 'A4',
@@ -408,15 +408,15 @@
 
         content: [
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
-
+          // Addressee block with name and address
           {
-            text: `Dear ${name},`,
-            fontSize: FONT_SIZE,
-            margin: [0, 0, 0, 10],
+            stack: [
+              { text: name, fontSize: FONT_SIZE, margin: [0, 0, 0, 2] },
+              ...(addressStr ? [{ text: addressStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 15] }] : [{ text: '', margin: [0, 0, 0, 15] }]),
+            ],
           },
-
+          { text: `Dear ${name},`, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
           { text: 'Greetings of Peace and Safety!', fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
-
           {
             text: [
               'We wish to inform you that after careful evaluation of your application for the position of ',
@@ -429,7 +429,6 @@
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
-
           {
             table: {
               headerRows: 1,
@@ -441,21 +440,18 @@
             },
             margin: [0, 0, 0, 8],
           },
-
           {
             text: 'We appreciate your interest in joining the City Government of Tagum and commend your effort in applying for the position. We encourage you to continue enhancing your qualifications and to apply for future vacancies that match your credentials.',
             fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 10, 0, 10],
           },
-
           {
             text: 'The City Government of Tagum upholds the principle of Equal Employment Opportunity and ensures that all applicants are evaluated fairly based on merit, fitness, and qualifications, without discrimination on the basis of gender, age, civil status, disability, religion, or other protected characteristics.',
             fontSize: FONT_SIZE,
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
-
           {
             text: [
               'If you have any questions or concerns, please do not hesitate to contact us at ',
@@ -466,21 +462,15 @@
             alignment: 'justify',
             margin: [0, 0, 0, 10],
           },
-
           {
             text: 'Thank you for your understanding.',
             fontSize: FONT_SIZE,
             margin: [0, 0, 0, 30],
           },
           { text: 'Sincerely,', fontSize: FONT_SIZE, margin: [0, 0, 0, 30] },
-
           {
             stack: [
-              {
-                text: `${props.signatoryName}`,
-                fontSize: FONT_SIZE,
-                bold: true,
-              },
+              { text: props.signatoryName, fontSize: FONT_SIZE, bold: true },
               { text: props.signatoryTitle, fontSize: FONT_SIZE, margin: [0, 2, 0, 0] },
               {
                 text: 'Authorized Representative of the City Mayor',
@@ -488,12 +478,7 @@
                 color: '#374151',
                 margin: [0, 1, 0, 0],
               },
-              {
-                text: 'Chairperson',
-                fontSize: FONT_SIZE,
-                color: '#374151',
-                margin: [0, 1, 0, 0],
-              },
+              { text: 'Chairperson', fontSize: FONT_SIZE, color: '#374151', margin: [0, 1, 0, 0] },
             ],
             margin: [0, 0, 0, 20],
           },
