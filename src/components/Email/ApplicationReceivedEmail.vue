@@ -48,6 +48,13 @@
                   <div class="letter-body">
                     <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
+                    <!-- Addressee block -->
+                    <p class="letter-addressee">
+                      <strong class="addressee-name">{{ applicantNameUppercase }}</strong>
+                      <br />
+                      <span>{{ formattedAddressProper }}</span>
+                    </p>
+
                     <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                     <p class="letter-text">Greetings of Peace and Safety!</p>
@@ -153,6 +160,7 @@
         lastname: '',
         name_extension: '',
         email: '',
+        address: '',
       }),
     },
     position: { type: String, default: '' },
@@ -181,6 +189,19 @@
       .join(' ');
   };
 
+  // ── Helper function for proper case ──────────────────────
+  const toProperCase = (str) => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // ── Static Default Address ───────────────────────────────
+  const DEFAULT_ADDRESS = 'Purok, Barangay, City, Province';
+
   // ── Computed ─────────────────────────────────────────────
   const applicantName = computed(() => {
     const { firstname, lastname, name_extension } = props.applicant;
@@ -188,6 +209,15 @@
     const extension = name_extension ? ` ${name_extension}` : '';
     const fullName = name ? name + extension : 'Applicant';
     return capitalizeName(fullName);
+  });
+
+  const applicantNameUppercase = computed(() => {
+    return applicantName.value.toUpperCase();
+  });
+
+  const formattedAddressProper = computed(() => {
+    const address = DEFAULT_ADDRESS;
+    return toProperCase(address);
   });
 
   // ── Helpers ──────────────────────────────────────────────
@@ -248,7 +278,9 @@
       pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
       const name = applicantName.value;
+      const nameUppercase = applicantNameUppercase.value;
       const dateStr = formatDateEnglish(props.currentDate);
+      const addressStr = formattedAddressProper.value;
       const positionText = props.position || 'the position';
       const itemNumberText = props.itemNumber ? `, item # ${props.itemNumber}` : '';
       const officeText = props.office || 'the office';
@@ -333,23 +365,18 @@
           ],
         }),
 
-        // Footer
-        footer: () => ({
-          stack: [
-            {
-              text: 'This is a system-generated email.',
-              fontSize: 8,
-              color: '#6b7280',
-              alignment: 'center',
-              margin: [60, 8, 60, 2],
-            },
-          ],
-        }),
-
         // Main Content
         content: [
           // Date
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
+
+          // Addressee block with UPPERCASE bold name and proper case address
+          {
+            stack: [
+              { text: nameUppercase, fontSize: FONT_SIZE, bold: true, margin: [0, 0, 0, 2] },
+              { text: addressStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 15] },
+            ],
+          },
 
           // Salutation
           {
@@ -424,11 +451,11 @@
 
           { text: 'Sincerely,', fontSize: FONT_SIZE, margin: [0, 0, 0, 30] },
 
-          // Signature block
+          // Signature block (no SGD in PDF)
           {
             stack: [
               {
-                text: `(SGD.) ${props.signatoryName}`,
+                text: props.signatoryName,
                 fontSize: FONT_SIZE,
                 bold: true,
               },
@@ -436,13 +463,11 @@
               {
                 text: 'Authorized Representative of the City Mayor',
                 fontSize: FONT_SIZE,
-                color: '#374151',
                 margin: [0, 1, 0, 0],
               },
               {
                 text: 'Chairperson',
                 fontSize: FONT_SIZE,
-                color: '#374151',
                 margin: [0, 1, 0, 0],
               },
             ],
@@ -624,6 +649,11 @@
     color: #000;
     margin: 0 0 10px;
   }
+
+  .letter-addressee .addressee-name {
+    font-weight: bold;
+  }
+
   .letter-text {
     text-align: justify;
   }
@@ -661,7 +691,7 @@
   }
   .sig-sub {
     font-size: 10pt;
-    color: #374151;
+    color: #000;
     margin-top: 1px;
   }
 

@@ -30,6 +30,13 @@
                 <div class="letter-body">
                   <p class="letter-date">{{ formatDateEnglish(currentDate) }}</p>
 
+                  <!-- Addressee block -->
+                  <p class="letter-addressee">
+                    <strong class="addressee-name">{{ applicantNameUppercase }}</strong>
+                    <br />
+                    <span v-if="formattedAddress">{{ formattedAddressProper }}</span>
+                  </p>
+
                   <p class="letter-greeting">Dear {{ applicantName }},</p>
 
                   <p class="letter-text">Greetings of Peace and Safety!</p>
@@ -185,6 +192,16 @@
       .join(' ');
   };
 
+  // ── Helper function for proper case ──────────────────────
+  const toProperCase = (str) => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // ── Helpers ──────────────────────────────────────────────
   const extractPosition = (applicant) => {
     if (!applicant) return 'N/A';
@@ -207,6 +224,13 @@
     if (applicant.itemNo) return applicant.itemNo;
     if (applicant.job_batch_rsp?.ItemNo) return applicant.job_batch_rsp.ItemNo;
     return null;
+  };
+
+  const extractAddress = (applicant) => {
+    if (!applicant) return '';
+    if (applicant.address) return applicant.address;
+    if (applicant.applicant_address) return applicant.applicant_address;
+    return '';
   };
 
   const formatTime = (timeStr) => {
@@ -271,6 +295,31 @@
     }
     const fullName = [firstname, lastname, nameExtension].filter(Boolean).join(' ') || 'Applicant';
     return capitalizeName(fullName);
+  });
+
+  const applicantNameUppercase = computed(() => {
+    return applicantName.value.toUpperCase();
+  });
+
+  const formattedAddress = computed(() => {
+    const addr = extractAddress(props.applicant);
+    if (!addr) return '';
+    if (typeof addr === 'string') return addr;
+    return [
+      addr.purok ? ` ${addr.purok}` : '',
+      addr.street,
+      addr.barangay,
+      addr.city,
+      addr.province,
+    ]
+      .filter(Boolean)
+      .join(', ');
+  });
+
+  const formattedAddressProper = computed(() => {
+    const address = formattedAddress.value;
+    if (!address) return '';
+    return toProperCase(address);
   });
 
   const displayPosition = computed(
@@ -356,7 +405,9 @@
       pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
       const name = applicantName.value;
+      const nameUppercase = applicantNameUppercase.value;
       const dateStr = formatDateEnglish(props.currentDate);
+      const addressStr = formattedAddressProper.value;
       const ex = props.examDetails;
 
       const docDefinition = {
@@ -364,19 +415,18 @@
         pageOrientation: 'portrait',
         pageMargins: [60, 120, 60, 60],
         header: () => buildPdfHeader(logoBase64),
-        footer: () => ({
-          stack: [
-            {
-              text: 'This is a system-generated email.',
-              fontSize: 8,
-              color: '#6b7280',
-              alignment: 'center',
-              margin: [60, 8, 60, 2],
-            },
-          ],
-        }),
+
         content: [
           { text: dateStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 10] },
+          // Addressee block with UPPERCASE bold name and proper case address
+          {
+            stack: [
+              { text: nameUppercase, fontSize: FONT_SIZE, bold: true, margin: [0, 0, 0, 2] },
+              ...(addressStr
+                ? [{ text: addressStr, fontSize: FONT_SIZE, margin: [0, 0, 0, 15] }]
+                : [{ text: '', margin: [0, 0, 0, 15] }]),
+            ],
+          },
           {
             text: `Dear ${name},`,
             fontSize: FONT_SIZE,
@@ -500,7 +550,7 @@
           {
             stack: [
               {
-                text: `(SGD.) ${props.signatoryName}`,
+                text: props.signatoryName,
                 fontSize: FONT_SIZE,
                 bold: true,
               },
@@ -508,10 +558,9 @@
               {
                 text: 'Authorized Representative of the City Mayor',
                 fontSize: FONT_SIZE,
-                color: '#374151',
                 margin: [0, 1, 0, 0],
               },
-              { text: 'Chairperson', fontSize: FONT_SIZE, color: '#374151', margin: [0, 1, 0, 0] },
+              { text: 'Chairperson', fontSize: FONT_SIZE, margin: [0, 1, 0, 0] },
             ],
             margin: [0, 0, 0, 20],
           },
@@ -651,6 +700,10 @@
     margin: 0 0 10px;
   }
 
+  .letter-addressee .addressee-name {
+    font-weight: bold;
+  }
+
   .letter-text {
     text-align: justify;
   }
@@ -714,7 +767,7 @@
 
   .sig-sub {
     font-size: 10pt;
-    color: #374151;
+    color: #000;
     margin-top: 1px;
   }
 
