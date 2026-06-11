@@ -1042,8 +1042,10 @@
   });
 
   const positionsWithAllOption = computed(() => {
-    if (!positions.value.length) return [];
-    return [{ id: 'all', name: 'All Positions', office_abbr: 'ALL' }, ...positions.value];
+    // Ensure positions.value is an array
+    const positionsArray = Array.isArray(positions.value) ? positions.value : [];
+    if (!positionsArray.length) return [];
+    return [{ id: 'all', name: 'All Positions', office_abbr: 'ALL' }, ...positionsArray];
   });
 
   const totalApplicants = computed(() => {
@@ -1091,10 +1093,11 @@
   // ==================== POSITION SELECTION ====================
   const isPositionSelected = (id) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
+    const positionsArray = Array.isArray(positions.value) ? positions.value : [];
     if (id === 'all') {
       return (
-        positions.value.length > 0 &&
-        current.filter((p) => p !== 'all').length === positions.value.length
+        positionsArray.length > 0 &&
+        current.filter((p) => p !== 'all').length === positionsArray.length
       );
     }
     return current.includes(id);
@@ -1102,8 +1105,9 @@
 
   const togglePosition = (id, checked) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
+    const positionsArray = Array.isArray(positions.value) ? positions.value : [];
     if (id === 'all') {
-      selectedPositions.value = checked ? positions.value.map((p) => p.id) : [];
+      selectedPositions.value = checked ? positionsArray.map((p) => p.id) : [];
       return;
     }
     if (checked) {
@@ -1352,7 +1356,21 @@
   };
 
   const loadPositions = () => {
-    positions.value = (jobPostStore.jobPosts || []).map((post) => ({
+    // Safely get jobPosts array - could be array or object
+    let jobPostsArray = [];
+
+    if (Array.isArray(jobPostStore.jobPosts)) {
+      jobPostsArray = jobPostStore.jobPosts;
+    } else if (jobPostStore.jobPosts && typeof jobPostStore.jobPosts === 'object') {
+      // If it's an object, try to extract the array from common properties
+      jobPostsArray =
+        jobPostStore.jobPosts.data ||
+        jobPostStore.jobPosts.items ||
+        jobPostStore.jobPosts.results ||
+        [];
+    }
+
+    positions.value = jobPostsArray.map((post) => ({
       id: post.id,
       name: post.Position,
       office_abbr: post.office_abbr || getOfficeAbbr(post.Office),
@@ -1573,11 +1591,20 @@
         closeModal();
         toast.success('Rater added successfully');
       } else {
-        throw new Error(result.message || 'Failed to add rater');
+        // Error message already shown in store, just log
+        console.error('Registration failed:', result.message);
       }
     } catch (error) {
       console.error('Error adding rater:', error);
-      toast.error(error.message || 'Failed to add rater');
+      // Check if there's a response with a message
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add rater';
+      const errors = error.response?.data?.errors;
+
+      if (errors && errors.username) {
+        toast.error(errors.username[0]);
+      } else {
+        toast.error(errorMessage);
+      }
       showError.value = true;
     } finally {
       isSubmitting.value = false;

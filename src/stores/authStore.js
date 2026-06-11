@@ -448,7 +448,20 @@ export const useAuthStore = defineStore('auth', {
         toast.error(response.data.message || 'Failed to register rater');
         return { success: false, message: response.data.message || 'Failed to register rater' };
       } catch (error) {
-        this.handleError(error, error.message || 'Failed to register rater');
+        // Handle 422 validation errors specifically
+        if (error.response?.status === 422) {
+          const errors = error.response?.data?.errors;
+          if (errors && errors.username) {
+            toast.error(errors.username[0]);
+            this.errors = errors;
+          } else {
+            toast.error(
+              error.response?.data?.message || 'Validation error. Please check the form.',
+            );
+          }
+        } else {
+          this.handleError(error, error.message || 'Failed to register rater');
+        }
         return { success: false, message: error.message || 'Failed to register rater' };
       } finally {
         this.loading = false;
