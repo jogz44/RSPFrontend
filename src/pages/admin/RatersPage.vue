@@ -727,6 +727,19 @@
                 >
                   <q-tooltip>Print Rating Form</q-tooltip>
                 </q-btn>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="note_add"
+                  color="info"
+                  class="q-ml-sm"
+                  @click="openEmptyRatingFormReport(props.row)"
+                  :loading="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                  :disable="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                >
+                  <q-tooltip>Print Empty Rating Form</q-tooltip>
+                </q-btn>
               </q-td>
             </template>
 
@@ -774,10 +787,7 @@
       </q-card>
     </q-dialog>
 
-    <!--
-      KEY FIX: Pass ratingData (the already-fetched object from the cache/store) directly
-      into the child. The child no longer fetches — it just renders what it receives.
-    -->
+    <!-- Rating Form Report (with data) -->
     <RatingFormReport
       v-if="showRatingFormDialog"
       v-model="showRatingFormDialog"
@@ -785,6 +795,16 @@
       :rater-id="selectedRaterId"
       :rating-data="ratingFormData"
       @close="handleRatingFormClose"
+    />
+
+    <!-- Empty Rating Form Report -->
+    <EmptyRatingFormReport
+      v-if="showEmptyRatingFormDialog"
+      v-model="showEmptyRatingFormDialog"
+      :job-batches-rsp-id="selectedJobId"
+      :rater-id="selectedRaterId"
+      :rating-data="emptyRatingFormData"
+      @close="handleEmptyRatingFormClose"
     />
   </q-page>
 </template>
@@ -797,6 +817,7 @@
   import { use_rating_form_store } from 'stores/ratingFormStore';
   import ButtonResetPassword from 'components/ButtonResetPassword.vue';
   import RatingFormReport from 'components/Reports/RatingFormReport.vue';
+  import EmptyRatingFormReport from 'components/Reports/EmptyRatingFormReport.vue';
   import { toast } from 'boot/toast';
   import { adminApi } from 'boot/axios_admin';
 
@@ -823,7 +844,9 @@
 
   // ==================== PRINTING / REPORT STATE ====================
   const printingJobId = ref(null);
+  const emptyPrintingJobId = ref(null);
   const showRatingFormDialog = ref(false);
+  const showEmptyRatingFormDialog = ref(false);
   const selectedJobId = ref(null);
   const selectedRaterId = ref(null);
   /**
@@ -832,10 +855,12 @@
    * The child component reads this prop and generates the PDF — no extra fetch needed.
    */
   const ratingFormData = ref(null);
+  const emptyRatingFormData = ref(null);
 
   // ==================== RATING FORM CACHE ====================
   // Key: `${jobId}_${raterId}` → cached API response object
   const ratingFormCache = ref(new Map());
+  const emptyRatingFormCache = ref(new Map());
 
   // ==================== MODAL STATE ====================
   const showModal = ref(false);
@@ -1188,15 +1213,12 @@
     const cacheKey = `${jobId}_${raterId}`;
     const cachedData = ratingFormCache.value.get(cacheKey);
 
-    // ── Helper: set data FIRST, wait a tick, then open the dialog.
-    // This guarantees the child component receives a populated :rating-data
-    // prop on its very first render / onMounted call.
     const openWithData = async (data) => {
       selectedJobId.value = jobId;
       selectedRaterId.value = raterId;
-      ratingFormData.value = data; // prop set BEFORE dialog opens
-      await nextTick(); // let Vue propagate the new prop value
-      showRatingFormDialog.value = true; // NOW open — child mounts with data ready
+      ratingFormData.value = data;
+      await nextTick();
+      showRatingFormDialog.value = true;
     };
 
     if (cachedData) {
@@ -1204,18 +1226,24 @@
       return;
     }
 
-    // Fetch fresh data
     printingJobId.value = jobId;
     try {
       const data = await ratingFormStore.fetchRatingForm(jobId, raterId);
 
-      if (!data || !ratingFormStore.hasApplicants) {
-        toast.error('No rating data available for this job');
+      // Don't block if no applicants - the report can show "No applicants found"
+      if (!data) {
+        toast.error('Failed to load rating data');
         return;
       }
 
+      // Cache even if no applicants
       ratingFormCache.value.set(cacheKey, data);
       await openWithData(data);
+
+      // Show info message instead of error
+      if (!data?.rating_scores?.length) {
+        toast.info('No applicants have been rated for this job yet');
+      }
     } catch (error) {
       console.error('Error fetching rating form:', error);
       toast.error(error.response?.data?.message || 'Failed to load rating form');
@@ -1224,9 +1252,63 @@
     }
   };
 
+  // ==================== OPEN EMPTY RATING FORM REPORT ====================
+  const openEmptyRatingFormReport = async (job) => {
+    if (!currentViewRater.value?.id) {
+      toast.error('Rater information not available');
+      return;
+    }
+
+    const jobId = job.job_batches_rsp_id || job.id;
+    if (!jobId) {
+      toast.error('Job ID not found');
+      return;
+    }
+
+    const raterId = currentViewRater.value.id;
+    const cacheKey = `${jobId}_${raterId}`;
+    const cachedData = emptyRatingFormCache.value.get(cacheKey);
+
+    const openWithData = async (data) => {
+      selectedJobId.value = jobId;
+      selectedRaterId.value = raterId;
+      emptyRatingFormData.value = data;
+      await nextTick();
+      showEmptyRatingFormDialog.value = true;
+    };
+
+    if (cachedData) {
+      await openWithData(cachedData);
+      return;
+    }
+
+    emptyPrintingJobId.value = jobId;
+    try {
+      const data = await ratingFormStore.fetchEmptyRatingForm(jobId, raterId);
+
+      if (!data) {
+        toast.error('Failed to load empty rating form data');
+        return;
+      }
+
+      emptyRatingFormCache.value.set(cacheKey, data);
+      await openWithData(data);
+    } catch (error) {
+      console.error('Error fetching empty rating form:', error);
+      toast.error(error.response?.data?.message || 'Failed to load empty rating form');
+    } finally {
+      emptyPrintingJobId.value = null;
+    }
+  };
+
   const handleRatingFormClose = () => {
     showRatingFormDialog.value = false;
     // ratingFormData is intentionally kept so the cache still works if the dialog reopens
+  };
+
+  const handleEmptyRatingFormClose = () => {
+    showEmptyRatingFormDialog.value = false;
+    // emptyRatingFormData is intentionally kept so the cache still works if the dialog reopens
   };
 
   // ==================== FORM HELPERS ====================

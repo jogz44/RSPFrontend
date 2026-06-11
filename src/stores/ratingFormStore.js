@@ -1,6 +1,5 @@
 // stores/ratingFormStore.js
 import { defineStore } from 'pinia';
-// import { raterApi } from 'src/boot/axios_rater';
 import { adminApi } from 'boot/axios_admin';
 import { getApplicantScore, raterListWithJob } from 'src/service/raterService';
 
@@ -32,6 +31,30 @@ export const use_rating_form_store = defineStore('rating_form_store', {
         };
 
         const { data } = await adminApi.post('/report/rating-form', payload);
+
+        this.data = data;
+        return data;
+      } catch (err) {
+        console.error('API Error Response:', err.response?.data);
+        this.error = err;
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchEmptyRatingForm(job_batches_rsp_id, rater_id) {
+      this.loading = true;
+      this.error = null;
+      this.data = null;
+
+      try {
+        const payload = {
+          job_batches_rsp_id: job_batches_rsp_id,
+          raterId: rater_id,
+        };
+
+        const { data } = await adminApi.post('/report/applicant/no-rating-score', payload);
 
         this.data = data;
         return data;

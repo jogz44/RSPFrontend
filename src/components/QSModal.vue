@@ -590,7 +590,7 @@
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { raterApi } from 'boot/axios_rater';
-  import PDSModalApplicant from './PDSModalApplicant.vue';
+  import PDSModalApplicant from './PDSModalApplicantRater.vue';
   import SupportingDocumentsModal from './SuppDocs.vue';
   import WESModal from './WESModalRater.vue';
 

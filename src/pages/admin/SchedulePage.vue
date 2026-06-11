@@ -1103,7 +1103,7 @@
   const authStore = useAuthStore();
   const { formatDate: qFormatDate } = date;
 
-  // Email dialog state
+  // ─── Email dialog state ───────────────────────────────────────────────────────
   const showInterviewEmail = ref(false);
   const showExamEmail = ref(false);
   const showInterviewCancelledEmail = ref(false);
@@ -1112,7 +1112,7 @@
   const selectedInterviewDetails = ref(null);
   const selectedExamDetails = ref(null);
 
-  // Cancel dialog state
+  // ─── Cancel dialog state ──────────────────────────────────────────────────────
   const showCancelInterviewDialog = ref(false);
   const showCancelExamDialog = ref(false);
   const cancelInterviewData = ref({});
@@ -1125,14 +1125,12 @@
   const pendingCancelScheduleId = ref(null);
   const pendingCancelExamId = ref(null);
 
-  // ============================================================================
-  // PERMISSION CHECK
-  // ============================================================================
+  // ─── Permission ───────────────────────────────────────────────────────────────
   const canModifySchedule = computed(() => {
     return authStore.user?.permissions?.modifySchedule === '1';
   });
 
-  // ─── Tab ─────────────────────────────────────────────────────────────────────
+  // ─── Tab ──────────────────────────────────────────────────────────────────────
   const activeTab = ref('interview');
 
   // ─── Interview state ──────────────────────────────────────────────────────────
@@ -1189,113 +1187,107 @@
   const viewPagination = ref({ page: 1, rowsPerPage: 10 });
 
   // ─── Columns ──────────────────────────────────────────────────────────────────
-  const columns = computed(() => {
-    const baseColumns = [
-      {
-        name: 'batch_name',
-        label: 'Batch Name',
-        align: 'left',
-        field: 'batch_name',
-        sortable: true,
-        style: 'width: 25%',
-      },
-      {
-        name: 'applicant_no',
-        label: 'No. of Applicants',
-        align: 'center',
-        field: 'applicant_no',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'venue_interview',
-        label: 'Venue',
-        align: 'left',
-        field: 'venue_interview',
-        sortable: true,
-        style: 'width: 20%',
-      },
-      {
-        name: 'date_interview',
-        label: 'Interview Date',
-        align: 'center',
-        field: 'date_interview',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'time_interview',
-        label: 'Time',
-        align: 'center',
-        field: 'time_interview',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'action',
-        label: 'Action',
-        align: 'center',
-        field: 'action',
-        sortable: false,
-        style: 'width: 10%',
-      },
-    ];
-    return baseColumns;
-  });
+  const columns = computed(() => [
+    {
+      name: 'batch_name',
+      label: 'Batch Name',
+      align: 'left',
+      field: 'batch_name',
+      sortable: true,
+      style: 'width: 25%',
+    },
+    {
+      name: 'applicant_no',
+      label: 'No. of Applicants',
+      align: 'center',
+      field: 'applicant_no',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'venue_interview',
+      label: 'Venue',
+      align: 'left',
+      field: 'venue_interview',
+      sortable: true,
+      style: 'width: 20%',
+    },
+    {
+      name: 'date_interview',
+      label: 'Interview Date',
+      align: 'center',
+      field: 'date_interview',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'time_interview',
+      label: 'Time',
+      align: 'center',
+      field: 'time_interview',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'action',
+      label: 'Action',
+      align: 'center',
+      field: 'action',
+      sortable: false,
+      style: 'width: 10%',
+    },
+  ]);
 
-  const examColumns = computed(() => {
-    const cols = [
-      {
-        name: 'batch_name',
-        label: 'Batch Name',
-        align: 'left',
-        field: 'batch_name',
-        sortable: true,
-        style: 'width: 25%',
-      },
-      {
-        name: 'applicant_no',
-        label: 'No. of Applicants',
-        align: 'center',
-        field: 'applicant_no',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'venue_exam',
-        label: 'Venue',
-        align: 'left',
-        field: 'venue_exam',
-        sortable: true,
-        style: 'width: 20%',
-      },
-      {
-        name: 'date_exam',
-        label: 'Exam Date',
-        align: 'center',
-        field: 'date_exam',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'time_exam',
-        label: 'Time',
-        align: 'center',
-        field: 'time_exam',
-        sortable: true,
-        style: 'width: 15%',
-      },
-      {
-        name: 'action',
-        label: 'Action',
-        align: 'center',
-        field: 'action',
-        sortable: false,
-        style: 'width: 10%',
-      },
-    ];
-    return cols;
-  });
+  const examColumns = computed(() => [
+    {
+      name: 'batch_name',
+      label: 'Batch Name',
+      align: 'left',
+      field: 'batch_name',
+      sortable: true,
+      style: 'width: 25%',
+    },
+    {
+      name: 'applicant_no',
+      label: 'No. of Applicants',
+      align: 'center',
+      field: 'applicant_no',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'venue_exam',
+      label: 'Venue',
+      align: 'left',
+      field: 'venue_exam',
+      sortable: true,
+      style: 'width: 20%',
+    },
+    {
+      name: 'date_exam',
+      label: 'Exam Date',
+      align: 'center',
+      field: 'date_exam',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'time_exam',
+      label: 'Time',
+      align: 'center',
+      field: 'time_exam',
+      sortable: true,
+      style: 'width: 15%',
+    },
+    {
+      name: 'action',
+      label: 'Action',
+      align: 'center',
+      field: 'action',
+      sortable: false,
+      style: 'width: 10%',
+    },
+  ]);
 
   const applicantColumns = [
     {
@@ -1367,6 +1359,36 @@
     },
   ];
 
+  // ─── Shared applicant mapper — carries ALL address fields ─────────────────────
+  /**
+   * Maps a raw applicant object from fetchScheduleDetails into a flat shape
+   * that carries every address field the email components need.
+   */
+  const mapApplicant = (applicant, index) => ({
+    submission_id: applicant.submission_id || applicant.applicant_id || index,
+    applicant_name:
+      applicant.applicant_name ||
+      `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
+      'Unknown Applicant',
+    position: applicant.position || 'N/A',
+    office: applicant.office || 'N/A',
+    contact_no: applicant.contact_no || applicant.phone || 'N/A',
+    itemNo: applicant.itemNo || null,
+    ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
+    firstname: applicant.firstname || '',
+    lastname: applicant.lastname || '',
+    email: applicant.email || null,
+    // ── Flat address fields from the API ──────────────────────────────────────
+    purok: applicant.purok || null,
+    street: applicant.street || null,
+    barangay: applicant.barangay || null,
+    city: applicant.city || null,
+    province: applicant.province || null,
+    // ── Also keep a nested address object if the API ever returns one ─────────
+    address: applicant.address || null,
+    applicant_address: applicant.applicant_address || null,
+  });
+
   // ─── Request handlers ─────────────────────────────────────────────────────────
   const onRequest = async (props) => {
     const { page, rowsPerPage, sortBy, descending } = props.pagination;
@@ -1425,7 +1447,7 @@
     }, 500);
   });
 
-  // ─── Computed ─────────────────────────────────────────────────────────────────
+  // ─── Transform available applicants (schedule dialogs) ───────────────────────
   const transformApplicants = (raw) =>
     (raw || []).map((s) => ({
       submission_id: s.submission_id,
@@ -1441,6 +1463,14 @@
       email: s.email,
       phone: s.phone,
       job_batch_rsp: s.job_batch_rsp,
+      // address fields
+      purok: s.purok || null,
+      street: s.street || null,
+      barangay: s.barangay || null,
+      city: s.city || null,
+      province: s.province || null,
+      address: s.address || null,
+      applicant_address: s.applicant_address || null,
     }));
 
   const transformedInterviewApplicants = computed(() =>
@@ -1483,7 +1513,7 @@
     () => examScheduleForm.value.date_exam && examScheduleForm.value.selected_applicants.length > 0,
   );
 
-  // Helper to get current form data as plain object for email preview
+  // ─── Current form data helpers ────────────────────────────────────────────────
   const getCurrentInterviewFormData = () => ({
     date_interview: scheduleForm.value.date_interview || null,
     time_interview: scheduleForm.value.time_interview || null,
@@ -1543,7 +1573,7 @@
     return new Date(dateVal) >= today;
   };
 
-  // ─── Normalize Applicant ──────────────────────────────────────────────────────
+  // ─── Normalize applicant for email preview ────────────────────────────────────
   const normalizeApplicant = (applicant) => {
     if (!applicant) return null;
 
@@ -1557,7 +1587,7 @@
     }
 
     let position = applicant.position || 'N/A';
-    if (position === 'N/A' && applicant.positions && Array.isArray(applicant.positions)) {
+    if (position === 'N/A' && Array.isArray(applicant.positions)) {
       position = applicant.positions[0] || 'N/A';
     }
     if (position === 'N/A' && applicant.job_batch_rsp?.Position) {
@@ -1565,7 +1595,7 @@
     }
 
     let office = applicant.office || 'N/A';
-    if (office === 'N/A' && applicant.offices && Array.isArray(applicant.offices)) {
+    if (office === 'N/A' && Array.isArray(applicant.offices)) {
       office = applicant.offices[0] || 'N/A';
     }
     if (office === 'N/A' && applicant.job_batch_rsp?.Office) {
@@ -1573,15 +1603,13 @@
     }
 
     let itemNo = applicant.itemNo || null;
-    if (!itemNo && applicant.job_batch_rsp?.ItemNo) {
-      itemNo = applicant.job_batch_rsp.ItemNo;
-    }
+    if (!itemNo && applicant.job_batch_rsp?.ItemNo) itemNo = applicant.job_batch_rsp.ItemNo;
 
     let salaryGrade = applicant.salaryGrade || null;
-    if (!salaryGrade && applicant.job_batch_rsp?.SalaryGrade) {
+    if (!salaryGrade && applicant.job_batch_rsp?.SalaryGrade)
       salaryGrade = applicant.job_batch_rsp.SalaryGrade;
-    }
 
+    // ...applicant spreads all existing fields (including address fields set by mapApplicant)
     return {
       ...applicant,
       firstname,
@@ -1593,13 +1621,9 @@
     };
   };
 
-  // ─── Email Preview Methods ────────────────────────────────────────────────────
+  // ─── Email preview methods ────────────────────────────────────────────────────
   const previewInterviewEmailForApplicant = (applicant, interviewDetailsSource = null) => {
-    if (!applicant) {
-      console.warn('Attempted to preview email with null applicant');
-      return;
-    }
-
+    if (!applicant) return;
     selectedApplicant.value = normalizeApplicant(applicant);
 
     if (interviewDetailsSource) {
@@ -1631,11 +1655,7 @@
   };
 
   const previewExamEmailForApplicant = (applicant, examDetailsSource = null) => {
-    if (!applicant) {
-      console.warn('Attempted to preview email with null applicant');
-      return;
-    }
-
+    if (!applicant) return;
     selectedApplicant.value = normalizeApplicant(applicant);
 
     if (examDetailsSource) {
@@ -1676,30 +1696,22 @@
     showExamEmail.value = true;
   };
 
-  // ─── Cancelled Email Preview Methods ───────────────────────────────────────────
+  // ─── Cancelled email preview methods ─────────────────────────────────────────
   const previewCancelledInterviewEmailForApplicant = (applicant) => {
-    if (!applicant) {
-      console.warn('Attempted to preview cancelled email with null applicant');
-      return;
-    }
-
+    if (!applicant) return;
     selectedApplicant.value = normalizeApplicant(applicant);
     selectedInterviewDetails.value = cancelInterviewData.value;
     showInterviewCancelledEmail.value = true;
   };
 
   const previewCancelledExamEmailForApplicant = (applicant) => {
-    if (!applicant) {
-      console.warn('Attempted to preview cancelled email with null applicant');
-      return;
-    }
-
+    if (!applicant) return;
     selectedApplicant.value = normalizeApplicant(applicant);
     selectedExamDetails.value = cancelExamData.value;
     showExamCancelledEmail.value = true;
   };
 
-  // ─── Cancel Interview Dialog Methods ───────────────────────────────────────────
+  // ─── Cancel interview dialog ──────────────────────────────────────────────────
   const openCancelInterviewDialog = async (interview) => {
     if (!canModifySchedule.value) {
       $q.notify({
@@ -1741,41 +1753,18 @@
           applicants = detail.applicants || [];
         } else if (Array.isArray(detail)) {
           applicants = detail;
-          scheduleData = {
-            ...interview,
-            venue_interview: interview.venue_interview,
-            date_interview: interview.date_interview,
-            time_interview: interview.time_interview,
-          };
+          scheduleData = { ...interview };
         } else {
           scheduleData = interview;
-          applicants = [];
         }
       } else {
         scheduleData = interview;
       }
 
       cancelInterviewData.value = scheduleData;
-
-      if (Array.isArray(applicants) && applicants.length > 0) {
-        cancelInterviewApplicants.value = applicants.map((applicant, index) => ({
-          submission_id: applicant.submission_id || applicant.applicant_id || index,
-          applicant_name:
-            applicant.applicant_name ||
-            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
-            'Unknown Applicant',
-          position: applicant.position || 'N/A',
-          office: applicant.office || 'N/A',
-          contact_no: applicant.contact_no || applicant.phone || 'N/A',
-          itemNo: applicant.itemNo || null,
-          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
-          firstname: applicant.firstname || '',
-          lastname: applicant.lastname || '',
-          email: applicant.email,
-        }));
-      } else {
-        cancelInterviewApplicants.value = [];
-      }
+      cancelInterviewApplicants.value = Array.isArray(applicants)
+        ? applicants.map(mapApplicant)
+        : [];
     } catch (e) {
       console.error('Error loading interview details for cancellation:', e);
       $q.notify({
@@ -1798,7 +1787,6 @@
 
   const confirmCancelInterview = async () => {
     if (!pendingCancelScheduleId.value) return;
-
     cancelling.value = true;
     try {
       await interviewStore.cancelInterview(pendingCancelScheduleId.value);
@@ -1825,7 +1813,7 @@
     }
   };
 
-  // ─── Cancel Exam Dialog Methods ────────────────────────────────────────────────
+  // ─── Cancel exam dialog ───────────────────────────────────────────────────────
   const openCancelExamDialog = async (exam) => {
     if (!canModifySchedule.value) {
       $q.notify({
@@ -1854,7 +1842,6 @@
           date_exam: detail.date_exam || detail.date || exam.date_exam || exam.date,
           time_exam: detail.time_exam || detail.time || exam.time_exam || exam.time,
         };
-
         if (detail.applicants && Array.isArray(detail.applicants)) {
           applicants = detail.applicants;
         } else if (Array.isArray(detail)) {
@@ -1866,26 +1853,7 @@
       }
 
       cancelExamData.value = scheduleData;
-
-      if (Array.isArray(applicants) && applicants.length > 0) {
-        cancelExamApplicants.value = applicants.map((applicant, index) => ({
-          submission_id: applicant.submission_id || applicant.applicant_id || index,
-          applicant_name:
-            applicant.applicant_name ||
-            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
-            'Unknown Applicant',
-          position: applicant.position || 'N/A',
-          office: applicant.office || 'N/A',
-          contact_no: applicant.contact_no || applicant.phone || 'N/A',
-          itemNo: applicant.itemNo || null,
-          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
-          firstname: applicant.firstname || '',
-          lastname: applicant.lastname || '',
-          email: applicant.email,
-        }));
-      } else {
-        cancelExamApplicants.value = [];
-      }
+      cancelExamApplicants.value = Array.isArray(applicants) ? applicants.map(mapApplicant) : [];
     } catch (e) {
       console.error('Error loading exam details for cancellation:', e);
       $q.notify({
@@ -1908,7 +1876,6 @@
 
   const confirmCancelExam = async () => {
     if (!pendingCancelExamId.value) return;
-
     cancelling.value = true;
     try {
       await examStore.cancelExamSchedule(pendingCancelExamId.value);
@@ -1935,7 +1902,7 @@
     }
   };
 
-  // ─── Interview dialog methods ──────────────────────────────────────────────────
+  // ─── Interview schedule dialog ────────────────────────────────────────────────
   const resetScheduleForm = () => {
     scheduleForm.value = {
       batch_name: '',
@@ -2055,41 +2022,16 @@
           applicants = detail.applicants || [];
         } else if (Array.isArray(detail)) {
           applicants = detail;
-          scheduleData = {
-            ...interview,
-            venue_interview: interview.venue_interview,
-            date_interview: interview.date_interview,
-            time_interview: interview.time_interview,
-          };
+          scheduleData = { ...interview };
         } else {
           scheduleData = interview;
-          applicants = [];
         }
       } else {
         scheduleData = interview;
       }
 
       viewData.value = scheduleData;
-
-      if (Array.isArray(applicants) && applicants.length > 0) {
-        viewApplicants.value = applicants.map((applicant, index) => ({
-          submission_id: applicant.submission_id || applicant.applicant_id || index,
-          applicant_name:
-            applicant.applicant_name ||
-            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
-            'Unknown Applicant',
-          position: applicant.position || 'N/A',
-          office: applicant.office || 'N/A',
-          contact_no: applicant.contact_no || applicant.phone || 'N/A',
-          itemNo: applicant.itemNo || null,
-          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
-          firstname: applicant.firstname || '',
-          lastname: applicant.lastname || '',
-          email: applicant.email,
-        }));
-      } else {
-        viewApplicants.value = [];
-      }
+      viewApplicants.value = Array.isArray(applicants) ? applicants.map(mapApplicant) : [];
     } catch (e) {
       console.error('Error loading interview details:', e);
       $q.notify({
@@ -2101,7 +2043,7 @@
     }
   };
 
-  // ─── Exam dialog methods ───────────────────────────────────────────────────────
+  // ─── Exam schedule dialog ─────────────────────────────────────────────────────
   const resetExamScheduleForm = () => {
     examScheduleForm.value = {
       batch_name: '',
@@ -2218,34 +2160,11 @@
           applicants = detail;
         }
 
-        examViewApplicants.value = applicants.map((applicant, index) => ({
-          submission_id: applicant.submission_id || applicant.applicant_id || index,
-          applicant_name:
-            applicant.applicant_name ||
-            `${applicant.firstname || ''} ${applicant.lastname || ''}`.trim() ||
-            'Unknown Applicant',
-          position: applicant.position || 'N/A',
-          office: applicant.office || 'N/A',
-          contact_no: applicant.contact_no || applicant.phone || 'N/A',
-          itemNo: applicant.itemNo || null,
-          ControlNo: applicant.ControlNo || applicant.control_no || 'N/A',
-          firstname: applicant.firstname || '',
-          lastname: applicant.lastname || '',
-          email: applicant.email,
-        }));
+        examViewApplicants.value = applicants.map(mapApplicant);
       } else {
-        if (exam.applicants && Array.isArray(exam.applicants)) {
-          examViewApplicants.value = exam.applicants.map((applicant, index) => ({
-            submission_id: index,
-            applicant_name: applicant.applicant_name || 'Unknown Applicant',
-            position: applicant.position || 'N/A',
-            office: applicant.office || 'N/A',
-            contact_no: applicant.contact_no || 'N/A',
-            itemNo: applicant.itemNo || null,
-          }));
-        } else {
-          examViewApplicants.value = [];
-        }
+        examViewApplicants.value = Array.isArray(exam.applicants)
+          ? exam.applicants.map(mapApplicant)
+          : [];
       }
     } catch (e) {
       console.error('Error loading exam details:', e);

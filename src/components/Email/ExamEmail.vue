@@ -198,9 +198,14 @@
     return str
       .toLowerCase()
       .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => {
+        // Find the first letter character and capitalize it,
+        // leaving any leading punctuation (like '(') untouched
+        return word.replace(/([a-z])/, (char) => char.toUpperCase());
+      })
       .join(' ');
   };
+
 
   // ── Helpers ──────────────────────────────────────────────
   const extractPosition = (applicant) => {
@@ -226,12 +231,24 @@
     return null;
   };
 
-  const extractAddress = (applicant) => {
-    if (!applicant) return '';
-    if (applicant.address) return applicant.address;
-    if (applicant.applicant_address) return applicant.applicant_address;
-    return '';
-  };
+const extractAddress = (applicant) => {
+  if (!applicant) return '';
+  if (applicant.address) return applicant.address;
+  if (applicant.applicant_address) return applicant.applicant_address;
+
+  // ✅ Handle flat address fields from the API response
+  if (applicant.street || applicant.barangay || applicant.city || applicant.province) {
+    return {
+      purok: applicant.purok || null,
+      street: applicant.street || null,
+      barangay: applicant.barangay || null,
+      city: applicant.city || null,
+      province: applicant.province || null,
+    };
+  }
+
+  return '';
+};
 
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
@@ -301,20 +318,20 @@
     return applicantName.value.toUpperCase();
   });
 
-  const formattedAddress = computed(() => {
-    const addr = extractAddress(props.applicant);
-    if (!addr) return '';
-    if (typeof addr === 'string') return addr;
-    return [
-      addr.purok ? ` ${addr.purok}` : '',
-      addr.street,
-      addr.barangay,
-      addr.city,
-      addr.province,
-    ]
-      .filter(Boolean)
-      .join(', ');
-  });
+const formattedAddress = computed(() => {
+  const addr = extractAddress(props.applicant);
+  if (!addr) return '';
+  if (typeof addr === 'string') return addr;
+  return [
+    addr.purok,   // ✅ removed the erroneous leading space: ` ${addr.purok}`
+    addr.street,
+    addr.barangay,
+    addr.city,
+    addr.province,
+  ]
+    .filter(Boolean)
+    .join(', ');
+});
 
   const formattedAddressProper = computed(() => {
     const address = formattedAddress.value;

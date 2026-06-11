@@ -195,7 +195,11 @@
     return str
       .toLowerCase()
       .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => {
+        // Find the first letter character and capitalize it,
+        // leaving any leading punctuation (like '(') untouched
+        return word.replace(/([a-z])/, (char) => char.toUpperCase());
+      })
       .join(' ');
   };
 

@@ -2,7 +2,7 @@
   <q-dialog v-model="isOpen" persistent>
     <q-card class="modal-card">
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Rating Form Report</div>
+        <div class="text-h6">Empty Rating Form Report</div>
         <q-space />
         <q-btn icon="close" flat round dense @click="closeModal" />
       </q-card-section>
@@ -66,9 +66,11 @@
 
   // ==================== DATA FROM PROP ====================
   const reportData = computed(() => props.ratingData || {});
+
+  // For empty form, use 'applicants' array instead of 'rating_scores'
   const applicants = computed(() => {
-    const scores = reportData.value?.rating_scores;
-    return Array.isArray(scores) ? scores : [];
+    const applicantsList = reportData.value?.applicants;
+    return Array.isArray(applicantsList) ? applicantsList : [];
   });
 
   const office = computed(() => reportData.value?.office || '');
@@ -151,23 +153,6 @@
   };
 
   // ==================== HELPERS ====================
-  const formatNumber = (value) => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return value ?? '';
-    return num % 1 === 0 ? String(Math.round(num)) : num.toFixed(2);
-  };
-
-  const toUpper = (value) => (value || '').toUpperCase();
-
-  const calculateQS = (applicant) => {
-    if (!applicant) return '-';
-    const edu = parseFloat(applicant.education) || 0;
-    const exp = parseFloat(applicant.experience) || 0;
-    const train = parseFloat(applicant.training) || 0;
-    const perf = parseFloat(applicant.performance) || 0;
-    if (edu === 0 && exp === 0 && train === 0 && perf === 0) return '-';
-    return formatNumber(edu + exp + train + perf);
-  };
 
   async function getImageBase64(url) {
     try {
@@ -408,7 +393,7 @@
         ...trailingColumns.map(() => ({})),
       ];
 
-      // ---- Data rows (empty if no applicants) ----
+      // ---- Data rows - display all applicants with empty scores ----
       let dataRows = [];
 
       if (applicants.value.length === 0) {
@@ -423,21 +408,22 @@
             border: [true, true, true, true],
           },
         ];
-        // Add empty cells for the remaining columns (colSpan handles it, but we need to add placeholders)
         for (let i = 2; i < totalColumns; i++) {
           emptyRow.push({});
         }
         dataRows = [emptyRow];
       } else {
-        dataRows = applicants.value.map((a, index) => {
+        // Display each applicant with empty scores (blank instead of dashes)
+        dataRows = applicants.value.map((applicant, index) => {
           const row = [
             { text: String(index + 1), alignment: 'center', border: [true, true, true, true] },
             {
-              text: toUpper(`${a.firstname ?? ''} ${a.lastname ?? ''}`.trim()),
+              text: `${applicant.firstname ?? ''} ${applicant.lastname ?? ''}`.trim().toUpperCase(),
               border: [true, true, true, true],
             },
           ];
 
+          // Empty scores for each criteria (blank)
           criteriaColumns.forEach((c, idx) => {
             if (c.isTwoColumn) {
               if (c.columnType === 'percentage') {
@@ -449,7 +435,7 @@
                   nextCol.key === c.key;
                 if (shouldSpan) {
                   row.push({
-                    text: formatNumber(a[c.key] ?? ''),
+                    text: '', // Changed from '-' to empty string
                     alignment: 'center',
                     colSpan: 2,
                     border: [true, true, true, true],
@@ -457,7 +443,7 @@
                   row.push({});
                 } else {
                   row.push({
-                    text: formatNumber(a[c.key] ?? ''),
+                    text: '', // Changed from '-' to empty string
                     alignment: 'center',
                     border: [true, true, true, true],
                   });
@@ -475,18 +461,18 @@
               }
             } else {
               row.push({
-                text: formatNumber(a[c.key] ?? ''),
+                text: '', // Changed from '-' to empty string
                 alignment: 'center',
                 border: [true, true, true, true],
               });
             }
           });
 
-          row.push({ text: calculateQS(a), alignment: 'center', border: [true, true, true, true] });
+          row.push({ text: '', alignment: 'center', border: [true, true, true, true] }); // QS Total - empty
 
-          trailingColumns.forEach((c) => {
+          trailingColumns.forEach(() => {
             row.push({
-              text: formatNumber(a[c.key] ?? ''),
+              text: '', // Changed from '-' to empty string
               alignment: 'center',
               border: [true, true, true, true],
             });
@@ -495,7 +481,6 @@
           return row;
         });
       }
-
       const rows = [headerRow1, headerRow2, headerRow3, ...dataRows];
 
       // ---- Column widths ----
@@ -595,7 +580,7 @@
         }),
         content: [
           {
-            text: 'INDIVIDUAL RATING REPORT',
+            text: 'INDIVIDUAL RATING REPORT (EMPTY FORM)',
             fontSize: 12,
             bold: true,
             margin: [0, -20, 0, 10],
