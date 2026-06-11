@@ -219,7 +219,7 @@
             key === 'education'
               ? '15%'
               : key === 'experience'
-                ? '25%'
+                ? '20%'
                 : key === 'training'
                   ? '8%'
                   : '8%',
@@ -232,14 +232,14 @@
         if (!Array.isArray(criteria[key]) || criteria[key].length === 0) return;
         let weight = criteria[key][0]?.weight || '';
         if (key === 'behavioral' && hasBehavioral && hasExam) weight = '10';
-        if (key === 'exams' && hasBehavioral && hasExam) weight = '7';
+        if (key === 'exams' && hasBehavioral && hasExam) weight = '10';
         trailingColumns.push({
           key: key === 'exams' ? 'exam' : 'behavioral',
           label: key === 'behavioral' ? 'BEI' : 'Exam',
           weight,
           items: criteria[key],
           isTwoColumn: false,
-          customWidth: '8%',
+          customWidth: '10%',
         });
       });
 
@@ -416,10 +416,18 @@
         // Display each applicant with empty scores (blank instead of dashes)
         dataRows = applicants.value.map((applicant, index) => {
           const row = [
-            { text: String(index + 1), alignment: 'center', border: [true, true, true, true] },
+            {
+              text: String(index + 1),
+              alignment: 'center',
+              fontSize: 8,
+              margin: [4, 8, 4, 8],
+              border: [true, true, true, true],
+            },
             {
               text: `${applicant.firstname ?? ''} ${applicant.lastname ?? ''}`.trim().toUpperCase(),
+              fontSize: 9,
               border: [true, true, true, true],
+              margin: [4, 8, 4, 8],
             },
           ];
 
@@ -506,7 +514,7 @@
           colWidths.push(c.customWidth || '8%');
         }
       });
-      colWidths.push('6%');
+      colWidths.push('9%');
       trailingColumns.forEach((c) => colWidths.push(c.customWidth || '8%'));
 
       // ---- Doc definition ----
@@ -630,7 +638,10 @@
             },
             margin: [0, 0, 0, 8],
           },
-          { table: { headerRows: 3, widths: colWidths, body: rows }, layout: customLayout },
+          {
+            table: { headerRows: 3, widths: colWidths, body: rows, dontBreakRows: true },
+            layout: customLayout,
+          },
           {
             unbreakable: true,
             margin: [0, 20, 0, 0],
