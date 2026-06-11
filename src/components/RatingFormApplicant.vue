@@ -476,14 +476,6 @@
 
         <div class="row justify-end q-gutter-sm">
           <q-btn color="primary" label="Save as Draft" icon-right="save" @click="saveDraft" dense />
-          <q-btn
-            v-if="allApplicantsRated"
-            color="green"
-            label="Submit Ratings"
-            icon-right="check"
-            @click="submitRatings"
-            dense
-          />
         </div>
       </q-card-section>
     </q-card>
@@ -523,7 +515,7 @@
   });
 
   // Emits
-  const emit = defineEmits(['close', 'update:modelValue', 'submit-ratings', 'save-draft']);
+  const emit = defineEmits(['close', 'update:modelValue', 'save-draft']);
 
   // Computed
   const isOpen = computed({
@@ -1129,62 +1121,6 @@
       position: 'top',
       timeout: 2000,
     });
-  };
-
-  const submitRatings = () => {
-    if (!allApplicantsRated.value) {
-      $q.notify({
-        color: 'warning',
-        message:
-          'Please rate all required fields (Education, Experience, Training, Performance) before submitting. BEI can be left empty.',
-        icon: 'warning',
-        position: 'top',
-        timeout: 3000,
-      });
-      return;
-    }
-
-    const formattedData = applicantsData.value.map((applicant) => {
-      const qsScore = parseFloat(calculateQS(applicant));
-      const totalScore = parseFloat(calculateTotal(applicant));
-      const examScore = getExamScore(applicant);
-      const examPercentage = getExamPercentage(applicant);
-
-      return {
-        id: applicant.id,
-        nPersonalInfo_id: applicant.nPersonalInfo_id,
-        ControlNo: applicant.ControlNo,
-        education_score: Number(applicant.educationScore),
-        experience_score: Number(applicant.experienceScore),
-        training_score: Number(applicant.trainingScore),
-        performance_score: Number(applicant.performanceScore),
-        behavioral_score: hasBehavioral.value
-          ? isEmpty(applicant.behavioralScore)
-            ? '-'
-            : Number(applicant.behavioralScore)
-          : '-',
-        exam_score: examScore === null ? '-' : Number(examScore),
-        exam_percentage: examPercentage === null ? '-' : Number(formatNumber(examPercentage)),
-        total_qs: Number(qsScore),
-        grand_total: Number(totalScore),
-        ranking: applicant.ranking || null,
-      };
-    });
-
-    emit('submit-ratings', {
-      positionId: props.position.id,
-      applicants: formattedData,
-    });
-
-    $q.notify({
-      color: 'positive',
-      message: 'Ratings submitted successfully!',
-      icon: 'check_circle',
-      position: 'top',
-      timeout: 2000,
-    });
-
-    closeForm();
   };
 
   const closeForm = () => {
