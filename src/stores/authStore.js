@@ -269,7 +269,11 @@ export const useAuthStore = defineStore('auth', {
 
         // Include user_role inside permissions so backend stores it in rsp_control
         const payload = {
-          ...userData,
+          name: userData.name,
+          username: userData.username,
+          position: userData.position,
+          active: userData.active,
+          password: userData.password || undefined,
           permissions: {
             ...userData.permissions,
             user_role: userData.user_role || '',
@@ -364,6 +368,7 @@ export const useAuthStore = defineStore('auth', {
               viewReport: userData.permissions?.viewReport || '0',
               userManagement: userData.permissions?.userManagement || '0',
               viewActivityLogs: userData.permissions?.viewActivityLogs || '0',
+              reportRaterManagementAccess: userData.permissions?.reportRaterManagementAccess || '0',
             },
           }),
         };

@@ -248,7 +248,6 @@
         });
       });
 
-      // ---- Build afterQSTableColumns (BEI/Exam after QS Total with two-column format) ----
       const afterQSTableColumns = [];
       afterQSCriteria.forEach((criterion) => {
         // Percentage column

@@ -531,7 +531,7 @@
                     </div>
                   </div>
 
-                  <!-- Rater Management (Raters & Criteria only) -->
+                  <!-- Rater Management -->
                   <div class="perm-group">
                     <div class="perm-group-title">
                       <q-icon name="assignment_ind" size="14px" class="q-mr-xs" />
@@ -576,6 +576,17 @@
                         dense
                         color="primary"
                         @update:model-value="() => onChildToggle('modifyCriteria')"
+                      />
+                    </div>
+                    <div class="perm-row">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.reportRaterManagementAccess"
+                        label="Rater Management Report"
+                        dense
+                        color="primary"
+                        @update:model-value="() => onChildToggle('reportRaterManagementAccess')"
                       />
                     </div>
                   </div>
@@ -681,7 +692,6 @@
   import ButtonDelete from 'components/ButtonDelete.vue';
 
   // ── All permission keys ─────────────────────────────────────────────────────
-  // viewReport is standalone — no longer a child of viewRater
   const ALL_PERMISSION_KEYS = [
     'viewDashboardstat',
     'viewPlantillaAccess',
@@ -703,13 +713,13 @@
     'modifyRater',
     'viewCriteria',
     'modifyCriteria',
-    'viewReport', // standalone — not under viewRater
+    'reportRaterManagementAccess', // NEW: Rater Management Report permission
+    'viewReport',
     'userManagement',
     'viewActivityLogs',
   ];
 
   // ── Child permissions that require their parent "View" permission ───────────
-  // viewReport is intentionally OMITTED — it is now standalone with no parent
   const CHILD_PERMISSIONS_MAP = {
     modifyPlantillaAccess: 'viewPlantillaAccess',
     requestPublication: 'viewPlantillaAccess',
@@ -723,7 +733,7 @@
     modifyRater: 'viewRater',
     viewCriteria: 'viewRater',
     modifyCriteria: 'viewRater',
-    // viewReport — removed; it no longer belongs to viewRater
+    reportRaterManagementAccess: 'viewRater', // NEW: Requires viewRater to be enabled
   };
 
   // ── Get all child permissions for a given view permission ───────────────────
@@ -820,7 +830,6 @@
 
       // ── Handle View toggle ───────────────────────────────────────────────────
       function onViewToggle(viewKey) {
-        // If tried to turn OFF but children still ON, revert to ON
         if (form.value.permissions[viewKey] === '0' && !canToggleView(viewKey)) {
           form.value.permissions[viewKey] = '1';
         }
@@ -930,7 +939,8 @@
           modifyRater: p.modifyRater || '0',
           viewCriteria: p.viewCriteria || '0',
           modifyCriteria: p.modifyCriteria || '0',
-          viewReport: p.viewReport || '0', // standalone
+          reportRaterManagementAccess: p.reportRaterManagementAccess || '0', // NEW
+          viewReport: p.viewReport || '0',
           userManagement: p.userManagement || '0',
           viewActivityLogs: p.viewActivityLogs || '0',
         };

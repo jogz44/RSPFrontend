@@ -11,7 +11,7 @@
       style="
         width: 100vw;
         max-width: 1500px;
-        height: 90vh;
+        height: 100dvh;
         display: flex;
         flex-direction: column;
         border-radius: 0;
@@ -20,21 +20,21 @@
     >
       <!-- Header -->
       <q-card-section
-        class="row items-center q-pb-none q-pt-md q-px-lg bg-white"
+        class="row items-center q-pb-none q-pt-sm q-px-md bg-white"
         style="flex-shrink: 0"
       >
-        <q-icon name="assignment" color="primary" size="28px" class="q-mr-sm" />
+        <q-icon name="assignment" color="primary" size="24px" class="q-mr-sm gt-xs" />
         <div>
-          <div class="text-h6 text-bold text-grey-9">Mark Applications</div>
+          <div class="text-subtitle1 text-bold text-grey-9">Mark Applications</div>
           <div class="text-caption text-grey-6">Tagging of Applications</div>
         </div>
         <q-space />
         <q-btn flat round icon="close" color="grey-7" @click="$emit('close')" />
       </q-card-section>
 
-      <q-separator class="q-mt-md" style="flex-shrink: 0" />
+      <q-separator class="q-mt-sm" style="flex-shrink: 0" />
 
-      <!-- Tabs — full width justified -->
+      <!-- Tabs -->
       <q-tabs
         v-model="activeTab"
         dense
@@ -78,150 +78,161 @@
             overflow: hidden;
           "
         >
-          <!-- Toolbar -->
-          <div
-            class="row items-center q-pa-md bg-grey-1"
-            style="flex-shrink: 0; flex-wrap: wrap; gap: 8px"
-          >
-            <q-input
-              v-model="searchText"
-              dense
-              outlined
-              placeholder="Search by name or position..."
-              style="width: 250px"
-              clearable
-              bg-color="white"
-              :disable="loading"
-            >
-              <template #prepend>
-                <q-icon name="search" size="18px" color="grey-6" />
-              </template>
-            </q-input>
+          <!-- Toolbar — stacks on mobile -->
+          <div class="q-pa-sm bg-grey-1" style="flex-shrink: 0">
+            <div class="row items-center q-gutter-xs q-mb-xs">
+              <!-- Search -->
+              <q-input
+                v-model="searchText"
+                dense
+                outlined
+                placeholder="Search name or position..."
+                class="col-12 col-sm"
+                clearable
+                bg-color="white"
+                :disable="loading"
+              >
+                <template #prepend>
+                  <q-icon name="search" size="16px" color="grey-6" />
+                </template>
+              </q-input>
 
-            <q-select
-              v-model="selectedOfficeFilter"
-              :options="filteredOfficeOptions"
-              dense
-              outlined
-              clearable
-              label="Filter by Office"
-              style="min-width: 260px; flex: 1; max-width: 500px"
-              bg-color="white"
-              use-input
-              fill-input
-              hide-selected
-              input-debounce="200"
-              :disable="loading"
-              @filter="filterOfficeOptions"
-            >
-              <template #prepend>
-                <q-icon name="filter_list" size="18px" color="grey-6" />
-              </template>
-              <template #no-option>
-                <q-item dense>
-                  <q-item-section class="text-grey text-caption">No offices found</q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              <!-- Office filter -->
+              <q-select
+                v-model="selectedOfficeFilter"
+                :options="filteredOfficeOptions"
+                dense
+                outlined
+                clearable
+                label="Office"
+                class="col-12 col-sm"
+                style="min-width: 0"
+                bg-color="white"
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="200"
+                :disable="loading"
+                @filter="filterOfficeOptions"
+              >
+                <template #prepend>
+                  <q-icon name="filter_list" size="16px" color="grey-6" />
+                </template>
+                <template #no-option>
+                  <q-item dense>
+                    <q-item-section class="text-grey text-caption">No offices found</q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+            </div>
 
-            <!-- Applicant Status Filter -->
-            <q-select
-              v-model="applicantStatusFilter"
-              :options="applicantStatusOptions"
-              dense
-              outlined
-              label="Applicant Status"
-              style="width: 200px"
-              bg-color="white"
-              emit-value
-              map-options
-              :disable="loading"
-            >
-              <template #prepend>
-                <q-icon name="person_outline" size="18px" color="grey-6" />
-              </template>
-            </q-select>
+            <div class="row items-center q-gutter-xs">
+              <!-- Status filter -->
+              <q-select
+                v-model="applicantStatusFilter"
+                :options="applicantStatusOptions"
+                dense
+                outlined
+                label="Status"
+                class="col-12 col-sm"
+                style="min-width: 0"
+                bg-color="white"
+                emit-value
+                map-options
+                :disable="loading"
+              >
+                <template #prepend>
+                  <q-icon name="person_outline" size="16px" color="grey-6" />
+                </template>
+              </q-select>
 
-            <!-- Tag Color Filter -->
-            <q-select
-              v-model="tagColorFilter"
-              :options="tagColorOptions"
-              dense
-              outlined
-              clearable
-              label="Tag Color"
-              style="width: 180px"
-              bg-color="white"
-              emit-value
-              map-options
-              :disable="loading"
-            >
-              <template #prepend>
-                <q-icon name="color_lens" size="18px" color="grey-6" />
-              </template>
-              <template #option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section avatar>
-                    <div
-                      v-if="scope.opt.value !== 'none'"
-                      class="color-circle"
-                      :style="{ backgroundColor: scope.opt.value }"
-                    ></div>
-                    <div v-else class="color-circle color-circle-empty"></div>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>{{ scope.opt.label }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template #selected>
-                <div v-if="tagColorFilter" class="row items-center" style="gap: 8px">
+              <!-- Tag Color filter -->
+              <q-select
+                v-model="tagColorFilter"
+                :options="tagColorOptions"
+                dense
+                outlined
+                clearable
+                label="Tag Color"
+                class="col-12 col-sm"
+                style="min-width: 0"
+                bg-color="white"
+                emit-value
+                map-options
+                :disable="loading"
+              >
+                <template #prepend>
+                  <q-icon name="color_lens" size="16px" color="grey-6" />
+                </template>
+                <template #option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar style="min-width: 28px">
+                      <div
+                        v-if="scope.opt.value && scope.opt.value !== 'none'"
+                        class="color-circle"
+                        :style="{ backgroundColor: scope.opt.value }"
+                      ></div>
+                      <div v-else class="color-circle color-circle-empty"></div>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <!-- FIX: selected slot now uses display:flex with nowrap to prevent label overlay -->
+                <template #selected-item>
                   <div
-                    v-if="tagColorFilter !== 'none'"
-                    class="color-circle"
-                    :style="{ backgroundColor: tagColorFilter }"
-                  ></div>
-                  <div v-else class="color-circle color-circle-empty"></div>
-                  <span>{{ getTagColorLabel(tagColorFilter) }}</span>
-                </div>
-                <span v-else>None</span>
-              </template>
-            </q-select>
+                    v-if="tagColorFilter"
+                    class="row no-wrap items-center"
+                    style="gap: 6px; overflow: hidden"
+                  >
+                    <div
+                      v-if="tagColorFilter !== 'none'"
+                      class="color-circle flex-shrink-0"
+                      :style="{ backgroundColor: tagColorFilter }"
+                    ></div>
+                    <div v-else class="color-circle color-circle-empty flex-shrink-0"></div>
+                    <span class="ellipsis">{{ getTagColorLabel(tagColorFilter) }}</span>
+                  </div>
+                </template>
+              </q-select>
 
-            <q-space />
+              <q-space />
 
-            <!-- Selected count chip -->
-            <q-chip
-              v-if="selectedApplicants.length > 0"
-              dense
-              color="primary"
-              text-color="white"
-              icon="check_circle"
-            >
-              {{ selectedApplicants.length }} selected
-            </q-chip>
+              <!-- Selected count chip -->
+              <q-chip
+                v-if="selectedApplicants.length > 0"
+                dense
+                color="primary"
+                text-color="white"
+                icon="check_circle"
+                class="q-ml-xs"
+              >
+                {{ selectedApplicants.length }} selected
+              </q-chip>
+            </div>
           </div>
 
-          <!-- Table -->
+          <!-- Table (desktop) / Cards (mobile) -->
           <div style="flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden">
-            <!-- Skeleton rows while fetching data -->
-            <div v-if="loading" class="column q-pa-md" style="gap: 10px">
+            <!-- Skeleton -->
+            <div v-if="loading" class="column q-pa-sm" style="gap: 8px">
               <div
-                v-for="n in 12"
+                v-for="n in 10"
                 :key="n"
                 class="row items-center q-px-sm"
                 style="gap: 10px; height: 32px"
               >
                 <q-skeleton type="QCheckbox" size="16px" style="flex-shrink: 0" />
-                <q-skeleton type="text" width="20%" height="12px" style="border-radius: 4px" />
+                <q-skeleton type="text" width="22%" height="12px" style="border-radius: 4px" />
                 <q-skeleton type="text" width="25%" height="12px" style="border-radius: 4px" />
-                <q-skeleton type="text" width="15%" height="12px" style="border-radius: 4px" />
+                <q-skeleton type="text" width="18%" height="12px" style="border-radius: 4px" />
                 <q-skeleton type="text" width="8%" height="12px" style="border-radius: 4px" />
                 <q-skeleton type="text" width="6%" height="12px" style="border-radius: 4px" />
-                <q-skeleton type="text" width="8%" height="12px" style="border-radius: 4px" />
               </div>
             </div>
 
+            <!-- Desktop table -->
             <q-table
               v-else
               flat
@@ -234,7 +245,7 @@
               :rows-per-page-options="[0]"
               hide-bottom
               wrap-cells
-              class="applicants-table"
+              class="applicants-table gt-xs"
             >
               <template #body-cell-name="props">
                 <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
@@ -260,6 +271,55 @@
                 </div>
               </template>
             </q-table>
+
+            <!-- Mobile card list -->
+            <div class="lt-sm q-pa-xs column" style="gap: 6px">
+              <div
+                v-if="!loading && filteredRows.length === 0"
+                class="full-width column flex-center q-pa-xl text-grey-6"
+              >
+                <q-icon name="search_off" size="3rem" class="q-mb-sm" />
+                <div class="text-subtitle2">No applicants found</div>
+              </div>
+
+              <q-card
+                v-for="row in filteredRows"
+                :key="row.submission_id"
+                flat
+                bordered
+                class="applicant-card"
+                :class="{ 'applicant-card--selected': isSelected(row) }"
+                @click="toggleSelection(row)"
+              >
+                <q-card-section class="q-pa-sm row no-wrap items-start" style="gap: 8px">
+                  <q-checkbox
+                    :model-value="isSelected(row)"
+                    color="primary"
+                    dense
+                    style="flex-shrink: 0; margin-top: 2px"
+                    @update:model-value="toggleSelection(row)"
+                    @click.stop
+                  />
+                  <div style="flex: 1; min-width: 0">
+                    <div class="text-body2 text-bold text-grey-9 ellipsis">
+                      {{ row.firstname }} {{ row.lastname }}
+                    </div>
+                    <div class="text-caption text-grey-7 ellipsis">{{ row.Position }}</div>
+                    <div class="text-caption text-grey-6 ellipsis">{{ row.Office }}</div>
+                  </div>
+                  <div class="column items-end" style="flex-shrink: 0; gap: 4px">
+                    <q-badge outline color="grey-6" :label="`SG ${row.SalaryGrade}`" />
+                    <div
+                      v-if="row.tag_color"
+                      class="color-circle"
+                      :style="{ backgroundColor: row.tag_color }"
+                      :title="getTagColorLabel(row.tag_color)"
+                    ></div>
+                    <span v-else class="text-caption text-grey-5">—</span>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
           </div>
         </q-tab-panel>
 
@@ -275,103 +335,100 @@
             overflow: hidden;
           "
         >
-          <!-- Tagging overlay -->
           <q-inner-loading
             :showing="updatingTags"
             color="primary"
             label="Updating tags..."
             label-class="text-primary text-subtitle2"
-            label-style="font-size: 1em"
           />
 
           <!-- Tag Toolbar -->
-          <div class="row items-center q-px-md q-py-sm bg-grey-1" style="flex-shrink: 0; gap: 8px">
-            <q-icon name="color_lens" color="primary" size="20px" />
-            <div class="text-subtitle2 text-grey-8">
+          <div
+            class="row items-center q-px-sm q-py-xs bg-grey-1"
+            style="flex-shrink: 0; gap: 6px; flex-wrap: wrap"
+          >
+            <q-icon name="color_lens" color="primary" size="18px" />
+            <div class="text-caption text-grey-8">
               Tag
               <span class="text-primary text-bold">{{ selectedApplicants.length }}</span>
-              selected applicant(s)
+              applicant(s)
             </div>
             <q-space />
             <q-btn
               flat
               dense
-              size="sm"
+              size="xs"
               color="grey-7"
               icon="arrow_back"
-              label="Back to Selection"
+              label="Back"
               @click="activeTab = 'select'"
             />
           </div>
 
-          <!-- Tag Color Assignment Card -->
-          <div class="q-px-md q-py-sm bg-grey-1" style="flex-shrink: 0">
-            <div class="row items-center q-gutter-md">
-              <div class="text-subtitle2 text-grey-8">Apply tag color to all selected:</div>
+          <!-- Bulk color actions -->
+          <div class="q-px-sm q-py-xs bg-grey-1" style="flex-shrink: 0">
+            <div class="row items-center" style="gap: 6px; flex-wrap: wrap">
+              <span class="text-caption text-grey-7">Apply to all:</span>
               <q-btn
                 v-for="color in availableColors"
                 :key="color.value"
                 :style="{ backgroundColor: color.value, color: getContrastColor(color.value) }"
                 :label="color.label"
-                size="sm"
+                size="xs"
                 dense
                 unelevated
                 :disable="selectedApplicants.length === 0 || updatingTags"
                 @click="applyTagToAll(color.value)"
               >
-                <q-tooltip>Apply {{ color.label }} tag to all selected applicants</q-tooltip>
+                <q-tooltip>Apply {{ color.label }} to all selected</q-tooltip>
               </q-btn>
               <q-btn
                 color="grey"
-                label="Clear All Tags"
-                size="sm"
+                label="Clear All"
+                size="xs"
                 dense
                 flat
                 :disable="selectedApplicants.length === 0 || !hasAnyTag || updatingTags"
                 @click="clearAllTags"
-              >
-                <q-tooltip>Remove tags from all selected applicants</q-tooltip>
-              </q-btn>
+              />
+            </div>
+          </div>
+
+          <!-- Summary Cards — 2-col grid on mobile, 4-col on larger -->
+          <div class="q-px-sm q-pb-sm q-pt-xs bg-grey-1" style="flex-shrink: 0">
+            <div class="row q-gutter-xs">
+              <q-card flat bordered class="summary-card col">
+                <q-card-section class="q-pa-xs text-center">
+                  <div class="text-h6 text-primary text-bold">{{ selectedApplicants.length }}</div>
+                  <div class="text-caption text-grey-6">Total</div>
+                </q-card-section>
+              </q-card>
+              <q-card flat bordered class="summary-card col">
+                <q-card-section class="q-pa-xs text-center">
+                  <div class="text-h6 text-positive text-bold">{{ internalCount }}</div>
+                  <div class="text-caption text-grey-6">Internal</div>
+                </q-card-section>
+              </q-card>
+              <q-card flat bordered class="summary-card col">
+                <q-card-section class="q-pa-xs text-center">
+                  <div class="text-h6 text-info text-bold">{{ externalCount }}</div>
+                  <div class="text-caption text-grey-6">External</div>
+                </q-card-section>
+              </q-card>
+              <q-card flat bordered class="summary-card col">
+                <q-card-section class="q-pa-xs text-center">
+                  <div class="text-h6 text-orange text-bold">{{ uniqueOffices }}</div>
+                  <div class="text-caption text-grey-6">Offices</div>
+                </q-card-section>
+              </q-card>
             </div>
           </div>
 
           <q-separator style="flex-shrink: 0" />
 
-          <!-- Summary Cards -->
-          <div
-            class="row no-wrap q-px-md q-pb-md q-pt-sm q-gutter-sm bg-grey-1"
-            style="flex-shrink: 0"
-          >
-            <q-card flat bordered class="summary-card col">
-              <q-card-section class="q-pa-sm text-center">
-                <div class="text-h5 text-primary text-bold">{{ selectedApplicants.length }}</div>
-                <div class="text-caption text-grey-6">Total Selected</div>
-              </q-card-section>
-            </q-card>
-            <q-card flat bordered class="summary-card col">
-              <q-card-section class="q-pa-sm text-center">
-                <div class="text-h5 text-positive text-bold">{{ internalCount }}</div>
-                <div class="text-caption text-grey-6">Internal</div>
-              </q-card-section>
-            </q-card>
-            <q-card flat bordered class="summary-card col">
-              <q-card-section class="q-pa-sm text-center">
-                <div class="text-h5 text-info text-bold">{{ externalCount }}</div>
-                <div class="text-caption text-grey-6">External</div>
-              </q-card-section>
-            </q-card>
-            <q-card flat bordered class="summary-card col">
-              <q-card-section class="q-pa-sm text-center">
-                <div class="text-h5 text-orange text-bold">{{ uniqueOffices }}</div>
-                <div class="text-caption text-grey-6">Offices</div>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <q-separator style="flex-shrink: 0" />
-
-          <!-- Tag Table -->
+          <!-- Tag Table (desktop) / Tag Cards (mobile) -->
           <div style="flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden">
+            <!-- Desktop table -->
             <q-table
               flat
               dense
@@ -381,7 +438,7 @@
               :rows-per-page-options="[0]"
               hide-bottom
               wrap-cells
-              class="applicants-table"
+              class="applicants-table gt-xs"
             >
               <template #body-cell-name="props">
                 <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
@@ -397,23 +454,25 @@
                     borderless
                     emit-value
                     map-options
-                    style="min-width: 100px"
+                    style="min-width: 110px"
                     :loading="updatingTagId === props.row.submission_id"
                     @update:model-value="(val) => updateTagColor(props.row, val)"
                   >
-                    <template #selected>
-                      <div class="row items-center" style="gap: 8px">
+                    <!-- FIX: selected-item slot prevents float label overlay -->
+                    <template #selected-item>
+                      <div class="row no-wrap items-center" style="gap: 6px">
                         <div
                           v-if="props.row.tag_color"
-                          class="color-circle"
+                          class="color-circle flex-shrink-0"
                           :style="{ backgroundColor: props.row.tag_color }"
                         ></div>
+                        <div v-else class="color-circle color-circle-empty flex-shrink-0"></div>
                         <span>{{ getTagColorLabel(props.row.tag_color) || 'None' }}</span>
                       </div>
                     </template>
                     <template #option="scope">
                       <q-item v-bind="scope.itemProps">
-                        <q-item-section avatar>
+                        <q-item-section avatar style="min-width: 28px">
                           <div
                             v-if="scope.opt.value"
                             class="color-circle"
@@ -459,14 +518,121 @@
                 </div>
               </template>
             </q-table>
+
+            <!-- Mobile tag cards -->
+            <div class="lt-sm q-pa-xs column" style="gap: 6px">
+              <div
+                v-if="selectedApplicants.length === 0"
+                class="full-width column flex-center q-pa-xl text-grey-6"
+              >
+                <q-icon name="inbox" size="3rem" class="q-mb-sm" />
+                <div class="text-subtitle2">No applicants selected</div>
+                <q-btn
+                  flat
+                  color="primary"
+                  label="Go select applicants"
+                  @click="activeTab = 'select'"
+                />
+              </div>
+
+              <q-card
+                v-for="row in selectedApplicants"
+                :key="row.submission_id"
+                flat
+                bordered
+                class="applicant-card"
+              >
+                <q-card-section class="q-pa-sm">
+                  <div class="row no-wrap items-start" style="gap: 8px">
+                    <div style="flex: 1; min-width: 0">
+                      <div class="text-body2 text-bold text-grey-9 ellipsis">
+                        {{ row.firstname }} {{ row.lastname }}
+                      </div>
+                      <div class="text-caption text-grey-7 ellipsis">{{ row.Position }}</div>
+                      <div class="text-caption text-grey-6 ellipsis">{{ row.Office }}</div>
+                    </div>
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="remove_circle_outline"
+                      color="negative"
+                      size="sm"
+                      @click="removeFromSelection(row)"
+                    />
+                  </div>
+                  <!-- Inline tag select for mobile -->
+                  <div class="row items-center q-mt-xs" style="gap: 6px">
+                    <span class="text-caption text-grey-7">Tag:</span>
+                    <q-select
+                      v-model="row.tag_color"
+                      :options="tagSelectOptions"
+                      dense
+                      outlined
+                      emit-value
+                      map-options
+                      style="min-width: 130px"
+                      :loading="updatingTagId === row.submission_id"
+                      @update:model-value="(val) => updateTagColor(row, val)"
+                    >
+                      <template #selected-item>
+                        <div class="row no-wrap items-center" style="gap: 6px">
+                          <div
+                            v-if="row.tag_color"
+                            class="color-circle flex-shrink-0"
+                            :style="{ backgroundColor: row.tag_color }"
+                          ></div>
+                          <div v-else class="color-circle color-circle-empty flex-shrink-0"></div>
+                          <span class="text-caption">
+                            {{ getTagColorLabel(row.tag_color) || 'None' }}
+                          </span>
+                        </div>
+                      </template>
+                      <template #option="scope">
+                        <q-item v-bind="scope.itemProps">
+                          <q-item-section avatar style="min-width: 28px">
+                            <div
+                              v-if="scope.opt.value"
+                              class="color-circle"
+                              :style="{ backgroundColor: scope.opt.value }"
+                            ></div>
+                            <div v-else class="color-circle color-circle-empty"></div>
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>{{ scope.opt.label }}</q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-select>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
           </div>
         </q-tab-panel>
       </q-tab-panels>
 
       <!-- Footer -->
       <q-separator style="flex-shrink: 0" />
-      <q-card-actions align="right" class="q-pa-md bg-white" style="flex-shrink: 0">
-        <q-btn flat label="Close" color="grey-7" @click="$emit('close')" class="q-mr-sm" />
+      <q-card-actions class="q-pa-sm bg-white row no-wrap items-center" style="flex-shrink: 0">
+        <!-- Left: Generate Report (only when green or yellow tag filter is active) -->
+        <q-btn
+          v-if="tagColorFilter === 'green' || tagColorFilter === 'yellow'"
+          unelevated
+          icon="description"
+          label="Generate Report"
+          size="sm"
+          :color="tagColorFilter === 'green' ? 'positive' : 'warning'"
+          :text-color="tagColorFilter === 'yellow' ? 'black' : undefined"
+          @click="showReport = true"
+        >
+          <q-tooltip>Generate {{ getTagColorLabel(tagColorFilter) }} tag report</q-tooltip>
+        </q-btn>
+
+        <q-space />
+
+        <!-- Right: Close / Tag Selected -->
+        <q-btn flat label="Close" color="grey-7" @click="$emit('close')" class="q-mr-xs" />
         <q-btn
           v-if="activeTab === 'select'"
           unelevated
@@ -479,12 +645,22 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+
+  <!-- Dynamic Report Dialog (GreenReport / YellowReport) -->
+  <component
+    :is="reportComponent"
+    v-if="showReport && reportComponent"
+    :date="props.date"
+    @close="showReport = false"
+  />
 </template>
 
 <script setup>
   import { ref, computed, onMounted, watch } from 'vue';
   import { useMarkingStore } from 'stores/markingStore';
   import { useQuasar } from 'quasar';
+  import GreenReport from 'components/Reports/GreenReport.vue';
+  import YellowReport from 'components/Reports/YellowReport.vue';
 
   const $q = useQuasar();
   defineEmits(['close']);
@@ -506,6 +682,14 @@
   const updatingTagId = ref(null);
   const allRows = ref([]);
   const filteredOfficeOptions = ref([]);
+  const showReport = ref(false);
+
+  // Resolves which report component to render based on the active tag color filter
+  const reportComponent = computed(() => {
+    if (tagColorFilter.value === 'green') return GreenReport;
+    if (tagColorFilter.value === 'yellow') return YellowReport;
+    return null;
+  });
 
   const markingStore = useMarkingStore();
 
@@ -516,34 +700,26 @@
     { label: 'External', value: 'EXTERNAL' },
   ];
 
-  // Available colors for tagging
   const availableColors = [
     { label: 'Green', value: 'green' },
     { label: 'Yellow', value: 'yellow' },
   ];
 
-  // Tag select options (including None)
   const tagSelectOptions = computed(() => [{ label: 'None', value: null }, ...availableColors]);
 
-  // Tag Color Filter options
   const tagColorFilter = ref(null);
   const tagColorOptions = computed(() => {
     const colors = [{ label: 'None', value: 'none' }];
     const existingColors = new Set();
     allRows.value.forEach((row) => {
-      if (row.tag_color) {
-        existingColors.add(row.tag_color);
-      }
+      if (row.tag_color) existingColors.add(row.tag_color);
     });
     availableColors.forEach((color) => {
-      if (existingColors.has(color.value)) {
-        colors.push({ label: color.label, value: color.value });
-      }
+      if (existingColors.has(color.value)) colors.push({ label: color.label, value: color.value });
     });
     return colors;
   });
 
-  // Helper function to get contrast text color
   const getContrastColor = (hexColor) => {
     const darkColors = ['red', 'blue', 'purple', 'green'];
     return darkColors.includes(hexColor) ? 'white' : 'black';
@@ -555,23 +731,30 @@
     return color ? color.label : value;
   };
 
-  // Check if any selected applicant has a tag
-  const hasAnyTag = computed(() => {
-    return selectedApplicants.value.some((app) => app.tag_color);
-  });
+  const hasAnyTag = computed(() => selectedApplicants.value.some((app) => app.tag_color));
 
-  // Apply tag to all selected applicants
+  // Mobile selection helpers
+  const isSelected = (row) =>
+    selectedApplicants.value.some((r) => r.submission_id === row.submission_id);
+
+  const toggleSelection = (row) => {
+    if (isSelected(row)) {
+      selectedApplicants.value = selectedApplicants.value.filter(
+        (r) => r.submission_id !== row.submission_id,
+      );
+    } else {
+      selectedApplicants.value = [...selectedApplicants.value, row];
+    }
+  };
+
   const applyTagToAll = async (color) => {
     updatingTags.value = true;
-
     try {
       const submissionIds = selectedApplicants.value.map((app) => app.submission_id);
       await markingStore.updateTagColor(submissionIds, color);
-
       selectedApplicants.value.forEach((app) => {
         app.tag_color = color;
       });
-
       $q.notify({
         type: 'positive',
         message: `Applied ${getTagColorLabel(color)} tag to ${submissionIds.length} applicant(s)`,
@@ -590,18 +773,14 @@
     }
   };
 
-  // Clear all tags from selected applicants
   const clearAllTags = async () => {
     updatingTags.value = true;
-
     try {
       const submissionIds = selectedApplicants.value.map((app) => app.submission_id);
       await markingStore.updateTagColor(submissionIds, null);
-
       selectedApplicants.value.forEach((app) => {
         app.tag_color = null;
       });
-
       $q.notify({
         type: 'info',
         message: `Cleared tags from ${submissionIds.length} applicant(s)`,
@@ -620,11 +799,9 @@
     }
   };
 
-  // Update individual tag color
   const updateTagColor = async (row, newColor) => {
     updatingTagId.value = row.submission_id;
     const oldColor = row.tag_color;
-
     try {
       await markingStore.updateTagColor([row.submission_id], newColor);
       row.tag_color = newColor;
@@ -647,7 +824,6 @@
     }
   };
 
-  // Table columns for selection tab
   const columns = [
     {
       name: 'select',
@@ -655,7 +831,7 @@
       field: 'select',
       align: 'center',
       style: 'width: 5%',
-      headerStyle: 'width: 7%',
+      headerStyle: 'width: 5%',
     },
     {
       name: 'name',
@@ -713,7 +889,6 @@
     },
   ];
 
-  // Tag columns (same as columns but without select and with remove)
   const tagColumns = [
     {
       name: 'name',
@@ -730,8 +905,8 @@
       field: 'Position',
       align: 'left',
       sortable: true,
-      style: 'width: 28%',
-      headerStyle: 'width: 28%',
+      style: 'width: 27%',
+      headerStyle: 'width: 27%',
     },
     {
       name: 'Office',
@@ -739,8 +914,8 @@
       field: 'Office',
       align: 'left',
       sortable: true,
-      style: 'width: 25%',
-      headerStyle: 'width: 25%',
+      style: 'width: 24%',
+      headerStyle: 'width: 24%',
     },
     {
       name: 'ItemNo',
@@ -779,30 +954,23 @@
     },
   ];
 
-  // Office options from data
   const officeOptions = computed(() =>
     [...new Set(allRows.value.map((r) => r.Office).filter(Boolean))].sort(),
   );
 
-  // Filtered rows based on search, office, applicant status, and tag color
   const filteredRows = computed(() => {
     const search = searchText.value?.toLowerCase().trim() ?? '';
-
     return allRows.value.filter((row) => {
       const fullName = `${row.firstname || ''} ${row.lastname || ''}`.toLowerCase();
       const matchSearch =
         !search || fullName.includes(search) || (row.Position || '').toLowerCase().includes(search);
-
       const matchOffice = !selectedOfficeFilter.value || row.Office === selectedOfficeFilter.value;
-
       const matchStatus =
         applicantStatusFilter.value === 'all' ||
         row.applicant_status === applicantStatusFilter.value;
-
       const matchTagColor =
         !tagColorFilter.value ||
         (tagColorFilter.value === 'none' ? !row.tag_color : row.tag_color === tagColorFilter.value);
-
       return matchSearch && matchOffice && matchStatus && matchTagColor;
     });
   });
@@ -815,7 +983,6 @@
   );
   const uniqueOffices = computed(() => new Set(selectedApplicants.value.map((a) => a.Office)).size);
 
-  // Filter offices for dropdown
   const filterOfficeOptions = (val, update) => {
     update(() => {
       if (!val.trim()) {
@@ -836,7 +1003,6 @@
     if (selectedApplicants.value.length === 0) activeTab.value = 'select';
   };
 
-  // Load data on mount
   onMounted(async () => {
     loading.value = true;
     try {
@@ -854,7 +1020,6 @@
     }
   });
 
-  // Reset selection when data changes
   watch(
     () => markingStore.reports,
     () => {
@@ -864,47 +1029,32 @@
 </script>
 
 <style scoped>
-  /* Color circle styles */
   .color-circle {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     display: inline-block;
-    margin: 0 auto;
+    flex-shrink: 0;
   }
 
   .color-circle-empty {
     background-color: transparent;
-    border: 1px solid #ccc;
+    border: 1.5px solid #bdbdbd;
   }
 
-  .applicants-table :deep(thead tr th:first-child) {
-    text-align: center !important;
-    padding-left: 0 !important;
-    width: 40px !important;
+  /* ── Applicant cards (mobile) ── */
+  .applicant-card {
+    border-radius: 8px !important;
+    cursor: pointer;
+    transition: background 0.15s;
   }
 
-  .applicants-table :deep(thead tr th:first-child .q-checkbox) {
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .applicant-card--selected {
+    border-color: var(--q-primary) !important;
+    background: #e8f0fe;
   }
 
-  .applicants-table :deep(tbody tr td:first-child) {
-    text-align: center !important;
-    width: 40px !important;
-  }
-
-  .applicants-table :deep(tbody tr td:first-child .q-checkbox) {
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
+  /* ── Table overrides ── */
   .applicants-table :deep(thead tr th) {
     font-size: 12px;
     font-weight: 700;
@@ -914,31 +1064,6 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    text-align: center !important;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(2)) {
-    text-align: left;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(3)) {
-    text-align: left;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(4)) {
-    text-align: left;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(5)) {
-    text-align: center !important;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(6)) {
-    text-align: center !important;
-  }
-
-  .applicants-table :deep(tbody tr td:nth-child(7)) {
-    text-align: center !important;
   }
 
   .applicants-table :deep(tbody tr:hover td) {
@@ -952,10 +1077,7 @@
     vertical-align: middle;
   }
 
-  .applicants-table :deep(.q-table__container) {
-    overflow-x: hidden !important;
-  }
-
+  .applicants-table :deep(.q-table__container),
   .applicants-table :deep(.q-table__middle) {
     overflow-x: hidden !important;
   }
@@ -969,8 +1091,34 @@
     display: none;
   }
 
+  /* Checkbox centering */
+  .applicants-table :deep(thead tr th:first-child),
+  .applicants-table :deep(tbody tr td:first-child) {
+    text-align: center !important;
+    width: 40px !important;
+  }
+
+  .applicants-table :deep(thead tr th:first-child .q-checkbox),
+  .applicants-table :deep(tbody tr td:first-child .q-checkbox) {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
   .summary-card {
     border-radius: 8px !important;
-    min-width: 80px;
+    min-width: 60px;
+  }
+
+  /* Utility */
+  .flex-shrink-0 {
+    flex-shrink: 0;
+  }
+
+  .ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

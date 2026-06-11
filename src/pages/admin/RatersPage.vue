@@ -713,33 +713,37 @@
               </q-td>
             </template>
 
+            <!-- Actions column with permission check -->
             <template v-slot:body-cell-actions="props">
               <q-td :props="props" class="text-center">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="print"
-                  color="primary"
-                  @click="openRatingFormReport(props.row)"
-                  :loading="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                  :disable="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                >
-                  <q-tooltip>Print Rating Form</q-tooltip>
-                </q-btn>
-                <q-btn
-                  flat
-                  round
-                  dense
-                  icon="note_add"
-                  color="info"
-                  class="q-ml-sm"
-                  @click="openEmptyRatingFormReport(props.row)"
-                  :loading="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                  :disable="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                >
-                  <q-tooltip>Print Empty Rating Form</q-tooltip>
-                </q-btn>
+                <template v-if="canReportRaterManagement">
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="print"
+                    color="primary"
+                    @click="openRatingFormReport(props.row)"
+                    :loading="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                    :disable="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                  >
+                    <q-tooltip>Print Rating Form</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="note_add"
+                    color="info"
+                    class="q-ml-sm"
+                    @click="openEmptyRatingFormReport(props.row)"
+                    :loading="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                    :disable="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                  >
+                    <q-tooltip>Print Empty Rating Form</q-tooltip>
+                  </q-btn>
+                </template>
+                <span v-else class="text-grey-5 text-caption">No report access</span>
               </q-td>
             </template>
 
@@ -826,9 +830,14 @@
   const plantillaStore = usePlantillaStore();
   const ratingFormStore = use_rating_form_store();
 
-  // ==================== PERMISSION CHECK ====================
+  // ==================== PERMISSION CHECKS ====================
   const canModifyRater = computed(() => {
     return authStore.user?.permissions?.modifyRater === '1';
+  });
+
+  // Permission for Rater Management Reports (Print forms)
+  const canReportRaterManagement = computed(() => {
+    return authStore.user?.permissions?.reportRaterManagementAccess === '1';
   });
 
   // ==================== SEARCH ====================
@@ -849,16 +858,10 @@
   const showEmptyRatingFormDialog = ref(false);
   const selectedJobId = ref(null);
   const selectedRaterId = ref(null);
-  /**
-   * ratingFormData holds the raw API response object.
-   * It is passed directly to <RatingFormReport> via the :rating-data prop.
-   * The child component reads this prop and generates the PDF — no extra fetch needed.
-   */
   const ratingFormData = ref(null);
   const emptyRatingFormData = ref(null);
 
   // ==================== RATING FORM CACHE ====================
-  // Key: `${jobId}_${raterId}` → cached API response object
   const ratingFormCache = ref(new Map());
   const emptyRatingFormCache = ref(new Map());
 
@@ -1042,7 +1045,6 @@
   });
 
   const positionsWithAllOption = computed(() => {
-    // Ensure positions.value is an array
     const positionsArray = Array.isArray(positions.value) ? positions.value : [];
     if (!positionsArray.length) return [];
     return [{ id: 'all', name: 'All Positions', office_abbr: 'ALL' }, ...positionsArray];
@@ -1191,16 +1193,6 @@
   };
 
   // ==================== OPEN RATING FORM REPORT ====================
-  /**
-   * Flow:
-   * 1. Check cache by `${jobId}_${raterId}`.
-   * 2. On cache hit  → set ratingFormData directly from cache, open dialog.
-   * 3. On cache miss → call store.fetchRatingForm(jobId, raterId), cache the result,
-   *                    then set ratingFormData and open dialog.
-   *
-   * The child component <RatingFormReport> receives ratingFormData via :rating-data prop
-   * and generates the PDF on its own — the parent never touches pdfmake.
-   */
   const openRatingFormReport = async (job) => {
     if (!currentViewRater.value?.id) {
       toast.error('Rater information not available');
@@ -1234,17 +1226,14 @@
     try {
       const data = await ratingFormStore.fetchRatingForm(jobId, raterId);
 
-      // Don't block if no applicants - the report can show "No applicants found"
       if (!data) {
         toast.error('Failed to load rating data');
         return;
       }
 
-      // Cache even if no applicants
       ratingFormCache.value.set(cacheKey, data);
       await openWithData(data);
 
-      // Show info message instead of error
       if (!data?.rating_scores?.length) {
         toast.info('No applicants have been rated for this job yet');
       }
@@ -1307,12 +1296,10 @@
 
   const handleRatingFormClose = () => {
     showRatingFormDialog.value = false;
-    // ratingFormData is intentionally kept so the cache still works if the dialog reopens
   };
 
   const handleEmptyRatingFormClose = () => {
     showEmptyRatingFormDialog.value = false;
-    // emptyRatingFormData is intentionally kept so the cache still works if the dialog reopens
   };
 
   // ==================== FORM HELPERS ====================
@@ -1356,13 +1343,11 @@
   };
 
   const loadPositions = () => {
-    // Safely get jobPosts array - could be array or object
     let jobPostsArray = [];
 
     if (Array.isArray(jobPostStore.jobPosts)) {
       jobPostsArray = jobPostStore.jobPosts;
     } else if (jobPostStore.jobPosts && typeof jobPostStore.jobPosts === 'object') {
-      // If it's an object, try to extract the array from common properties
       jobPostsArray =
         jobPostStore.jobPosts.data ||
         jobPostStore.jobPosts.items ||
@@ -1399,21 +1384,13 @@
     showViewDialog.value = true;
 
     try {
-      // Call the API to get jobs for this rater
       const response = await jobPostStore.assign_job_list(rater.id);
 
-      // Check where the data is actually stored
-      // Option 1: If the store returns the data directly
       if (response && response.data) {
         raterJobs.value = Array.isArray(response.data) ? response.data : [];
-      }
-      // Option 2: If the store stores it in a specific property
-      else if (jobPostStore.assignedJobs) {
+      } else if (jobPostStore.assignedJobs) {
         raterJobs.value = Array.isArray(jobPostStore.assignedJobs) ? jobPostStore.assignedJobs : [];
-      }
-      // Option 3: If it's stored in jobPosts (your original approach but cleaner)
-      else if (jobPostStore.jobPosts) {
-        // Handle different possible structures
+      } else if (jobPostStore.jobPosts) {
         if (Array.isArray(jobPostStore.jobPosts)) {
           raterJobs.value = jobPostStore.jobPosts;
         } else if (
@@ -1428,7 +1405,6 @@
         raterJobs.value = [];
       }
 
-      // Validate we got data
       if (raterJobs.value.length === 0) {
         jobLoadError.value = 'No jobs assigned to this rater';
       }
@@ -1591,12 +1567,10 @@
         closeModal();
         toast.success('Rater added successfully');
       } else {
-        // Error message already shown in store, just log
         console.error('Registration failed:', result.message);
       }
     } catch (error) {
       console.error('Error adding rater:', error);
-      // Check if there's a response with a message
       const errorMessage = error.response?.data?.message || error.message || 'Failed to add rater';
       const errors = error.response?.data?.errors;
 
