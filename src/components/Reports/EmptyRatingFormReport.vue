@@ -599,7 +599,7 @@
       const docDefinition = {
         pageSize: 'LEGAL',
         pageOrientation: 'landscape',
-        pageMargins: [72, 120, 72, 40],
+        pageMargins: [72, 200, 72, 40],
         header: () => ({
           stack: [
             {
@@ -662,60 +662,64 @@
                 },
               ],
             },
+            {
+              text: 'INDIVIDUAL RATING REPORT',
+              fontSize: 12,
+              bold: true,
+              margin: [0, 0, 0, 10],
+              alignment: 'center',
+            },
+            {
+              table: {
+                widths: ['15%', '85%'],
+                body: [
+                  [
+                    { text: 'Office:', fontSize: 8, border: [false, false, false, false] },
+                    {
+                      text: office.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    { text: 'Position:', fontSize: 9, border: [false, false, false, false] },
+                    {
+                      text: position.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    { text: 'Salary Grade:', fontSize: 8, border: [false, false, false, false] },
+                    {
+                      text: salaryGrade.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    {
+                      text: 'Plantilla Item No:',
+                      fontSize: 8,
+                      border: [false, false, false, false],
+                    },
+                    {
+                      text: plantillaItemNo.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                ],
+              },
+              margin: [72, 0, 0, 8],
+            },
           ],
         }),
         content: [
-          {
-            text: 'INDIVIDUAL RATING REPORT',
-            fontSize: 12,
-            bold: true,
-            margin: [0, -20, 0, 10],
-            alignment: 'center',
-          },
-          {
-            table: {
-              widths: ['15%', '85%'],
-              body: [
-                [
-                  { text: 'Office:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: office.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Position:', fontSize: 9, border: [false, false, false, false] },
-                  {
-                    text: position.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Salary Grade:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: salaryGrade.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Plantilla Item No:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: plantillaItemNo.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-              ],
-            },
-            margin: [0, 0, 0, 8],
-          },
           {
             table: { headerRows: 3, widths: colWidths, body: rows, dontBreakRows: true },
             layout: customLayout,
