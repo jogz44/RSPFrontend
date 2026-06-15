@@ -666,7 +666,7 @@
               text: 'INDIVIDUAL RATING REPORT',
               fontSize: 12,
               bold: true,
-              margin: [0, 0, 0, 10],
+              margin: [0, 10, 0, 10],
               alignment: 'center',
             },
             {
