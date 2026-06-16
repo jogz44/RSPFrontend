@@ -550,7 +550,7 @@
       const rows = [headerRow1, headerRow2, headerRow3, ...dataRows];
 
       // ---- Column widths ----
-      const colWidths = ['3%', '15%'];
+      const colWidths = ['4%', '14%'];
 
       // Main criteria columns
       for (let idx = 0; idx < criteriaColumns.length; idx++) {
