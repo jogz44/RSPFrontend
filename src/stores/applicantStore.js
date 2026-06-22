@@ -66,6 +66,7 @@ export const useApplicantStore = defineStore('applicant', {
               SalaryGrade: item.job_post?.SalaryGrade,
               status: item.status,
               job_post_status: item.job_post?.status,
+              application_status: item.application_status || null, // Add this
             })),
           };
         } else if (res.data?.data) {
@@ -94,6 +95,32 @@ export const useApplicantStore = defineStore('applicant', {
       } finally {
         this.loading = false;
       }
+    },
+
+    async updateApplicationStatus(submissionId, applicationStatus) {
+      try {
+        this.loading = true;
+        const response = await adminApi.post('/applicant/application', {
+          submission_id: submissionId,
+          application_status: applicationStatus,
+        });
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.message;
+        console.error('Error updating application status:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async withdrawApplication(submissionId) {
+      return this.updateApplicationStatus(submissionId, 'Withdrawn');
+    },
+
+    async restoreApplication(submissionId) {
+      return this.updateApplicationStatus(submissionId, null);
     },
   },
 });

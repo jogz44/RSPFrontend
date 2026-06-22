@@ -277,6 +277,19 @@
               </q-td>
             </template>
 
+            <template #body-cell-withdrawn="p">
+              <q-td :props="p">
+                <q-toggle
+                  :model-value="p.row.withdrawn === 'withdrawn'"
+                  :true-value="true"
+                  :false-value="false"
+                  :color="p.row.withdrawn === 'withdrawn' ? 'blue' : 'grey'"
+                  @update:model-value="() => toggleWithdrawnStatus(p.row)"
+                  :loading="p.row.updatingWithdrawn"
+                />
+              </q-td>
+            </template>
+
             <template #body-cell-action="p">
               <q-td :props="p">
                 <q-btn
@@ -767,6 +780,76 @@
     </q-dialog>
 
     <!-- ================================================================ -->
+    <!-- TOGGLE WITHDRAWN MODAL                                            -->
+    <!-- ================================================================ -->
+
+    <!-- Withdraw/Restore Confirmation Dialog -->
+    <q-dialog v-model="showWithdrawConfirmDialog" persistent>
+      <q-card>
+        <q-card-section class="row items-center q-pb-none">
+          <q-icon
+            :name="isWithdrawAction ? 'warning' : 'restore'"
+            :color="isWithdrawAction ? 'orange' : 'blue'"
+            size="24px"
+            class="q-mr-sm"
+          />
+          <div class="text-h6">
+            {{ isWithdrawAction ? 'Confirm Withdrawal' : 'Confirm Restoration' }}
+          </div>
+        </q-card-section>
+
+        <q-card-section>
+          <p class="q-mb-sm">
+            {{
+              isWithdrawAction
+                ? 'Are you sure you want to withdraw this application?'
+                : 'Are you sure you want to restore this application?'
+            }}
+          </p>
+          <div v-if="pendingWithdrawRow" class="bg-grey-2 rounded-borders q-pa-md">
+            <div class="text-caption text-grey-7">Application Details:</div>
+            <div class="q-mt-xs">
+              <strong>Submission ID:</strong>
+              {{ pendingWithdrawRow.submission_id }}
+            </div>
+            <div>
+              <strong>Position:</strong>
+              {{ pendingWithdrawRow.position }}
+            </div>
+            <div>
+              <strong>Office:</strong>
+              {{ pendingWithdrawRow.office }}
+            </div>
+            <div>
+              <strong>Current Status:</strong>
+              <q-badge
+                :color="getJobStatusColor(pendingWithdrawRow.status)"
+                :label="pendingWithdrawRow.status?.toUpperCase()"
+                class="q-ml-sm"
+              />
+            </div>
+            <div v-if="pendingWithdrawRow.withdrawn === 'withdrawn'">
+              <strong>Withdrawn Status:</strong>
+              <q-badge color="blue" label="WITHDRAWN" class="q-ml-sm" />
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-gutter-sm">
+          <q-btn flat label="Cancel" color="grey-7" @click="cancelWithdrawAction" />
+          <q-btn
+            unelevated
+            :label="isWithdrawAction ? 'Withdraw' : 'Restore'"
+            :color="isWithdrawAction ? 'orange' : 'blue'"
+            :icon="isWithdrawAction ? 'warning' : 'restore'"
+            @click="confirmWithdrawAction"
+            :loading="pendingWithdrawRow?.updatingWithdrawn"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================================================================ -->
     <!-- Report Sub-Dialogs                                               -->
     <!-- ================================================================ -->
 
@@ -959,6 +1042,14 @@
   const deletingSubmissionId = ref(null);
 
   // ============================================================================
+  // WITHDRAWAL STATE
+  // ============================================================================
+
+  const showWithdrawConfirmDialog = ref(false);
+  const pendingWithdrawRow = ref(null);
+  const isWithdrawAction = ref(false); // true = withdrawing, false = restoring
+
+  // ============================================================================
   // PAGINATION
   // ============================================================================
 
@@ -1017,6 +1108,13 @@
       { name: 'position', label: 'Position', field: 'position', align: 'left' },
       { name: 'office', label: 'Office', field: 'office', align: 'left' },
       { name: 'status', label: 'Status', field: 'status', align: 'center' },
+      {
+        name: 'withdrawn',
+        label: 'Withdrawn',
+        align: 'center',
+        field: 'withdrawn',
+        sortable: false,
+      },
     ];
     if (canModifyApplicant.value) {
       cols.push({
@@ -1041,6 +1139,8 @@
         position: job.Position || 'N/A',
         office: job.Office || 'N/A',
         status: job.status || 'N/A',
+        withdrawn: job.application_status?.toLowerCase() || null,
+        application_status: job.application_status || null,
       }));
     }
     if (jobPosts && typeof jobPosts === 'object' && !Array.isArray(jobPosts)) {
@@ -1052,6 +1152,8 @@
           position: jobPosts.Position || 'N/A',
           office: jobPosts.Office || 'N/A',
           status: jobPosts.status || selectedApplicant.value.status || 'N/A',
+          withdrawn: jobPosts.application_status || null,
+          application_status: jobPosts.application_status || null,
         },
       ];
     }
@@ -1330,6 +1432,133 @@
       loadingApplicantDetails.value = false;
     }
   };
+
+  // ============================================================================
+  // WITHDRAWAL FUNCTIONS
+  // ============================================================================
+
+  const toggleWithdrawnStatus = (row) => {
+    // The toggle is being clicked - check current state
+    // If currently withdrawn, we're restoring; if not withdrawn, we're withdrawing
+    const isCurrentlyWithdrawn = row.withdrawn === 'withdrawn';
+    const isWithdrawing = !isCurrentlyWithdrawn; // Toggle to opposite state
+
+    // Store the row and action type
+    pendingWithdrawRow.value = row;
+    isWithdrawAction.value = isWithdrawing;
+
+    // Show confirmation dialog
+    showWithdrawConfirmDialog.value = true;
+  };
+
+  const confirmWithdrawAction = async () => {
+    if (!pendingWithdrawRow.value) return;
+
+    const row = pendingWithdrawRow.value;
+    const isWithdrawing = isWithdrawAction.value;
+
+    try {
+      row.updatingWithdrawn = true;
+
+      if (isWithdrawing) {
+        await applicantStore.updateApplicationStatus(row.submission_id, 'Withdrawn');
+        $q.notify({
+          type: 'positive',
+          message: `Application #${row.submission_id} has been withdrawn successfully`,
+          position: 'top',
+        });
+      } else {
+        await applicantStore.updateApplicationStatus(row.submission_id, null);
+        $q.notify({
+          type: 'positive',
+          message: `Application #${row.submission_id} has been restored successfully`,
+          position: 'top',
+        });
+      }
+
+      // Close ONLY the confirmation dialog
+      showWithdrawConfirmDialog.value = false;
+      pendingWithdrawRow.value = null;
+      isWithdrawAction.value = false;
+
+      // Refresh the data WITHOUT closing the detail dialog
+      if (selectedApplicant.value) {
+        // Get the date in DD/MM/YYYY format
+        const rawDate =
+          selectedApplicant.value.n_personal_info?.date_of_birth ||
+          selectedApplicant.value.personal_info?.date_of_birth ||
+          selectedApplicant.value.date_of_birth;
+
+        // Convert from DD/MM/YYYY to YYYY-MM-DD
+        let formattedDate = rawDate;
+        if (rawDate && rawDate.includes('/')) {
+          const parts = rawDate.split('/');
+          if (parts.length === 3) {
+            // parts[0] = day, parts[1] = month, parts[2] = year
+            formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        }
+
+        const firstname =
+          selectedApplicant.value.n_personal_info?.firstname ||
+          selectedApplicant.value.personal_info?.firstname ||
+          selectedApplicant.value.firstname;
+        const lastname =
+          selectedApplicant.value.n_personal_info?.lastname ||
+          selectedApplicant.value.personal_info?.lastname ||
+          selectedApplicant.value.lastname;
+
+        // Fetch with properly formatted date
+        const freshDetails = await applicantStore.fetchApplicantDetail(
+          firstname,
+          lastname,
+          formattedDate,
+        );
+
+        if (freshDetails) {
+          selectedApplicant.value = {
+            ...selectedApplicant.value,
+            ...freshDetails,
+            job_post: freshDetails.job_post || selectedApplicant.value.job_post,
+          };
+        }
+      }
+
+      // Refresh the applicants list (without closing the detail dialog)
+      await applicantStore.fetchApplicants({
+        page: pagination.value.page,
+        perPage: pagination.value.rowsPerPage,
+        search: globalSearch.value,
+      });
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message:
+          error.response?.data?.message ||
+          `Failed to ${isWithdrawAction.value ? 'withdraw' : 'restore'} application`,
+        position: 'top',
+      });
+      // Close the confirmation dialog on error too
+      showWithdrawConfirmDialog.value = false;
+      pendingWithdrawRow.value = null;
+      isWithdrawAction.value = false;
+    } finally {
+      if (row) {
+        row.updatingWithdrawn = false;
+      }
+    }
+  };
+
+  const cancelWithdrawAction = () => {
+    showWithdrawConfirmDialog.value = false;
+    pendingWithdrawRow.value = null;
+    isWithdrawAction.value = false;
+  };
+
+  // Helper function for toggle color
+  // const getToggleColor = (withdrawnStatus) => {
+  //   return withdrawnStatus === 'withdrawn' ? 'blue' : 'grey';
+  // };
 
   // ============================================================================
   // DELETE APPLICATION
