@@ -642,12 +642,15 @@
           });
         }
 
+        // Total QS column - moved BEFORE BEI and Exam
+        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
+
+        // BEI column - now after Total QS
         if (hasBei.value) {
           columns.push({ name: 'bei', label: 'BEI', field: 'bei', align: 'center' });
         }
 
-        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
-
+        // Exam column - now after Total QS and BEI
         if (hasExamScore.value && criteriaWeights.value.exam > 0) {
           columns.push({
             name: 'exam',
@@ -657,6 +660,7 @@
           });
         }
 
+        // Rank and Grand Total remain at the end
         columns.push({ name: 'rank', label: 'Rank', field: 'ranking', align: 'center' });
         columns.push({
           name: 'grandTotal',
@@ -707,12 +711,15 @@
           });
         }
 
+        // Total QS column - moved BEFORE BEI and Exam
+        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
+
+        // BEI column - now after Total QS
         if (hasBei.value) {
           columns.push({ name: 'bei', label: 'BEI', field: 'bei', align: 'center' });
         }
 
-        columns.push({ name: 'totalQs', label: 'Total QS', field: 'total_qs', align: 'center' });
-
+        // Exam column - now after Total QS and BEI
         if (hasExamScore.value && criteriaWeights.value.exam > 0) {
           columns.push({
             name: 'exam',
@@ -722,6 +729,7 @@
           });
         }
 
+        // Rank and Grand Total remain at the end
         columns.push({ name: 'rank', label: 'Final Rank', field: 'rank', align: 'center' });
         columns.push({
           name: 'grandTotal',

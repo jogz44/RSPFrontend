@@ -258,8 +258,11 @@
         const avgQs =
           qsScores.length > 0 ? qsScores.reduce((sum, val) => sum + val, 0) / qsScores.length : 0;
 
-        // Final Rating = Average QS + Average BEI
-        const finalRating = avgQs + avgBei;
+        // Get exam score (this should be from the applicant level, not per rater)
+        const examScore = parseFloat(item.exam_score || 0) || 0;
+
+        // Final Rating = Average QS + Average BEI + Exam Score
+        const finalRating = avgQs + avgBei + examScore;
 
         return {
           applicant: {
@@ -269,7 +272,7 @@
           score: item.rater_scores,
           total_rating: avgQs,
           bei: avgBei,
-          exam_score: item.exam_score || 0,
+          exam_score: examScore,
           final_rating: finalRating,
           grand_total: item.grand_total,
           rank: item.rank,
@@ -695,7 +698,7 @@
         const docDefinition = {
           pageSize: 'LEGAL',
           pageOrientation: 'landscape',
-          pageMargins: [72, 100, 72, 10],
+          pageMargins: [72, 100, 72, 20],
           header: function () {
             return {
               stack: [

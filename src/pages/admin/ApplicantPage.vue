@@ -63,6 +63,18 @@
         >
           <q-tooltip>List of All Applicants</q-tooltip>
         </q-btn>
+        <!-- Withdrawn Report Button -->
+        <q-btn
+          v-if="canReportApplicant"
+          rounded
+          unelevated
+          color="orange"
+          icon="article"
+          label="Withdrawn Report"
+          @click="openWithdrawnReportDialog"
+        >
+          <q-tooltip>List of Withdrawn Applicants</q-tooltip>
+        </q-btn>
         <!-- Mark Application Button -->
         <q-btn
           v-if="canReportApplicant"
@@ -692,6 +704,113 @@
     </q-dialog>
 
     <!-- ================================================================ -->
+    <!-- WITHDRAWN REPORT MODAL                                           -->
+    <!-- ================================================================ -->
+    <q-dialog v-if="canReportApplicant" v-model="showWithdrawnModal" persistent>
+      <q-card class="report-select-card">
+        <q-card-section class="dialog-header header-withdrawn">
+          <div class="row items-center no-wrap">
+            <q-icon name="article" size="28px" class="q-mr-sm" />
+            <div>
+              <div class="text-h6 text-bold">Withdrawn Applicants Report</div>
+              <div class="text-caption opacity-80">Select options to generate</div>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" class="close-btn" @click="closeWithdrawnModal" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-lg">
+          <div v-if="loadingPublicationDates" class="text-center q-pa-md">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
+          </div>
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedWithdrawnPublicationDate"
+                :options="filteredWithdrawnPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterWithdrawnPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedWithdrawnPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedWithdrawnPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
+            </div>
+
+            <!-- Applicant Type -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="people" size="16px" class="q-mr-xs" />
+                Applicant Type
+              </div>
+              <q-btn-toggle
+                v-model="selectedWithdrawnApplicantType"
+                spread
+                no-caps
+                unelevated
+                rounded
+                toggle-color="primary"
+                color="grey-2"
+                text-color="grey-8"
+                :options="applicantTypeOptions"
+              />
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+        <div class="dialog-footer row justify-end items-center q-pa-md q-gutter-sm">
+          <q-btn rounded flat label="Cancel" color="grey-7" @click="closeWithdrawnModal" />
+          <q-btn
+            rounded
+            unelevated
+            color="primary"
+            label="Generate Report"
+            icon="print"
+            :disable="!selectedWithdrawnPublicationDate"
+            @click="generateWithdrawnReport"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================================================================ -->
     <!-- MARK APPLICATION MODAL                                            -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showMarkingModal" persistent>
@@ -903,6 +1022,30 @@
       />
     </q-dialog>
 
+    <!-- Withdrawn: Both -->
+    <q-dialog v-if="canReportApplicant" v-model="showWithdrawnReportDialog" persistent>
+      <WithdrawnApplicantReport
+        :publicationDate="selectedWithdrawnPublicationDate"
+        applicantType="both"
+      />
+    </q-dialog>
+
+    <!-- Withdrawn: Internal only -->
+    <q-dialog v-if="canReportApplicant" v-model="showInternalWithdrawnReportDialog" persistent>
+      <WithdrawnApplicantReport
+        :publicationDate="selectedWithdrawnPublicationDate"
+        applicantType="internal"
+      />
+    </q-dialog>
+
+    <!-- Withdrawn: External only -->
+    <q-dialog v-if="canReportApplicant" v-model="showExternalWithdrawnReportDialog" persistent>
+      <WithdrawnApplicantReport
+        :publicationDate="selectedWithdrawnPublicationDate"
+        applicantType="external"
+      />
+    </q-dialog>
+
     <!-- Marking Application Component -->
     <MarkingApplication
       v-if="showMarkingApplicationDialog"
@@ -931,6 +1074,7 @@
   import UnqualifiedReport from 'src/components/Reports/UnqualifiedReport.vue';
   import InternalUnqualifiedReport from 'src/components/Reports/InternalUnqualifiedReport.vue';
   import ExternalUnqualifiedReport from 'src/components/Reports/ExternalUnqualifiedReport.vue';
+  import WithdrawnApplicantReport from 'src/components/Reports/WithdrawnApplicantReport.vue';
   import MarkingApplication from 'src/components/MarkingApplication.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
@@ -956,7 +1100,7 @@
   );
 
   // ============================================================================
-  // APPLICANT TYPE OPTIONS (shared by Qualified & Unqualified modals)
+  // APPLICANT TYPE OPTIONS (shared by all report modals)
   // ============================================================================
 
   const applicantTypeOptions = [
@@ -1016,6 +1160,20 @@
   const selectedAllApplicantsApplicantType = ref('both');
   const filteredAllApplicantsPublicationDateOptions = ref([]);
   const showAllApplicantsReportDialog = ref(false);
+
+  // ============================================================================
+  // WITHDRAWN REPORT STATE
+  // ============================================================================
+
+  const showWithdrawnModal = ref(false);
+  const selectedWithdrawnPublicationDate = ref(null);
+  const selectedWithdrawnApplicantType = ref('both');
+  const filteredWithdrawnPublicationDateOptions = ref([]);
+
+  // Sub-dialogs — one per type
+  const showWithdrawnReportDialog = ref(false);
+  const showInternalWithdrawnReportDialog = ref(false);
+  const showExternalWithdrawnReportDialog = ref(false);
 
   // ============================================================================
   // MARK APPLICATION STATE
@@ -1201,6 +1359,7 @@
       filteredQualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredAllApplicantsPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredWithdrawnPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredMarkingPublicationDateOptions.value = [...publicationDateOptions.value];
     } catch {
       $q.notify({ type: 'negative', message: 'Failed to load publication dates' });
@@ -1208,6 +1367,7 @@
       filteredQualifiedPublicationDateOptions.value = [];
       filteredUnqualifiedPublicationDateOptions.value = [];
       filteredAllApplicantsPublicationDateOptions.value = [];
+      filteredWithdrawnPublicationDateOptions.value = [];
       filteredMarkingPublicationDateOptions.value = [];
     } finally {
       loadingPublicationDates.value = false;
@@ -1344,6 +1504,51 @@
   };
 
   // ============================================================================
+  // WITHDRAWN REPORT ACTIONS
+  // ============================================================================
+
+  const openWithdrawnReportDialog = async () => {
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to view reports',
+        position: 'top',
+      });
+      return;
+    }
+    selectedWithdrawnPublicationDate.value = null;
+    selectedWithdrawnApplicantType.value = 'both';
+    showWithdrawnModal.value = true;
+    await fetchPublicationDates();
+  };
+
+  const filterWithdrawnPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredWithdrawnPublicationDateOptions.value = publicationDateOptions.value.filter((v) =>
+        v.toLowerCase().includes(needle),
+      );
+    });
+  };
+
+  const closeWithdrawnModal = () => {
+    showWithdrawnModal.value = false;
+    selectedWithdrawnPublicationDate.value = null;
+    selectedWithdrawnApplicantType.value = 'both';
+  };
+
+  const generateWithdrawnReport = () => {
+    showWithdrawnModal.value = false;
+    if (selectedWithdrawnApplicantType.value === 'internal') {
+      showInternalWithdrawnReportDialog.value = true;
+    } else if (selectedWithdrawnApplicantType.value === 'external') {
+      showExternalWithdrawnReportDialog.value = true;
+    } else {
+      showWithdrawnReportDialog.value = true;
+    }
+  };
+
+  // ============================================================================
   // MARK APPLICATION ACTIONS
   // ============================================================================
 
@@ -1438,16 +1643,10 @@
   // ============================================================================
 
   const toggleWithdrawnStatus = (row) => {
-    // The toggle is being clicked - check current state
-    // If currently withdrawn, we're restoring; if not withdrawn, we're withdrawing
     const isCurrentlyWithdrawn = row.withdrawn === 'withdrawn';
-    const isWithdrawing = !isCurrentlyWithdrawn; // Toggle to opposite state
-
-    // Store the row and action type
+    const isWithdrawing = !isCurrentlyWithdrawn;
     pendingWithdrawRow.value = row;
     isWithdrawAction.value = isWithdrawing;
-
-    // Show confirmation dialog
     showWithdrawConfirmDialog.value = true;
   };
 
@@ -1476,25 +1675,21 @@
         });
       }
 
-      // Close ONLY the confirmation dialog
       showWithdrawConfirmDialog.value = false;
       pendingWithdrawRow.value = null;
       isWithdrawAction.value = false;
 
-      // Refresh the data WITHOUT closing the detail dialog
+      // Refresh detail dialog data without closing it
       if (selectedApplicant.value) {
-        // Get the date in DD/MM/YYYY format
         const rawDate =
           selectedApplicant.value.n_personal_info?.date_of_birth ||
           selectedApplicant.value.personal_info?.date_of_birth ||
           selectedApplicant.value.date_of_birth;
 
-        // Convert from DD/MM/YYYY to YYYY-MM-DD
         let formattedDate = rawDate;
         if (rawDate && rawDate.includes('/')) {
           const parts = rawDate.split('/');
           if (parts.length === 3) {
-            // parts[0] = day, parts[1] = month, parts[2] = year
             formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
           }
         }
@@ -1508,7 +1703,6 @@
           selectedApplicant.value.personal_info?.lastname ||
           selectedApplicant.value.lastname;
 
-        // Fetch with properly formatted date
         const freshDetails = await applicantStore.fetchApplicantDetail(
           firstname,
           lastname,
@@ -1524,7 +1718,6 @@
         }
       }
 
-      // Refresh the applicants list (without closing the detail dialog)
       await applicantStore.fetchApplicants({
         page: pagination.value.page,
         perPage: pagination.value.rowsPerPage,
@@ -1538,7 +1731,6 @@
           `Failed to ${isWithdrawAction.value ? 'withdraw' : 'restore'} application`,
         position: 'top',
       });
-      // Close the confirmation dialog on error too
       showWithdrawConfirmDialog.value = false;
       pendingWithdrawRow.value = null;
       isWithdrawAction.value = false;
@@ -1554,11 +1746,6 @@
     pendingWithdrawRow.value = null;
     isWithdrawAction.value = false;
   };
-
-  // Helper function for toggle color
-  // const getToggleColor = (withdrawnStatus) => {
-  //   return withdrawnStatus === 'withdrawn' ? 'blue' : 'grey';
-  // };
 
   // ============================================================================
   // DELETE APPLICATION
@@ -1682,6 +1869,9 @@
   }
   .header-all {
     background: #6a1b9a;
+  }
+  .header-withdrawn {
+    background: #e65100;
   }
   .header-mark {
     background: #9c27b0;
