@@ -454,6 +454,14 @@
                 </q-td>
               </template>
 
+              <template v-if="hasBeiScore" #body-cell-bei="props">
+                <q-td :props="props">
+                  <div class="text-center">
+                    {{ props.row.bei }}
+                  </div>
+                </q-td>
+              </template>
+
               <!-- Grand Total column template -->
               <template #body-cell-grand_total="props">
                 <q-td :props="props">
@@ -894,9 +902,11 @@
     training: 0,
     performance: 0,
     exam: 0,
+    bei: 0,
   });
 
   const hasExamScore = ref(false);
+  const hasBeiScore = ref(false);
 
   const { formatDate } = date;
   const activeTab = ref('applicants');
@@ -1241,6 +1251,17 @@
       style: 'min-width: 100px',
     });
 
+    if (criteriaWeights.value.bei > 0) {
+      columns.push({
+        name: 'bei',
+        label: `BEI (${criteriaWeights.value.bei}%)`,
+        field: 'bei',
+        align: 'center',
+        sortable: true,
+        style: 'min-width: 100px',
+      });
+    }
+
     // Exam column if exists
     if (hasExamScore.value && criteriaWeights.value.exam > 0) {
       columns.push({
@@ -1326,6 +1347,10 @@
       if (criteriaData.exams && criteriaData.exams.length > 0) {
         criteriaWeights.value.exam = parseInt(criteriaData.exams[0].weight) || 0;
         hasExamScore.value = criteriaWeights.value.exam > 0;
+      }
+      if (criteriaData.behaviorals && criteriaData.behaviorals.length > 0) {
+        criteriaWeights.value.bei = parseInt(criteriaData.behaviorals[0].weight) || 0;
+        hasBeiScore.value = criteriaWeights.value.bei > 0;
       }
     }
   };
