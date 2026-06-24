@@ -1621,8 +1621,43 @@
         applicant.n_personal_info?.date_of_birth ||
         applicant.personal_info?.date_of_birth ||
         applicant.date_of_birth;
+      const applicantType = applicant.applicant_type || 'external'; // Get applicant type
 
-      const details = await applicantStore.fetchApplicantDetail(firstname, lastname, dob);
+      // Format the date based on applicant type
+      let formattedDate = dob;
+      if (dob) {
+        // Remove any slashes/dashes and create a clean date
+        let cleanDate = dob.replace(/[/-]/g, '-');
+        const parts = cleanDate.split('-');
+
+        if (parts.length === 3) {
+          let year, month, day;
+
+          // Check if it's YYYY-MM-DD format (first part is year)
+          if (parts[0].length === 4) {
+            year = parts[0];
+            month = parts[1];
+            day = parts[2];
+          } else {
+            // It's either MM-DD-YYYY or DD-MM-YYYY
+            // Based on applicant_type
+            if (applicantType === 'internal') {
+              // Internal: MM-DD-YYYY
+              month = parts[0];
+              day = parts[1];
+              year = parts[2];
+            } else {
+              // External: DD-MM-YYYY
+              day = parts[0];
+              month = parts[1];
+              year = parts[2];
+            }
+          }
+          formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+
+      const details = await applicantStore.fetchApplicantDetail(firstname, lastname, formattedDate);
       if (details) {
         selectedApplicant.value = {
           ...selectedApplicant.value,
@@ -1685,12 +1720,33 @@
           selectedApplicant.value.n_personal_info?.date_of_birth ||
           selectedApplicant.value.personal_info?.date_of_birth ||
           selectedApplicant.value.date_of_birth;
+        const applicantType = selectedApplicant.value.applicant_type || 'external';
 
+        // Format the date based on applicant type
         let formattedDate = rawDate;
-        if (rawDate && rawDate.includes('/')) {
-          const parts = rawDate.split('/');
+        if (rawDate) {
+          let cleanDate = rawDate.replace(/[/-]/g, '-');
+          const parts = cleanDate.split('-');
+
           if (parts.length === 3) {
-            formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            let year, month, day;
+
+            if (parts[0].length === 4) {
+              year = parts[0];
+              month = parts[1];
+              day = parts[2];
+            } else {
+              if (applicantType === 'internal') {
+                month = parts[0];
+                day = parts[1];
+                year = parts[2];
+              } else {
+                day = parts[0];
+                month = parts[1];
+                year = parts[2];
+              }
+            }
+            formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
           }
         }
 
@@ -1728,7 +1784,7 @@
         type: 'negative',
         message:
           error.response?.data?.message ||
-          `Failed to ${isWithdrawAction.value ? 'withdraw' : 'restore'} application`,
+          `Failed to ${isWithdrawing ? 'withdraw' : 'restore'} application`,
         position: 'top',
       });
       showWithdrawConfirmDialog.value = false;
@@ -1740,7 +1796,6 @@
       }
     }
   };
-
   const cancelWithdrawAction = () => {
     showWithdrawConfirmDialog.value = false;
     pendingWithdrawRow.value = null;
