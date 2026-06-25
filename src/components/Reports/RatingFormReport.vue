@@ -66,6 +66,8 @@
 
   // ==================== DATA FROM PROP ====================
   const reportData = computed(() => props.ratingData || {});
+
+  // Use 'rating_scores' for this report
   const applicants = computed(() => {
     const scores = reportData.value?.rating_scores;
     return Array.isArray(scores) ? scores : [];
@@ -199,13 +201,24 @@
       const qs = reportData.value.qs || {};
       const criteria = reportData.value.criteria || {};
 
-      const trailingCriteriaKeys = ['behavioral', 'exams'];
+      // Main criteria only (without behavioral)
       const criteriaOrder = ['education', 'experience', 'training', 'performance'];
 
-      const hasBehavioral = Array.isArray(criteria.behavioral) && criteria.behavioral.length > 0;
-      const hasExam = Array.isArray(criteria.exams) && criteria.exams.length > 0;
+      // Criteria that go AFTER QS Total (BEI only - Exam removed)
+      const afterQSCriteria = [];
 
-      // ---- Build main criteriaColumns ----
+      // Add behavioral if it exists
+      if (Array.isArray(criteria.behavioral) && criteria.behavioral.length > 0) {
+        afterQSCriteria.push({
+          key: 'behavioral',
+          label: 'BEI',
+          weight: criteria.behavioral[0]?.weight || '',
+          qsText: qs.behavioral || '',
+          items: criteria.behavioral,
+        });
+      }
+
+      // ---- Build main criteriaColumns (before QS Total) ----
       const criteriaColumns = [];
       criteriaOrder.forEach((key) => {
         if (!Array.isArray(criteria[key]) || criteria[key].length === 0) return;
@@ -234,26 +247,35 @@
             key === 'education'
               ? '15%'
               : key === 'experience'
-                ? '25%'
+                ? '20%'
                 : key === 'training'
                   ? '8%'
                   : '8%',
         });
       });
 
-      // ---- Build trailingColumns (BEI / Exam after QS Total) ----
-      const trailingColumns = [];
-      trailingCriteriaKeys.forEach((key) => {
-        if (!Array.isArray(criteria[key]) || criteria[key].length === 0) return;
-        let weight = criteria[key][0]?.weight || '';
-        if (key === 'behavioral' && hasBehavioral && hasExam) weight = '10';
-        if (key === 'exams' && hasBehavioral && hasExam) weight = '7';
-        trailingColumns.push({
-          key: key === 'exams' ? 'exam' : 'behavioral',
-          label: key === 'behavioral' ? 'BEI' : 'Exam',
-          weight,
-          items: criteria[key],
-          isTwoColumn: false,
+      const afterQSTableColumns = [];
+      afterQSCriteria.forEach((criterion) => {
+        // Percentage column
+        afterQSTableColumns.push({
+          key: criterion.key,
+          label: `${criterion.label} (%)`,
+          weight: criterion.weight,
+          qsText: criterion.qsText,
+          items: criterion.items,
+          isTwoColumn: true,
+          columnType: 'percentage',
+          customWidth: '2%',
+        });
+        // Description column
+        afterQSTableColumns.push({
+          key: criterion.key,
+          label: `${criterion.label} Desc.`,
+          weight: criterion.weight,
+          qsText: criterion.qsText,
+          items: criterion.items,
+          isTwoColumn: true,
+          columnType: 'description',
           customWidth: '8%',
         });
       });
@@ -301,11 +323,11 @@
           rowSpan: 3,
           border: [true, true, true, true],
         },
-        ...trailingColumns.map((c) => ({
-          text: `${c.label} (${c.weight}%)`,
+        ...afterQSTableColumns.map((c) => ({
+          text: `${c.label.split(' ')[0]} (${c.weight}%)`,
           style: 'tableHeader',
           alignment: 'center',
-          rowSpan: 3,
+          colSpan: c.isTwoColumn && c.columnType === 'percentage' ? 2 : 1,
           border: [true, true, true, true],
         })),
       ];
@@ -322,8 +344,58 @@
           colSpan: c.isTwoColumn && c.columnType === 'percentage' ? 2 : 1,
         })),
         {},
-        ...trailingColumns.map(() => ({})),
+        ...afterQSTableColumns.map((c) => ({
+          text: c.qsText || '-',
+          fontSize: 8,
+          alignment: 'left',
+          border: [true, true, true, false],
+          colSpan: c.isTwoColumn && c.columnType === 'percentage' ? 2 : 1,
+        })),
       ];
+
+      // ---- Helper function to create sub-table for criteria items ----
+      const createSubTable = (items, key) => {
+        let percentageWidth = '20%';
+        let descriptionWidth = '80%';
+
+        if (key === 'experience') {
+          percentageWidth = '10%';
+          descriptionWidth = '90%';
+        } else if (key === 'behavioral' || key === 'exams') {
+          percentageWidth = '20%';
+          descriptionWidth = '80%';
+        }
+
+        return {
+          colSpan: 2,
+          border: [true, true, true, true],
+          table: {
+            widths: [percentageWidth, descriptionWidth],
+            body: items.map((i) => [
+              {
+                text: `${i.percentage}%`,
+                fontSize: 7,
+                alignment: 'center',
+                margin: [0, 0, 0, 0],
+              },
+              {
+                text: i.description || '',
+                fontSize: 7,
+                alignment: 'left',
+                margin: [0, 0, 0, 0],
+              },
+            ]),
+          },
+          layout: {
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingLeft: () => 0,
+            paddingRight: () => 0,
+            paddingTop: () => 0,
+            paddingBottom: () => 0,
+          },
+        };
+      };
 
       // ---- Header Row 3 — percentage / description details ----
       const headerRow3 = [
@@ -338,61 +410,14 @@
                 nextCol.isTwoColumn &&
                 nextCol.columnType === 'description' &&
                 nextCol.key === c.key;
-              if (!isPaired) {
-                return {
-                  text: c.items.map((i) => `${i.percentage}%`).join('\n'),
-                  fontSize: 7,
-                  alignment: 'left',
-                  border: [true, true, true, true],
-                };
+              if (isPaired) {
+                return createSubTable(c.items, c.key);
               }
-
-              // Set widths based on category
-              let percentageWidth = '20%';
-              let descriptionWidth = '80%';
-
-              if (c.key === 'experience') {
-                percentageWidth = '10%';
-                descriptionWidth = '90%';
-              } else if (c.key === 'education') {
-                percentageWidth = '20%';
-                descriptionWidth = '80%';
-              } else if (c.key === 'training') {
-                percentageWidth = '20%';
-                descriptionWidth = '80%';
-              } else if (c.key === 'performance') {
-                percentageWidth = '20%';
-                descriptionWidth = '80%';
-              }
-
               return {
-                colSpan: 2,
+                text: c.items.map((i) => `${i.percentage}%`).join('\n'),
+                fontSize: 7,
+                alignment: 'left',
                 border: [true, true, true, true],
-                table: {
-                  widths: [percentageWidth, descriptionWidth],
-                  body: c.items.map((i) => [
-                    {
-                      text: `${i.percentage}%`,
-                      fontSize: 7,
-                      alignment: 'center',
-                      margin: [0, 0, 0, 0],
-                    },
-                    {
-                      text: i.description || '',
-                      fontSize: 7,
-                      alignment: 'left',
-                      margin: [0, 0, 0, 0],
-                    },
-                  ]),
-                },
-                layout: {
-                  hLineWidth: () => 0,
-                  vLineWidth: () => 0,
-                  paddingLeft: () => 0,
-                  paddingRight: () => 0,
-                  paddingTop: () => 0,
-                  paddingBottom: () => 0,
-                },
               };
             }
             return {};
@@ -405,15 +430,25 @@
           };
         }),
         {},
-        ...trailingColumns.map(() => ({})),
+        ...afterQSTableColumns.map((c, idx) => {
+          if (c.columnType === 'percentage') {
+            const nextCol = afterQSTableColumns[idx + 1];
+            const isPaired =
+              nextCol && nextCol.columnType === 'description' && nextCol.key === c.key;
+            if (isPaired) {
+              return createSubTable(c.items, c.key);
+            }
+          }
+          return {};
+        }),
       ];
 
-      // ---- Data rows (empty if no applicants) ----
+      // ---- Data rows - display all applicants with scores ----
       let dataRows = [];
 
+      const totalColumns = 2 + criteriaColumns.length + 1 + afterQSTableColumns.length;
+
       if (applicants.value.length === 0) {
-        // Create a single row indicating no applicants
-        const totalColumns = 2 + criteriaColumns.length + 1 + trailingColumns.length;
         const emptyRow = [
           { text: '—', alignment: 'center', border: [true, true, true, true] },
           {
@@ -423,41 +458,44 @@
             border: [true, true, true, true],
           },
         ];
-        // Add empty cells for the remaining columns (colSpan handles it, but we need to add placeholders)
         for (let i = 2; i < totalColumns; i++) {
           emptyRow.push({});
         }
         dataRows = [emptyRow];
       } else {
-        dataRows = applicants.value.map((a, index) => {
+        dataRows = applicants.value.map((applicant, index) => {
           const row = [
-            { text: String(index + 1), alignment: 'center', border: [true, true, true, true] },
             {
-              text: toUpper(`${a.firstname ?? ''} ${a.lastname ?? ''}`.trim()),
+              text: String(index + 1),
+              alignment: 'center',
+              border: [true, true, true, true],
+            },
+            {
+              text: toUpper(`${applicant.firstname ?? ''} ${applicant.lastname ?? ''}`.trim()),
               border: [true, true, true, true],
             },
           ];
 
-          criteriaColumns.forEach((c, idx) => {
+          // Scores for main criteria (before QS Total)
+          for (let idx = 0; idx < criteriaColumns.length; idx++) {
+            const c = criteriaColumns[idx];
             if (c.isTwoColumn) {
               if (c.columnType === 'percentage') {
                 const nextCol = criteriaColumns[idx + 1];
                 const shouldSpan =
-                  nextCol &&
-                  nextCol.isTwoColumn &&
-                  nextCol.columnType === 'description' &&
-                  nextCol.key === c.key;
+                  nextCol && nextCol.columnType === 'description' && nextCol.key === c.key;
                 if (shouldSpan) {
                   row.push({
-                    text: formatNumber(a[c.key] ?? ''),
+                    text: formatNumber(applicant[c.key] ?? ''),
                     alignment: 'center',
                     colSpan: 2,
                     border: [true, true, true, true],
                   });
                   row.push({});
+                  idx++;
                 } else {
                   row.push({
-                    text: formatNumber(a[c.key] ?? ''),
+                    text: formatNumber(applicant[c.key] ?? ''),
                     alignment: 'center',
                     border: [true, true, true, true],
                   });
@@ -465,32 +503,67 @@
               } else {
                 const prevCol = criteriaColumns[idx - 1];
                 const isSpanned =
-                  prevCol &&
-                  prevCol.isTwoColumn &&
-                  prevCol.columnType === 'percentage' &&
-                  prevCol.key === c.key;
+                  prevCol && prevCol.columnType === 'percentage' && prevCol.key === c.key;
                 if (!isSpanned) {
                   row.push({ text: '', alignment: 'center', border: [true, true, true, true] });
                 }
               }
             } else {
               row.push({
-                text: formatNumber(a[c.key] ?? ''),
+                text: formatNumber(applicant[c.key] ?? ''),
                 alignment: 'center',
                 border: [true, true, true, true],
               });
             }
+          }
+
+          // QS Total
+          row.push({
+            text: calculateQS(applicant),
+            alignment: 'center',
+            border: [true, true, true, true],
           });
 
-          row.push({ text: calculateQS(a), alignment: 'center', border: [true, true, true, true] });
-
-          trailingColumns.forEach((c) => {
-            row.push({
-              text: formatNumber(a[c.key] ?? ''),
-              alignment: 'center',
-              border: [true, true, true, true],
-            });
-          });
+          // Scores for after-QS criteria (BEI)
+          for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
+            const c = afterQSTableColumns[idx];
+            if (c.isTwoColumn) {
+              if (c.columnType === 'percentage') {
+                const nextCol = afterQSTableColumns[idx + 1];
+                const shouldSpan =
+                  nextCol && nextCol.columnType === 'description' && nextCol.key === c.key;
+                if (shouldSpan) {
+                  row.push({
+                    text: formatNumber(applicant[c.key] ?? ''),
+                    alignment: 'center',
+                    colSpan: 2,
+                    border: [true, true, true, true],
+                  });
+                  row.push({});
+                  idx++;
+                } else {
+                  row.push({
+                    text: formatNumber(applicant[c.key] ?? ''),
+                    alignment: 'center',
+                    border: [true, true, true, true],
+                  });
+                }
+              } else {
+                const prevCol = afterQSTableColumns[idx - 1];
+                const isSpanned =
+                  prevCol && prevCol.columnType === 'percentage' && prevCol.key === c.key;
+                if (!isSpanned) {
+                  row.push({ text: '', alignment: 'center', border: [true, true, true, true] });
+                }
+              }
+            } else {
+              row.push({
+                text: formatNumber(applicant[c.key] ?? ''),
+                alignment: 'center',
+                border: [true, true, true, true],
+              });
+            }
+          }
 
           return row;
         });
@@ -498,37 +571,114 @@
 
       const rows = [headerRow1, headerRow2, headerRow3, ...dataRows];
 
-      // ---- Column widths ----
-      const colWidths = ['3%', '15%'];
-      criteriaColumns.forEach((c, idx) => {
+      // ---- Column widths - Dynamic calculation ----
+      const baseWidths = {
+        no: '4%',
+        applicant: '14%',
+        educationPercent: '3%',
+        educationDesc: '15%',
+        experiencePercent: '3%',
+        experienceDesc: '20%',
+        trainingPercent: '3%',
+        trainingDesc: '8%',
+        performancePercent: '3%',
+        performanceDesc: '8%',
+        qsTotal: '9%',
+        beiPercent: '4%',
+        beiDesc: '12%',
+      };
+
+      // Check if BEI exists
+      const hasBei = afterQSCriteria.some((c) => c.key === 'behavioral');
+
+      // Calculate total width
+      let totalWidth = 0;
+      const widthValues = [];
+
+      // Add No and Applicant
+      widthValues.push(4, 14);
+      totalWidth += 18;
+
+      // Add main criteria
+      const mainKeys = ['education', 'experience', 'training', 'performance'];
+      const mainWidths = [];
+      mainKeys.forEach((key) => {
+        const percent = parseFloat(baseWidths[key + 'Percent']);
+        const desc = parseFloat(baseWidths[key + 'Desc']);
+        mainWidths.push({ key, percent, desc });
+        totalWidth += percent + desc;
+      });
+
+      // Add QS Total
+      widthValues.push(9);
+      totalWidth += 9;
+
+      // Add BEI if exists
+      if (hasBei) {
+        totalWidth += 4 + 12; // BEI percent + description
+      }
+
+      // Calculate how much extra width we have
+      const extraWidth = 100 - totalWidth;
+
+      // Distribute extra width to main criteria
+      if (extraWidth !== 0) {
+        const adjustmentPerMain = extraWidth / mainWidths.length / 2;
+        mainWidths.forEach((w) => {
+          w.percent = Math.max(2, w.percent + adjustmentPerMain);
+          w.desc = Math.max(5, w.desc + adjustmentPerMain);
+        });
+      }
+
+      // Build final colWidths array
+      const colWidths = [];
+      colWidths.push('4%'); // No.
+      colWidths.push('14%'); // Applicant
+
+      // Add main criteria
+      for (let idx = 0; idx < criteriaColumns.length; idx++) {
+        const c = criteriaColumns[idx];
         if (c.isTwoColumn && c.columnType === 'percentage') {
           const nextCol = criteriaColumns[idx + 1];
-          if (
-            nextCol &&
-            nextCol.isTwoColumn &&
-            nextCol.columnType === 'description' &&
-            nextCol.key === c.key
-          ) {
-            colWidths.push(c.customWidth || '3%');
-            colWidths.push(nextCol.customWidth || '12%');
-          } else {
-            colWidths.push(c.customWidth || '3%');
-            colWidths.push('12%');
+          if (nextCol && nextCol.columnType === 'description' && nextCol.key === c.key) {
+            const widthData = mainWidths.find((w) => w.key === c.key);
+            if (widthData) {
+              colWidths.push(widthData.percent + '%');
+              colWidths.push(widthData.desc + '%');
+              idx++;
+            }
           }
-        } else if (c.isTwoColumn && c.columnType === 'description') {
-          // already pushed by its paired 'percentage' column above
-        } else {
-          colWidths.push(c.customWidth || '8%');
         }
-      });
-      colWidths.push('6%');
-      trailingColumns.forEach((c) => colWidths.push(c.customWidth || '8%'));
+      }
+
+      // Add QS Total
+      colWidths.push('9%');
+
+      // Add BEI if exists
+      if (hasBei) {
+        for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
+          const c = afterQSTableColumns[idx];
+          if (c.isTwoColumn && c.columnType === 'percentage') {
+            const nextCol = afterQSTableColumns[idx + 1];
+            if (nextCol && nextCol.columnType === 'description' && nextCol.key === c.key) {
+              colWidths.push('4%');
+              colWidths.push('12%');
+              idx++;
+            }
+          }
+        }
+      }
+
+      console.log(
+        'Total width:',
+        colWidths.reduce((sum, w) => sum + parseFloat(w), 0),
+      );
 
       // ---- Doc definition ----
       const docDefinition = {
         pageSize: 'LEGAL',
         pageOrientation: 'landscape',
-        pageMargins: [72, 120, 72, 40],
+        pageMargins: [72, 200, 72, 40],
         header: () => ({
           stack: [
             {
@@ -591,61 +741,68 @@
                 },
               ],
             },
+            {
+              text: 'INDIVIDUAL RATING REPORT',
+              fontSize: 12,
+              bold: true,
+              margin: [0, 10, 0, 10],
+              alignment: 'center',
+            },
+            {
+              table: {
+                widths: ['15%', '85%'],
+                body: [
+                  [
+                    { text: 'Office:', fontSize: 8, border: [false, false, false, false] },
+                    {
+                      text: office.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    { text: 'Position:', fontSize: 9, border: [false, false, false, false] },
+                    {
+                      text: position.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    { text: 'Salary Grade:', fontSize: 8, border: [false, false, false, false] },
+                    {
+                      text: salaryGrade.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                  [
+                    {
+                      text: 'Plantilla Item No:',
+                      fontSize: 8,
+                      border: [false, false, false, false],
+                    },
+                    {
+                      text: plantillaItemNo.value,
+                      fontSize: 8,
+                      bold: true,
+                      border: [false, false, false, false],
+                    },
+                  ],
+                ],
+              },
+              margin: [72, 0, 0, 8],
+            },
           ],
         }),
         content: [
           {
-            text: 'INDIVIDUAL RATING REPORT',
-            fontSize: 12,
-            bold: true,
-            margin: [0, -20, 0, 10],
-            alignment: 'center',
+            table: { headerRows: 3, widths: colWidths, body: rows, dontBreakRows: true },
+            layout: customLayout,
           },
-          {
-            table: {
-              widths: ['15%', '85%'],
-              body: [
-                [
-                  { text: 'Office:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: office.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Position:', fontSize: 9, border: [false, false, false, false] },
-                  {
-                    text: position.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Salary Grade:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: salaryGrade.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-                [
-                  { text: 'Plantilla Item No:', fontSize: 8, border: [false, false, false, false] },
-                  {
-                    text: plantillaItemNo.value,
-                    fontSize: 8,
-                    bold: true,
-                    border: [false, false, false, false],
-                  },
-                ],
-              ],
-            },
-            margin: [0, 0, 0, 8],
-          },
-          { table: { headerRows: 3, widths: colWidths, body: rows }, layout: customLayout },
           {
             unbreakable: true,
             margin: [0, 20, 0, 0],

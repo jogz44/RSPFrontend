@@ -202,15 +202,15 @@
       }
 
       // Add exams if it exists
-      if (Array.isArray(criteria.exams) && criteria.exams.length > 0) {
-        afterQSCriteria.push({
-          key: 'exams',
-          label: 'Exam',
-          weight: criteria.exams[0]?.weight || '',
-          qsText: qs.exams || '',
-          items: criteria.exams,
-        });
-      }
+      // if (Array.isArray(criteria.exams) && criteria.exams.length > 0) {
+      //   afterQSCriteria.push({
+      //     key: 'exams',
+      //     label: 'Exam',
+      //     weight: criteria.exams[0]?.weight || '',
+      //     qsText: qs.exams || '',
+      //     items: criteria.exams,
+      //   });
+      // }
 
       // ---- Build main criteriaColumns (before QS Total) ----
       const criteriaColumns = [];
@@ -550,50 +550,108 @@
       const rows = [headerRow1, headerRow2, headerRow3, ...dataRows];
 
       // ---- Column widths ----
-      const colWidths = ['4%', '14%'];
+      // Define base widths for each column type
+      const baseWidths = {
+        no: '4%',
+        applicant: '14%',
+        educationPercent: '3%',
+        educationDesc: '15%',
+        experiencePercent: '3%',
+        experienceDesc: '20%',
+        trainingPercent: '3%',
+        trainingDesc: '8%',
+        performancePercent: '3%',
+        performanceDesc: '8%',
+        qsTotal: '9%',
+        beiPercent: '4%',
+        beiDesc: '12%',
+      };
 
-      // Main criteria columns
+      // Check if BEI exists
+      const hasBei = afterQSCriteria.some((c) => c.key === 'behavioral');
+
+      // Calculate total width
+      let totalWidth = 0;
+      const widthValues = [];
+
+      // Add No and Applicant
+      widthValues.push(4, 14);
+      totalWidth += 18;
+
+      // Add main criteria
+      const mainKeys = ['education', 'experience', 'training', 'performance'];
+      const mainWidths = [];
+      mainKeys.forEach((key) => {
+        const percent = parseFloat(baseWidths[key + 'Percent']);
+        const desc = parseFloat(baseWidths[key + 'Desc']);
+        mainWidths.push({ key, percent, desc });
+        totalWidth += percent + desc;
+      });
+
+      // Add QS Total
+      widthValues.push(9);
+      totalWidth += 9;
+
+      // Add BEI if exists
+      if (hasBei) {
+        totalWidth += 4 + 12; // BEI percent + description
+      }
+
+      // Calculate how much extra width we have (should be negative if overflowing)
+      const extraWidth = 100 - totalWidth;
+
+      // Distribute extra width to main criteria if positive, or adjust if negative
+      if (extraWidth !== 0) {
+        const adjustmentPerMain = extraWidth / mainWidths.length / 2;
+        mainWidths.forEach((w) => {
+          w.percent = Math.max(2, w.percent + adjustmentPerMain);
+          w.desc = Math.max(5, w.desc + adjustmentPerMain);
+        });
+      }
+
+      // Build final colWidths array
+      const colWidths = [];
+      colWidths.push('4%'); // No.
+      colWidths.push('14%'); // Applicant
+
+      // Add main criteria
       for (let idx = 0; idx < criteriaColumns.length; idx++) {
         const c = criteriaColumns[idx];
         if (c.isTwoColumn && c.columnType === 'percentage') {
           const nextCol = criteriaColumns[idx + 1];
           if (nextCol && nextCol.columnType === 'description' && nextCol.key === c.key) {
-            colWidths.push(c.customWidth || '3%');
-            colWidths.push(nextCol.customWidth || '12%');
-            idx++;
-          } else {
-            colWidths.push(c.customWidth || '3%');
-            colWidths.push('12%');
+            const widthData = mainWidths.find((w) => w.key === c.key);
+            if (widthData) {
+              colWidths.push(widthData.percent + '%');
+              colWidths.push(widthData.desc + '%');
+              idx++;
+            }
           }
-        } else if (c.isTwoColumn && c.columnType === 'description') {
-          // already pushed
-        } else {
-          colWidths.push(c.customWidth || '8%');
         }
       }
 
-      // QS Total column
+      // Add QS Total
       colWidths.push('9%');
 
-      // After-QS columns (BEI/Exam)
-      for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
-        const c = afterQSTableColumns[idx];
-        if (c.isTwoColumn && c.columnType === 'percentage') {
-          const nextCol = afterQSTableColumns[idx + 1];
-          if (nextCol && nextCol.columnType === 'description' && nextCol.key === c.key) {
-            colWidths.push(c.customWidth || '4%');
-            colWidths.push(nextCol.customWidth || '12%');
-            idx++;
-          } else {
-            colWidths.push(c.customWidth || '4%');
-            colWidths.push('12%');
+      // Add BEI if exists
+      if (hasBei) {
+        for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
+          const c = afterQSTableColumns[idx];
+          if (c.isTwoColumn && c.columnType === 'percentage') {
+            const nextCol = afterQSTableColumns[idx + 1];
+            if (nextCol && nextCol.columnType === 'description' && nextCol.key === c.key) {
+              colWidths.push('4%');
+              colWidths.push('12%');
+              idx++;
+            }
           }
-        } else if (c.isTwoColumn && c.columnType === 'description') {
-          // already pushed
-        } else {
-          colWidths.push(c.customWidth || '10%');
         }
       }
+
+      console.log(
+        'Total width:',
+        colWidths.reduce((sum, w) => sum + parseFloat(w), 0),
+      );
 
       // ---- Doc definition ----
       const docDefinition = {

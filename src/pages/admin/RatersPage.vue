@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="q-pa-sm q-pa-md-md">
     <div class="column items-start justify-center q-mb-md">
       <h5 class="text-h5 q-ma-none"><b>Rater Management</b></h5>
       <div class="q-pa-md q-gutter-sm">
@@ -15,8 +15,8 @@
 
     <!-- Card -->
     <q-card>
-      <q-card-section class="row justify-between items-center">
-        <div>
+      <q-card-section class="row justify-between items-center q-gap-sm flex-wrap">
+        <div class="col-12 col-sm-auto">
           <q-input
             dense
             outlined
@@ -24,6 +24,7 @@
             placeholder="Search all raters..."
             clearable
             :disable="isLoadingTable"
+            style="min-width: 220px"
           >
             <template v-slot:prepend>
               <q-icon name="search" />
@@ -38,7 +39,7 @@
             </template>
           </q-input>
         </div>
-        <div v-if="canModifyRater">
+        <div v-if="canModifyRater" class="col-12 col-sm-auto">
           <q-btn
             rounded
             color="primary"
@@ -46,101 +47,107 @@
             @click="showAddModal"
             icon="add"
             :disable="isLoadingTable"
+            class="full-width-xs"
           />
         </div>
       </q-card-section>
 
       <q-separator />
 
-      <q-card-section>
-        <q-table
-          flat
-          bordered
-          :rows="filteredRaters"
-          :columns="columns"
-          row-key="id"
-          :loading="isLoadingTable"
-          loading-label="Loading raters..."
-          no-data-label="No raters found"
-        >
-          <template v-slot:body-cell-Office="props">
-            <q-td :props="props">
-              <div style="white-space: normal; overflow-wrap: break-word">
-                {{ props.row.office }}
-              </div>
-            </q-td>
-          </template>
+      <q-card-section class="q-pa-xs q-pa-md-md">
+        <div class="rater-table-wrapper">
+          <q-table
+            flat
+            bordered
+            :rows="filteredRaters"
+            :columns="columns"
+            row-key="id"
+            :loading="isLoadingTable"
+            loading-label="Loading raters..."
+            no-data-label="No raters found"
+            :wrap-cells="$q.screen.lt.md"
+          >
+            <template v-slot:body-cell-Office="props">
+              <q-td :props="props">
+                <div style="white-space: normal; overflow-wrap: break-word">
+                  {{ props.row.office }}
+                </div>
+              </q-td>
+            </template>
 
-          <template v-slot:body-cell-active="props">
-            <q-td :props="props">
-              <q-badge
-                :color="props.row.active ? 'green' : 'red'"
-                :label="props.row.active ? 'Active' : 'Inactive'"
-                class="q-pa-xs"
-              />
-            </q-td>
-          </template>
+            <template v-slot:body-cell-active="props">
+              <q-td :props="props">
+                <q-badge
+                  :color="props.row.active ? 'green' : 'red'"
+                  :label="props.row.active ? 'Active' : 'Inactive'"
+                  class="q-pa-xs"
+                />
+              </q-td>
+            </template>
 
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props">
-              <q-btn
-                flat
-                round
-                dense
-                icon="visibility"
-                @click="viewRater(props.row)"
-                color="info"
-                class="bg-blue-1"
-                :disable="isLoadingTable"
-              >
-                <q-tooltip>View</q-tooltip>
-              </q-btn>
-              <template v-if="canModifyRater">
+            <template v-slot:body-cell-actions="props">
+              <q-td :props="props">
                 <q-btn
                   flat
                   round
                   dense
-                  icon="edit"
-                  @click="editRater(props.row)"
-                  class="q-ml-sm bg-teal-1"
-                  color="positive"
+                  icon="visibility"
+                  @click="viewRater(props.row)"
+                  color="info"
+                  class="bg-blue-1"
                   :disable="isLoadingTable"
                 >
-                  <q-tooltip>Edit</q-tooltip>
+                  <q-tooltip>View</q-tooltip>
                 </q-btn>
-                <ButtonResetPassword
-                  v-if="props.row.id !== authStore.user?.id"
-                  :user-id="props.row.id"
-                />
-              </template>
-            </q-td>
-          </template>
+                <template v-if="canModifyRater">
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="edit"
+                    @click="editRater(props.row)"
+                    class="q-ml-sm bg-teal-1"
+                    color="positive"
+                    :disable="isLoadingTable"
+                  >
+                    <q-tooltip>Edit</q-tooltip>
+                  </q-btn>
+                  <ButtonResetPassword
+                    v-if="props.row.id !== authStore.user?.id"
+                    :user-id="props.row.id"
+                  />
+                </template>
+              </q-td>
+            </template>
 
-          <template v-slot:no-data="{ icon, message, filter }">
-            <div class="full-width row flex-center q-gutter-sm text-grey" style="padding: 60px 0">
-              <q-icon size="2em" :name="filter ? 'filter_alt_off' : icon || 'inbox'" />
-              <span>
-                {{
-                  filter ? 'No raters match your search criteria' : message || 'No raters available'
-                }}
-              </span>
-            </div>
-          </template>
-        </q-table>
+            <template v-slot:no-data="{ icon, message, filter }">
+              <div class="full-width row flex-center q-gutter-sm text-grey" style="padding: 60px 0">
+                <q-icon size="2em" :name="filter ? 'filter_alt_off' : icon || 'inbox'" />
+                <span>
+                  {{
+                    filter
+                      ? 'No raters match your search criteria'
+                      : message || 'No raters available'
+                  }}
+                </span>
+              </div>
+            </template>
+          </q-table>
+        </div>
       </q-card-section>
     </q-card>
 
     <!-- Add/Edit Rater Modal -->
     <q-dialog v-if="canModifyRater" v-model="showModal" persistent>
-      <q-card style="width: 600px; max-width: 90vw">
+      <q-card style="width: 600px; max-width: 95vw">
         <q-card-section class="row items-center justify-between bg-primary text-white">
-          <div class="text-h4">
+          <div class="text-h6">
             <b>{{ isEditMode ? 'Edit Rater' : 'Add a Rater' }}</b>
           </div>
           <q-btn icon="close" flat round dense @click="closeModal" />
         </q-card-section>
 
-        <q-card-section>
+        <q-card-section class="q-pa-md" style="max-height: 70vh; overflow-y: auto">
           <q-banner v-if="showError" class="bg-red-2 text-red-10 q-mb-md" rounded>
             <template v-slot:avatar>
               <q-icon name="error" color="negative" />
@@ -574,69 +581,73 @@
     </q-dialog>
 
     <!-- View Rater Dialog -->
-    <q-dialog v-model="showViewDialog" persistent>
-      <q-card style="width: 800px; max-width: 95vw; display: flex; flex-direction: column">
-        <q-card-section class="bg-grey-2 q-px-lg q-py-md sticky-header">
-          <div class="text-h6">Jobs to Rate</div>
-          <q-btn
-            icon="close"
-            flat
-            round
-            dense
-            v-close-popup
-            class="absolute-top-right q-mt-sm q-mr-sm"
-          />
+    <q-dialog v-model="showViewDialog" persistent :maximized="$q.screen.lt.sm">
+      <q-card
+        class="view-rater-card"
+        :style="$q.screen.lt.sm ? '' : 'width: 900px; max-width: 95vw;'"
+      >
+        <!-- Header -->
+        <q-card-section
+          class="bg-grey-2 q-px-md q-px-lg-lg q-py-md row items-center justify-between no-wrap"
+        >
+          <div class="text-h6 ellipsis">Jobs to Rate</div>
+          <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-        <q-card-section class="q-px-lg sticky-info">
-          <div class="row q-col-gutter-md">
-            <div class="col">
-              <div class="text-subtitle1 q-mb-sm">
-                <strong>Rater:</strong>
-                {{ formattedRaterName }}
-              </div>
-              <div class="text-subtitle1 q-mb-sm">
-                <strong>Office:</strong>
-                {{ currentViewRater.office }}
-              </div>
-              <div class="text-subtitle1 q-mb-sm" v-if="currentViewRater.prefix">
-                <strong>Honorific Title:</strong>
-                {{ currentViewRater.prefix }}
-              </div>
-              <div class="text-subtitle1 q-mb-sm" v-if="currentViewRater.suffix">
-                <strong>Post-Nominal:</strong>
-                {{ formatSuffixDisplay(currentViewRater.suffix) }}
-              </div>
-              <div class="text-subtitle1 q-mb-sm">
-                <strong>Representation:</strong>
-                {{ currentViewRater.representative || '—' }}
-              </div>
-              <div class="text-subtitle1 q-mb-sm">
-                <strong>Role:</strong>
-                <q-badge
-                  v-if="currentViewRater.role"
-                  :color="currentViewRater.role === 'Chairperson' ? 'purple' : 'teal'"
-                  text-color="white"
-                  class="q-pa-xs q-ml-xs"
-                >
-                  <q-icon
-                    :name="currentViewRater.role === 'Chairperson' ? 'star' : 'group'"
-                    size="xs"
-                    class="q-mr-xs"
-                  />
-                  {{ currentViewRater.role }}
-                </q-badge>
-                <span v-else class="text-grey">—</span>
+        <!-- Rater Info -->
+        <q-card-section class="q-px-md q-px-lg-lg q-py-sm bg-white rater-info-section">
+          <div class="row q-col-gutter-md items-start">
+            <div class="col-12 col-sm">
+              <div class="info-grid">
+                <div class="info-row">
+                  <span class="info-label">Rater</span>
+                  <span class="info-value">{{ formattedRaterName }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Office</span>
+                  <span class="info-value">{{ currentViewRater.office }}</span>
+                </div>
+                <div class="info-row" v-if="currentViewRater.prefix">
+                  <span class="info-label">Honorific</span>
+                  <span class="info-value">{{ currentViewRater.prefix }}</span>
+                </div>
+                <div class="info-row" v-if="currentViewRater.suffix">
+                  <span class="info-label">Post-Nominal</span>
+                  <span class="info-value">{{ formatSuffixDisplay(currentViewRater.suffix) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Representation</span>
+                  <span class="info-value">{{ currentViewRater.representative || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Role</span>
+                  <span class="info-value">
+                    <q-badge
+                      v-if="currentViewRater.role"
+                      :color="currentViewRater.role === 'Chairperson' ? 'purple' : 'teal'"
+                      text-color="white"
+                      class="q-pa-xs"
+                    >
+                      <q-icon
+                        :name="currentViewRater.role === 'Chairperson' ? 'star' : 'group'"
+                        size="xs"
+                        class="q-mr-xs"
+                      />
+                      {{ currentViewRater.role }}
+                    </q-badge>
+                    <span v-else class="text-grey">—</span>
+                  </span>
+                </div>
               </div>
             </div>
-            <div class="col-auto">
+            <div class="col-12 col-sm-auto">
               <q-input
                 outlined
                 v-model="jobSearch"
                 placeholder="Search jobs..."
                 dense
                 clearable
-                style="width: 250px"
+                style="min-width: 220px"
               >
                 <template v-slot:prepend>
                   <q-icon name="search" />
@@ -646,148 +657,331 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="q-pa-md q-mx-md scrollable-content">
+        <q-separator />
+
+        <!-- Jobs Table -->
+        <q-card-section class="q-pa-md scrollable-content">
           <div v-if="isLoadingJobs" class="flex flex-center q-py-xl">
             <q-spinner size="50px" color="primary" />
             <div class="q-ml-md">Loading assigned jobs...</div>
           </div>
 
-          <div v-else-if="jobLoadError" class="flex flex-center q-py-xl">
-            <q-icon name="error" size="40px" color="negative" />
-            <div class="q-ml-md text-negative">{{ jobLoadError }}</div>
+          <div v-else-if="jobLoadError && raterJobs.length === 0" class="flex flex-center q-py-xl">
+            <q-icon name="inbox" size="40px" color="grey-5" />
+            <div class="q-ml-md text-grey-6">No jobs assigned to this rater</div>
           </div>
 
-          <q-table
-            v-else
-            flat
-            bordered
-            :rows="filteredJobs"
-            :columns="jobColumns"
-            row-key="id"
-            :pagination="pagination"
-            class="sticky-header-table no-horizontal-scroll"
-            wrap-cells
-            virtual-scroll
-          >
-            <template v-slot:body-cell-position="props">
-              <q-td :props="props" class="position-column">
-                <div class="full-position-text" :title="props.row.Position">
-                  {{ props.row.Position }}
-                </div>
-              </q-td>
-            </template>
+          <template v-else>
+            <!-- Desktop/Tablet Table -->
+            <q-table
+              v-if="!$q.screen.lt.sm"
+              flat
+              bordered
+              :rows="filteredJobs"
+              :columns="jobColumns"
+              row-key="job_batches_rsp_id"
+              :pagination="pagination"
+              class="jobs-table"
+              wrap-cells
+            >
+              <template v-slot:body-cell-position="props">
+                <q-td :props="props" class="position-column">
+                  <div class="full-position-text">{{ props.row.Position }}</div>
+                </q-td>
+              </template>
 
-            <template v-slot:body-cell-office="props">
-              <q-td :props="props" class="office-column">
-                <div class="full-office-text" :title="props.row.Office">
-                  {{ props.row.Office }}
-                </div>
-              </q-td>
-            </template>
+              <template v-slot:body-cell-office="props">
+                <q-td :props="props" class="office-column">
+                  <div class="full-office-text">{{ props.row.Office }}</div>
+                </q-td>
+              </template>
 
-            <template v-slot:body-cell-applicant="props">
-              <q-td :props="props" class="text-center">
-                <div class="text-grey-9">
-                  {{ props.row.applicant }}
-                  <q-icon name="people" size="xs" class="q-ml-xs" />
-                </div>
-              </q-td>
-            </template>
+              <template v-slot:body-cell-applicant="props">
+                <q-td :props="props" class="text-center">
+                  <div class="text-grey-9">
+                    {{ props.row.applicant }}
+                    <q-icon name="people" size="xs" class="q-ml-xs" />
+                  </div>
+                </q-td>
+              </template>
 
-            <template v-slot:body-cell-status="props">
-              <q-td :props="props" class="text-center">
-                <q-chip
-                  :color="
-                    props.row.status === 'pending'
-                      ? 'amber'
-                      : props.row.status === 'complete'
-                        ? 'green'
-                        : 'grey'
-                  "
-                  text-color="white"
-                  class="q-pa-sm"
-                  outline
+              <template v-slot:body-cell-status="props">
+                <q-td :props="props" class="text-center">
+                  <q-chip
+                    :color="getStatusColor(props.row.status)"
+                    text-color="white"
+                    class="q-pa-sm"
+                    dense
+                    outline
+                  >
+                    {{ props.row.status }}
+                  </q-chip>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props" class="text-center">
+                  <template v-if="canReportRaterManagement">
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="print"
+                      color="primary"
+                      @click="openRatingFormReport(props.row)"
+                      :loading="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                      :disable="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
+                    >
+                      <q-tooltip>Print Rating Form</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="note_add"
+                      color="info"
+                      class="q-ml-xs"
+                      @click="openEmptyRatingFormReport(props.row)"
+                      :loading="
+                        emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)
+                      "
+                      :disable="
+                        emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)
+                      "
+                    >
+                      <q-tooltip>Print Empty Rating Form</q-tooltip>
+                    </q-btn>
+                  </template>
+                  <!-- Return Rating Button -->
+                  <q-btn
+                    flat
+                    round
+                    dense
+                    icon="undo"
+                    color="warning"
+                    class="q-ml-xs"
+                    @click="openReturnRatingDialog(props.row)"
+                    :disable="props.row.status === 'returned' || isReturningRating"
+                  >
+                    <q-tooltip>
+                      {{ props.row.status === 'returned' ? 'Already Returned' : 'Return Rating' }}
+                    </q-tooltip>
+                  </q-btn>
+                  <span v-if="!canReportRaterManagement" class="text-grey-5 text-caption">
+                    No report access
+                  </span>
+                </q-td>
+              </template>
+
+              <template v-slot:no-data>
+                <div
+                  class="full-width row flex-center q-gutter-sm text-grey"
+                  style="padding: 40px 0"
                 >
-                  {{ props.row.status }}
-                </q-chip>
-              </q-td>
-            </template>
-
-            <!-- Actions column with permission check -->
-            <template v-slot:body-cell-actions="props">
-              <q-td :props="props" class="text-center">
-                <template v-if="canReportRaterManagement">
-                  <q-btn
-                    flat
-                    round
-                    dense
-                    icon="print"
-                    color="primary"
-                    @click="openRatingFormReport(props.row)"
-                    :loading="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                    :disable="printingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                  >
-                    <q-tooltip>Print Rating Form</q-tooltip>
-                  </q-btn>
-                  <q-btn
-                    flat
-                    round
-                    dense
-                    icon="note_add"
-                    color="info"
-                    class="q-ml-sm"
-                    @click="openEmptyRatingFormReport(props.row)"
-                    :loading="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                    :disable="emptyPrintingJobId === (props.row.job_batches_rsp_id || props.row.id)"
-                  >
-                    <q-tooltip>Print Empty Rating Form</q-tooltip>
-                  </q-btn>
-                </template>
-                <span v-else class="text-grey-5 text-caption">No report access</span>
-              </q-td>
-            </template>
-
-            <template v-slot:no-data>
-              <div class="full-width row flex-center q-gutter-sm text-grey">
-                <q-icon size="2em" name="inbox" />
-                <span>No jobs assigned to this rater</span>
-              </div>
-            </template>
-
-            <template v-slot:bottom="scope">
-              <div class="row items-center justify-between full-width q-px-md">
-                <div>Records per page: {{ scope.pagination.rowsPerPage }}</div>
-                <div>
-                  {{ (scope.pagination.page - 1) * scope.pagination.rowsPerPage + 1 }}-{{
-                    Math.min(
-                      scope.pagination.page * scope.pagination.rowsPerPage,
-                      filteredJobs.length,
-                    )
-                  }}
-                  of {{ filteredJobs.length }}
+                  <q-icon size="2em" name="inbox" />
+                  <span>No jobs assigned to this rater</span>
                 </div>
+              </template>
+
+              <template v-slot:bottom="scope">
+                <div class="row items-center justify-between full-width q-px-sm q-py-xs">
+                  <div class="text-caption text-grey-7">
+                    Rows per page: {{ scope.pagination.rowsPerPage }}
+                  </div>
+                  <div class="text-caption text-grey-7">
+                    {{ (scope.pagination.page - 1) * scope.pagination.rowsPerPage + 1 }}–{{
+                      Math.min(
+                        scope.pagination.page * scope.pagination.rowsPerPage,
+                        filteredJobs.length,
+                      )
+                    }}
+                    of {{ filteredJobs.length }}
+                  </div>
+                </div>
+              </template>
+            </q-table>
+
+            <!-- Mobile Card List -->
+            <div v-else class="column q-gutter-sm">
+              <div v-if="filteredJobs.length === 0" class="text-center text-grey q-py-xl">
+                <q-icon size="2em" name="inbox" />
+                <div class="q-mt-sm">No jobs assigned to this rater</div>
               </div>
-            </template>
-          </q-table>
+              <q-card
+                v-for="job in filteredJobs"
+                :key="job.job_batches_rsp_id || job.id"
+                flat
+                bordered
+                class="q-pa-sm"
+              >
+                <div class="text-subtitle2 text-weight-bold q-mb-xs">{{ job.Position }}</div>
+                <div class="text-caption text-grey-7 q-mb-xs">{{ job.Office }}</div>
+                <div class="row items-center justify-between q-mt-sm">
+                  <div class="row items-center q-gutter-xs">
+                    <q-chip
+                      :color="getStatusColor(job.status)"
+                      text-color="white"
+                      dense
+                      outline
+                      class="q-pa-xs"
+                    >
+                      {{ job.status }}
+                    </q-chip>
+                    <span class="text-caption text-grey-7">
+                      {{ job.applicant }}
+                      <q-icon name="people" size="xs" />
+                    </span>
+                  </div>
+                  <div class="row q-gutter-xs">
+                    <template v-if="canReportRaterManagement">
+                      <q-btn
+                        flat
+                        round
+                        dense
+                        icon="print"
+                        color="primary"
+                        size="sm"
+                        @click="openRatingFormReport(job)"
+                        :loading="printingJobId === (job.job_batches_rsp_id || job.id)"
+                        :disable="printingJobId === (job.job_batches_rsp_id || job.id)"
+                      >
+                        <q-tooltip>Print Rating Form</q-tooltip>
+                      </q-btn>
+                      <q-btn
+                        flat
+                        round
+                        dense
+                        icon="note_add"
+                        color="info"
+                        size="sm"
+                        @click="openEmptyRatingFormReport(job)"
+                        :loading="emptyPrintingJobId === (job.job_batches_rsp_id || job.id)"
+                        :disable="emptyPrintingJobId === (job.job_batches_rsp_id || job.id)"
+                      >
+                        <q-tooltip>Print Empty Rating Form</q-tooltip>
+                      </q-btn>
+                    </template>
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="undo"
+                      color="warning"
+                      size="sm"
+                      @click="openReturnRatingDialog(job)"
+                      :disable="job.status === 'returned' || isReturningRating"
+                    >
+                      <q-tooltip>
+                        {{ job.status === 'returned' ? 'Already Returned' : 'Return Rating' }}
+                      </q-tooltip>
+                    </q-btn>
+                  </div>
+                </div>
+              </q-card>
+            </div>
+          </template>
         </q-card-section>
 
-        <q-card-section class="q-pt-md q-px-lg sticky-footer">
-          <div class="row justify-between items-center">
+        <!-- Footer Summary -->
+        <q-separator />
+        <q-card-section class="q-py-sm q-px-md q-px-lg-lg">
+          <div class="row justify-between items-center flex-wrap q-gap-xs">
             <div class="text-caption text-grey-7">
               Showing {{ filteredJobs.length }} job{{ filteredJobs.length !== 1 ? 's' : '' }}
             </div>
             <div class="row q-gutter-md">
-              <div class="text-primary flex items-center">
-                <q-icon name="assignment" size="sm" class="q-mr-xs" />
+              <div class="text-primary flex items-center text-caption">
+                <q-icon name="assignment" size="xs" class="q-mr-xs" />
                 Total Jobs: {{ raterJobs.length }}
               </div>
-              <div class="text-info flex items-center">
-                <q-icon name="people" size="sm" class="q-mr-xs" />
+              <div class="text-info flex items-center text-caption">
+                <q-icon name="people" size="xs" class="q-mr-xs" />
                 Total Applicants: {{ totalApplicants }}
               </div>
             </div>
           </div>
         </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Return Rating Confirmation Dialog -->
+    <q-dialog v-model="showReturnRatingDialog" persistent>
+      <q-card style="width: 460px; max-width: 95vw">
+        <q-card-section class="row items-center justify-between bg-warning text-white">
+          <div class="row items-center q-gutter-sm">
+            <q-icon name="undo" size="sm" />
+            <div class="text-subtitle1 text-weight-bold">Return Rating</div>
+          </div>
+          <q-btn
+            icon="close"
+            flat
+            round
+            dense
+            @click="closeReturnRatingDialog"
+            :disable="isReturningRating"
+          />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md">
+          <div class="text-body1 q-mb-md">
+            Are you sure you want to return the rating status for this job?
+          </div>
+
+          <q-card flat bordered class="bg-grey-1 q-pa-md q-mb-md">
+            <div class="info-row q-mb-xs">
+              <span class="info-label">Position</span>
+              <span class="info-value text-weight-medium">
+                {{ selectedReturnJob?.Position || '—' }}
+              </span>
+            </div>
+            <div class="info-row q-mb-xs">
+              <span class="info-label">Office</span>
+              <span class="info-value">{{ selectedReturnJob?.Office || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Current Status</span>
+              <span class="info-value">
+                <q-chip
+                  :color="getStatusColor(selectedReturnJob?.status)"
+                  text-color="white"
+                  dense
+                  outline
+                  class="q-pa-xs"
+                >
+                  {{ selectedReturnJob?.status || '—' }}
+                </q-chip>
+              </span>
+            </div>
+          </q-card>
+
+          <q-banner class="bg-orange-1 text-orange-10" rounded>
+            <template v-slot:avatar>
+              <q-icon name="info" color="warning" />
+            </template>
+            This will update the job's rating status to
+            <strong>returned</strong>
+            . This action allows the rater to edit the rating.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-px-md q-pb-md">
+          <q-btn
+            flat
+            rounded
+            label="Cancel"
+            color="grey-7"
+            @click="closeReturnRatingDialog"
+            :disable="isReturningRating"
+          />
+          <q-btn
+            rounded
+            label="Confirm Return"
+            color="warning"
+            icon="undo"
+            @click="confirmReturnRating"
+            :loading="isReturningRating"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
@@ -835,7 +1029,6 @@
     return authStore.user?.permissions?.modifyRater === '1';
   });
 
-  // Permission for Rater Management Reports (Print forms)
   const canReportRaterManagement = computed(() => {
     return authStore.user?.permissions?.reportRaterManagementAccess === '1';
   });
@@ -864,6 +1057,11 @@
   // ==================== RATING FORM CACHE ====================
   const ratingFormCache = ref(new Map());
   const emptyRatingFormCache = ref(new Map());
+
+  // ==================== RETURN RATING STATE ====================
+  const showReturnRatingDialog = ref(false);
+  const selectedReturnJob = ref(null);
+  const isReturningRating = ref(false);
 
   // ==================== MODAL STATE ====================
   const showModal = ref(false);
@@ -929,8 +1127,8 @@
 
   // ==================== JOB COLUMNS ====================
   const jobColumns = [
-    { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 30%' },
-    { name: 'office', label: 'Office', field: 'Office', align: 'left', style: 'width: 30%' },
+    { name: 'position', label: 'Position', field: 'Position', align: 'left', style: 'width: 28%' },
+    { name: 'office', label: 'Office', field: 'Office', align: 'left', style: 'width: 28%' },
     {
       name: 'applicant',
       label: 'Applicants',
@@ -938,8 +1136,8 @@
       align: 'center',
       style: 'width: 10%',
     },
-    { name: 'status', label: 'Status', field: 'status', align: 'center', style: 'width: 15%' },
-    { name: 'actions', label: 'Actions', align: 'center', style: 'width: 15%' },
+    { name: 'status', label: 'Status', field: 'status', align: 'center', style: 'width: 14%' },
+    { name: 'actions', label: 'Actions', align: 'center', style: 'width: 20%' },
   ];
 
   // ==================== COLUMNS ====================
@@ -1092,6 +1290,17 @@
     return String(suffix);
   };
 
+  const getStatusColor = (status) => {
+    if (!status) return 'grey';
+    const map = {
+      pending: 'amber',
+      complete: 'green',
+      completed: 'green',
+      returned: 'deep-orange',
+    };
+    return map[status.toLowerCase()] || 'grey';
+  };
+
   // ==================== POSITION SELECTION ====================
   const isPositionSelected = (id) => {
     const current = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
@@ -1190,6 +1399,82 @@
         r.name.toLowerCase().includes(needle),
       );
     });
+  };
+
+  // ==================== RETURN RATING ====================
+  const openReturnRatingDialog = (job) => {
+    if (job.status === 'returned') {
+      toast.info('This job rating has already been returned');
+      return;
+    }
+    selectedReturnJob.value = job;
+    showReturnRatingDialog.value = true;
+  };
+
+  const closeReturnRatingDialog = () => {
+    if (isReturningRating.value) return;
+    showReturnRatingDialog.value = false;
+    selectedReturnJob.value = null;
+    ratingFormStore.resetReturnStatus();
+  };
+
+  const confirmReturnRating = async () => {
+    if (!selectedReturnJob.value) return;
+
+    const jobPostAssignId = selectedReturnJob.value.job_post_assign_id;
+    if (!jobPostAssignId) {
+      toast.error('Job assignment ID not found');
+      return;
+    }
+
+    isReturningRating.value = true;
+    try {
+      await ratingFormStore.returnRating(jobPostAssignId);
+
+      // Update the job's status locally for immediate feedback
+      const jobIndex = raterJobs.value.findIndex(
+        (j) =>
+          j.job_post_assign_id === jobPostAssignId ||
+          j.job_batches_rsp_id === selectedReturnJob.value.job_batches_rsp_id,
+      );
+      if (jobIndex !== -1) {
+        raterJobs.value[jobIndex] = {
+          ...raterJobs.value[jobIndex],
+          status: 'returned',
+        };
+      }
+
+      toast.success('Rating status updated to returned successfully');
+
+      // Reset flag before closing so the guard in closeReturnRatingDialog doesn't block it
+      isReturningRating.value = false;
+      showReturnRatingDialog.value = false;
+      selectedReturnJob.value = null;
+      ratingFormStore.resetReturnStatus();
+
+      // Refresh jobs list from server to ensure data consistency
+      await refreshRaterJobs();
+    } catch (error) {
+      console.error('Error returning rating:', error);
+      toast.error(error.response?.data?.message || 'Failed to return rating status');
+      isReturningRating.value = false;
+    }
+  };
+
+  // Refresh rater jobs after return rating action
+  const refreshRaterJobs = async () => {
+    if (!currentViewRater.value?.id) return;
+    try {
+      const response = await jobPostStore.assign_job_list(currentViewRater.value.id);
+      if (response && response.data) {
+        raterJobs.value = Array.isArray(response.data) ? response.data : [];
+      }
+      // Invalidate rating form caches for this rater since data may have changed
+      ratingFormCache.value.clear();
+      emptyRatingFormCache.value.clear();
+    } catch (error) {
+      console.error('Error refreshing rater jobs:', error);
+    }
   };
 
   // ==================== OPEN RATING FORM REPORT ====================
@@ -1380,6 +1665,7 @@
     isLoadingJobs.value = true;
     jobLoadError.value = '';
     raterJobs.value = [];
+    jobSearch.value = '';
     pagination.value.page = 1;
     showViewDialog.value = true;
 
@@ -1645,45 +1931,85 @@
 </script>
 
 <style scoped>
+  /* ==================== TABLE ====================  */
+  .rater-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+  }
+
   .q-table {
     width: 100%;
+    min-width: 480px;
   }
 
-  .sticky-header-table .q-table__top,
-  .sticky-header-table .q-table__bottom,
-  .sticky-header-table thead tr:first-child th {
-    background-color: white;
+  /* ==================== VIEW DIALOG CARD ====================  */
+  .view-rater-card {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
   }
 
-  .sticky-header-table thead tr th {
-    position: sticky;
-    z-index: 1;
+  @media (max-width: 599px) {
+    .view-rater-card {
+      max-height: 100vh;
+      border-radius: 0;
+    }
   }
 
-  .sticky-header-table thead tr:first-child th {
-    top: 0;
+  .scrollable-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
   }
 
-  .no-horizontal-scroll {
-    table-layout: fixed;
+  /* ==================== RATER INFO GRID ====================  */
+  .info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #616161;
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+
+  .info-value {
+    font-size: 0.875rem;
+    color: #212121;
+    flex: 1;
+    word-break: break-word;
+  }
+
+  /* ==================== JOBS TABLE ====================  */
+  .jobs-table {
     width: 100%;
+    table-layout: fixed;
   }
 
-  .no-horizontal-scroll th,
-  .no-horizontal-scroll td {
+  .jobs-table th,
+  .jobs-table td {
     overflow: hidden;
     white-space: normal;
     word-break: break-word;
   }
 
   .position-column {
-    width: 30%;
-    max-width: 300px;
+    width: 28%;
   }
 
   .office-column {
-    width: 35%;
-    max-width: 350px;
+    width: 28%;
   }
 
   .full-position-text,
@@ -1692,35 +2018,33 @@
     word-break: break-word;
     line-height: 1.4;
     padding: 2px 0;
-    width: 100%;
   }
 
-  .sticky-header {
+  /* ==================== STICKY HEADERS ====================  */
+  .jobs-table .q-table__top,
+  .jobs-table .q-table__bottom,
+  .jobs-table thead tr:first-child th {
+    background-color: white;
+  }
+
+  .jobs-table thead tr th {
     position: sticky;
     top: 0;
-    z-index: 2;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
   }
 
-  .sticky-info {
-    position: sticky;
-    top: 65px;
-    z-index: 2;
-    background: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  /* ==================== MISC ====================  */
+  .full-width-xs {
+    width: auto;
   }
 
-  .scrollable-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    max-height: calc(80vh - 200px);
+  @media (max-width: 374px) {
+    .full-width-xs {
+      width: 100%;
+    }
   }
 
-  .sticky-footer {
-    position: sticky;
-    bottom: 0;
-    background: white;
-    z-index: 2;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  .rater-info-section {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 </style>

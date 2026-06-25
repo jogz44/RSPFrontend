@@ -10,6 +10,7 @@ export const use_rating_form_store = defineStore('rating_form_store', {
     error: null,
     rater: null,
     raterApplicants: [],
+    returnStatus: null, // Add state for return status
   }),
 
   getters: {
@@ -87,6 +88,36 @@ export const use_rating_form_store = defineStore('rating_form_store', {
       } finally {
         this.loading = false;
       }
+    },
+
+    async returnRating(job_post_assign_id) {
+      this.loading = true;
+      this.error = null;
+      this.returnStatus = null;
+
+      try {
+        const payload = {
+          job_post_assign_id: job_post_assign_id,
+          status: 'Returned',
+        };
+
+        const { data } = await adminApi.put('/rating/returned', payload);
+
+        this.returnStatus = data;
+        return data;
+      } catch (err) {
+        console.error('Error returning rating:', err.response?.data);
+        this.error = err;
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Optional: Reset return status
+    resetReturnStatus() {
+      this.returnStatus = null;
+      this.error = null;
     },
   },
 });
