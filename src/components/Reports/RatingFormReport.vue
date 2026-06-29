@@ -218,6 +218,9 @@
         });
       }
 
+      // FILTER OUT EXAMS - Only keep behavioral
+      const filteredAfterQSCriteria = afterQSCriteria.filter((c) => c.key === 'behavioral');
+
       // ---- Build main criteriaColumns (before QS Total) ----
       const criteriaColumns = [];
       criteriaOrder.forEach((key) => {
@@ -255,7 +258,7 @@
       });
 
       const afterQSTableColumns = [];
-      afterQSCriteria.forEach((criterion) => {
+      filteredAfterQSCriteria.forEach((criterion) => {
         // Percentage column
         afterQSTableColumns.push({
           key: criterion.key,
@@ -361,7 +364,7 @@
         if (key === 'experience') {
           percentageWidth = '10%';
           descriptionWidth = '90%';
-        } else if (key === 'behavioral' || key === 'exams') {
+        } else if (key === 'behavioral') {
           percentageWidth = '20%';
           descriptionWidth = '80%';
         }
@@ -524,7 +527,7 @@
             border: [true, true, true, true],
           });
 
-          // Scores for after-QS criteria (BEI)
+          // Scores for after-QS criteria (BEI only)
           for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
             const c = afterQSTableColumns[idx];
             if (c.isTwoColumn) {
@@ -589,7 +592,7 @@
       };
 
       // Check if BEI exists
-      const hasBei = afterQSCriteria.some((c) => c.key === 'behavioral');
+      const hasBei = filteredAfterQSCriteria.some((c) => c.key === 'behavioral');
 
       // Calculate total width
       let totalWidth = 0;

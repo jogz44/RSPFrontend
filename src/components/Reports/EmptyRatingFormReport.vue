@@ -187,7 +187,7 @@
       // Main criteria only (without behavioral)
       const criteriaOrder = ['education', 'experience', 'training', 'performance'];
 
-      // Criteria that go AFTER QS Total (BEI and Exams)
+      // Criteria that go AFTER QS Total (BEI only - exams removed)
       const afterQSCriteria = [];
 
       // Add behavioral if it exists
@@ -201,16 +201,7 @@
         });
       }
 
-      // Add exams if it exists
-      // if (Array.isArray(criteria.exams) && criteria.exams.length > 0) {
-      //   afterQSCriteria.push({
-      //     key: 'exams',
-      //     label: 'Exam',
-      //     weight: criteria.exams[0]?.weight || '',
-      //     qsText: qs.exams || '',
-      //     items: criteria.exams,
-      //   });
-      // }
+      // EXAMS COMPLETELY REMOVED - No exams will be shown
 
       // ---- Build main criteriaColumns (before QS Total) ----
       const criteriaColumns = [];
@@ -355,7 +346,7 @@
         if (key === 'experience') {
           percentageWidth = '10%';
           descriptionWidth = '90%';
-        } else if (key === 'behavioral' || key === 'exams') {
+        } else if (key === 'behavioral') {
           percentageWidth = '20%';
           descriptionWidth = '80%';
         }
@@ -510,7 +501,7 @@
           // QS Total - empty
           row.push({ text: '', alignment: 'center', border: [true, true, true, true] });
 
-          // Empty scores for after-QS criteria (BEI/Exam)
+          // Empty scores for after-QS criteria (BEI only)
           for (let idx = 0; idx < afterQSTableColumns.length; idx++) {
             const c = afterQSTableColumns[idx];
             if (c.isTwoColumn) {
