@@ -619,6 +619,15 @@
     return props.position.tblStructureDetails_ID || null;
   });
 
+  // Determine which score source to use to populate the form.
+  // If the rater rating status is "Returned" (case-insensitive), use the
+  // previously submitted `rating_score`. Otherwise (e.g. "pending"), use
+  // the `draft_score` as before.
+  const isReturnedStatus = computed(() => {
+    const status = (props.position?.rater_rating_status || '').toString().toLowerCase();
+    return status === 'returned';
+  });
+
   // Transform criteria structure to include items array (MAX RATE uses weight)
   const education = computed(() => {
     const edu = props.criteria.education || {};
@@ -880,53 +889,58 @@
   // Methods
   const initializeApplicants = () => {
     if (props.applicants?.length > 0) {
+      // Choose the score source depending on the rater rating status:
+      // - "Returned" -> repopulate from the previously submitted rating_score
+      // - anything else (e.g. "pending") -> repopulate from draft_score
+      const useRatingScore = isReturnedStatus.value;
+
       applicantsData.value = props.applicants.map((applicant) => {
-        const draftScore = applicant.draft_score || {};
+        const sourceScore = (useRatingScore ? applicant.rating_score : applicant.draft_score) || {};
         const computedExamScore = getExamScore(applicant);
 
         return {
           ...applicant,
           educationScore:
-            draftScore.education_score !== null &&
-            draftScore.education_score !== undefined &&
-            draftScore.education_score !== 0 &&
-            draftScore.education_score !== '-'
-              ? formatNumber(draftScore.education_score)
+            sourceScore.education_score !== null &&
+            sourceScore.education_score !== undefined &&
+            sourceScore.education_score !== 0 &&
+            sourceScore.education_score !== '-'
+              ? formatNumber(sourceScore.education_score)
               : '',
           experienceScore:
-            draftScore.experience_score !== null &&
-            draftScore.experience_score !== undefined &&
-            draftScore.experience_score !== 0 &&
-            draftScore.experience_score !== '-'
-              ? formatNumber(draftScore.experience_score)
+            sourceScore.experience_score !== null &&
+            sourceScore.experience_score !== undefined &&
+            sourceScore.experience_score !== 0 &&
+            sourceScore.experience_score !== '-'
+              ? formatNumber(sourceScore.experience_score)
               : '',
           trainingScore:
-            draftScore.training_score !== null &&
-            draftScore.training_score !== undefined &&
-            draftScore.training_score !== 0 &&
-            draftScore.training_score !== '-'
-              ? formatNumber(draftScore.training_score)
+            sourceScore.training_score !== null &&
+            sourceScore.training_score !== undefined &&
+            sourceScore.training_score !== 0 &&
+            sourceScore.training_score !== '-'
+              ? formatNumber(sourceScore.training_score)
               : '',
           performanceScore:
-            draftScore.performance_score !== null &&
-            draftScore.performance_score !== undefined &&
-            draftScore.performance_score !== 0 &&
-            draftScore.performance_score !== '-'
-              ? formatNumber(draftScore.performance_score)
+            sourceScore.performance_score !== null &&
+            sourceScore.performance_score !== undefined &&
+            sourceScore.performance_score !== 0 &&
+            sourceScore.performance_score !== '-'
+              ? formatNumber(sourceScore.performance_score)
               : '',
           behavioralScore:
-            draftScore.behavioral_score !== null &&
-            draftScore.behavioral_score !== undefined &&
-            draftScore.behavioral_score !== 0 &&
-            draftScore.behavioral_score !== '-'
-              ? formatNumber(draftScore.behavioral_score)
+            sourceScore.behavioral_score !== null &&
+            sourceScore.behavioral_score !== undefined &&
+            sourceScore.behavioral_score !== 0 &&
+            sourceScore.behavioral_score !== '-'
+              ? formatNumber(sourceScore.behavioral_score)
               : '',
           examScore:
             computedExamScore !== null && computedExamScore !== undefined
               ? formatNumber(computedExamScore)
               : '',
           name: `${applicant.firstname} ${applicant.lastname}`,
-          ranking: draftScore.ranking || null,
+          ranking: sourceScore.ranking || null,
         };
       });
 
@@ -1191,13 +1205,7 @@
       applicants: formattedData,
     });
 
-    $q.notify({
-      color: 'info',
-      message: 'Draft ratings saved successfully!',
-      icon: 'save',
-      position: 'top',
-      timeout: 2000,
-    });
+    closeForm();
   };
 
   const submitRatings = () => {
@@ -1243,14 +1251,6 @@
     emit('submit-ratings', {
       positionId: props.position.id,
       applicants: formattedData,
-    });
-
-    $q.notify({
-      color: 'positive',
-      message: 'Ratings submitted successfully!',
-      icon: 'check_circle',
-      position: 'top',
-      timeout: 2000,
     });
 
     closeForm();
