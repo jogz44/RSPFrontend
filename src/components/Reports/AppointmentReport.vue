@@ -33,7 +33,13 @@
         <div class="body">
           <p>
             {{ data.Sex === 'MALE' ? 'MR.' : 'MS.' }}:
-            <strong class="underline">{{ data.Name4 || '(Name)' }}</strong>
+            <strong class="underline">
+              {{
+                data.Name ||
+                data.Surname + ', ' + data.Firstname + ' ' + (data.MIddlename || '') ||
+                '(Name)'
+              }}
+            </strong>
           </p>
 
           <p style="text-indent: 2em">
