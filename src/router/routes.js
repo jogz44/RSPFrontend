@@ -95,6 +95,16 @@ const routes = [
         },
       },
       {
+        path: '/advance-appointment',
+        name: 'Advance Appointment',
+        component: () => import('pages/admin/AdvanceAppointment.vue'),
+        meta: {
+          auth: true,
+          role: 'admin',
+          // permissions: ['viewAdvanceAppointmentAccess'],
+        },
+      },
+      {
         path: '/raters',
         name: 'Admin Raters',
         component: () => import('pages/admin/RatersPage.vue'),

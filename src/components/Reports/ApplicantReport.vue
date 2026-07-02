@@ -129,6 +129,30 @@
     return nameA.localeCompare(nameB);
   }
 
+  // Helper function to get age from date of birth
+  function calculateAge(dateOfBirth) {
+    if (!dateOfBirth) return 'N/A';
+
+    // Parse date in MM/DD/YYYY format
+    const parts = dateOfBirth.split('/');
+    if (parts.length !== 3) return 'N/A';
+
+    const month = parseInt(parts[0]) - 1; // JS months are 0-indexed
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+
+    const birthDate = new Date(year, month, day);
+    const today = new Date();
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age.toString();
+  }
+
   async function fetchReportData() {
     if (!props.publicationDate) return;
 
@@ -193,6 +217,7 @@
       const formattedName = formatFullName(applicant.firstname, applicant.lastname);
       const email = (applicant.email_address || '').toLowerCase();
       const contactNumber = cleanPhoneNumber(applicant.cellphone_number);
+      const age = calculateAge(applicant.date_of_birth);
 
       if (applications.length === 0) {
         targetArray.push({
@@ -203,14 +228,22 @@
           itemNo: 'N/A',
           email: email,
           contactNumber: contactNumber,
+          age: age,
+          lengthOfService: 'N/A',
           sortName: formattedName,
           isFirstRow: true,
           type: type,
         });
       } else {
         // Flatten the data - each application becomes its own row
-        // Name, email, contact only on first row, empty on subsequent rows
+        // Name, email, contact, age, length of service only on first row, empty on subsequent rows
         applications.forEach((app, appIndex) => {
+          // For internal applicants, get length of service from the application
+          let lengthOfService = 'N/A';
+          if (type === 'internal' && app.lengthOfService) {
+            lengthOfService = app.lengthOfService;
+          }
+
           targetArray.push({
             applicantName: appIndex === 0 ? formattedName : '',
             position: app.job_post?.Position || 'N/A',
@@ -219,6 +252,8 @@
             itemNo: app.job_post?.ItemNo || 'N/A',
             email: appIndex === 0 ? email : '',
             contactNumber: appIndex === 0 ? contactNumber : '',
+            age: appIndex === 0 ? age : '',
+            lengthOfService: appIndex === 0 && type === 'internal' ? lengthOfService : '',
             sortName: formattedName, // Keep the full name for sorting
             isFirstRow: appIndex === 0,
             type: type,
@@ -266,59 +301,151 @@
         const tableBody = [];
 
         // Main header row - grey background
-        tableBody.push([
-          {
-            text: 'APPLICANT NAME',
-            style: 'tableHeader',
-            alignment: 'center',
-            fillColor: '#e0e0e0',
-          },
-          { text: 'POSITION', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
-          { text: 'OFFICE', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
-          { text: 'SALARY GRADE', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
-          { text: 'ITEM NO', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
-          { text: 'EMAIL', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
-          {
-            text: 'CONTACT NUMBER',
-            style: 'tableHeader',
-            alignment: 'center',
-            fillColor: '#e0e0e0',
-          },
-        ]);
+        // Only show Age and Length of Service columns for internal applicants
+        const isInternalOnly = props.applicantType === 'internal';
+
+        if (isInternalOnly) {
+          // For internal only - show 9 columns including Age and Length of Service
+          // Reduced font sizes and adjusted column widths to prevent overflow
+          tableBody.push([
+            {
+              text: 'APPLICANT NAME',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'AGE',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'LENGTH OF SERVICE',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'POSITION',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'OFFICE',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'SALARY GRADE',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'ITEM NO',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'EMAIL',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+            {
+              text: 'CONTACT NUMBER',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+              fontSize: 7,
+            },
+          ]);
+        } else {
+          // For external or both - show 7 columns without Age and Length of Service
+          tableBody.push([
+            {
+              text: 'APPLICANT NAME',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+            },
+            { text: 'POSITION', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+            { text: 'OFFICE', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+            {
+              text: 'SALARY GRADE',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+            },
+            { text: 'ITEM NO', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+            { text: 'EMAIL', style: 'tableHeader', alignment: 'center', fillColor: '#e0e0e0' },
+            {
+              text: 'CONTACT NUMBER',
+              style: 'tableHeader',
+              alignment: 'center',
+              fillColor: '#e0e0e0',
+            },
+          ]);
+        }
 
         // Helper function to add applicant rows for a section
         function addSectionRows(rows, sectionTitle) {
           if (rows.length === 0) return;
 
           // Add section header row - grey background
+          const colSpan = isInternalOnly ? 9 : 7;
           tableBody.push([
             {
               text: sectionTitle,
-              colSpan: 7,
+              colSpan: colSpan,
               style: 'sectionHeader',
               alignment: 'center',
               bold: true,
               fillColor: '#e0e0e0',
+              fontSize: 8,
             },
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
+            ...Array(colSpan - 1).fill({}),
           ]);
 
           // Add all rows (no rowspan, each row is independent)
           rows.forEach((row) => {
-            tableBody.push([
-              { text: row.applicantName || '', alignment: 'left' },
-              { text: row.position || '', alignment: 'left' },
-              { text: row.office || '', alignment: 'left' },
-              { text: row.salaryGrade || '', alignment: 'center' },
-              { text: row.itemNo || '', alignment: 'center' },
-              { text: row.email || '', alignment: 'left' },
-              { text: row.contactNumber || '', alignment: 'left' },
-            ]);
+            if (isInternalOnly) {
+              // For internal - show all 9 columns including age and length of service with smaller font
+              tableBody.push([
+                { text: row.applicantName || '', alignment: 'left', fontSize: 7 },
+                { text: row.age || '', alignment: 'center', fontSize: 7 },
+                { text: row.lengthOfService || '', alignment: 'center', fontSize: 7 },
+                { text: row.position || '', alignment: 'left', fontSize: 7 },
+                { text: row.office || '', alignment: 'left', fontSize: 7 },
+                { text: row.salaryGrade || '', alignment: 'center', fontSize: 7 },
+                { text: row.itemNo || '', alignment: 'center', fontSize: 7 },
+                { text: row.email || '', alignment: 'left', fontSize: 7 },
+                { text: row.contactNumber || '', alignment: 'left', fontSize: 7 },
+              ]);
+            } else {
+              // For external/both - show 7 columns without age and length of service
+              tableBody.push([
+                { text: row.applicantName || '', alignment: 'left' },
+                { text: row.position || '', alignment: 'left' },
+                { text: row.office || '', alignment: 'left' },
+                { text: row.salaryGrade || '', alignment: 'center' },
+                { text: row.itemNo || '', alignment: 'center' },
+                { text: row.email || '', alignment: 'left' },
+                { text: row.contactNumber || '', alignment: 'left' },
+              ]);
+            }
           });
         }
 
@@ -329,6 +456,7 @@
           addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
         } else {
           // 'both' - add Internal section first then External section
+          // But for 'both', we hide Age and Length of Service (only show for internal-only view)
           addSectionRows(internalRows.value, 'INTERNAL APPLICANTS');
           addSectionRows(externalRows.value, 'EXTERNAL APPLICANTS');
         }
@@ -344,7 +472,7 @@
         const docDefinition = {
           pageSize: 'LEGAL',
           pageOrientation: 'landscape',
-          pageMargins: [40, 120, 40, 50],
+          pageMargins: [30, 120, 30, 50], // Reduced margins to give more space
           header: function () {
             return {
               stack: [
@@ -447,14 +575,16 @@
             },
             {
               table: {
-                widths: ['15%', '21%', '25%', '8%', '5%', '18%', '8%'],
+                widths: isInternalOnly
+                  ? ['12%', '3%', '10%', '18%', '22%', '7%', '5%', '15%', '8%']
+                  : ['15%', '21%', '25%', '8%', '5%', '18%', '8%'],
                 body: tableBody,
                 keepWithHeaderRows: 1,
               },
               layout: {
                 fillColor: function (rowIndex, node) {
                   const row = node.table.body[rowIndex];
-                  if (row && row[0] && row[0].colSpan === 7) {
+                  if (row && row[0] && row[0].colSpan === (isInternalOnly ? 9 : 7)) {
                     return '#e0e0e0';
                   }
                   return null;
@@ -476,15 +606,15 @@
           ],
           styles: {
             tableHeader: {
-              fontSize: 9,
+              fontSize: 8,
               bold: true,
             },
             sectionHeader: {
-              fontSize: 9,
+              fontSize: 8,
               margin: [0, 4, 0, 4],
             },
           },
-          defaultStyle: { fontSize: 8 },
+          defaultStyle: { fontSize: 7 },
         };
 
         const pdfDocGenerator = pdfMake.createPdf(docDefinition);

@@ -357,6 +357,15 @@ export const useAuthStore = defineStore('auth', {
               viewApplicantAccess: userData.permissions?.viewApplicantAccess || '0',
               modifyApplicantAccess: userData.permissions?.modifyApplicantAccess || '0',
               reportApplicantAccess: userData.permissions?.reportApplicantAccess || '0',
+              // Advance Appointment permissions
+              viewAdvanceAppointmentAccess:
+                userData.permissions?.viewAdvanceAppointmentAccess || '0',
+              modifyAdvanceAppointmentAccess:
+                userData.permissions?.modifyAdvanceAppointmentAccess || '0',
+              reportAdvanceAppointmentAccess:
+                userData.permissions?.reportAdvanceAppointmentAccess || '0',
+              viewLibraryAccess: userData.permissions?.viewLibraryAccess || '0',
+              modifyLibraryAccess: userData.permissions?.modifyLibraryAccess || '0',
               viewSchedule: userData.permissions?.viewSchedule || '0',
               modifySchedule: userData.permissions?.modifySchedule || '0',
               viewExam: userData.permissions?.viewExam || '0',

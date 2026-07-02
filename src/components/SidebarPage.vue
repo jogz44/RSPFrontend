@@ -205,6 +205,13 @@
       authStore.user?.permissions?.modifyPlantillaAccess == '1',
   );
 
+  const hasAdvanceAppointmentAccess = computed(
+    () =>
+      authStore.user?.permissions?.viewAdvanceAppointmentAccess == '1' ||
+      authStore.user?.permissions?.modifyAdvanceAppointmentAccess == '1' ||
+      authStore.user?.permissions?.reportAdvanceAppointmentAccess == '1',
+  );
+
   const hasJobPostAccess = computed(
     () =>
       authStore.user?.permissions?.viewJobpostAccess == '1' ||
@@ -299,6 +306,9 @@
     { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
     ...(hasPlantillaAccess.value
       ? [{ label: 'Plantilla', route: '/plantilla', icon: 'domain' }]
+      : []),
+    ...(hasAdvanceAppointmentAccess.value
+      ? [{ label: 'Appoinment', route: '/advance-appointment', icon: 'event_note' }]
       : []),
     ...(hasJobPostAccess.value
       ? [{ label: 'Job Posts', route: '/job-post', icon: 'post_add' }]

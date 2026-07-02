@@ -444,6 +444,46 @@
                     </div>
                   </div>
 
+                  <!-- Advance Appointment (NEW) -->
+                  <div class="perm-group">
+                    <div class="perm-group-title">
+                      <q-icon name="event_note" size="14px" class="q-mr-xs" />
+                      Advance Appointment
+                    </div>
+                    <div class="perm-row two-col">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.viewAdvanceAppointmentAccess"
+                        label="View"
+                        dense
+                        color="primary"
+                        :disable="!canToggleView('viewAdvanceAppointmentAccess')"
+                        @update:model-value="() => onViewToggle('viewAdvanceAppointmentAccess')"
+                      />
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.modifyAdvanceAppointmentAccess"
+                        label="Modify"
+                        dense
+                        color="primary"
+                        @update:model-value="() => onChildToggle('modifyAdvanceAppointmentAccess')"
+                      />
+                    </div>
+                    <div class="perm-row">
+                      <q-toggle
+                        true-value="1"
+                        false-value="0"
+                        v-model="form.permissions.reportAdvanceAppointmentAccess"
+                        label="Report"
+                        dense
+                        color="primary"
+                        @update:model-value="() => onChildToggle('reportAdvanceAppointmentAccess')"
+                      />
+                    </div>
+                  </div>
+
                   <!-- Library -->
                   <div class="perm-group">
                     <div class="perm-group-title">
@@ -703,6 +743,10 @@
     'viewApplicantAccess',
     'modifyApplicantAccess',
     'reportApplicantAccess',
+    // Advance Appointment permissions
+    'viewAdvanceAppointmentAccess',
+    'modifyAdvanceAppointmentAccess',
+    'reportAdvanceAppointmentAccess',
     'viewLibraryAccess',
     'modifyLibraryAccess',
     'viewSchedule',
@@ -713,7 +757,7 @@
     'modifyRater',
     'viewCriteria',
     'modifyCriteria',
-    'reportRaterManagementAccess', // NEW: Rater Management Report permission
+    'reportRaterManagementAccess',
     'viewReport',
     'userManagement',
     'viewActivityLogs',
@@ -727,13 +771,16 @@
     modifyJobpostAccess: 'viewJobpostAccess',
     modifyApplicantAccess: 'viewApplicantAccess',
     reportApplicantAccess: 'viewApplicantAccess',
+    // Advance Appointment child permissions
+    modifyAdvanceAppointmentAccess: 'viewAdvanceAppointmentAccess',
+    reportAdvanceAppointmentAccess: 'viewAdvanceAppointmentAccess',
     modifyLibraryAccess: 'viewLibraryAccess',
     modifySchedule: 'viewSchedule',
     modifyExam: 'viewExam',
     modifyRater: 'viewRater',
     viewCriteria: 'viewRater',
     modifyCriteria: 'viewRater',
-    reportRaterManagementAccess: 'viewRater', // NEW: Requires viewRater to be enabled
+    reportRaterManagementAccess: 'viewRater',
   };
 
   // ── Get all child permissions for a given view permission ───────────────────
@@ -929,6 +976,10 @@
           viewApplicantAccess: p.viewApplicantAccess || '0',
           modifyApplicantAccess: p.modifyApplicantAccess || '0',
           reportApplicantAccess: p.reportApplicantAccess || '0',
+          // Advance Appointment permissions
+          viewAdvanceAppointmentAccess: p.viewAdvanceAppointmentAccess || '0',
+          modifyAdvanceAppointmentAccess: p.modifyAdvanceAppointmentAccess || '0',
+          reportAdvanceAppointmentAccess: p.reportAdvanceAppointmentAccess || '0',
           viewLibraryAccess: p.viewLibraryAccess || '0',
           modifyLibraryAccess: p.modifyLibraryAccess || '0',
           viewSchedule: p.viewSchedule || '0',
@@ -939,7 +990,7 @@
           modifyRater: p.modifyRater || '0',
           viewCriteria: p.viewCriteria || '0',
           modifyCriteria: p.modifyCriteria || '0',
-          reportRaterManagementAccess: p.reportRaterManagementAccess || '0', // NEW
+          reportRaterManagementAccess: p.reportRaterManagementAccess || '0',
           viewReport: p.viewReport || '0',
           userManagement: p.userManagement || '0',
           viewActivityLogs: p.viewActivityLogs || '0',
