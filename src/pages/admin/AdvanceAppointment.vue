@@ -42,6 +42,12 @@
                   v-model:pagination="advanceAppointmentPagination"
                   :rows-per-page-options="[5, 10, 25, 50]"
                 >
+                  <!-- Loading State - Shows loading overlay -->
+                  <template v-slot:loading>
+                    <q-inner-loading showing color="primary" size="40px" />
+                  </template>
+
+                  <!-- Custom Cell Rendering for Name Column -->
                   <template v-slot:body-cell-name="props">
                     <q-td :props="props">
                       {{ props.row.Surname }}, {{ props.row.Firstname }}
@@ -49,12 +55,14 @@
                     </q-td>
                   </template>
 
+                  <!-- Custom Cell Rendering for Effective Date Column -->
                   <template v-slot:body-cell-effectiveDate="props">
                     <q-td :props="props">
                       {{ props.row.FromDate }}
                     </q-td>
                   </template>
 
+                  <!-- Custom Cell Rendering for Pages Column -->
                   <template v-slot:body-cell-pages="props">
                     <q-td :props="props">
                       {{ props.row.Pages || '1' }}
@@ -94,11 +102,56 @@
                     </q-td>
                   </template>
 
-                  <!-- No Data Message -->
+                  <!-- No Data with Loading State -->
                   <template v-slot:no-data>
-                    <div class="text-center q-pa-xl full-width">
+                    <div
+                      v-if="advanceAppointmentStore.loading"
+                      class="text-center q-pa-xl full-width"
+                    >
+                      <q-spinner color="primary" size="3em" />
+                      <p class="text-h6 text-grey-8 q-mt-md">Loading advance appointments...</p>
+                    </div>
+                    <div v-else class="text-center q-pa-xl full-width">
                       <q-icon name="info" size="3em" color="grey-7" />
                       <p class="text-h6 text-grey-8 q-mt-md">No advance appointments found</p>
+                    </div>
+                  </template>
+
+                  <!-- Custom Bottom Pagination -->
+                  <template v-slot:bottom="props">
+                    <div class="row justify-between items-center q-pa-sm full-width">
+                      <div class="text-caption text-grey-8">
+                        Showing page {{ props.pagination.page }} of
+                        {{ Math.ceil(props.filteredRowsCount / props.pagination.rowsPerPage) || 1 }}
+                      </div>
+                      <div class="row items-center q-gutter-sm">
+                        <q-btn
+                          flat
+                          round
+                          dense
+                          icon="chevron_left"
+                          :disable="props.pagination.page === 1 || advanceAppointmentStore.loading"
+                          @click="props.pagination.page--"
+                        />
+                        <span class="q-mx-sm">
+                          Page {{ props.pagination.page }} /
+                          {{
+                            Math.ceil(props.filteredRowsCount / props.pagination.rowsPerPage) || 1
+                          }}
+                        </span>
+                        <q-btn
+                          flat
+                          round
+                          dense
+                          icon="chevron_right"
+                          :disable="
+                            props.pagination.page >=
+                              Math.ceil(props.filteredRowsCount / props.pagination.rowsPerPage) ||
+                            advanceAppointmentStore.loading
+                          "
+                          @click="props.pagination.page++"
+                        />
+                      </div>
                     </div>
                   </template>
                 </q-table>

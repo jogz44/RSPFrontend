@@ -3,7 +3,7 @@
     <q-card class="bg-white modal-card column no-wrap">
       <!-- Header -->
       <q-card-section class="row items-center justify-between q-pa-md bg-grey-2">
-        <div class="text-h6">Employee Reports - {{ employeeName }}</div>
+        <div class="text-h6">Employee Reports</div>
         <q-btn flat dense icon="close" @click="close" aria-label="Close dialog" />
       </q-card-section>
 
@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-  import { ref, watch, computed } from 'vue';
+  import { ref, watch } from 'vue';
   import AppointmentReport from 'src/components/Reports/AppointmentReport.vue';
   import CertificationPage from 'src/components/Reports/CertificationReport.vue';
   import PositionDescriptionForm from 'src/components/Reports/PositionDescriptionReport.vue';
@@ -81,15 +81,6 @@
     emit('close');
   }
 
-  // Compute employee name
-  const employeeName = computed(() => {
-    if (!props.employee) return 'Unknown Employee';
-    return (
-      `${props.employee.Surname || ''}, ${props.employee.Firstname || ''} ${props.employee.MIddlename || ''}`.trim() ||
-      'Unknown Employee'
-    );
-  });
-
   const tab = ref('appointment');
   const pdfUrls = ref({});
 
@@ -97,38 +88,19 @@
     let component;
     let componentProps;
 
-    // Create a combined data object with employee info
-    const appointmentData = {
-      ...props.employee.appointmentData,
-      // Add employee name fields directly
-      Name: employeeName.value,
-      Surname: props.employee.Surname,
-      Firstname: props.employee.Firstname,
-      MIddlename: props.employee.MIddlename,
-      // Add other employee fields that might be needed
-      ControlNo: props.employee.ControlNo,
-      Designation: props.employee.Designation,
-      Office: props.employee.Office,
-      FromDate: props.employee.FromDate,
-      ToDate: props.employee.ToDate,
-      Status: props.employee.Status,
-      ItemNo: props.employee.ItemNo,
-      Pages: props.employee.Pages,
-    };
-
     switch (tabName) {
       case 'appointment':
         component = AppointmentReport;
         componentProps = {
-          data: appointmentData,
+          data: props.employee.appointmentData || {},
         };
         break;
       case 'certification':
         component = CertificationPage;
         componentProps = {
-          data: appointmentData,
+          data: props.employee.appointmentData || {},
           officeName:
-            props.employee.Office ||
+            props.employee.office ||
             props.employee.appointmentData?.NewOffice ||
             'OFFICE OF THE CITY MAYOR',
         };
@@ -136,21 +108,23 @@
       case 'position':
         component = PositionDescriptionForm;
         componentProps = {
-          data: appointmentData,
+          data: props.employee.appointmentData || {},
         };
         break;
     }
 
-    console.log(`Generating PDF for ${tabName} with props:`, componentProps);
+    console.log(`Generating PDF for ${tabName} with props:`, componentProps); // Debug
 
     const div = document.createElement('div');
     div.style.width = '816px';
     div.style.minHeight = '1344px';
     document.body.appendChild(div);
 
+    // Fix: Pass props correctly to the component
     const app = createApp(component, componentProps);
     app.mount(div);
 
+    // Wait a bit for the component to render with data
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const pdfBlob = await html2pdf()
