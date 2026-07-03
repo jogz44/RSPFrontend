@@ -3,14 +3,14 @@
     <!-- Page Header -->
     <div class="column items-start justify-center q-mb-md">
       <h5 class="text-h5 q-ma-none"><b>Applicants</b></h5>
-      <div class="q-pa-md q-gutter-sm">
+      <!-- <div class="q-pa-md q-gutter-sm">
         <q-breadcrumbs class="q-ma-none">
           <template #separator>
             <q-icon size="1.2em" name="arrow_forward" />
           </template>
           <q-breadcrumbs-el icon="group" label="Applicants" />
         </q-breadcrumbs>
-      </div>
+      </div> -->
     </div>
 
     <!-- Table Toolbar -->
@@ -915,10 +915,20 @@
             rounded
             unelevated
             color="teal"
-            label="Generate Report"
-            icon="print"
+            label="Generate PDF"
+            icon="picture_as_pdf"
             :disable="!selectedInternalReportPublicationDate"
             @click="generateInternalReport"
+          />
+          <q-btn
+            rounded
+            unelevated
+            color="green"
+            label="Generate Excel"
+            icon="table_view"
+            :loading="generatingInternalExcel"
+            :disable="!selectedInternalReportPublicationDate"
+            @click="downloadInternalReportExcel"
           />
         </div>
       </q-card>
@@ -1303,6 +1313,7 @@
   const selectedInternalReportPublicationDate = ref(null);
   const filteredInternalReportPublicationDateOptions = ref([]);
   const showInternalReportDialog = ref(false);
+  const generatingInternalExcel = ref(false);
 
   // ============================================================================
   // MARK APPLICATION STATE
@@ -1714,6 +1725,46 @@
   const generateInternalReport = () => {
     showInternalReportModal.value = false;
     showInternalReportDialog.value = true;
+  };
+
+  const downloadInternalReportExcel = async () => {
+    if (!selectedInternalReportPublicationDate.value) return;
+
+    generatingInternalExcel.value = true;
+    try {
+      const blob = await summaryReportStore.generateInternalReportExcel(
+        selectedInternalReportPublicationDate.value,
+      );
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download',
+        `Internal_Applicants_Report_${selectedInternalReportPublicationDate.value}.xlsx`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      $q.notify({
+        type: 'positive',
+        message: 'Excel report downloaded successfully',
+        position: 'top',
+      });
+
+      showInternalReportModal.value = false;
+      selectedInternalReportPublicationDate.value = null;
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message: error.response?.data?.message || 'Failed to generate Excel report',
+        position: 'top',
+      });
+    } finally {
+      generatingInternalExcel.value = false;
+    }
   };
 
   // ============================================================================

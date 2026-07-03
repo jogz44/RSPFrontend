@@ -331,6 +331,26 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async generateInternalReportExcel(date) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(date);
+        const response = await adminApi.post(
+          '/generate/internal/applicant/service',
+          { publication_date: formattedDate },
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating Internal Report Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async generateUnqualifiedApplicantExcel(publicationDate) {
       try {
         this.loading = true;
