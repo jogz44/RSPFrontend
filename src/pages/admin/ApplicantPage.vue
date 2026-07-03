@@ -28,54 +28,73 @@
         </template>
       </q-input>
 
-      <!-- Report Buttons -->
-      <div class="row q-gutter-sm">
-        <q-btn
+      <!-- Toolbar Actions -->
+      <div class="row q-gutter-sm q-my-sm">
+        <!-- Reports Dropdown: groups all report generation actions together -->
+        <q-btn-dropdown
           v-if="canReportApplicant"
           rounded
           unelevated
           color="orange"
           icon="article"
-          label="Qualified Report"
-          @click="openQualifiedReportDialog"
+          label="Reports"
         >
-          <q-tooltip>List of Qualified Applicants</q-tooltip>
-        </q-btn>
-        <q-btn
-          v-if="canReportApplicant"
-          rounded
-          unelevated
-          color="orange"
-          icon="article"
-          label="Unqualified Report"
-          @click="openUnqualifiedReportDialog"
-        >
-          <q-tooltip>List of Unqualified Applicants</q-tooltip>
-        </q-btn>
-        <q-btn
-          v-if="canReportApplicant"
-          rounded
-          unelevated
-          color="orange"
-          icon="article"
-          label="All Applicants Report"
-          @click="openAllApplicantsReportDialog"
-        >
-          <q-tooltip>List of All Applicants</q-tooltip>
-        </q-btn>
-        <!-- Withdrawn Report Button -->
-        <q-btn
-          v-if="canReportApplicant"
-          rounded
-          unelevated
-          color="orange"
-          icon="article"
-          label="Withdrawn Report"
-          @click="openWithdrawnReportDialog"
-        >
-          <q-tooltip>List of Withdrawn Applicants</q-tooltip>
-        </q-btn>
-        <!-- Mark Application Button -->
+          <q-list separator>
+            <q-item clickable v-close-popup @click="openQualifiedReportDialog">
+              <q-item-section avatar>
+                <q-icon name="task_alt" color="green" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Qualified Report</q-item-label>
+                <q-item-label caption>List of qualified applicants</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="openUnqualifiedReportDialog">
+              <q-item-section avatar>
+                <q-icon name="highlight_off" color="deep-orange" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Unqualified Report</q-item-label>
+                <q-item-label caption>List of unqualified applicants</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="openAllApplicantsReportDialog">
+              <q-item-section avatar>
+                <q-icon name="groups" color="purple" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>All Applicants Report</q-item-label>
+                <q-item-label caption>Every applicant, any status</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="openInternalReportDialog">
+              <q-item-section avatar>
+                <q-icon name="badge" color="teal" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Internal Report</q-item-label>
+                <q-item-label caption>
+                  List of internal applicants with additional details
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="openWithdrawnReportDialog">
+              <q-item-section avatar>
+                <q-icon name="undo" color="brown" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Withdrawn Report</q-item-label>
+                <q-item-label caption>List of withdrawn applicants</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
+        <!-- Mark Application: a distinct, non-report action, kept visually separate -->
         <q-btn
           v-if="canReportApplicant"
           rounded
@@ -811,6 +830,101 @@
     </q-dialog>
 
     <!-- ================================================================ -->
+    <!-- INTERNAL REPORT MODAL (Publication Date only)                    -->
+    <!-- ================================================================ -->
+    <q-dialog v-if="canReportApplicant" v-model="showInternalReportModal" persistent>
+      <q-card class="report-select-card">
+        <q-card-section class="dialog-header header-internal">
+          <div class="row items-center no-wrap">
+            <q-icon name="article" size="28px" class="q-mr-sm" />
+            <div>
+              <div class="text-h6 text-bold">Internal Applicants Report</div>
+              <div class="text-caption opacity-80">Select a publication date to generate</div>
+            </div>
+          </div>
+          <q-btn
+            flat
+            round
+            dense
+            icon="close"
+            class="close-btn"
+            @click="closeInternalReportModal"
+          />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="q-pa-lg">
+          <div v-if="loadingPublicationDates" class="text-center q-pa-md">
+            <q-spinner color="primary" size="32px" />
+            <div class="q-mt-sm text-grey-6">Loading publication dates...</div>
+          </div>
+          <div v-else class="q-gutter-md">
+            <!-- Publication Date -->
+            <div>
+              <div class="section-label q-mb-sm">
+                <q-icon name="event" size="16px" class="q-mr-xs" />
+                Publication Date
+              </div>
+              <q-select
+                v-model="selectedInternalReportPublicationDate"
+                :options="filteredInternalReportPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                dense
+                use-input
+                input-debounce="300"
+                @filter="filterInternalReportPublicationDates"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No dates found</q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected>
+                  <span v-if="selectedInternalReportPublicationDate">
+                    <q-icon name="event" size="xs" class="q-mr-sm" />
+                    {{ selectedInternalReportPublicationDate }}
+                  </span>
+                </template>
+              </q-select>
+              <div
+                v-if="publicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+        <div class="dialog-footer row justify-end items-center q-pa-md q-gutter-sm">
+          <q-btn rounded flat label="Cancel" color="grey-7" @click="closeInternalReportModal" />
+          <q-btn
+            rounded
+            unelevated
+            color="teal"
+            label="Generate Report"
+            icon="print"
+            :disable="!selectedInternalReportPublicationDate"
+            @click="generateInternalReport"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
+    <!-- ================================================================ -->
     <!-- MARK APPLICATION MODAL                                            -->
     <!-- ================================================================ -->
     <q-dialog v-if="canReportApplicant" v-model="showMarkingModal" persistent>
@@ -1046,6 +1160,11 @@
       />
     </q-dialog>
 
+    <!-- Internal Applicants Report Display -->
+    <q-dialog v-if="canReportApplicant" v-model="showInternalReportDialog" persistent>
+      <InternalApplicantReport :publicationDate="selectedInternalReportPublicationDate" />
+    </q-dialog>
+
     <!-- Marking Application Component -->
     <MarkingApplication
       v-if="showMarkingApplicationDialog"
@@ -1075,6 +1194,7 @@
   import InternalUnqualifiedReport from 'src/components/Reports/InternalUnqualifiedReport.vue';
   import ExternalUnqualifiedReport from 'src/components/Reports/ExternalUnqualifiedReport.vue';
   import WithdrawnApplicantReport from 'src/components/Reports/WithdrawnApplicantReport.vue';
+  import InternalApplicantReport from 'src/components/Reports/InternalApplicantReport.vue';
   import MarkingApplication from 'src/components/MarkingApplication.vue';
   import { useApplicantStore } from 'stores/applicantStore';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
@@ -1174,6 +1294,15 @@
   const showWithdrawnReportDialog = ref(false);
   const showInternalWithdrawnReportDialog = ref(false);
   const showExternalWithdrawnReportDialog = ref(false);
+
+  // ============================================================================
+  // INTERNAL REPORT STATE (publication date only, no applicant type)
+  // ============================================================================
+
+  const showInternalReportModal = ref(false);
+  const selectedInternalReportPublicationDate = ref(null);
+  const filteredInternalReportPublicationDateOptions = ref([]);
+  const showInternalReportDialog = ref(false);
 
   // ============================================================================
   // MARK APPLICATION STATE
@@ -1360,6 +1489,7 @@
       filteredUnqualifiedPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredAllApplicantsPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredWithdrawnPublicationDateOptions.value = [...publicationDateOptions.value];
+      filteredInternalReportPublicationDateOptions.value = [...publicationDateOptions.value];
       filteredMarkingPublicationDateOptions.value = [...publicationDateOptions.value];
     } catch {
       $q.notify({ type: 'negative', message: 'Failed to load publication dates' });
@@ -1368,6 +1498,7 @@
       filteredUnqualifiedPublicationDateOptions.value = [];
       filteredAllApplicantsPublicationDateOptions.value = [];
       filteredWithdrawnPublicationDateOptions.value = [];
+      filteredInternalReportPublicationDateOptions.value = [];
       filteredMarkingPublicationDateOptions.value = [];
     } finally {
       loadingPublicationDates.value = false;
@@ -1546,6 +1677,43 @@
     } else {
       showWithdrawnReportDialog.value = true;
     }
+  };
+
+  // ============================================================================
+  // INTERNAL REPORT ACTIONS (publication date only)
+  // ============================================================================
+
+  const openInternalReportDialog = async () => {
+    if (!canReportApplicant.value) {
+      $q.notify({
+        type: 'warning',
+        message: 'You do not have permission to view reports',
+        position: 'top',
+      });
+      return;
+    }
+    selectedInternalReportPublicationDate.value = null;
+    showInternalReportModal.value = true;
+    await fetchPublicationDates();
+  };
+
+  const filterInternalReportPublicationDates = (val, update) => {
+    update(() => {
+      const needle = val.toLowerCase();
+      filteredInternalReportPublicationDateOptions.value = publicationDateOptions.value.filter(
+        (v) => v.toLowerCase().includes(needle),
+      );
+    });
+  };
+
+  const closeInternalReportModal = () => {
+    showInternalReportModal.value = false;
+    selectedInternalReportPublicationDate.value = null;
+  };
+
+  const generateInternalReport = () => {
+    showInternalReportModal.value = false;
+    showInternalReportDialog.value = true;
   };
 
   // ============================================================================
@@ -1927,6 +2095,9 @@
   }
   .header-withdrawn {
     background: #e65100;
+  }
+  .header-internal {
+    background: #00796b;
   }
   .header-mark {
     background: #9c27b0;
