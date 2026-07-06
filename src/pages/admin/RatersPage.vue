@@ -1773,13 +1773,14 @@
       if (!raterId) throw new Error('No rater selected for editing');
 
       const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
-      let processedSuffix = selectedSuffix.value;
-      if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
-        processedSuffix = selectedSuffix.value
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s);
-      }
+      
+      // let processedSuffix = selectedSuffix.value;
+      // if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
+      //   processedSuffix = selectedSuffix.value
+      //     .split(',')
+      //     .map((s) => s.trim())
+      //     .filter((s) => s);
+      // }
 
       const userData = {
         job_batches_rsp_id: safePositions.filter((id) => id !== 'all'),
@@ -1789,7 +1790,7 @@
         representative: representative.value,
         role: selectedRole.value,
         prefix: selectedPrefix.value || null,
-        suffix: processedSuffix || null,
+        suffix: selectedSuffix.value|| null,
       };
 
       const result = await authStore.rater_edit(raterId, userData);
@@ -1824,13 +1825,13 @@
 
       const safePositions = Array.isArray(selectedPositions.value) ? selectedPositions.value : [];
       const jobBatchIds = safePositions.filter((id) => id !== 'all');
-      let processedSuffix = selectedSuffix.value;
-      if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
-        processedSuffix = selectedSuffix.value
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s);
-      }
+      // let processedSuffix = selectedSuffix.value;
+      // if (typeof selectedSuffix.value === 'string' && selectedSuffix.value.includes(',')) {
+      //   processedSuffix = selectedSuffix.value
+      //     .split(',')
+      //     .map((s) => s.trim())
+      //     .filter((s) => s);
+      // }
 
       const userData = {
         name: raterData.name,
@@ -1844,7 +1845,7 @@
         representative: representative.value,
         role: selectedRole.value,
         prefix: selectedPrefix.value || null,
-        suffix: processedSuffix || null,
+        suffix: selectedSuffix.value || null,
       };
 
       const result = await authStore.Rater_register(userData);
