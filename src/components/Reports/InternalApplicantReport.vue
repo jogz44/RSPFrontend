@@ -82,6 +82,16 @@
     return nameA.localeCompare(nameB);
   }
 
+  // Helper function to format status
+  function formatStatus(status) {
+    if (!status) return 'N/A';
+    // If status is CONTRACTUAL, display JOB ORDER
+    if (status.toUpperCase() === 'CONTRACTUAL') {
+      return 'JOB ORDER';
+    }
+    return status;
+  }
+
   async function fetchReportData() {
     if (!props.publicationDate) return;
 
@@ -135,6 +145,7 @@
       const lengthOfService = applicant.lengthOfService || 'N/A';
       const currentPosition = applicant.current_position || 'N/A';
       const currentOffice = applicant.current_office || 'N/A';
+      const status = formatStatus(applicant.status || '');
 
       if (applications.length === 0) {
         targetArray.push({
@@ -142,6 +153,7 @@
           age: age,
           currentPosition: currentPosition,
           currentOffice: currentOffice,
+          status: status,
           lengthOfService: lengthOfService,
           appliedPosition: 'N/A',
           appliedOffice: 'N/A',
@@ -154,13 +166,14 @@
         });
       } else {
         // Flatten the data - each application becomes its own row
-        // Name, age, currentPosition, currentOffice, lengthOfService only on first row
+        // Name, age, currentPosition, currentOffice, status, lengthOfService only on first row
         applications.forEach((app, appIndex) => {
           targetArray.push({
             applicantName: appIndex === 0 ? formattedName : '',
             age: appIndex === 0 ? age : '',
             currentPosition: appIndex === 0 ? currentPosition : '',
             currentOffice: appIndex === 0 ? currentOffice : '',
+            status: appIndex === 0 ? status : '',
             lengthOfService: appIndex === 0 ? lengthOfService : '',
             appliedPosition: app.job_post?.Position || '',
             appliedOffice: app.job_post?.Office || '',
@@ -213,7 +226,7 @@
 
         const tableBody = [];
 
-        // Main header row - grey background with 10 columns
+        // Main header row - grey background with 11 columns (added Status column)
         tableBody.push([
           {
             text: 'APPLICANT NAME',
@@ -230,6 +243,12 @@
           },
           {
             text: 'CURRENT OFFICE',
+            style: 'tableHeader',
+            alignment: 'center',
+            fillColor: '#e0e0e0',
+          },
+          {
+            text: 'STATUS',
             style: 'tableHeader',
             alignment: 'center',
             fillColor: '#e0e0e0',
@@ -279,6 +298,7 @@
             { text: row.age || '', alignment: 'center' },
             { text: row.currentPosition || '', alignment: 'left' },
             { text: row.currentOffice || '', alignment: 'left' },
+            { text: row.status || '', alignment: 'center' },
             { text: row.lengthOfService || '', alignment: 'left' },
             { text: row.appliedPosition || '', alignment: 'left' },
             { text: row.appliedOffice || '', alignment: 'left' },
@@ -394,7 +414,7 @@
             },
             {
               table: {
-                widths: ['13%', '4%', '13%', '13%', '10%', '15%', '15%', '4%', '4%', '6%'],
+                widths: ['12%', '4%', '13%', '12%', '6%', '12%', '14%', '14%', '4%', '4%', '5%'],
                 body: tableBody,
                 keepWithHeaderRows: 1,
               },
