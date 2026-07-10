@@ -140,67 +140,42 @@
           <div v-else>
             <!-- Publication Date Filter -->
             <div class="q-mb-md">
-              <div class="text-subtitle2 q-mb-sm">Publication Date Filter</div>
-              <q-option-group
-                v-model="dateFilterType"
-                :options="[
-                  { label: 'Single Date', value: 'single' },
-                  { label: 'Date Range', value: 'range' },
-                  { label: 'All Dates', value: 'all' },
-                ]"
-                type="radio"
-                inline
-              />
+              <div class="text-subtitle2 q-mb-sm">Publication Date</div>
+              <q-select
+                v-model="selectedReportPublicationDate"
+                :options="reportPublicationDateOptions"
+                label="Select Publication Date"
+                outlined
+                option-value="value"
+                option-label="label"
+                emit-value
+                map-options
+                clearable
+                :dropdown-icon="'arrow_drop_down'"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">No publication dates found</q-item-section>
+                  </q-item>
+                </template>
 
-              <div v-if="dateFilterType === 'single'" class="q-mt-sm">
-                <q-input v-model="singleDate" label="Select Publication Date" outlined>
-                  <template v-slot:append>
-                    <q-icon
-                      name="event"
-                      class="cursor-pointer"
-                      @click="showSingleDatePicker = true"
-                    />
-                  </template>
-                </q-input>
-                <q-dialog v-model="showSingleDatePicker">
-                  <q-date
-                    v-model="singleDate"
-                    mask="YYYY-MM-DD"
-                    @update:model-value="onSingleDateChange"
-                  />
-                </q-dialog>
-              </div>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section>
+                      <q-item-label>
+                        <q-icon name="event" size="xs" class="q-mr-sm" />
+                        {{ scope.opt.label }}
+                      </q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
 
-              <div v-if="dateFilterType === 'range'" class="q-mt-sm">
-                <q-input v-model="dateRange.from" label="From Date" outlined>
-                  <template v-slot:append>
-                    <q-icon
-                      name="event"
-                      class="cursor-pointer"
-                      @click="showFromDatePicker = true"
-                    />
-                  </template>
-                </q-input>
-                <q-dialog v-model="showFromDatePicker">
-                  <q-date
-                    v-model="dateRange.from"
-                    mask="YYYY-MM-DD"
-                    @update:model-value="onFromDateChange"
-                  />
-                </q-dialog>
-
-                <q-input v-model="dateRange.to" label="To Date" class="q-mt-sm" outlined>
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer" @click="showToDatePicker = true" />
-                  </template>
-                </q-input>
-                <q-dialog v-model="showToDatePicker">
-                  <q-date
-                    v-model="dateRange.to"
-                    mask="YYYY-MM-DD"
-                    @update:model-value="onToDateChange"
-                  />
-                </q-dialog>
+              <div
+                v-if="reportPublicationDateOptions.length === 0"
+                class="q-mt-sm text-caption text-grey"
+              >
+                No publication dates available
               </div>
             </div>
 
@@ -259,7 +234,7 @@
                 <template v-slot:no-option>
                   <q-item>
                     <q-item-section class="text-grey">
-                      No positions found for the selected date(s)
+                      No positions found for the selected publication date
                     </q-item-section>
                   </q-item>
                 </template>
@@ -270,9 +245,9 @@
                 class="q-mt-sm text-caption text-grey"
               >
                 {{
-                  dateFilterType === 'all'
+                  !selectedReportPublicationDate
                     ? 'No positions available'
-                    : 'No positions found for the selected date filter. Try selecting a different date or date range.'
+                    : 'No positions found for the selected publication date.'
                 }}
               </div>
             </div>
@@ -778,13 +753,8 @@
         positionOptions: [],
         selectedPositions: [],
 
-        // Date filter
-        dateFilterType: 'all',
-        singleDate: '',
-        dateRange: { from: '', to: '' },
-        showSingleDatePicker: false,
-        showFromDatePicker: false,
-        showToDatePicker: false,
+        // Publication date filter (Final Summary / Applicant per Position / BEI Summary)
+        selectedReportPublicationDate: null,
 
         // ==================== TOP 5 RANKING DATA ====================
         loadingPublicationDates: false,
@@ -853,24 +823,43 @@
         return selectedLabels.join(', ');
       },
 
+      // Unique publication date ranges built from the loaded positions,
+      // displayed as "April 27, 2026 - May 14, 2026"
+      reportPublicationDateOptions() {
+        const map = new Map();
+
+        this.currentPositionsData.forEach((pos) => {
+          const postDate = this.normalizeDate(pos.post_date);
+          const endDate = pos.end_date ? this.normalizeDate(pos.end_date) : '';
+          const key = `${postDate}|${endDate}`;
+
+          if (!map.has(key)) {
+            map.set(key, {
+              value: key,
+              postDate,
+              endDate,
+              label: pos.end_date
+                ? `${this.formatDate(pos.post_date)} - ${this.formatDate(pos.end_date)}`
+                : this.formatDate(pos.post_date),
+            });
+          }
+        });
+
+        return Array.from(map.values());
+      },
+
       filteredPositionOptions() {
-        if (this.dateFilterType === 'all') {
+        if (!this.selectedReportPublicationDate) {
           return this.positionOptions;
         }
 
-        let filteredPositions = [...this.currentPositionsData];
+        const [postDate, endDate] = this.selectedReportPublicationDate.split('|');
 
-        if (this.dateFilterType === 'single' && this.singleDate) {
-          filteredPositions = filteredPositions.filter((pos) => {
-            const postDate = this.normalizeDate(pos.post_date);
-            return postDate === this.singleDate;
-          });
-        } else if (this.dateFilterType === 'range' && this.dateRange.from && this.dateRange.to) {
-          filteredPositions = filteredPositions.filter((pos) => {
-            const postDate = this.normalizeDate(pos.post_date);
-            return postDate >= this.dateRange.from && postDate <= this.dateRange.to;
-          });
-        }
+        const filteredPositions = this.currentPositionsData.filter((pos) => {
+          const p = this.normalizeDate(pos.post_date);
+          const e = pos.end_date ? this.normalizeDate(pos.end_date) : '';
+          return p === postDate && e === endDate;
+        });
 
         const valueKey = 'jobpostId';
         const labelKey = 'Position';
@@ -899,13 +888,8 @@
     },
 
     watch: {
-      dateFilterType(newVal) {
+      selectedReportPublicationDate() {
         this.selectedPositions = [];
-        if (newVal === 'all') {
-          this.singleDate = '';
-          this.dateRange.from = '';
-          this.dateRange.to = '';
-        }
       },
 
       showReportModal(newVal) {
@@ -1213,10 +1197,7 @@
 
       resetFilters() {
         this.selectedPositions = [];
-        this.dateFilterType = 'all';
-        this.singleDate = '';
-        this.dateRange.from = '';
-        this.dateRange.to = '';
+        this.selectedReportPublicationDate = null;
       },
 
       closeReportModal() {
@@ -1246,21 +1227,6 @@
 
       isPositionSelected(pos) {
         return this.selectedPositions.includes(pos);
-      },
-
-      onSingleDateChange() {
-        this.showSingleDatePicker = false;
-        this.selectedPositions = [];
-      },
-
-      onFromDateChange() {
-        this.showFromDatePicker = false;
-        this.selectedPositions = [];
-      },
-
-      onToDateChange() {
-        this.showToDatePicker = false;
-        this.selectedPositions = [];
       },
 
       openReport() {
