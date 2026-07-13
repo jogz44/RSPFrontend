@@ -141,7 +141,6 @@
     return last.toUpperCase();
   }
 
-  // Format full name with prefix and suffix
   function formatFullName(prefix, name, suffix) {
     let formattedName = name || '';
     if (prefix && prefix.trim()) {
@@ -153,25 +152,19 @@
     return formattedName.toUpperCase();
   }
 
-  // Check if position has BEI (behaviorals criteria)
   function hasBeiCriteria(reportData) {
-    const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
+    const criteria = reportData?.criteria || [];
     if (!Array.isArray(criteria)) return false;
 
-    for (const c of criteria) {
-      if (Array.isArray(c.behaviorals) && c.behaviorals.length > 0) {
-        return true;
-      }
-      if (Array.isArray(c.behavioral) && c.behavioral.length > 0) {
-        return true;
-      }
-    }
-    return false;
+    return criteria.some((c) => {
+      if (Array.isArray(c.behaviorals) && c.behaviorals.length > 0) return true;
+      if (Array.isArray(c.behavioral) && c.behavioral.length > 0) return true;
+      return false;
+    });
   }
 
-  // Get BEI weight from criteria
   function getBeiWeight(reportData) {
-    const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
+    const criteria = reportData?.criteria || [];
     if (!Array.isArray(criteria)) return 0;
 
     for (const c of criteria) {
@@ -185,119 +178,51 @@
     return 0;
   }
 
-  // Get QS total weight (education + experience + training + performance)
   function getQsTotalWeight(reportData) {
-    const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
+    const criteria = reportData?.criteria || [];
     if (!Array.isArray(criteria)) return 0;
 
     let totalWeight = 0;
-
     for (const c of criteria) {
-      // Add education weight
-      if (Array.isArray(c.educations) && c.educations.length > 0) {
+      if (c.educations && c.educations.length > 0) {
         totalWeight += parseFloat(c.educations[0]?.weight) || 0;
       }
-      // Add experience weight
-      if (Array.isArray(c.experiences) && c.experiences.length > 0) {
+      if (c.experiences && c.experiences.length > 0) {
         totalWeight += parseFloat(c.experiences[0]?.weight) || 0;
       }
-      // Add training weight
-      if (Array.isArray(c.trainings) && c.trainings.length > 0) {
+      if (c.trainings && c.trainings.length > 0) {
         totalWeight += parseFloat(c.trainings[0]?.weight) || 0;
       }
-      // Add performance weight
-      if (Array.isArray(c.performances) && c.performances.length > 0) {
+      if (c.performances && c.performances.length > 0) {
         totalWeight += parseFloat(c.performances[0]?.weight) || 0;
       }
     }
-
     return totalWeight;
   }
 
   function hasExamCriteria(reportData) {
-    const criteria = reportData?.criteria || reportData?.jobPost?.criteria || [];
+    const criteria = reportData?.criteria || [];
     if (!Array.isArray(criteria)) return false;
 
     return criteria.some((c) => Array.isArray(c.exams) && c.exams.length > 0);
   }
 
-  // Normalize applicants from API response with correct calculations
   function getApplicants(reportData) {
-    if (Array.isArray(reportData?.applicants)) return reportData.applicants;
+    if (!reportData?.data) return [];
 
-    if (reportData?.data && typeof reportData.data === 'object') {
-      return Object.values(reportData.data).map((item) => {
-        // Collect BEI scores from raters (excluding null/undefined/'-')
-        let beiScores = [];
-        let qsScores = [];
-
-        if (Array.isArray(item.rater_scores)) {
-          item.rater_scores.forEach((scoreItem) => {
-            // Collect BEI scores that have valid values
-            if (scoreItem.bei !== null && scoreItem.bei !== undefined && scoreItem.bei !== '-') {
-              const beiValue = parseFloat(scoreItem.bei);
-              if (!isNaN(beiValue)) {
-                beiScores.push(beiValue);
-              }
-            }
-
-            // Collect QS scores
-            if (
-              scoreItem.total_qs !== null &&
-              scoreItem.total_qs !== undefined &&
-              scoreItem.total_qs !== '-'
-            ) {
-              const qsValue = parseFloat(scoreItem.total_qs);
-              if (!isNaN(qsValue)) {
-                qsScores.push(qsValue);
-              }
-            }
-          });
-        }
-
-        // Calculate average BEI (exclude null/'-' values)
-        const avgBei =
-          beiScores.length > 0
-            ? beiScores.reduce((sum, val) => sum + val, 0) / beiScores.length
-            : 0;
-
-        // Calculate average QS
-        const avgQS =
-          qsScores.length > 0 ? qsScores.reduce((sum, val) => sum + val, 0) / qsScores.length : 0;
-
-        // Final Rating = Average QS + Average BEI
-        const finalRating = avgQS + avgBei;
-
-        return {
-          applicant: {
-            firstname: item.firstname,
-            lastname: item.lastname,
-          },
-          rater_scores: item.rater_scores,
-          total_rating: avgQS,
-          bei: avgBei,
-          exam_score: item.exam_score,
-          final_rating: finalRating,
-          grand_total: item.grand_total,
-          rank: item.rank,
-          beiScores: beiScores,
-        };
-      });
-    }
-
-    return [];
-  }
-
-  function getMaxRatersCount(reportData) {
-    const applicants = getApplicants(reportData);
-    if (!applicants.length) return 0;
-
-    let maxRaters = 0;
-    applicants.forEach((item) => {
-      const ratersCount = item.rater_scores?.length || 0;
-      if (ratersCount > maxRaters) maxRaters = ratersCount;
+    return Object.values(reportData.data).map((item) => {
+      return {
+        firstname: item.firstname || '',
+        lastname: item.lastname || '',
+        rater_scores: item.rater_scores || [],
+        total_rating: item.total_rating || 0,
+        bei: item.bei || 0,
+        exam_score: item.exam_score || 0,
+        final_rating: item.final_rating || 0,
+        grand_total: item.grand_total || 0,
+        rank: item.rank || null,
+      };
     });
-    return maxRaters;
   }
 
   function getAllRaters(reportData) {
@@ -313,7 +238,6 @@
             ratersMap.set(scoreItem.rater_id, {
               id: scoreItem.rater_id,
               name: scoreItem.rater_name,
-              position: scoreItem.rater_position,
             });
           }
         });
@@ -323,7 +247,6 @@
     return Array.from(ratersMap.values());
   }
 
-  // Get signatories from raters, with Chairperson last
   function getSignatories(reportData) {
     const raters = Array.isArray(reportData?.raters) ? reportData.raters : [];
 
@@ -345,7 +268,6 @@
       const itemCount = rowItems.length;
 
       const columns = rowItems.map((r) => {
-        // Format full name with prefix and suffix
         const formattedName = formatFullName(r.prefix, r.rater_name, r.suffix);
 
         return {
@@ -370,11 +292,7 @@
         };
       });
 
-      // Calculate widths for centering
-      // Each column gets equal width based on count
       const columnWidth = `${100 / itemCount}%`;
-
-      // Apply width to each column
       const columnsWithWidth = columns.map((col) => ({
         ...col,
         width: columnWidth,
@@ -392,15 +310,13 @@
   }
 
   function generatePositionTable(reportData) {
-    // Check if position has BEI criteria
     const hasBei = hasBeiCriteria(reportData);
 
     if (!hasBei) {
-      const jobPost = reportData.jobPost || reportData || {};
-      const office = jobPost.Office || reportData.office || 'N/A';
-      const position = jobPost.Position || reportData.position || 'N/A';
-      const salaryGrade = jobPost.SalaryGrade || reportData.Salary_Grade || 'N/A';
-      const plantillaItemNo = jobPost['Plantilla Item No'] || reportData.Plantilla_Item_No || 'N/A';
+      const office = reportData.office || 'N/A';
+      const position = reportData.position || 'N/A';
+      const salaryGrade = reportData.Salary_Grade || 'N/A';
+      const plantillaItemNo = reportData.Plantilla_Item_No || 'N/A';
 
       return [
         {
@@ -468,38 +384,72 @@
     }
 
     const applicants = getApplicants(reportData);
-    const maxRaters = getMaxRatersCount(reportData);
     const allRaters = getAllRaters(reportData);
     const showExam = hasExamCriteria(reportData);
     const beiWeight = getBeiWeight(reportData);
     const qsTotalWeight = getQsTotalWeight(reportData);
 
-    // Header Row
-    const headerRow = [
-      {
-        text: 'No.',
-        style: 'tableHeader',
-        alignment: 'center',
-        rowSpan: 2,
-      },
-      {
-        text: 'NAME OF APPLICANT',
-        style: 'tableHeader',
-        alignment: 'center',
-        rowSpan: 2,
-      },
-    ];
+    // Define fixed widths as percentages of the table (matching Summary Report)
+    const FIXED_WIDTHS = {
+      no: '3%', // No.
+      name: '16%', // NAME OF APPLICANT
+      totalBei: '6%', // TOTAL BEI
+      totalQs: '6%', // TOTAL QS
+      exam: '6%', // EXAM (if shown)
+      finalRating: '6%', // FINAL RATING
+      ranking: '6%', // RANKING
+    };
 
-    if (maxRaters > 0) {
+    // Calculate total fixed width percentage
+    let totalFixedWidth =
+      parseFloat(FIXED_WIDTHS.no) +
+      parseFloat(FIXED_WIDTHS.name) +
+      parseFloat(FIXED_WIDTHS.totalBei) +
+      parseFloat(FIXED_WIDTHS.totalQs) +
+      parseFloat(FIXED_WIDTHS.finalRating) +
+      parseFloat(FIXED_WIDTHS.ranking);
+
+    if (showExam) totalFixedWidth += parseFloat(FIXED_WIDTHS.exam);
+
+    // Remaining width for HRM PSB MEMBER RATINGS columns
+    const remainingWidth = 100 - totalFixedWidth;
+
+    // Each rater gets an equal share of the remaining width
+    const perRaterWidth = allRaters.length > 0 ? remainingWidth / allRaters.length : 0;
+
+    // Build header row
+    const headerRow = [];
+
+    // Column 1: No.
+    headerRow.push({
+      text: 'No.',
+      style: 'tableHeader',
+      alignment: 'center',
+      rowSpan: 2,
+    });
+
+    // Column 2: NAME OF APPLICANT
+    headerRow.push({
+      text: 'NAME OF APPLICANT',
+      style: 'tableHeader',
+      alignment: 'center',
+      rowSpan: 2,
+    });
+
+    // Column 3: HRM PSB MEMBER RATINGS (BEI) - span across all raters
+    if (allRaters.length > 0) {
       headerRow.push({
         text: 'HRM PSB MEMBER RATINGS (BEI)',
         style: 'tableHeader',
         alignment: 'center',
-        colSpan: maxRaters,
+        colSpan: allRaters.length,
       });
-      for (let i = 1; i < maxRaters; i++) headerRow.push({});
+      for (let i = 1; i < allRaters.length; i++) {
+        headerRow.push({});
+      }
     }
 
+    // TOTAL BEI column
     headerRow.push({
       text: `TOTAL BEI (${beiWeight}%)`,
       style: 'tableHeader',
@@ -507,6 +457,7 @@
       rowSpan: 2,
     });
 
+    // TOTAL QS column
     headerRow.push({
       text: `TOTAL QS (${qsTotalWeight}%)`,
       style: 'tableHeader',
@@ -514,6 +465,7 @@
       rowSpan: 2,
     });
 
+    // EXAM column (if enabled)
     if (showExam) {
       headerRow.push({
         text: 'EXAM',
@@ -523,6 +475,7 @@
       });
     }
 
+    // FINAL RATING column
     headerRow.push({
       text: 'FINAL RATING',
       style: 'tableHeader',
@@ -530,6 +483,7 @@
       rowSpan: 2,
     });
 
+    // RANKING column
     headerRow.push({
       text: 'RANKING',
       style: 'tableHeader',
@@ -537,134 +491,126 @@
       rowSpan: 2,
     });
 
-    // Sub Header Row
-    const subHeaderRow = [{}, {}];
+    // Build sub header row
+    const subHeaderRow = [];
+    subHeaderRow.push({});
+    subHeaderRow.push({});
 
-    // BEI headers (rater names)
-    allRaters.forEach((rater) => {
-      subHeaderRow.push({
-        text: getLastNameUpper(rater.name),
-        style: 'tableHeader',
-        alignment: 'center',
-        fontSize: 9,
+    // Rater names for HRM PSB MEMBER RATINGS
+    if (allRaters.length > 0) {
+      allRaters.forEach((rater) => {
+        subHeaderRow.push({
+          text: getLastNameUpper(rater.name),
+          style: 'tableHeader',
+          alignment: 'center',
+          fontSize: 9, // Matching Summary Report
+        });
       });
-    });
+    }
 
-    subHeaderRow.push({}); // Total BEI column
-    subHeaderRow.push({}); // Total QS column
-    if (showExam) subHeaderRow.push({}); // Exam column
-    subHeaderRow.push({}); // Final Rating column
-    subHeaderRow.push({}); // Ranking column
+    subHeaderRow.push({}); // TOTAL BEI
+    subHeaderRow.push({}); // TOTAL QS
+    if (showExam) subHeaderRow.push({}); // EXAM
+    subHeaderRow.push({}); // FINAL RATING
+    subHeaderRow.push({}); // RANKING
 
-    // Build data rows
-    const dataRowsWithScores = applicants.map((item) => {
+    // Build data rows - directly using data from response
+    const dataRows = applicants.map((item) => {
       const row = [];
 
-      // # number placeholder
+      // No. placeholder
       row.push({ text: '', alignment: 'center' });
 
       // Name
-      const fullName =
-        `${item.applicant?.firstname || ''} ${item.applicant?.lastname || ''}`.trim();
-      row.push({ text: fullName, alignment: 'left' });
+      const fullName = `${item.firstname} ${item.lastname}`.trim();
+      row.push({ text: fullName || 'N/A', alignment: 'left' });
 
-      // Map for BEI scores
+      // Create a map of rater_id to bei score
       const beiMap = new Map();
-      let beiScores = [];
-      let qsScores = [];
-
       if (Array.isArray(item.rater_scores)) {
         item.rater_scores.forEach((scoreItem) => {
-          // BEI scores
           if (scoreItem.bei !== null && scoreItem.bei !== undefined && scoreItem.bei !== '-') {
-            const beiValue = parseFloat(scoreItem.bei);
-            if (!isNaN(beiValue)) {
-              beiMap.set(scoreItem.rater_id, beiValue);
-              beiScores.push(beiValue);
-            }
-          }
-
-          // QS scores
-          if (
-            scoreItem.total_qs !== null &&
-            scoreItem.total_qs !== undefined &&
-            scoreItem.total_qs !== '-'
-          ) {
-            const qsValue = parseFloat(scoreItem.total_qs);
-            if (!isNaN(qsValue)) {
-              qsScores.push(qsValue);
-            }
+            beiMap.set(scoreItem.rater_id, scoreItem.bei);
           }
         });
       }
 
-      // Display BEI scores per rater
-      allRaters.forEach((rater) => {
-        const beiScore = beiMap.get(rater.id);
-        row.push({
-          text: beiScore !== undefined ? formatNumber(beiScore) : '-',
-          alignment: 'center',
+      // Add BEI score for each rater (directly from response)
+      if (allRaters.length > 0) {
+        allRaters.forEach((rater) => {
+          const beiScore = beiMap.get(rater.id);
+          row.push({
+            text: beiScore !== undefined ? formatNumber(beiScore) : '-',
+            alignment: 'center',
+          });
         });
-      });
+      }
 
-      // Total BEI (average of all rater BEI scores)
-      const totalBei =
-        beiScores.length > 0 ? beiScores.reduce((sum, val) => sum + val, 0) / beiScores.length : 0;
-      row.push({ text: formatNumber(totalBei), alignment: 'center', bold: true });
+      // TOTAL BEI - directly from response
+      row.push({ text: formatNumber(item.bei), alignment: 'center', bold: true });
 
-      // Total QS (average of all rater QS scores)
-      const totalQs =
-        qsScores.length > 0 ? qsScores.reduce((sum, val) => sum + val, 0) / qsScores.length : 0;
-      row.push({ text: formatNumber(totalQs), alignment: 'center', bold: true });
+      // TOTAL QS - directly from response
+      row.push({ text: formatNumber(item.total_rating), alignment: 'center', bold: true });
 
-      // Exam (if applicable)
+      // EXAM (if enabled) - directly from response
       if (showExam) {
         row.push({ text: formatNumber(item.exam_score), alignment: 'center', bold: true });
       }
 
-      // Final Rating = Total QS + Total BEI
-      const finalRating = totalQs + totalBei;
-      row.push({ text: formatNumber(finalRating), alignment: 'center', bold: true });
+      // FINAL RATING - directly from response
+      row.push({ text: formatNumber(item.final_rating), alignment: 'center', bold: true });
 
-      // Rank placeholder
+      // RANKING placeholder
       row.push({ text: '', alignment: 'center', bold: true });
 
       return {
-        row,
-        finalRating: finalRating,
+        row: row,
+        rank: item.rank ? Number(item.rank) : null,
       };
     });
 
-    // Sort by final rating (descending)
-    dataRowsWithScores.sort((a, b) => b.finalRating - a.finalRating);
+    // Sort by rank if available
+    dataRows.sort((a, b) => {
+      if (a.rank != null && b.rank != null) return a.rank - b.rank;
+      if (a.rank != null) return -1;
+      if (b.rank != null) return 1;
+      return 0;
+    });
 
     // Add ranking numbers
-    dataRowsWithScores.forEach((item, index) => {
+    dataRows.forEach((item, index) => {
       item.row[0].text = (index + 1).toString();
       item.row[item.row.length - 1].text = (index + 1).toString();
     });
 
-    const dataRows = dataRowsWithScores.map((item) => item.row);
-    const rows = [headerRow, subHeaderRow, ...dataRows];
+    const rows = [headerRow, subHeaderRow, ...dataRows.map((item) => item.row)];
 
-    // Calculate column widths
-    const raterColumnWidth = '*';
-    const widths = [20, 150]; // #, Name
+    // Calculate column widths as percentages
+    const widths = [];
 
-    // BEI columns
-    for (let i = 0; i < maxRaters; i++) widths.push(raterColumnWidth);
-    widths.push(65); // Total BEI
-    widths.push(65); // Total QS
+    // Fixed columns with percentage widths
+    widths.push(FIXED_WIDTHS.no); // No.
+    widths.push(FIXED_WIDTHS.name); // NAME OF APPLICANT
 
-    if (showExam) widths.push(55);
-    widths.push(75); // Final Rating
-    widths.push(50); // Ranking
+    // HRM PSB MEMBER RATINGS columns - each gets equal percentage
+    if (allRaters.length > 0) {
+      const raterWidthPercent = perRaterWidth.toFixed(2) + '%';
+      for (let i = 0; i < allRaters.length; i++) {
+        widths.push(raterWidthPercent);
+      }
+    }
 
-    const jobPost = reportData.jobPost || reportData || {};
-    const office = jobPost.Office || reportData.office || 'N/A';
-    const position = jobPost.Position || reportData.position || 'N/A';
-    const salaryGrade = jobPost.SalaryGrade || reportData.Salary_Grade || 'N/A';
-    const plantillaItemNo = jobPost['Plantilla Item No'] || reportData.Plantilla_Item_No || 'N/A';
+    // Fixed columns with percentage widths
+    widths.push(FIXED_WIDTHS.totalBei); // TOTAL BEI
+    widths.push(FIXED_WIDTHS.totalQs); // TOTAL QS
+    if (showExam) widths.push(FIXED_WIDTHS.exam); // EXAM
+    widths.push(FIXED_WIDTHS.finalRating); // FINAL RATING
+    widths.push(FIXED_WIDTHS.ranking); // RANKING
+
+    const office = reportData.office || 'N/A';
+    const position = reportData.position || 'N/A';
+    const salaryGrade = reportData.Salary_Grade || 'N/A';
+    const plantillaItemNo = reportData.Plantilla_Item_No || 'N/A';
 
     return [
       {
@@ -725,6 +671,11 @@
           widths: widths,
           body: rows,
         },
+        layout: {
+          fillColor: function (rowIndex) {
+            return rowIndex === 0 || rowIndex === 1 ? 'white' : null;
+          },
+        },
       },
       ...generateSignatoryFooter(reportData),
     ];
@@ -761,7 +712,7 @@
         const docDefinition = {
           pageSize: 'LEGAL',
           pageOrientation: 'landscape',
-          pageMargins: [72, 100, 72, 10],
+          pageMargins: [72, 100, 72, 20],
           header: function () {
             return {
               stack: [
@@ -849,7 +800,7 @@
           content: allContent,
           styles: {
             tableHeader: {
-              fontSize: 10,
+              fontSize: 9,
               bold: true,
             },
           },
