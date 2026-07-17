@@ -16,13 +16,14 @@
         <div>Loading report...</div>
       </div>
       <div
-        v-if="!pdfUrl && !isLoading"
+        v-if="!pdfUrl && !isLoading && !hasNoData"
         class="column items-center justify-center text-grey q-gutter-sm"
         style="height: 100%"
       >
         <q-spinner color="primary" size="32px" />
         <div>Generating PDF preview...</div>
       </div>
+
       <iframe
         v-if="pdfUrl"
         :src="pdfUrl"
@@ -34,7 +35,7 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { ref, onMounted, onUnmounted, computed } from 'vue';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
 
   const props = defineProps({
@@ -50,6 +51,19 @@
   const reportData = ref(null);
 
   let DISABLE_ALL_IMAGES = false;
+
+  // Computed property to safely get applicants array
+  const applicantsArray = computed(() => {
+    if (!reportData.value || !reportData.value.data) return [];
+    if (Array.isArray(reportData.value.data)) {
+      return [...reportData.value.data].sort((a, b) => Number(a.rank) - Number(b.rank));
+    }
+    return Object.values(reportData.value.data).sort((a, b) => Number(a.rank) - Number(b.rank));
+  });
+
+  const hasNoData = computed(() => {
+    return !isLoading.value && reportData.value && applicantsArray.value.length === 0;
+  });
 
   async function fetchReportData() {
     if (isLoading.value) return;
@@ -92,8 +106,7 @@
         if (!isValidPng) return false;
       }
       return true;
-    } catch (error) {
-      console.error('Base64 decode error:', error);
+    } catch {
       return false;
     }
   }
@@ -108,38 +121,6 @@
     return isValidBase64(str);
   }
 
-  function collectInvalidImages(node, list = []) {
-    if (!node || typeof node !== 'object') return list;
-    if (node.image && !isSupportedImageDataUrl(node.image)) {
-      list.push({ image: node.image, location: 'found invalid image' });
-    }
-    if (Array.isArray(node.stack)) node.stack.forEach((n) => collectInvalidImages(n, list));
-    if (Array.isArray(node.columns)) node.columns.forEach((n) => collectInvalidImages(n, list));
-    if (Array.isArray(node.content)) node.content.forEach((n) => collectInvalidImages(n, list));
-    if (node.table && Array.isArray(node.table.body)) {
-      node.table.body.forEach((row) => row.forEach((n) => collectInvalidImages(n, list)));
-    }
-    return list;
-  }
-
-  function sanitizeImages(node) {
-    if (!node || typeof node !== 'object') return;
-    if (node.image && !isSupportedImageDataUrl(node.image)) {
-      delete node.image;
-      delete node.fit;
-      delete node.width;
-      delete node.height;
-      delete node.alignment;
-      delete node.margin;
-    }
-    if (Array.isArray(node.stack)) node.stack.forEach(sanitizeImages);
-    if (Array.isArray(node.columns)) node.columns.forEach(sanitizeImages);
-    if (Array.isArray(node.content)) node.content.forEach(sanitizeImages);
-    if (node.table && Array.isArray(node.table.body)) {
-      node.table.body.forEach((row) => row.forEach(sanitizeImages));
-    }
-  }
-
   function placeholderImage() {
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   }
@@ -148,7 +129,6 @@
     if (dataUrl && isSupportedImageDataUrl(dataUrl)) {
       return dataUrl;
     }
-    console.warn('Using placeholder for invalid image');
     return placeholderImage();
   }
 
@@ -158,10 +138,7 @@
       if (!response.ok) return null;
       const blob = await response.blob();
       if (!blob || blob.size === 0) return null;
-      if (blob.size > 500 * 1024) {
-        console.warn('Image too large:', blob.size);
-        return null;
-      }
+      if (blob.size > 500 * 1024) return null;
       if (!['image/png', 'image/jpeg', 'image/jpg'].includes(blob.type)) return null;
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -172,10 +149,8 @@
       if (isSupportedImageDataUrl(base64)) {
         return base64;
       }
-      console.warn('Invalid image data generated for:', url);
       return null;
-    } catch (error) {
-      console.error('Public image load failed:', url, error);
+    } catch {
       return null;
     }
   }
@@ -193,28 +168,6 @@
     },
     vLineColor: function () {
       return '#d1d1e7';
-    },
-    paddingLeft: function () {
-      return 4;
-    },
-    paddingRight: function () {
-      return 4;
-    },
-    paddingTop: function () {
-      return 4;
-    },
-    paddingBottom: function () {
-      return 4;
-    },
-  };
-
-  // Layout for NO borders at all
-  const noBorderLayout = {
-    hLineWidth: function () {
-      return 0;
-    },
-    vLineWidth: function () {
-      return 0;
     },
     paddingLeft: function () {
       return 4;
@@ -252,28 +205,20 @@
     },
   };
 
-  // Helper function to format publication date from the report data
   function getFormattedPublicationDate() {
     if (!reportData.value || !reportData.value.publication_date) {
       return '';
     }
 
     const pubDate = reportData.value.publication_date;
-    // Expected format: "April 27, 2026 - May 14, 2026"
-    // Extract the first date (start date) or use the whole string
     let startDateStr = pubDate.split(' - ')[0] || pubDate;
-
-    // Parse the date string (e.g., "April 27, 2026")
     const dateParts = startDateStr.match(/(\w+)\s+(\d+),\s+(\d+)/);
     if (!dateParts) return '';
 
     const month = dateParts[1];
     const day = dateParts[2];
     const year = dateParts[3];
-
-    // Create a date object and format to "MONTH DD, YYYY" in uppercase
-    const formattedDate = `${month.toUpperCase()} ${day}, ${year}`;
-    return formattedDate;
+    return `${month.toUpperCase()} ${day}, ${year}`;
   }
 
   async function generatePdfContent() {
@@ -285,57 +230,110 @@
 
     const rd = reportData.value;
 
-    const applicantsArray = Object.values(rd.data || {}).sort(function (a, b) {
-      return Number(a.rank) - Number(b.rank);
-    });
-
-    const imageMap = {};
-
-    // Store images using a unique key (ControlNo or nPersonalInfo_id)
-    await Promise.all(
-      applicantsArray.map(async function (ap) {
-        // Use ControlNo if available, otherwise use nPersonalInfo_id
-        const uniqueKey = ap.ControlNo || ap.nPersonalInfo_id;
-
-        // Skip if no valid key
-        if (!uniqueKey) {
-          console.warn(`No unique identifier for applicant: ${ap.firstname} ${ap.lastname}`);
-          return;
-        }
-
-        if (ap.image_url) {
-          try {
-            const b64 = await summaryReportStore.fetchImageBase64(ap.image_url);
-            if (b64 && isSupportedImageDataUrl(b64)) {
-              imageMap[uniqueKey] = b64;
-            } else {
-              console.warn(`Invalid or missing image for applicant ${uniqueKey}`);
-            }
-          } catch (error) {
-            console.error(`Failed to load image for applicant ${uniqueKey}:`, error);
-          }
-        }
-      }),
-    );
-
-    const logoUrl = new URL('/logo.png', window.location.origin).toString();
-    let logoBase64 = null;
-    try {
-      const rawLogo = await getPublicImageBase64(logoUrl);
-      logoBase64 = safeImageOrPlaceholder(rawLogo);
-    } catch (error) {
-      console.error('Failed to load logo:', error);
-      logoBase64 = placeholderImage();
+    let applicants = [];
+    if (Array.isArray(rd.data)) {
+      applicants = rd.data;
+    } else if (rd.data && typeof rd.data === 'object') {
+      applicants = Object.values(rd.data);
     }
 
+    applicants.sort((a, b) => Number(a.rank) - Number(b.rank));
+
+    // Load pdfmake
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfMake = pdfMakeModule.default || pdfMakeModule;
     const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
     pdfMake.vfs = vfsFontsModule?.pdfMake?.vfs || vfsFontsModule?.vfs || vfsFontsModule;
 
+    const publicationDateText = getFormattedPublicationDate();
+    let headerTitleText = 'APPLICANTS PER POSITION';
+    if (publicationDateText) {
+      headerTitleText = `APPLICANTS PER POSITION - ${publicationDateText} PUBLICATION`;
+    }
+
+    // If no applicants, show a simple message
+    if (applicants.length === 0) {
+      const docDefinition = {
+        pageSize: 'Legal',
+        pageOrientation: 'portrait',
+        pageMargins: [40, 110, 40, 50],
+        header: function () {
+          return {
+            table: {
+              widths: ['*'],
+              body: [
+                [
+                  {
+                    text: headerTitleText,
+                    color: 'white',
+                    fontSize: 11,
+                    bold: true,
+                    alignment: 'center',
+                    fillColor: '#008000',
+                    margin: [0, 25, 0, 25],
+                  },
+                ],
+              ],
+            },
+            layout: headerLayout,
+          };
+        },
+        footer: function (currentPage, pageCount) {
+          return {
+            text: 'Page ' + currentPage + ' of ' + pageCount,
+            alignment: 'right',
+            fontSize: 8,
+            margin: [0, 10, 30, 0],
+          };
+        },
+        content: [
+          {
+            text: 'No applicants found for this position.',
+            alignment: 'center',
+            fontSize: 14,
+            margin: [0, 50, 0, 0],
+          },
+        ],
+        defaultStyle: { fontSize: 8 },
+      };
+
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      pdfDocGenerator.getBlob(function (blob) {
+        pdfUrl.value = URL.createObjectURL(blob);
+      });
+      return;
+    }
+
+    // Load images
+    const imageMap = {};
+    await Promise.all(
+      applicants.map(async function (ap) {
+        const uniqueKey = ap.ControlNo || ap.nPersonalInfo_id;
+        if (!uniqueKey || !ap.image_url) return;
+
+        try {
+          const b64 = await summaryReportStore.fetchImageBase64(ap.image_url);
+          if (b64 && isSupportedImageDataUrl(b64)) {
+            imageMap[uniqueKey] = b64;
+          }
+        } catch {
+          // Silently skip
+        }
+      }),
+    );
+
+    // Load logo
+    const logoUrl = new URL('/logo.png', window.location.origin).toString();
+    let logoBase64 = null;
+    try {
+      const rawLogo = await getPublicImageBase64(logoUrl);
+      logoBase64 = safeImageOrPlaceholder(rawLogo);
+    } catch {
+      logoBase64 = placeholderImage();
+    }
+
     const allContent = [];
     const BG = '#f0f0f0';
-
     const divisionOrSection = rd.section || rd.division || '';
 
     // Info table with outer borders
@@ -404,21 +402,18 @@
       margin: [0, 0, 0, 16],
     });
 
-    // Build applicants table body with NO borders
-    const applicantsTableBody = [];
-
-    for (let idx = 0; idx < applicantsArray.length; idx++) {
-      const applicant = applicantsArray[idx];
+    // Build each applicant as a separate unbreakable table
+    for (let idx = 0; idx < applicants.length; idx++) {
+      const applicant = applicants[idx];
       const isInternal = (applicant.applicant_type || '').toLowerCase() === 'internal';
 
       const fullName =
         ((applicant.firstname || '') + ' ' + (applicant.lastname || '')).trim() || 'N/A';
-
-      // Use the same unique key for retrieving the image
       const uniqueKey = applicant.ControlNo || applicant.nPersonalInfo_id;
-      const photoData = uniqueKey
-        ? safeImageOrPlaceholder(imageMap[uniqueKey])
-        : placeholderImage();
+      const photoData =
+        uniqueKey && imageMap[uniqueKey]
+          ? safeImageOrPlaceholder(imageMap[uniqueKey])
+          : placeholderImage();
 
       let infoStack;
       if (isInternal) {
@@ -457,67 +452,81 @@
         });
       }
 
-      applicantsTableBody.push([
-        {
-          stack: [
-            {
-              text: 'RANK',
-              fontSize: 8,
-              bold: true,
-              alignment: 'center',
-              color: '#666',
-              margin: [0, 10, 0, 5],
-            },
-            {
-              text: (applicant.rank || idx + 1).toString(),
-              fontSize: 20,
-              bold: true,
-              alignment: 'center',
-              margin: [0, 0, 0, 10],
-            },
-          ],
-          alignment: 'center',
-          margin: [0, 15, 0, 15],
-        },
-        {
-          stack:
-            imageStack.length > 0
-              ? imageStack
-              : [
+      // Create a separate table for each applicant with unbreakable: true
+      const applicantTable = {
+        table: {
+          widths: ['8%', '22%', '*'],
+          body: [
+            [
+              {
+                stack: [
                   {
-                    text: 'No Photo',
-                    alignment: 'center',
-                    margin: [0, 40, 0, 40],
+                    text: 'RANK',
                     fontSize: 8,
-                    color: '#999',
+                    bold: true,
+                    alignment: 'center',
+                    color: '#666',
+                    margin: [0, 10, 0, 5],
+                  },
+                  {
+                    text: (applicant.rank || idx + 1).toString(),
+                    fontSize: 20,
+                    bold: true,
+                    alignment: 'center',
+                    margin: [0, 0, 0, 10],
                   },
                 ],
-          alignment: 'center',
-          border: [true, true, true, true],
+                alignment: 'center',
+                margin: [0, 15, 0, 15],
+              },
+              {
+                stack:
+                  imageStack.length > 0
+                    ? imageStack
+                    : [
+                        {
+                          text: 'No Photo',
+                          alignment: 'center',
+                          margin: [0, 40, 0, 40],
+                          fontSize: 8,
+                          color: '#999',
+                        },
+                      ],
+                alignment: 'center',
+                border: [true, true, true, true],
+              },
+              {
+                stack: infoStack,
+                margin: [12, 14, 12, 14],
+              },
+            ],
+          ],
         },
-        {
-          stack: infoStack,
-          margin: [12, 14, 12, 14],
+        layout: {
+          hLineWidth: function () {
+            return 0;
+          },
+          vLineWidth: function () {
+            return 0;
+          },
+          paddingLeft: function () {
+            return 4;
+          },
+          paddingRight: function () {
+            return 4;
+          },
+          paddingTop: function () {
+            return 4;
+          },
+          paddingBottom: function () {
+            return 4;
+          },
         },
-      ]);
-    }
+        margin: [0, 0, 0, 6],
+        unbreakable: true, // This keeps the entire applicant row together
+      };
 
-    // Add the complete applicants table with NO borders
-    allContent.push({
-      table: {
-        widths: ['8%', '22%', '*'],
-        body: applicantsTableBody,
-      },
-      layout: noBorderLayout, // This removes all borders
-      margin: [0, 0, 0, 6],
-      dontBreakRows: true,
-    });
-
-    // Format the publication date for the header
-    const publicationDateText = getFormattedPublicationDate();
-    let headerTitleText = 'APPLICANTS PER POSITION';
-    if (publicationDateText) {
-      headerTitleText = `APPLICANTS PER POSITION - ${publicationDateText} PUBLICATION`;
+      allContent.push(applicantTable);
     }
 
     const docDefinition = {
@@ -594,13 +603,6 @@
       styles: { tableHeader: { fontSize: 8, bold: true } },
       defaultStyle: { fontSize: 8 },
     };
-
-    const bad = collectInvalidImages(docDefinition);
-    if (bad.length > 0) {
-      console.warn('Found invalid images:', bad.length);
-    }
-
-    sanitizeImages(docDefinition);
 
     try {
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
