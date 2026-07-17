@@ -456,7 +456,7 @@
         allContent.push(...generateSignatoryFooter());
 
         const docDefinition = {
-          pageSize: 'A4',
+          pageSize: 'Legal',
           pageOrientation: 'portrait',
           pageMargins: [60, 120, 60, 50],
           header: function () {
