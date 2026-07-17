@@ -521,7 +521,7 @@
     }
 
     const docDefinition = {
-      pageSize: 'A4',
+      pageSize: 'Legal',
       pageOrientation: 'portrait',
       pageMargins: [40, 110, 40, 50],
       header: function () {

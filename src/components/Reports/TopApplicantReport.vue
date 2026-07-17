@@ -199,7 +199,6 @@
     return rows;
   }
 
-  // Generate content for a single job post
   function generateJobPostContent(office, jobPost) {
     const content = [];
 
@@ -270,15 +269,24 @@
       margin: [0, 0, 0, 10],
     });
 
+    const topApplicants = jobPost['Top Applicant'] || jobPost['Top 5 Applicant'] || [];
+
+    // Build the table body with a break after rank 5
     const tableBody = [
       [
-        { text: 'RANK', style: 'tableHeader', alignment: 'center' },
-        { text: 'RECOMMENDED APPLICANTS', style: 'tableHeader', alignment: 'center' },
-        { text: 'REMARKS', style: 'tableHeader', alignment: 'center' },
+        { text: 'RANK', style: 'tableHeader', alignment: 'center', margin: [0, 5, 0, 5] },
+        {
+          text: 'RECOMMENDED APPLICANTS',
+          style: 'tableHeader',
+          alignment: 'center',
+          margin: [0, 5, 0, 5],
+        },
+        { text: 'REMARKS', style: 'tableHeader', alignment: 'center', margin: [0, 5, 0, 5] },
       ],
     ];
 
-    const topApplicants = jobPost['Top Applicant'] || jobPost['Top 5 Applicant'] || [];
+    // Store the index of the empty row
+    let emptyRowIndex = -1;
 
     // If there are no applicants, display a single empty row
     if (topApplicants.length === 0) {
@@ -288,8 +296,8 @@
         { text: '', alignment: 'center', fontSize: 8 },
       ]);
     } else {
-      // Display ALL applicants (not just top 5)
-      topApplicants.forEach((applicant) => {
+      // Display applicants
+      topApplicants.forEach((applicant, index) => {
         let fullName = '';
         if (applicant.firstname && applicant.lastname) {
           fullName = `${applicant.firstname} ${applicant.lastname}`.trim();
@@ -302,10 +310,47 @@
         }
 
         tableBody.push([
-          { text: applicant.rank?.toString() || '-', alignment: 'center', fontSize: 8 },
-          { text: fullName, alignment: 'left', fontSize: 8 },
-          { text: '', alignment: 'center', fontSize: 8 },
+          {
+            text: applicant.rank?.toString() || '-',
+            alignment: 'center',
+            fontSize: 8,
+            margin: [0, 5, 0, 5],
+          },
+          { text: fullName, alignment: 'left', fontSize: 8, margin: [0, 5, 0, 5] },
+          { text: '', alignment: 'center', fontSize: 8, margin: [0, 5, 0, 5] },
         ]);
+
+        // After rank 5, add an empty row with no borders as a break
+        if (applicant.rank === 5 && index < topApplicants.length - 1) {
+          const hasMoreAfterRank5 = topApplicants.some((a, i) => i > index);
+          if (hasMoreAfterRank5) {
+            emptyRowIndex = tableBody.length;
+            tableBody.push([
+              {
+                text: '',
+                alignment: 'center',
+                fontSize: 8,
+                margin: [0, 8, 0, 8],
+                // Keep top and bottom borders, remove left and right
+                border: [false, true, false, true],
+              },
+              {
+                text: '',
+                alignment: 'left',
+                fontSize: 8,
+                margin: [0, 8, 0, 8],
+                border: [false, true, false, true],
+              },
+              {
+                text: '',
+                alignment: 'center',
+                fontSize: 8,
+                margin: [0, 8, 0, 8],
+                border: [false, true, false, true],
+              },
+            ]);
+          }
+        }
       });
     }
 
@@ -319,13 +364,23 @@
         fillColor: function (rowIndex) {
           return rowIndex === 0 ? 'white' : null;
         },
+        hLineWidth: function () {
+          // Keep all horizontal lines by default
+          return 1;
+        },
+        vLineWidth: function (i) {
+          // Only remove vertical borders for the empty row
+          if (emptyRowIndex !== -1 && i === emptyRowIndex) {
+            return 0;
+          }
+          return 1;
+        },
       },
       margin: [0, 0, 0, 0],
     });
 
     return content;
   }
-
   async function generatePdfContent() {
     if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
