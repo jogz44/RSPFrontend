@@ -291,6 +291,26 @@ export const useSummaryReportStore = defineStore('summaryReport', {
       }
     },
 
+    async generateTopApplicant(publicationDate) {
+      try {
+        this.loading = true;
+        const formattedDate = this.formatDateToYYYYMMDD(publicationDate);
+        const response = await adminApi.post(
+          '/generate/top/ranking/applicant',
+          { publication_date: formattedDate }, // ✅ fixed
+          { responseType: 'blob' },
+        );
+        this.error = null;
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message;
+        console.error('Error generating Top Applicant Report Excel:', err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async generateListOfPositionExcel(publicationDate) {
       try {
         this.loading = true;

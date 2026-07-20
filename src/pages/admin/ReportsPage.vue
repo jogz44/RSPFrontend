@@ -721,6 +721,15 @@
             apiEndpoint: '/api/generate/internal/applicant/designation',
             needsDateOnly: true,
           },
+          {
+            id: 16,
+            name: 'Top 5 Ranking Applicants (Excel)',
+            category: 'Rating',
+            type: 'Excel',
+            description: 'Top 5 Ranking Applicants Report - Excel Format',
+            apiEndpoint: '/generate/top/applicant',
+            needsDateOnly: true,
+          },
         ],
 
         pagination: { rowsPerPage: 10 },
@@ -1078,7 +1087,7 @@
           case 13: // List of For QS Validation Applicant
           case 14: // List of All Applicant with Demographics
           case 15: // List of Internal Applicants - handled above
-            // These are handled by the Excel condition above
+          case 16: // Top 5 Ranking Applicants (Excel) - handled above
             break;
 
           default:
@@ -1149,6 +1158,11 @@
               break;
             case 15: // List of Internal Applicants
               response = await summaryReportStore.generateInternalPrequalifiedApplicantExcel(
+                this.selectedPublicationDate,
+              );
+              break;
+            case 16: // Top 5 Ranking Applicants (Excel)  <-- NEW
+              response = await summaryReportStore.generateTopApplicant(
                 this.selectedPublicationDate,
               );
               break;
