@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, onUnmounted, computed } from 'vue';
+  import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
   import { useSummaryReportStore } from 'stores/summaryReportStore';
 
   const props = defineProps({
@@ -72,6 +72,21 @@
     try {
       const data = await summaryReportStore.fetchApplicantPosition(props.jobpostId);
       reportData.value = data;
+
+      // Debug: Log the first applicant's image data
+      if (data && data.data) {
+        const firstApplicant = Array.isArray(data.data)
+          ? data.data[0]
+          : Object.values(data.data)[0];
+        if (firstApplicant) {
+          console.log('First applicant data:', {
+            name: `${firstApplicant.firstname} ${firstApplicant.lastname}`,
+            image_url: firstApplicant.image_url,
+            controlNo: firstApplicant.ControlNo,
+            nPersonalInfo_id: firstApplicant.nPersonalInfo_id,
+          });
+        }
+      }
     } catch (error) {
       console.error('Error fetching report data:', error);
     } finally {
@@ -81,22 +96,44 @@
 
   function isValidBase64(str) {
     if (!str || typeof str !== 'string') return false;
-    const dataUrlMatch = str.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
-    if (!dataUrlMatch) return false;
+
+    // Check if it's a data URL - allow ALL image types
+    const dataUrlMatch = str.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+    if (!dataUrlMatch) {
+      console.log('Not a valid data URL format');
+      return false;
+    }
+
+    const imageType = dataUrlMatch[1];
     const base64Data = dataUrlMatch[2];
-    if (base64Data.length < 100) return false;
+
+    if (base64Data.length < 100) {
+      console.log('Base64 data too short');
+      return false;
+    }
+
+    // Check for valid base64 characters
     const base64Regex = /^[A-Za-z0-9+/]+=*$/;
-    if (!base64Regex.test(base64Data)) return false;
+    if (!base64Regex.test(base64Data)) {
+      console.log('Invalid base64 characters');
+      return false;
+    }
+
     try {
       const binaryString = atob(base64Data);
-      if (binaryString.length < 8) return false;
+      if (binaryString.length < 8) {
+        console.log('Binary data too short');
+        return false;
+      }
 
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      if (dataUrlMatch[1] === 'png') {
+      // Validate common image types by magic bytes
+      // PNG
+      if (imageType === 'png') {
         const isValidPng =
           bytes[0] === 137 &&
           bytes[1] === 80 &&
@@ -106,91 +143,161 @@
           bytes[5] === 10 &&
           bytes[6] === 26 &&
           bytes[7] === 10;
-        if (!isValidPng) return false;
-      } else {
-        // JPEG/JPG: check for SOI marker (FFD8) at start and EOI marker (FFD9) at end.
-        // Without this, a truncated JPEG (e.g. cut off mid-fetch) passes validation
-        // and later crashes pdfmake's internal JPEG parser.
-        const isValidJpegStart = bytes[0] === 0xff && bytes[1] === 0xd8;
-        const isValidJpegEnd =
-          bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9;
-        if (!isValidJpegStart || !isValidJpegEnd) return false;
-
-        // Reject progressive JPEGs (SOF2, marker 0xFFC2). Browsers decode these
-        // fine, but pdfmake's hand-rolled JPEG parser only reliably supports
-        // baseline JPEG (SOF0, 0xFFC0) and can walk off the buffer on SOF2 data,
-        // producing "Invalid image: RangeError: Trying to access beyond buffer
-        // length" even though the file itself is perfectly valid.
-        let isProgressive = false;
-        for (let i = 2; i < bytes.length - 1; i++) {
-          if (bytes[i] !== 0xff) continue;
-          const marker = bytes[i + 1];
-          // Skip padding/fill bytes.
-          if (marker === 0xff || marker === 0x00) continue;
-          if (marker === 0xc2) {
-            isProgressive = true;
-            break;
-          }
-          // SOF0 (baseline) or SOS (start of scan) — no need to look further.
-          if (marker === 0xc0 || marker === 0xda) break;
-          // Any other marker with a length field: skip its segment.
-          if (marker >= 0xd0 && marker <= 0xd9) {
-            i += 1; // markers with no payload (RST0-7, SOI, EOI)
-            continue;
-          }
-          if (i + 3 < bytes.length) {
-            const segmentLength = (bytes[i + 2] << 8) | bytes[i + 3];
-            i += 1 + segmentLength;
-          } else {
-            break;
-          }
+        if (!isValidPng) {
+          console.log('Invalid PNG header');
+          return false;
         }
-        if (isProgressive) return false;
+        return true;
       }
+
+      // JPEG/JPG
+      if (imageType === 'jpeg' || imageType === 'jpg') {
+        const isValidJpegStart = bytes[0] === 0xff && bytes[1] === 0xd8;
+        if (!isValidJpegStart) {
+          console.log('Invalid JPEG start marker');
+          return false;
+        }
+
+        const isValidJpegEnd = bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9;
+        if (!isValidJpegEnd) {
+          console.log('Invalid JPEG end marker - image may be truncated');
+          return false;
+        }
+        return true;
+      }
+
+      // GIF
+      if (imageType === 'gif') {
+        const isValidGif =
+          bytes[0] === 0x47 &&
+          bytes[1] === 0x49 &&
+          bytes[2] === 0x46 &&
+          bytes[3] === 0x38 &&
+          (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+          bytes[5] === 0x61;
+        if (!isValidGif) {
+          console.log('Invalid GIF header');
+          return false;
+        }
+        return true;
+      }
+
+      // BMP
+      if (imageType === 'bmp') {
+        const isValidBmp = bytes[0] === 0x42 && bytes[1] === 0x4d;
+        if (!isValidBmp) {
+          console.log('Invalid BMP header');
+          return false;
+        }
+        return true;
+      }
+
+      // WEBP
+      if (imageType === 'webp') {
+        const isValidWebp =
+          bytes[0] === 0x52 &&
+          bytes[1] === 0x49 &&
+          bytes[2] === 0x46 &&
+          bytes[3] === 0x46 &&
+          bytes[8] === 0x57 &&
+          bytes[9] === 0x45 &&
+          bytes[10] === 0x42 &&
+          bytes[11] === 0x50;
+        if (!isValidWebp) {
+          console.log('Invalid WEBP header');
+          return false;
+        }
+        return true;
+      }
+
+      // SVG - just check if it's valid XML
+      if (imageType === 'svg+xml' || imageType === 'svg') {
+        const str = binaryString.substring(0, 100).toLowerCase();
+        const isValidSvg = str.includes('<svg') || str.includes('<?xml');
+        if (!isValidSvg) {
+          console.log('Invalid SVG header');
+          return false;
+        }
+        return true;
+      }
+
+      // For other image types (ico, tiff, etc.), try to decode
+      console.log(`Unknown image type: ${imageType}, accepting if decodable`);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Error validating base64:', error);
       return false;
     }
   }
 
   function isSupportedImageDataUrl(str) {
     if (!str || typeof str !== 'string') return false;
-    const isValid =
-      str.startsWith('data:image/png;base64,') ||
-      str.startsWith('data:image/jpeg;base64,') ||
-      str.startsWith('data:image/jpg;base64,');
-    if (!isValid) return false;
+    // Allow ALL image types
+    const isValid = str.startsWith('data:image/');
+    if (!isValid) {
+      console.log('Not a valid data URL');
+      return false;
+    }
     return isValidBase64(str);
   }
 
-  // Confirms a data URL is a real, decodable image AND normalizes it into a
-  // plain baseline sRGB JPEG by drawing it through a canvas. This is the
-  // actual fix for pdfmake compatibility: pdfmake has its own hand-rolled
-  // image parser (it doesn't use the browser's decoder), which can fail on
-  // CMYK JPEGs, progressive JPEGs, 16-bit PNGs, or files carrying ICC/EXIF
-  // data it doesn't skip correctly — even though the browser displays them
-  // fine. Re-encoding through canvas strips all of that and always produces
-  // a format pdfmake can read. Returns null if the image can't be decoded
-  // at all (truncated/corrupt data).
   function normalizeImageForPdfmake(dataUrl) {
     return new Promise((resolve) => {
-      if (!dataUrl) return resolve(null);
+      if (!dataUrl) {
+        console.log('No data URL to normalize');
+        return resolve(null);
+      }
+
       const img = new Image();
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
-          if (canvas.width === 0 || canvas.height === 0) return resolve(null);
+
+          if (canvas.width === 0 || canvas.height === 0) {
+            console.log('Invalid image dimensions');
+            return resolve(null);
+          }
+
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const normalized = canvas.toDataURL('image/jpeg', 0.92);
-          resolve(normalized);
-        } catch {
+
+          // Check if it's a PNG
+          const isPng = dataUrl.startsWith('data:image/png');
+          // Check if it's a GIF (might have transparency)
+          const isGif = dataUrl.startsWith('data:image/gif');
+          // Check if it's a WEBP (might have transparency)
+          const isWebp = dataUrl.startsWith('data:image/webp');
+
+          if (isPng || isGif || isWebp) {
+            // For images with possible transparency, preserve it
+            ctx.drawImage(img, 0, 0);
+            // Keep as PNG format for transparency
+            const normalized = canvas.toDataURL('image/png');
+            console.log(
+              `Image normalized with transparency preserved: ${canvas.width}x${canvas.height}`,
+            );
+            resolve(normalized);
+          } else {
+            // For JPEGs and other formats, add white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            const normalized = canvas.toDataURL('image/jpeg', 0.92);
+            console.log(`JPEG normalized: ${canvas.width}x${canvas.height}`);
+            resolve(normalized);
+          }
+        } catch (error) {
+          console.error('Error normalizing image:', error);
           resolve(null);
         }
       };
-      img.onerror = () => resolve(null);
+
+      img.onerror = (error) => {
+        console.error('Image load error:', error);
+        resolve(null);
+      };
+
       img.src = dataUrl;
     });
   }
@@ -208,23 +315,84 @@
 
   async function getPublicImageBase64(url) {
     try {
+      console.log('Fetching public image from URL:', url);
       const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) return null;
-      if (blob.size > 500 * 1024) return null;
-      if (!['image/png', 'image/jpeg', 'image/jpg'].includes(blob.type)) return null;
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      if (isSupportedImageDataUrl(base64)) {
-        return base64;
+      if (!response.ok) {
+        console.log('Failed to fetch image:', response.status);
+        return null;
       }
+
+      const blob = await response.blob();
+      if (!blob || blob.size === 0) {
+        console.log('Empty blob');
+        return null;
+      }
+
+      // REMOVED file type restriction - allow ALL image types
+      // Just log the type for debugging
+      console.log(`Image type: ${blob.type}, size: ${blob.size} bytes`);
+
+      // ✅ Allow larger images but resize them
+      let imageDataUrl;
+      if (blob.size > 500 * 1024) {
+        console.log(`Image too large (${blob.size} bytes), resizing...`);
+
+        // Load the image
+        const img = new Image();
+        const loadPromise = new Promise((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(blob);
+        });
+        await loadPromise;
+
+        // Resize to max 800px width/height
+        const maxSize = 800;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        if (width > maxSize || height > maxSize) {
+          const ratio = Math.min(maxSize / width, maxSize / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        // Draw resized image on canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to appropriate format
+        if (blob.type === 'image/png') {
+          imageDataUrl = canvas.toDataURL('image/png');
+        } else {
+          imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        }
+        console.log(`Image resized to ${width}x${height}`);
+      } else {
+        // Convert small images normally
+        imageDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      if (isSupportedImageDataUrl(imageDataUrl)) {
+        console.log('Successfully loaded image');
+        return imageDataUrl;
+      }
+
       return null;
-    } catch {
+    } catch (error) {
+      console.error('Error fetching image:', error);
       return null;
     }
   }
@@ -296,10 +464,12 @@
   }
 
   async function generatePdfContent() {
+    // Revoke old URL if exists
     if (pdfUrl.value) {
       URL.revokeObjectURL(pdfUrl.value);
       pdfUrl.value = null;
     }
+
     if (!reportData.value) return;
 
     const rd = reportData.value;
@@ -372,33 +542,73 @@
       };
 
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-      pdfDocGenerator.getBlob(function (blob) {
-        pdfUrl.value = URL.createObjectURL(blob);
+      return new Promise((resolve) => {
+        pdfDocGenerator.getBlob(function (blob) {
+          const url = URL.createObjectURL(blob);
+          pdfUrl.value = url;
+          console.log('PDF generated (no applicants)');
+          resolve();
+        });
       });
-      return;
     }
 
     // Load images — each candidate is validated by magic-byte check AND
     // actually decoded in the browser before being trusted for pdfmake.
     const imageMap = {};
+    console.log(`Loading images for ${applicants.length} applicants...`);
+
     await Promise.all(
       applicants.map(async function (ap) {
         const uniqueKey = ap.ControlNo || ap.nPersonalInfo_id;
-        if (!uniqueKey || !ap.image_url) return;
+        if (!uniqueKey) {
+          console.log('No unique key for applicant:', ap);
+          return;
+        }
+
+        if (!ap.image_url) {
+          console.log(`No image_url for applicant ${uniqueKey}`);
+          return;
+        }
 
         try {
-          const b64 = await summaryReportStore.fetchImageBase64(ap.image_url);
+          console.log(`Fetching image for applicant ${uniqueKey} from URL:`, ap.image_url);
+
+          // If image_url is relative, make it absolute
+          let imageUrl = ap.image_url;
+          if (imageUrl.startsWith('/')) {
+            imageUrl = window.location.origin + imageUrl;
+            console.log(`Converted to absolute URL: ${imageUrl}`);
+          }
+
+          const b64 = await summaryReportStore.fetchImageBase64(imageUrl);
+
+          if (b64) {
+            console.log(`Raw base64 for ${uniqueKey}:`, b64.substring(0, 100) + '...');
+            console.log(`Base64 length: ${b64.length}`);
+          } else {
+            console.log(`No base64 data returned for ${uniqueKey}`);
+            return;
+          }
+
           if (b64 && isSupportedImageDataUrl(b64)) {
+            console.log(`Base64 validated for ${uniqueKey}, normalizing...`);
             const normalized = await normalizeImageForPdfmake(b64);
             if (normalized) {
               imageMap[uniqueKey] = normalized;
+              console.log(`✅ Image successfully loaded for ${uniqueKey}`);
+            } else {
+              console.log(`❌ Failed to normalize image for ${uniqueKey}`);
             }
+          } else {
+            console.log(`❌ Base64 validation failed for ${uniqueKey}`);
           }
-        } catch {
-          // Silently skip
+        } catch (error) {
+          console.error(`❌ Error loading image for ${uniqueKey}:`, error);
         }
       }),
     );
+
+    console.log(`Successfully loaded ${Object.keys(imageMap).length} images`);
 
     const logoUrl = new URL('/rsp/logo.png', window.location.origin).toString();
     let logoBase64 = null;
@@ -407,7 +617,9 @@
       const candidate = safeImageOrPlaceholder(rawLogo);
       const normalized = await normalizeImageForPdfmake(candidate);
       logoBase64 = normalized || placeholderImage();
-    } catch {
+      console.log('Logo loaded successfully');
+    } catch (error) {
+      console.error('Error loading logo:', error);
       logoBase64 = placeholderImage();
     }
 
@@ -489,10 +701,12 @@
       const fullName =
         ((applicant.firstname || '') + ' ' + (applicant.lastname || '')).trim() || 'N/A';
       const uniqueKey = applicant.ControlNo || applicant.nPersonalInfo_id;
-      const photoData =
-        uniqueKey && imageMap[uniqueKey]
-          ? safeImageOrPlaceholder(imageMap[uniqueKey])
-          : placeholderImage();
+
+      // Check if we have an image for this applicant
+      const hasImage = uniqueKey && imageMap[uniqueKey] && !DISABLE_ALL_IMAGES;
+      const photoData = hasImage ? imageMap[uniqueKey] : null;
+
+      console.log(`Applicant ${idx}: ${fullName}, hasImage: ${!!hasImage}`);
 
       let infoStack;
       if (isInternal) {
@@ -522,12 +736,26 @@
       }
 
       const imageStack = [];
-      if (!DISABLE_ALL_IMAGES && photoData && isSupportedImageDataUrl(photoData)) {
+      if (photoData && isSupportedImageDataUrl(photoData) && !DISABLE_ALL_IMAGES) {
         imageStack.push({
           image: photoData,
           fit: [100, 100],
           alignment: 'center',
           margin: [0, 8, 0, 8],
+        });
+        console.log(`✅ Adding photo for ${fullName}`);
+      } else {
+        console.log(`❌ No photo for ${fullName}`, {
+          hasImage: !!hasImage,
+          DISABLE_ALL_IMAGES,
+          photoData: photoData ? 'exists' : 'null',
+        });
+        imageStack.push({
+          text: 'No Photo',
+          alignment: 'center',
+          margin: [0, 40, 0, 40],
+          fontSize: 8,
+          color: '#999',
         });
       }
 
@@ -559,18 +787,7 @@
                 margin: [0, 15, 0, 15],
               },
               {
-                stack:
-                  imageStack.length > 0
-                    ? imageStack
-                    : [
-                        {
-                          text: 'No Photo',
-                          alignment: 'center',
-                          margin: [0, 40, 0, 40],
-                          fontSize: 8,
-                          color: '#999',
-                        },
-                      ],
+                stack: imageStack,
                 alignment: 'center',
                 border: [true, true, true, true],
               },
@@ -602,7 +819,7 @@
           },
         },
         margin: [0, 0, 0, 6],
-        unbreakable: true, // This keeps the entire applicant row together
+        unbreakable: true,
       };
 
       allContent.push(applicantTable);
@@ -684,19 +901,43 @@
     };
 
     try {
+      console.log('Generating PDF...');
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-      pdfDocGenerator.getBlob(function (blob) {
-        pdfUrl.value = URL.createObjectURL(blob);
+
+      // Use Promise to wait for blob generation
+      return new Promise((resolve, reject) => {
+        pdfDocGenerator.getBlob(function (blob) {
+          try {
+            console.log('PDF blob generated, size:', blob.size);
+            const url = URL.createObjectURL(blob);
+            pdfUrl.value = url;
+            console.log('PDF URL set:', url);
+
+            // Force a re-render of the iframe
+            nextTick(() => {
+              // The iframe will automatically update when pdfUrl changes
+              console.log('PDF generated successfully');
+              resolve();
+            });
+          } catch (error) {
+            console.error('Error creating blob URL:', error);
+            reject(error);
+          }
+        });
       });
     } catch (error) {
       console.error('PDF generation error:', error);
       DISABLE_ALL_IMAGES = true;
+      console.log('Retrying without images...');
       await generatePdfContent();
     }
   }
 
   onUnmounted(function () {
-    if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
+    if (pdfUrl.value) {
+      URL.revokeObjectURL(pdfUrl.value);
+      pdfUrl.value = null;
+    }
     if (rejectionHandler) {
       window.removeEventListener('unhandledrejection', rejectionHandler);
     }
@@ -704,19 +945,15 @@
 
   onMounted(async function () {
     // Backstop: pdfmake's document build runs internally as a promise chain,
-    // so an "Invalid image" error thrown deep inside it (e.g. corrupt buffer
-    // that slipped past validation) surfaces as an unhandled rejection rather
-    // than something our try/catch around getBlob() can see. This catches
-    // that case and retries once with all images disabled.
+    // so an "Invalid image" error thrown deep inside it surfaces as an unhandled rejection.
     rejectionHandler = (event) => {
-      // pdfmake frequently rejects with a plain string rather than an Error
-      // object, so event.reason?.message is often undefined even on a real
-      // "Invalid image" failure. Check both shapes.
       const reasonText =
         typeof event.reason === 'string' ? event.reason : event.reason?.message || '';
       if (reasonText.includes('Invalid image')) {
         event.preventDefault();
-        console.error('Caught pdfmake image error via unhandledrejection, retrying without images.');
+        console.error(
+          'Caught pdfmake image error via unhandledrejection, retrying without images.',
+        );
         DISABLE_ALL_IMAGES = true;
         generatePdfContent();
       }
@@ -725,6 +962,14 @@
 
     await fetchReportData();
     await generatePdfContent();
+
+    // Log final state
+    console.log('Final state:', {
+      hasPdfUrl: !!pdfUrl.value,
+      pdfUrlValue: pdfUrl.value,
+      reportData: !!reportData.value,
+      applicants: applicantsArray.value.length,
+    });
   });
 </script>
 

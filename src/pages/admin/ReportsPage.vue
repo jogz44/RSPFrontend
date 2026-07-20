@@ -190,17 +190,20 @@
               <div class="text-subtitle2 q-mb-sm">Select Positions</div>
               <q-select
                 v-model="selectedPositions"
-                :options="filteredPositionOptions"
+                :options="filteredPositionSearchOptions"
                 label="Select Positions"
                 outlined
                 multiple
                 use-chips
+                use-input
+                input-debounce="300"
                 option-value="value"
                 option-label="label"
                 emit-value
                 map-options
                 :dropdown-icon="'arrow_drop_down'"
                 :display-value="displayPositions"
+                @filter="filterPositions"
               >
                 <template v-slot:option="scope">
                   <q-item
@@ -762,6 +765,9 @@
         positionOptions: [],
         selectedPositions: [],
 
+        // NEW: search-narrowed list of position options rendered by the q-select
+        filteredPositionSearchOptions: [],
+
         // Publication date filter (Final Summary / Applicant per Position / BEI Summary)
         selectedReportPublicationDate: null,
 
@@ -857,6 +863,8 @@
         return Array.from(map.values());
       },
 
+      // Base list, narrowed by the selected publication date only.
+      // This stays the "source of truth" for Select All / allSelected / displayPositions.
       filteredPositionOptions() {
         if (!this.selectedReportPublicationDate) {
           return this.positionOptions;
@@ -899,6 +907,16 @@
     watch: {
       selectedReportPublicationDate() {
         this.selectedPositions = [];
+      },
+
+      // NEW: whenever the date-filtered base list changes (date picked/cleared,
+      // positions loaded), reset the search list to match it so the q-select
+      // shows the full set again until the user types something.
+      filteredPositionOptions: {
+        immediate: true,
+        handler(newVal) {
+          this.filteredPositionSearchOptions = [...newVal];
+        },
       },
 
       showReportModal(newVal) {
@@ -1241,6 +1259,21 @@
 
       isPositionSelected(pos) {
         return this.selectedPositions.includes(pos);
+      },
+
+      // NEW: narrows filteredPositionOptions (the date-filtered base list)
+      // by whatever the user types into the position q-select.
+      filterPositions(val, update) {
+        update(() => {
+          if (val === '') {
+            this.filteredPositionSearchOptions = [...this.filteredPositionOptions];
+          } else {
+            const needle = val.toLowerCase();
+            this.filteredPositionSearchOptions = this.filteredPositionOptions.filter(
+              (opt) => opt.value === 'select_all' || opt.label.toLowerCase().includes(needle),
+            );
+          }
+        });
       },
 
       openReport() {
