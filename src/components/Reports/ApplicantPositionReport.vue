@@ -51,6 +51,7 @@
   const reportData = ref(null);
 
   let DISABLE_ALL_IMAGES = false;
+  let rejectionHandler = null;
 
   // Computed property to safely get applicants array
   const applicantsArray = computed(() => {
@@ -89,11 +90,13 @@
     try {
       const binaryString = atob(base64Data);
       if (binaryString.length < 8) return false;
+
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
       if (dataUrlMatch[1] === 'png') {
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
         const isValidPng =
           bytes[0] === 137 &&
           bytes[1] === 80 &&
@@ -104,6 +107,45 @@
           bytes[6] === 26 &&
           bytes[7] === 10;
         if (!isValidPng) return false;
+      } else {
+        // JPEG/JPG: check for SOI marker (FFD8) at start and EOI marker (FFD9) at end.
+        // Without this, a truncated JPEG (e.g. cut off mid-fetch) passes validation
+        // and later crashes pdfmake's internal JPEG parser.
+        const isValidJpegStart = bytes[0] === 0xff && bytes[1] === 0xd8;
+        const isValidJpegEnd =
+          bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9;
+        if (!isValidJpegStart || !isValidJpegEnd) return false;
+
+        // Reject progressive JPEGs (SOF2, marker 0xFFC2). Browsers decode these
+        // fine, but pdfmake's hand-rolled JPEG parser only reliably supports
+        // baseline JPEG (SOF0, 0xFFC0) and can walk off the buffer on SOF2 data,
+        // producing "Invalid image: RangeError: Trying to access beyond buffer
+        // length" even though the file itself is perfectly valid.
+        let isProgressive = false;
+        for (let i = 2; i < bytes.length - 1; i++) {
+          if (bytes[i] !== 0xff) continue;
+          const marker = bytes[i + 1];
+          // Skip padding/fill bytes.
+          if (marker === 0xff || marker === 0x00) continue;
+          if (marker === 0xc2) {
+            isProgressive = true;
+            break;
+          }
+          // SOF0 (baseline) or SOS (start of scan) — no need to look further.
+          if (marker === 0xc0 || marker === 0xda) break;
+          // Any other marker with a length field: skip its segment.
+          if (marker >= 0xd0 && marker <= 0xd9) {
+            i += 1; // markers with no payload (RST0-7, SOI, EOI)
+            continue;
+          }
+          if (i + 3 < bytes.length) {
+            const segmentLength = (bytes[i + 2] << 8) | bytes[i + 3];
+            i += 1 + segmentLength;
+          } else {
+            break;
+          }
+        }
+        if (isProgressive) return false;
       }
       return true;
     } catch {
@@ -119,6 +161,38 @@
       str.startsWith('data:image/jpg;base64,');
     if (!isValid) return false;
     return isValidBase64(str);
+  }
+
+  // Confirms a data URL is a real, decodable image AND normalizes it into a
+  // plain baseline sRGB JPEG by drawing it through a canvas. This is the
+  // actual fix for pdfmake compatibility: pdfmake has its own hand-rolled
+  // image parser (it doesn't use the browser's decoder), which can fail on
+  // CMYK JPEGs, progressive JPEGs, 16-bit PNGs, or files carrying ICC/EXIF
+  // data it doesn't skip correctly — even though the browser displays them
+  // fine. Re-encoding through canvas strips all of that and always produces
+  // a format pdfmake can read. Returns null if the image can't be decoded
+  // at all (truncated/corrupt data).
+  function normalizeImageForPdfmake(dataUrl) {
+    return new Promise((resolve) => {
+      if (!dataUrl) return resolve(null);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          if (canvas.width === 0 || canvas.height === 0) return resolve(null);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const normalized = canvas.toDataURL('image/jpeg', 0.92);
+          resolve(normalized);
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
   }
 
   function placeholderImage() {
@@ -304,7 +378,8 @@
       return;
     }
 
-    // Load images
+    // Load images — each candidate is validated by magic-byte check AND
+    // actually decoded in the browser before being trusted for pdfmake.
     const imageMap = {};
     await Promise.all(
       applicants.map(async function (ap) {
@@ -314,7 +389,10 @@
         try {
           const b64 = await summaryReportStore.fetchImageBase64(ap.image_url);
           if (b64 && isSupportedImageDataUrl(b64)) {
-            imageMap[uniqueKey] = b64;
+            const normalized = await normalizeImageForPdfmake(b64);
+            if (normalized) {
+              imageMap[uniqueKey] = normalized;
+            }
           }
         } catch {
           // Silently skip
@@ -322,12 +400,13 @@
       }),
     );
 
-    // Load logo
-    const logoUrl = new URL('/logo.png', window.location.origin).toString();
+    const logoUrl = new URL('/rsp/logo.png', window.location.origin).toString();
     let logoBase64 = null;
     try {
       const rawLogo = await getPublicImageBase64(logoUrl);
-      logoBase64 = safeImageOrPlaceholder(rawLogo);
+      const candidate = safeImageOrPlaceholder(rawLogo);
+      const normalized = await normalizeImageForPdfmake(candidate);
+      logoBase64 = normalized || placeholderImage();
     } catch {
       logoBase64 = placeholderImage();
     }
@@ -618,9 +697,32 @@
 
   onUnmounted(function () {
     if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
+    if (rejectionHandler) {
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+    }
   });
 
   onMounted(async function () {
+    // Backstop: pdfmake's document build runs internally as a promise chain,
+    // so an "Invalid image" error thrown deep inside it (e.g. corrupt buffer
+    // that slipped past validation) surfaces as an unhandled rejection rather
+    // than something our try/catch around getBlob() can see. This catches
+    // that case and retries once with all images disabled.
+    rejectionHandler = (event) => {
+      // pdfmake frequently rejects with a plain string rather than an Error
+      // object, so event.reason?.message is often undefined even on a real
+      // "Invalid image" failure. Check both shapes.
+      const reasonText =
+        typeof event.reason === 'string' ? event.reason : event.reason?.message || '';
+      if (reasonText.includes('Invalid image')) {
+        event.preventDefault();
+        console.error('Caught pdfmake image error via unhandledrejection, retrying without images.');
+        DISABLE_ALL_IMAGES = true;
+        generatePdfContent();
+      }
+    };
+    window.addEventListener('unhandledrejection', rejectionHandler);
+
     await fetchReportData();
     await generatePdfContent();
   });

@@ -5,7 +5,7 @@
         <div class="line"></div>
       </div>
       <div class="city-logo">
-        <img class="logo" alt="City of Tagum Logo" src="/logo.png" />
+        <img class="logo" alt="City of Tagum Logo" src="/rsp/logo.png" />
       </div>
       <div class="header-text">
         <div class="text-green-9 text-caption padded-text">REPUBLIC OF THE PHILIPPINES</div>

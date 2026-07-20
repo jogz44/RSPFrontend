@@ -21,7 +21,7 @@
     <!-- Sticky Header -->
     <header class="sticky-header">
       <div class="hero-inner">
-        <img src="/logo.png" alt="City Government of Tagum Logo" class="hero-logo" />
+        <img src="/rsp/logo.png" alt="City Government of Tagum Logo" class="hero-logo" />
         <div class="badge">
           <q-icon name="privacy_tip" size="14px" class="q-mr-xs" />
           Privacy Document

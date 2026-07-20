@@ -496,7 +496,7 @@
       pdfUrl.value = null;
     }
 
-    const logoBase64 = await getImageBase64('/logo.png');
+    const logoBase64 = await getImageBase64('/rsp/logo.png');
     // const dateDisplay = reportData.value.Date || `${props.date} Publication`;
 
     const pdfMakeModule = await import('pdfmake/build/pdfmake');

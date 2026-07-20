@@ -72,7 +72,9 @@
   async function fetchReportData() {
     try {
       isLoading.value = true;
-      const response = await summaryReportStore.fetchInternalUnqualifiedReport(props.publicationDate);
+      const response = await summaryReportStore.fetchInternalUnqualifiedReport(
+        props.publicationDate,
+      );
       reportData.value = response;
       console.log('Report data:', response);
     } catch (error) {
@@ -535,7 +537,7 @@
       pdfUrl.value = null;
     }
 
-    const logoBase64 = await getImageBase64('/logo.png');
+    const logoBase64 = await getImageBase64('/rsp/logo.png');
 
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfMake = pdfMakeModule.default || pdfMakeModule;

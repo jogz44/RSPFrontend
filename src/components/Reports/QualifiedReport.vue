@@ -535,7 +535,8 @@
       pdfUrl.value = null;
     }
 
-    const logoBase64 = await getImageBase64('/logo.png');
+    // Load logo image
+    const logoBase64 = await getImageBase64('/rsp/logo.png');
 
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfMake = pdfMakeModule.default || pdfMakeModule;

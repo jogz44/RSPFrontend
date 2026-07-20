@@ -7,11 +7,11 @@
           class="col-12 col-md-6 self-center"
           :style="$q.screen.lt.md ? 'height: 40vh' : 'height: 100vh'"
         >
-          <q-img src="/img/background/tagumbg.jpg" style="height: 100%">
+          <q-img src="/rsp/img/background/tagumbg.jpg" style="height: 100%">
             <div class="absolute-full text-subtitle2 flex flex-center">
               <div class="column items-start justify-start q-pa-md">
                 <img
-                  src="/logo.png"
+                  src="/rsp/logo.png"
                   alt="Tagum City Logo"
                   class="q-mb-md"
                   :width="$q.screen.lt.sm ? '60' : '90'"

@@ -7,7 +7,7 @@
         <div class="login-card">
           <!-- Logo and Header -->
           <div class="login-header">
-            <img src="/logo.png" alt="Logo" class="login-logo" />
+            <img src="/rsp/logo.png" alt="Logo" class="login-logo" />
             <h1 class="main-title">Recruitment Selection & Placement</h1>
             <h2 class="login-title">
               {{

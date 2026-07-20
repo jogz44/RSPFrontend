@@ -1,7 +1,7 @@
 <template>
   <div class="header-wrapper">
     <div class="logo-container">
-      <img class="logo" alt="City of Tagum Logo" src="/logo.png" />
+      <img class="logo" alt="City of Tagum Logo" src="/rsp/logo.png" />
     </div>
     <div class="header-text-container">
       <div class="republic-text">REPUBLIC OF THE PHILIPPINES</div>

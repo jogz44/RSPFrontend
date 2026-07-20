@@ -224,7 +224,7 @@
 
     if (!reportData.value) return;
 
-    const logoBase64 = await getImageBase64('/logo.png');
+    const logoBase64 = await getImageBase64('/rsp/logo.png');
 
     import('pdfmake/build/pdfmake').then((pdfMakeModule) => {
       const pdfMake = pdfMakeModule.default || pdfMakeModule;

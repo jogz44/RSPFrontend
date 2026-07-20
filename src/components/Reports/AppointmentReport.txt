@@ -26,7 +26,7 @@
             </div>
           </div>
           <div class="right-logo">
-            <img src="/logo.png" alt="City of Tagum Logo" />
+            <img src="/rsp/logo.png" alt="City of Tagum Logo" />
           </div>
         </div>
 

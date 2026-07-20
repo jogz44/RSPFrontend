@@ -467,7 +467,7 @@
   const authStore = useAuthStore();
   const $q = useQuasar();
 
-  const API_BASE = 'http://192.168.8.182:9000/api';
+  const API_BASE = 'https://tagumcity.gov.ph/rspbackend/api';
 
   const props = defineProps({
     personal: { type: Object, default: () => ({}) },

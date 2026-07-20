@@ -365,7 +365,7 @@
    */
 
   const workExperienceDocxUrl =
-    '/CS%20Form%20No.%20212%20Attachment%20-%20Work%20Experience%20Sheet.docx';
+    '/rsp/CS%20Form%20No.%20212%20Attachment%20-%20Work%20Experience%20Sheet.docx';
 
   /**
    * Download without opening a new tab:

@@ -2,7 +2,7 @@
   <q-drawer show-if-above v-model="drawer" side="left" :width="230" bordered>
     <!-- Logo Section -->
     <div class="logo-container">
-      <q-img src="/logo.png" width="100px" />
+      <q-img src="/rsp/logo.png" width="100px" />
     </div>
 
     <div class="header-container">

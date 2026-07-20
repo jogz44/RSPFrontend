@@ -7,7 +7,7 @@
         <div class="title">PROVINCE OF DAVAO DEL NORTE</div>
         <div class="title">CITY OF TAGUM</div>
       </div>
-      <img src="/logo.png" alt="City of Tagum Logo" class="logo" />
+      <img src="/rsp/logo.png" alt="City of Tagum Logo" class="logo" />
     </div>
 
     <div class="appointment-title">

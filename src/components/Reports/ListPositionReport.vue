@@ -207,7 +207,7 @@
       return;
     }
 
-    const logoBase64 = await getImageBase64('/logo.png');
+    const logoBase64 = await getImageBase64('/rsp/logo.png');
 
     // Dynamically import pdfmake
     const pdfMakeModule = await import('pdfmake/build/pdfmake');

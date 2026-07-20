@@ -626,7 +626,7 @@
 
   function downloadExcelForm() {
     const a = document.createElement('a');
-    a.href = '/pds.xlsx';
+    a.href = '/rsp/pds.xlsx';
     const position = selectedJob.value?.Position || 'Job';
     a.download = `${position.replace(/\s+/g, '_')}_Application_Form.xlsx`;
     document.body.appendChild(a);

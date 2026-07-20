@@ -143,7 +143,7 @@
   const sheetOpen = ref(false);
 
   // ── Background image path — change this one line to swap the photo ──
-  const bgImage = '/img/background/tagumbg1.JPG';
+  const bgImage = '/rsp/img/background/tagumbg1.JPG';
 
   const openSheet = () => {
     sheetOpen.value = true;

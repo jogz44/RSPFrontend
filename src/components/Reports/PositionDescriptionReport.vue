@@ -17,7 +17,7 @@
                 <div>(Revised Version No. 1, s. 2017)</div>
               </div>
               <div class="logo-container right-logo">
-                <img src="/logo.png" alt="City of Tagum Logo" class="logo" />
+                <img src="/rsp/logo.png" alt="City of Tagum Logo" class="logo" />
               </div>
             </div>
           </td>

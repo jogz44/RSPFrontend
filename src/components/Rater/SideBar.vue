@@ -12,7 +12,7 @@
     <!-- Logo Section -->
     <div class="logo-container">
       <q-img
-        src="/logo.png"
+        src="/rsp/logo.png"
         alt="Tagum City Logo"
         class="logo"
         :class="{ 'logo-mini': miniState }"

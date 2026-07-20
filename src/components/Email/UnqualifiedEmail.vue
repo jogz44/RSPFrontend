@@ -338,7 +338,7 @@
     isPrinting.value = true;
 
     try {
-      const logoBase64 = await getImageBase64('/logo.png');
+      const logoBase64 = await getImageBase64('/rsp/logo.png');
 
       const [pdfMakeModule, vfsFontsModule] = await Promise.all([
         import('pdfmake/build/pdfmake'),
