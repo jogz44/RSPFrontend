@@ -56,6 +56,11 @@
       type: Array,
       default: () => [],
     },
+    publicationDate: {
+      type: String,
+      required: false,
+      default: null,
+    },
   });
 
   const pdfUrl = ref(null);
@@ -178,27 +183,27 @@
     return 0;
   }
 
-  function getQsTotalWeight(reportData) {
-    const criteria = reportData?.criteria || [];
-    if (!Array.isArray(criteria)) return 0;
+  // function getQsTotalWeight(reportData) {
+  //   const criteria = reportData?.criteria || [];
+  //   if (!Array.isArray(criteria)) return 0;
 
-    let totalWeight = 0;
-    for (const c of criteria) {
-      if (c.educations && c.educations.length > 0) {
-        totalWeight += parseFloat(c.educations[0]?.weight) || 0;
-      }
-      if (c.experiences && c.experiences.length > 0) {
-        totalWeight += parseFloat(c.experiences[0]?.weight) || 0;
-      }
-      if (c.trainings && c.trainings.length > 0) {
-        totalWeight += parseFloat(c.trainings[0]?.weight) || 0;
-      }
-      if (c.performances && c.performances.length > 0) {
-        totalWeight += parseFloat(c.performances[0]?.weight) || 0;
-      }
-    }
-    return totalWeight;
-  }
+  //   let totalWeight = 0;
+  //   for (const c of criteria) {
+  //     if (c.educations && c.educations.length > 0) {
+  //       totalWeight += parseFloat(c.educations[0]?.weight) || 0;
+  //     }
+  //     if (c.experiences && c.experiences.length > 0) {
+  //       totalWeight += parseFloat(c.experiences[0]?.weight) || 0;
+  //     }
+  //     if (c.trainings && c.trainings.length > 0) {
+  //       totalWeight += parseFloat(c.trainings[0]?.weight) || 0;
+  //     }
+  //     if (c.performances && c.performances.length > 0) {
+  //       totalWeight += parseFloat(c.performances[0]?.weight) || 0;
+  //     }
+  //   }
+  //   return totalWeight;
+  // }
 
   function hasExamCriteria(reportData) {
     const criteria = reportData?.criteria || [];
@@ -309,6 +314,15 @@
     return footerContent;
   }
 
+  // Helper function to extract just the start date from the publication date string
+  function getStartDate(publicationDateString) {
+    if (!publicationDateString) return null;
+    // The format is "April 27, 2026 - May 14, 2026"
+    // We want just "April 27, 2026"
+    const parts = publicationDateString.split(' - ');
+    return parts[0] || publicationDateString;
+  }
+
   function generatePositionTable(reportData) {
     const hasBei = hasBeiCriteria(reportData);
 
@@ -387,27 +401,20 @@
     const allRaters = getAllRaters(reportData);
     const showExam = hasExamCriteria(reportData);
     const beiWeight = getBeiWeight(reportData);
-    const qsTotalWeight = getQsTotalWeight(reportData);
 
-    // Define fixed widths as percentages of the table (matching Summary Report)
+    // Define fixed widths as percentages of the table (without QS, Final Rating, Ranking)
     const FIXED_WIDTHS = {
       no: '3%', // No.
-      name: '16%', // NAME OF APPLICANT
-      totalBei: '6%', // TOTAL BEI
-      totalQs: '6%', // TOTAL QS
-      exam: '6%', // EXAM (if shown)
-      finalRating: '6%', // FINAL RATING
-      ranking: '6%', // RANKING
+      name: '25%', // NAME OF APPLICANT (increased from 16%)
+      totalBei: '10%', // TOTAL BEI (increased from 6%)
+      exam: '8%', // EXAM (increased from 6%)
     };
 
     // Calculate total fixed width percentage
     let totalFixedWidth =
       parseFloat(FIXED_WIDTHS.no) +
       parseFloat(FIXED_WIDTHS.name) +
-      parseFloat(FIXED_WIDTHS.totalBei) +
-      parseFloat(FIXED_WIDTHS.totalQs) +
-      parseFloat(FIXED_WIDTHS.finalRating) +
-      parseFloat(FIXED_WIDTHS.ranking);
+      parseFloat(FIXED_WIDTHS.totalBei);
 
     if (showExam) totalFixedWidth += parseFloat(FIXED_WIDTHS.exam);
 
@@ -457,14 +464,6 @@
       rowSpan: 2,
     });
 
-    // TOTAL QS column
-    headerRow.push({
-      text: `TOTAL QS (${qsTotalWeight}%)`,
-      style: 'tableHeader',
-      alignment: 'center',
-      rowSpan: 2,
-    });
-
     // EXAM column (if enabled)
     if (showExam) {
       headerRow.push({
@@ -474,22 +473,6 @@
         rowSpan: 2,
       });
     }
-
-    // FINAL RATING column
-    headerRow.push({
-      text: 'FINAL RATING',
-      style: 'tableHeader',
-      alignment: 'center',
-      rowSpan: 2,
-    });
-
-    // RANKING column
-    headerRow.push({
-      text: 'RANKING',
-      style: 'tableHeader',
-      alignment: 'center',
-      rowSpan: 2,
-    });
 
     // Build sub header row
     const subHeaderRow = [];
@@ -503,16 +486,13 @@
           text: getLastNameUpper(rater.name),
           style: 'tableHeader',
           alignment: 'center',
-          fontSize: 9, // Matching Summary Report
+          fontSize: 9,
         });
       });
     }
 
     subHeaderRow.push({}); // TOTAL BEI
-    subHeaderRow.push({}); // TOTAL QS
     if (showExam) subHeaderRow.push({}); // EXAM
-    subHeaderRow.push({}); // FINAL RATING
-    subHeaderRow.push({}); // RANKING
 
     // Build data rows - directly using data from response
     const dataRows = applicants.map((item) => {
@@ -549,19 +529,10 @@
       // TOTAL BEI - directly from response
       row.push({ text: formatNumber(item.bei), alignment: 'center', bold: true });
 
-      // TOTAL QS - directly from response
-      row.push({ text: formatNumber(item.total_rating), alignment: 'center', bold: true });
-
       // EXAM (if enabled) - directly from response
       if (showExam) {
         row.push({ text: formatNumber(item.exam_score), alignment: 'center', bold: true });
       }
-
-      // FINAL RATING - directly from response
-      row.push({ text: formatNumber(item.final_rating), alignment: 'center', bold: true });
-
-      // RANKING placeholder
-      row.push({ text: '', alignment: 'center', bold: true });
 
       return {
         row: row,
@@ -580,7 +551,6 @@
     // Add ranking numbers
     dataRows.forEach((item, index) => {
       item.row[0].text = (index + 1).toString();
-      item.row[item.row.length - 1].text = (index + 1).toString();
     });
 
     const rows = [headerRow, subHeaderRow, ...dataRows.map((item) => item.row)];
@@ -602,26 +572,50 @@
 
     // Fixed columns with percentage widths
     widths.push(FIXED_WIDTHS.totalBei); // TOTAL BEI
-    widths.push(FIXED_WIDTHS.totalQs); // TOTAL QS
     if (showExam) widths.push(FIXED_WIDTHS.exam); // EXAM
-    widths.push(FIXED_WIDTHS.finalRating); // FINAL RATING
-    widths.push(FIXED_WIDTHS.ranking); // RANKING
 
     const office = reportData.office || 'N/A';
     const position = reportData.position || 'N/A';
     const salaryGrade = reportData.Salary_Grade || 'N/A';
     const plantillaItemNo = reportData.Plantilla_Item_No || 'N/A';
 
+    // Get the start date from the response's publication_date field
+    // The response has: "publication_date": "April 27, 2026 - May 14, 2026"
+    // We want just: "April 27, 2026"
+    const publicationDateFromResponse = reportData.publication_date || null;
+    const startDate = getStartDate(publicationDateFromResponse);
+
+    // Fallback to props.publicationDate if response doesn't have it
+    let displayDate = startDate;
+    if (!displayDate && props.publicationDate) {
+      const [postDate] = props.publicationDate.split('|');
+      if (postDate) {
+        const date = new Date(postDate);
+        displayDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      }
+    }
+
     return [
       {
-        text: 'BEI SUMMARY OF RATING',
+        text: 'SUMMARY OF RATING',
         fontSize: 12,
         bold: true,
         margin: [0, 0, 0, 2],
         alignment: 'center',
       },
       {
-        text: 'QUALIFICATION STANDARDS',
+        text: 'BEHAVIORAL EVENT INTERVIEW (BEI)',
+        fontSize: 10,
+        bold: true,
+        margin: [0, 0, 0, 2],
+        alignment: 'center',
+      },
+      {
+        text: `Publication Date: ${displayDate || 'N/A'}`,
         fontSize: 10,
         bold: true,
         margin: [0, 0, 0, 16],

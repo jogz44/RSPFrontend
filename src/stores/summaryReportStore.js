@@ -451,7 +451,12 @@ export const useSummaryReportStore = defineStore('summaryReport', {
         const response = await adminApi.get(imageUrl, { responseType: 'blob' });
         const blob = response.data;
         if (!blob || blob.size === 0) return null;
-        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(blob.type)) return null;
+
+        if (!blob.type.startsWith('image/')) {
+          console.warn('Not an image type:', blob.type);
+          return null;
+        }
+
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
