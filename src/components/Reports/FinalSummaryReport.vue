@@ -324,6 +324,15 @@
     return footerContent;
   }
 
+  // Helper function to extract just the start date from the publication date string
+  function getStartDate(publicationDateString) {
+    if (!publicationDateString) return null;
+    // The format is "April 27, 2026 - May 14, 2026"
+    // We want just "April 27, 2026"
+    const parts = publicationDateString.split(' - ');
+    return parts[0] || publicationDateString;
+  }
+
   function generatePositionTable(reportData) {
     const applicants = getApplicants(reportData);
     const allRaters = getAllRaters(reportData);
@@ -332,6 +341,10 @@
     const qsWeight = getQsWeight(reportData);
     const beiWeight = getBeiWeight(reportData);
     const examWeight = getExamWeight(reportData);
+
+    // Get the start date from the response's publication_date field
+    const publicationDateFromResponse = reportData.publication_date || null;
+    const startDate = getStartDate(publicationDateFromResponse);
 
     // Define fixed widths as percentages of the table
     const FIXED_WIDTHS = {
@@ -564,7 +577,7 @@
         alignment: 'center',
       },
       {
-        text: 'QUALIFICATION STANDARDS',
+        text: `Publication Date: ${startDate || 'N/A'}`,
         fontSize: 10,
         bold: true,
         margin: [0, 0, 0, 16],

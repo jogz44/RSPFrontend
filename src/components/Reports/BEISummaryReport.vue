@@ -56,11 +56,6 @@
       type: Array,
       default: () => [],
     },
-    publicationDate: {
-      type: String,
-      required: false,
-      default: null,
-    },
   });
 
   const pdfUrl = ref(null);
@@ -182,28 +177,6 @@
     }
     return 0;
   }
-
-  // function getQsTotalWeight(reportData) {
-  //   const criteria = reportData?.criteria || [];
-  //   if (!Array.isArray(criteria)) return 0;
-
-  //   let totalWeight = 0;
-  //   for (const c of criteria) {
-  //     if (c.educations && c.educations.length > 0) {
-  //       totalWeight += parseFloat(c.educations[0]?.weight) || 0;
-  //     }
-  //     if (c.experiences && c.experiences.length > 0) {
-  //       totalWeight += parseFloat(c.experiences[0]?.weight) || 0;
-  //     }
-  //     if (c.trainings && c.trainings.length > 0) {
-  //       totalWeight += parseFloat(c.trainings[0]?.weight) || 0;
-  //     }
-  //     if (c.performances && c.performances.length > 0) {
-  //       totalWeight += parseFloat(c.performances[0]?.weight) || 0;
-  //     }
-  //   }
-  //   return totalWeight;
-  // }
 
   function hasExamCriteria(reportData) {
     const criteria = reportData?.criteria || [];
@@ -332,6 +305,10 @@
       const salaryGrade = reportData.Salary_Grade || 'N/A';
       const plantillaItemNo = reportData.Plantilla_Item_No || 'N/A';
 
+      // Get the start date from the response's publication_date field
+      const publicationDateFromResponse = reportData.publication_date || null;
+      const startDate = getStartDate(publicationDateFromResponse);
+
       return [
         {
           text: 'BEI SUMMARY OF RATING',
@@ -341,7 +318,7 @@
           alignment: 'center',
         },
         {
-          text: 'QUALIFICATION STANDARDS',
+          text: `Publication Date: ${startDate || 'N/A'}`,
           fontSize: 10,
           bold: true,
           margin: [0, 0, 0, 16],
@@ -580,24 +557,8 @@
     const plantillaItemNo = reportData.Plantilla_Item_No || 'N/A';
 
     // Get the start date from the response's publication_date field
-    // The response has: "publication_date": "April 27, 2026 - May 14, 2026"
-    // We want just: "April 27, 2026"
     const publicationDateFromResponse = reportData.publication_date || null;
     const startDate = getStartDate(publicationDateFromResponse);
-
-    // Fallback to props.publicationDate if response doesn't have it
-    let displayDate = startDate;
-    if (!displayDate && props.publicationDate) {
-      const [postDate] = props.publicationDate.split('|');
-      if (postDate) {
-        const date = new Date(postDate);
-        displayDate = date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      }
-    }
 
     return [
       {
@@ -615,7 +576,7 @@
         alignment: 'center',
       },
       {
-        text: `Publication Date: ${displayDate || 'N/A'}`,
+        text: `Publication Date: ${startDate || 'N/A'}`,
         fontSize: 10,
         bold: true,
         margin: [0, 0, 0, 16],
