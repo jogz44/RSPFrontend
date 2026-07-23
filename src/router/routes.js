@@ -21,7 +21,6 @@ const routes = [
         meta: {
           auth: true,
           role: 'admin',
-          // permissions: ['viewDashboardstat'],
         },
       },
       {
@@ -101,7 +100,6 @@ const routes = [
         meta: {
           auth: true,
           role: 'admin',
-          // permissions: ['viewAdvanceAppointmentAccess'],
         },
       },
       {
@@ -195,7 +193,7 @@ const routes = [
     },
   },
 
-  // Rater Routes (keep your existing rater routes here)
+  // Rater Routes
   {
     path: '/rater/login',
     name: 'Rater Login',
@@ -234,7 +232,7 @@ const routes = [
     ],
   },
 
-  // User Routes (keep your existing user routes here)
+  // User Routes with PDS protection
   {
     path: '/',
     name: 'Email',
@@ -259,22 +257,64 @@ const routes = [
     meta: { auth: true, role: 'user' },
     children: [
       {
+        path: '/form',
+        name: 'PDSForm',
+        component: () => import('pages/user/UserPDSForm.vue'),
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: false, // PDSForm doesn't require PDS (it's where you create it)
+        },
+      },
+      {
         path: '/page',
         name: 'Homepage',
         component: () => import('pages/user/UserHomePage.vue'),
-        meta: { auth: true, role: 'user' },
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: true, // Requires PDS
+        },
       },
       {
         path: 'jobList',
         name: 'Joblist',
         component: () => import('pages/user/UserJobList.vue'),
-        meta: { auth: true, role: 'user' },
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: true, // Requires PDS
+        },
+      },
+      {
+        path: 'account',
+        name: 'Account',
+        component: () => import('pages/user/UserAccountPage.vue'),
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: true, // Requires PDS
+        },
+      },
+      {
+        path: '/pds',
+        name: 'UserPDS',
+        component: () => import('pages/user/UserPDSPage.vue'),
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: true,
+        },
       },
       {
         path: '/jobList/details/:id',
         name: 'Joblist Details',
         component: () => import('pages/user/ViewJobDetails.vue'),
-        meta: { auth: true, role: 'user' },
+        meta: {
+          auth: true,
+          role: 'user',
+          requiresPDS: true, // Requires PDS
+        },
       },
     ],
   },

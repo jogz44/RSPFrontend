@@ -1,5 +1,7 @@
+// src/stores/emailStore.js
 import { defineStore } from 'pinia';
-import { adminApi } from 'boot/axios_admin'; // ← Use the same admin API instance
+import { applicantApi } from 'boot/axios_applicant';
+import { usePDSStore } from './pdsFormStore';
 
 export const useEmailStore = defineStore('email', {
   state: () => ({
@@ -11,6 +13,12 @@ export const useEmailStore = defineStore('email', {
     resending: false,
     resendTimer: 0,
     resendInterval: null,
+    // Cache PDS check result to prevent infinite loops
+    pdsCheckCache: {
+      hasPDS: false,
+      checked: false,
+      timestamp: null,
+    },
   }),
 
   getters: {
@@ -33,7 +41,7 @@ export const useEmailStore = defineStore('email', {
     async sendOtp(email, recaptchaResponse) {
       this.loading = true;
       try {
-        const response = await adminApi.post('/send-verification', {
+        const response = await applicantApi.post('/send-verification', {
           email,
           recaptchaResponse,
         });
@@ -84,7 +92,7 @@ export const useEmailStore = defineStore('email', {
 
       this.resending = true;
       try {
-        const response = await adminApi.post('/resend-verification', {
+        const response = await applicantApi.post('/resend-verification', {
           email: this.email,
           // recaptchaResponse,
         });
@@ -127,7 +135,7 @@ export const useEmailStore = defineStore('email', {
     async verifyOtp(code, recaptchaResponse) {
       this.verifying = true;
       try {
-        const response = await adminApi.post('/verify-code', {
+        const response = await applicantApi.post('/verify-code', {
           email: this.email,
           code,
           recaptchaResponse,
@@ -146,6 +154,9 @@ export const useEmailStore = defineStore('email', {
           localStorage.setItem('userEmail', this.email);
           localStorage.setItem('userAuthenticated', 'true');
           localStorage.setItem('userAuthTimestamp', Date.now().toString());
+
+          // Clear PDS cache when new user logs in
+          this.clearPDSCache();
 
           return {
             success: true,
@@ -181,7 +192,8 @@ export const useEmailStore = defineStore('email', {
 
       if (storedEmail && isAuth === 'true' && timestamp) {
         const authAge = Date.now() - parseInt(timestamp);
-        const maxAge = 120 * 60 * 1000; // 30 minutes in milliseconds
+        // const maxAge = 120 * 60 * 1000; // 30 minutes in milliseconds
+        const maxAge = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
         if (authAge < maxAge) {
           this.email = storedEmail;
@@ -202,6 +214,128 @@ export const useEmailStore = defineStore('email', {
     },
 
     /**
+     * Check authentication status and PDS existence with caching
+     * @param {boolean} forceRefresh - Force refresh the cache
+     * @returns {Promise<Object>} Object with isAuthenticated and hasPDS flags
+     */
+    async checkAuthPDSStatus(forceRefresh = false) {
+      const storedEmail = localStorage.getItem('userEmail');
+      const isAuth = localStorage.getItem('userAuthenticated');
+      const timestamp = localStorage.getItem('userAuthTimestamp');
+
+      // Check if we have a cached result that's still valid (within 30 seconds)
+      const cacheValid =
+        this.pdsCheckCache.checked &&
+        !forceRefresh &&
+        this.pdsCheckCache.timestamp &&
+        Date.now() - this.pdsCheckCache.timestamp < 30000; // 30 seconds cache
+
+      if (cacheValid) {
+        console.log('Using cached PDS check result:', this.pdsCheckCache.hasPDS);
+        return {
+          isAuthenticated: this.isAuthenticated,
+          hasPDS: this.pdsCheckCache.hasPDS,
+        };
+      }
+
+      if (storedEmail && isAuth === 'true' && timestamp) {
+        const authAge = Date.now() - parseInt(timestamp);
+        const maxAge = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
+        if (authAge < maxAge) {
+          this.email = storedEmail;
+          this.isAuthenticated = true;
+
+          // Get PDS store instance
+          const pdsStore = usePDSStore();
+
+          // Check if user has existing PDS data in localStorage first
+          if (pdsStore.hasStoredData()) {
+            // Restore PDS data from storage
+            pdsStore.restoreFromStorage();
+
+            // Cache the result
+            this.pdsCheckCache = {
+              hasPDS: true,
+              checked: true,
+              timestamp: Date.now(),
+            };
+
+            console.log('User has existing PDS data in storage');
+            return {
+              isAuthenticated: true,
+              hasPDS: true,
+            };
+          }
+
+          // If no stored data, try to fetch from API
+          try {
+            const result = await pdsStore.fetchPDS(this.email);
+
+            // Cache the result
+            this.pdsCheckCache = {
+              hasPDS: result.success && !!result.data,
+              checked: true,
+              timestamp: Date.now(),
+            };
+
+            if (result.success && result.data) {
+              console.log('User has existing PDS');
+              return {
+                isAuthenticated: true,
+                hasPDS: true,
+              };
+            } else {
+              console.log('User has no PDS');
+              return {
+                isAuthenticated: true,
+                hasPDS: false,
+              };
+            }
+          } catch (error) {
+            console.error('Error checking PDS:', error);
+            // Cache the negative result
+            this.pdsCheckCache = {
+              hasPDS: false,
+              checked: true,
+              timestamp: Date.now(),
+            };
+            return {
+              isAuthenticated: true,
+              hasPDS: false,
+            };
+          }
+        } else {
+          // Authentication expired
+          console.log('User authentication expired');
+          this.logout();
+          return {
+            isAuthenticated: false,
+            hasPDS: false,
+          };
+        }
+      }
+
+      console.log('No valid authentication found');
+      return {
+        isAuthenticated: false,
+        hasPDS: false,
+      };
+    },
+
+    /**
+     * Clear PDS cache (useful after saving/updating PDS)
+     */
+    clearPDSCache() {
+      this.pdsCheckCache = {
+        hasPDS: false,
+        checked: false,
+        timestamp: null,
+      };
+      console.log('PDS cache cleared');
+    },
+
+    /**
      * Logout user and clear all authentication data
      */
     logout() {
@@ -209,6 +343,9 @@ export const useEmailStore = defineStore('email', {
       this.isAuthenticated = false;
       this.isOtpSent = false;
       this.resendTimer = 0;
+
+      // Clear PDS cache
+      this.clearPDSCache();
 
       // Clear localStorage
       localStorage.removeItem('userEmail');

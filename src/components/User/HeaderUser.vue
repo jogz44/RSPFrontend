@@ -1,6 +1,6 @@
 <template>
-  <q-header reveal elevated>
-    <q-toolbar class="header row items-center justify-between text-black" elevated>
+  <q-header ref="headerRef" elevated>
+    <q-toolbar class="header row items-center justify-between text-black">
       <!-- Logo and Title Section -->
       <div class="row items-center q-gutter-x-sm logo-section">
         <div>
@@ -11,8 +11,8 @@
         </div>
       </div>
 
-      <!-- Desktop Navigation -->
-      <div class="desktop-nav gt-sm">
+      <!-- Desktop Navigation - Hidden on form route -->
+      <div v-if="!isFormRoute" class="desktop-nav gt-sm">
         <q-tabs
           active-color="primary"
           v-model="routeTab"
@@ -22,18 +22,36 @@
         >
           <q-tab name="Homepage" label="Home" @click="navigateTo('Homepage')" />
           <q-tab name="Joblist" label="Job Lists" @click="navigateTo('Joblist')" />
+          <q-tab name="Account" label="Account" @click="navigateTo('Account')" />
           <!-- <q-tab name="Admin" label="Admin" @click="navigateTo('Admin Login')" />
           <q-tab name="Rater" label="Rater" @click="navigateTo('Rater Login')" /> -->
         </q-tabs>
       </div>
 
-      <!-- Mobile Menu Button -->
-      <q-btn flat dense round icon="menu" class="lt-md" @click="drawerOpen = !drawerOpen" />
+      <!-- Mobile Menu Button - Hidden on form route -->
+      <q-btn
+        v-if="!isFormRoute"
+        flat
+        dense
+        round
+        icon="menu"
+        class="lt-md"
+        aria-label="Open navigation menu"
+        @click="drawerOpen = !drawerOpen"
+      />
     </q-toolbar>
   </q-header>
 
-  <!-- Mobile Navigation Drawer -->
-  <q-drawer v-model="drawerOpen" side="right" overlay behavior="mobile" elevated class="lt-md">
+  <!-- Mobile Navigation Drawer - Hidden on form route -->
+  <q-drawer
+    v-if="!isFormRoute"
+    v-model="drawerOpen"
+    side="right"
+    overlay
+    behavior="mobile"
+    elevated
+    class="lt-md"
+  >
     <q-list padding>
       <q-item-label header class="text-h6 text-weight-bold">Navigation</q-item-label>
 
@@ -62,6 +80,20 @@
         </q-item-section>
         <q-item-section>
           <q-item-label>Job Lists</q-item-label>
+        </q-item-section>
+      </q-item>
+
+      <q-item
+        clickable
+        v-ripple
+        :active="routeTab === 'Account'"
+        @click="navigateToMobile('Account')"
+      >
+        <q-item-section avatar>
+          <q-icon name="account_circle" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label>Account</q-item-label>
         </q-item-section>
       </q-item>
 
@@ -100,7 +132,7 @@
 
 <script setup>
   import { useRoute, useRouter } from 'vue-router';
-  import { ref, watch, onMounted, computed } from 'vue';
+  import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue';
   import { useQuasar } from 'quasar';
 
   const route = useRoute();
@@ -108,6 +140,11 @@
   const $q = useQuasar();
   const routeTab = ref(route.name);
   const drawerOpen = ref(false);
+
+  // Check if current route is the form route
+  const isFormRoute = computed(() => {
+    return route.path === '/form' || route.name === 'PDSForm';
+  });
 
   // Responsive logo size
   const logoSize = computed(() => {
@@ -119,7 +156,7 @@
     return 'width: 50px; height: 50px';
   });
 
-  // Update tab when route changesx
+  // Update tab when route changes
   watch(
     () => route.name,
     (newRouteName) => {
@@ -142,6 +179,34 @@
     router.push({ name: routeName });
     drawerOpen.value = false;
   };
+
+  // ── Publish header height as a global CSS variable ──────────────
+  // Any page can then use var(--app-header-height) for sticky offsets
+  // without needing to know anything about this component.
+  const headerRef = ref(null);
+  let headerResizeObserver = null;
+
+  function publishHeaderHeight(height) {
+    document.documentElement.style.setProperty('--app-header-height', `${height}px`);
+  }
+
+  onMounted(() => {
+    nextTick(() => {
+      const headerEl = headerRef.value?.$el;
+      if (!headerEl) return;
+
+      publishHeaderHeight(headerEl.getBoundingClientRect().height);
+
+      headerResizeObserver = new ResizeObserver((entries) => {
+        publishHeaderHeight(entries[0].contentRect.height);
+      });
+      headerResizeObserver.observe(headerEl);
+    });
+  });
+
+  onUnmounted(() => {
+    headerResizeObserver?.disconnect();
+  });
 </script>
 
 <style scoped>
@@ -160,6 +225,8 @@
     font-size: 1.25rem;
     line-height: 1.2;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Tablet breakpoint */
@@ -201,7 +268,7 @@
     }
 
     .title-wrapper {
-      max-width: 180px;
+      max-width: 140px;
     }
   }
 

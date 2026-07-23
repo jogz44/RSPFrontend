@@ -159,6 +159,22 @@
                           No education records found
                         </div>
                       </template>
+                      <template v-slot:body-cell-attachment="props">
+                        <q-td :props="props" class="text-center">
+                          <q-btn
+                            v-if="props.row.attachment || props.row.attachment_url"
+                            icon="attach_file"
+                            size="sm"
+                            color="primary"
+                            flat
+                            round
+                            @click="viewAttachment(props.row)"
+                          >
+                            <q-tooltip>View Attachment</q-tooltip>
+                          </q-btn>
+                          <span v-else class="text-grey-5 text-caption">None</span>
+                        </q-td>
+                      </template>
                     </q-table>
                   </q-scroll-area>
                 </div>
@@ -311,6 +327,22 @@
                           No experience records found
                         </div>
                       </template>
+                      <template v-slot:body-cell-attachment="props">
+                        <q-td :props="props" class="text-center">
+                          <q-btn
+                            v-if="props.row.attachment || props.row.attachment_url"
+                            icon="attach_file"
+                            size="sm"
+                            color="primary"
+                            flat
+                            round
+                            @click="viewAttachment(props.row)"
+                          >
+                            <q-tooltip>View Attachment</q-tooltip>
+                          </q-btn>
+                          <span v-else class="text-grey-5 text-caption">None</span>
+                        </q-td>
+                      </template>
                     </q-table>
                   </q-scroll-area>
                 </div>
@@ -454,6 +486,22 @@
                           No training records found
                         </div>
                       </template>
+                      <template v-slot:body-cell-attachment="props">
+                        <q-td :props="props" class="text-center">
+                          <q-btn
+                            v-if="props.row.attachment || props.row.attachment_url"
+                            icon="attach_file"
+                            size="sm"
+                            color="primary"
+                            flat
+                            round
+                            @click="viewAttachment(props.row)"
+                          >
+                            <q-tooltip>View Attachment</q-tooltip>
+                          </q-btn>
+                          <span v-else class="text-grey-5 text-caption">None</span>
+                        </q-td>
+                      </template>
                     </q-table>
                   </q-scroll-area>
                 </div>
@@ -540,6 +588,22 @@
                           No eligibility records found
                         </div>
                       </template>
+                      <template v-slot:body-cell-attachment="props">
+                        <q-td :props="props" class="text-center">
+                          <q-btn
+                            v-if="props.row.attachment || props.row.attachment_url"
+                            icon="attach_file"
+                            size="sm"
+                            color="primary"
+                            flat
+                            round
+                            @click="viewAttachment(props.row)"
+                          >
+                            <q-tooltip>View Attachment</q-tooltip>
+                          </q-btn>
+                          <span v-else class="text-grey-5 text-caption">None</span>
+                        </q-td>
+                      </template>
                     </q-table>
                   </q-scroll-area>
                 </div>
@@ -582,6 +646,142 @@
     </q-card>
   </q-dialog>
 
+  <!-- ── File Viewer Modal ── -->
+  <q-dialog
+    v-model="showFileViewer"
+    persistent
+    :maximized="$q.screen.lt.md"
+    transition-show="scale"
+    transition-hide="scale"
+  >
+    <q-card
+      class="q-pa-none"
+      :style="{
+        width: $q.screen.lt.md ? '100vw' : '90vw',
+        maxWidth: $q.screen.lt.md ? '100vw' : '1200px',
+        height: $q.screen.lt.md ? '100vh' : '90vh',
+        maxHeight: $q.screen.lt.md ? '100vh' : '90vh',
+        borderRadius: $q.screen.lt.md ? '0' : '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }"
+    >
+      <!-- Header -->
+      <q-card-section
+        class="row items-center no-wrap q-px-md q-py-sm bg-primary text-white"
+        style="flex-shrink: 0"
+      >
+        <div class="text-h6 text-weight-medium ellipsis">
+          <q-icon name="attach_file" class="q-mr-sm" />
+          File Viewer
+        </div>
+        <q-space />
+        <q-btn icon="close" flat round dense @click="showFileViewer = false" />
+      </q-card-section>
+
+      <!-- Content -->
+      <q-card-section
+        class="column items-center justify-center"
+        :style="{
+          flex: '1',
+          overflow: 'hidden',
+          minHeight: '0',
+          padding: $q.screen.lt.sm ? '8px' : '16px',
+          backgroundColor: '#f5f5f5',
+        }"
+      >
+        <!-- Loading state -->
+        <div v-if="isFileLoading" class="column items-center">
+          <q-spinner-dots size="40px" color="primary" />
+          <div class="q-mt-sm text-grey">Loading file...</div>
+        </div>
+
+        <!-- PDF Viewer -->
+        <div
+          v-else-if="fileType === 'pdf'"
+          class="full-width"
+          :style="{
+            flex: '1',
+            minHeight: $q.screen.lt.sm ? '40vh' : $q.screen.lt.md ? '50vh' : '65vh',
+            backgroundColor: '#ffffff',
+            borderRadius: '4px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+          }"
+        >
+          <iframe
+            :src="fileUrl"
+            class="full-width full-height"
+            :style="{
+              border: 'none',
+              width: '100%',
+              height: '100%',
+              minHeight: $q.screen.lt.sm ? '40vh' : $q.screen.lt.md ? '50vh' : '65vh',
+            }"
+            allow="fullscreen"
+          />
+        </div>
+
+        <!-- Image Viewer -->
+        <div
+          v-else-if="fileType === 'image'"
+          class="full-width"
+          :style="{
+            flex: '1',
+            minHeight: $q.screen.lt.sm ? '40vh' : $q.screen.lt.md ? '50vh' : '65vh',
+            backgroundColor: '#ffffff',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: $q.screen.lt.sm ? '8px' : '16px',
+            overflow: 'hidden',
+          }"
+        >
+          <q-img
+            :src="fileUrl"
+            fit="contain"
+            class="full-width full-height"
+            :style="{
+              maxHeight: $q.screen.lt.sm ? '50vh' : $q.screen.lt.md ? '60vh' : '75vh',
+            }"
+            spinner-color="primary"
+            loading="lazy"
+          >
+            <template v-slot:error>
+              <div class="column items-center q-gutter-md">
+                <q-icon name="broken_image" size="64px" color="grey-6" />
+                <div class="text-grey">Failed to load image</div>
+                <q-btn label="Download" color="primary" flat @click="downloadFile" />
+              </div>
+            </template>
+          </q-img>
+        </div>
+
+        <!-- Unknown file type -->
+        <div v-else class="column items-center q-gutter-md">
+          <q-icon name="description" size="64px" color="grey-6" />
+          <div class="text-h6 text-grey">File type not supported for preview</div>
+          <q-btn label="Download File" color="primary" icon="download" @click="downloadFile" />
+        </div>
+      </q-card-section>
+
+      <!-- Footer Actions -->
+      <q-card-section class="row justify-end q-py-sm bg-grey-2" style="flex-shrink: 0">
+        <q-btn
+          v-if="fileUrl"
+          label="Download"
+          icon="download"
+          color="primary"
+          flat
+          @click="downloadFile"
+        />
+        <q-btn label="Close" color="grey" flat @click="showFileViewer = false" />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
+
   <PDSModalApplicant v-model="showPDSModal" :applicant="applicantData" />
 </template>
 
@@ -607,6 +807,13 @@
   const xExperience = ref([]);
   const xTraining = ref([]);
   const isLoadingPDS = ref(false);
+
+  // ── File Viewer State ──
+  const showFileViewer = ref(false);
+  const isFileLoading = ref(false);
+  const fileUrl = ref('');
+  const fileType = ref('');
+  const currentFile = ref(null);
 
   const selectedEducationIds = ref([]);
   const selectedExperienceIds = ref([]);
@@ -747,6 +954,7 @@
         highest_units: e.highest_units || e.NumUnits || '',
         year_graduated: e.year_graduated || e.DateAttend?.split('-')[1]?.trim() || '',
         scholarship: e.scholarship || e.Honors || '',
+        attachment_url: e.attachment_url || '',
       };
     });
   };
@@ -764,6 +972,7 @@
         place_of_examination: e.place_of_examination || e.Place || '',
         license_number: e.license_number || e.LNumber || '',
         date_of_validity: e.date_of_validity || e.LDate || '',
+        attachment_url: e.attachment_url || '',
       };
     });
   };
@@ -790,6 +999,7 @@
         salary_grade: e.salary_grade || e.WGrade || '',
         status_of_appointment: e.status_of_appointment || e.Status || '',
         government_service: e.government_service || e.WGov || '',
+        attachment_url: e.attachment_url || '',
       };
     });
   };
@@ -807,6 +1017,7 @@
         number_of_hours: t.number_of_hours || t.NumHours || '0',
         type: t.type || '',
         conducted_by: t.conducted_by || t.Conductor || '',
+        attachment_url: t.attachment_url || '',
       };
     });
   };
@@ -1048,6 +1259,7 @@
     { name: 'highestLevel', label: 'Units Earned', align: 'left', field: 'highest_units' },
     { name: 'yearGraduated', label: 'Year Graduated', align: 'left', field: 'year_graduated' },
     { name: 'honors', label: 'Honors', align: 'left', field: 'scholarship' },
+    { name: 'attachment', label: 'Attachment', align: 'center', field: 'attachment' },
   ];
 
   const xEligibilityCol = [
@@ -1088,6 +1300,7 @@
       sortable: true,
       align: 'left',
     },
+    { name: 'attachment', label: 'Attachment', align: 'center', field: 'attachment' },
   ];
 
   const xExperienceCol = [
@@ -1101,6 +1314,7 @@
     { name: 'appointmentStatus', label: 'Status', field: 'status_of_appointment', align: 'left' },
     { name: 'govtService', label: "Gov't", field: 'government_service', align: 'center' },
     { name: 'duration', label: 'Duration', field: 'durationText', align: 'center' },
+    { name: 'attachment', label: 'Attachment', align: 'center', field: 'attachment' },
   ];
 
   const xTrainingCol = [
@@ -1111,9 +1325,92 @@
     { name: 'hours', label: 'Hours', field: 'number_of_hours', align: 'center' },
     { name: 'type', label: 'Type', field: 'type', align: 'left' },
     { name: 'conductor', label: 'Conducted/Sponsored By', field: 'conducted_by', align: 'left' },
+    { name: 'attachment', label: 'Attachment', align: 'center', field: 'attachment' },
   ];
 
   const positionQS = ref([]);
+
+  // ── File Viewer Methods ──
+  const viewAttachment = async (row) => {
+    try {
+      isFileLoading.value = true;
+      showFileViewer.value = true;
+
+      // Get the attachment URL
+      let url = row.attachment_url || row.attachment || row.attachment_path;
+      if (!url) {
+        console.warn('No attachment URL found');
+        if (window.Quasar) {
+          window.Quasar.notify({
+            type: 'warning',
+            message: 'No attachment available',
+            position: 'top',
+            timeout: 3000,
+          });
+        }
+        showFileViewer.value = false;
+        return;
+      }
+
+      // Clean up the URL
+      url = url.trim();
+
+      // Handle different URL formats
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Full URL - use as is
+      } else if (url.startsWith('/storage/')) {
+        // Already has /storage/ prefix
+      } else if (url.startsWith('storage/')) {
+        url = `/${url}`;
+      } else if (!url.startsWith('/')) {
+        url = `/storage/${url}`;
+      }
+
+      // Determine file type from URL
+      const extension = url.split('.').pop()?.toLowerCase() || '';
+      const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+      const pdfExtensions = ['pdf'];
+
+      if (imageExtensions.includes(extension)) {
+        fileType.value = 'image';
+      } else if (pdfExtensions.includes(extension)) {
+        fileType.value = 'pdf';
+      } else {
+        fileType.value = 'other';
+      }
+
+      // Store the URL
+      fileUrl.value = url;
+      currentFile.value = row;
+    } catch (error) {
+      console.error('Error viewing attachment:', error);
+      if (window.Quasar) {
+        window.Quasar.notify({
+          type: 'negative',
+          message: 'Failed to load file',
+          position: 'top',
+          timeout: 3000,
+        });
+      }
+      showFileViewer.value = false;
+    } finally {
+      isFileLoading.value = false;
+    }
+  };
+
+  const downloadFile = () => {
+    if (!fileUrl.value) return;
+
+    // Create a download link
+    const link = document.createElement('a');
+    link.href = fileUrl.value;
+    link.target = '_blank';
+    const fileName = fileUrl.value.split('/').pop() || 'file';
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // ── Image loader ──────────────────────────────────────────────────────────────
 

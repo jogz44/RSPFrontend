@@ -96,10 +96,12 @@ export default defineRouter(function (/* { store, ssrContext } */) {
           return next({ name: 'Rater Login' });
         }
       }
-      // User routes
+      // User routes - SIMPLIFIED: Just check authentication, no PDS check
       else if (to.meta.role === 'user') {
-        emailStore.checkAuthStatus();
-        if (!emailStore.isAuthenticated) {
+        // Check authentication only
+        const authStatus = await emailStore.checkAuthPDSStatus();
+
+        if (!authStatus.isAuthenticated) {
           Notify.create({
             type: 'warning',
             message: 'Please login to continue',
@@ -107,6 +109,18 @@ export default defineRouter(function (/* { store, ssrContext } */) {
           });
           return next({ name: 'Email' });
         }
+
+        // Define routes that don't require authentication
+        const publicRoutes = ['Email', 'Terms', 'Privacy'];
+
+        // If the route is a public route (login, terms, privacy), allow access
+        if (publicRoutes.includes(to.name)) {
+          return next();
+        }
+
+        // User is authenticated - allow access to all protected routes
+        // No PDS check - users can access all routes regardless of PDS status
+        return next();
       }
     }
 
@@ -125,10 +139,12 @@ export default defineRouter(function (/* { store, ssrContext } */) {
           return next({ name: 'Raters Homepage' });
         }
       }
-      // User login page
+      // User login page - SIMPLIFIED: Just check authentication
       else if (to.meta.role === 'user') {
-        emailStore.checkAuthStatus();
-        if (emailStore.isAuthenticated) {
+        const authStatus = await emailStore.checkAuthPDSStatus();
+        if (authStatus.isAuthenticated) {
+          // Always redirect to Homepage after login
+          // Remove the PDS check and always go to /page
           return next({ name: 'Homepage' });
         }
       }

@@ -133,7 +133,7 @@
                       <div class="wes-badge-integrated bg-green-2 text-green">
                         <q-icon name="work" size="18px" class="q-mr-sm" />
                         <span class="text-weight-bold">Work Experience Sheet</span>
-                      </div>
+                      </div>s
 
                       <div class="wes-title-integrated">
                         Download, fill up, then upload to

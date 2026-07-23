@@ -14,7 +14,7 @@
 
         <div class="header">
           <div class="left-logo">
-            <img src="/image.png" alt="Philippine Seal" />
+            <img src="/rsp/image.png" alt="Philippine Seal" />
           </div>
           <div class="center-header">
             <div>Republic of the Philippines</div>
@@ -92,17 +92,19 @@
                 <span style="color: white">*</span>
               </strong>
               <rt>
-                <span style="color: white">*</span>
+                <span style="color: white">(Office/Department/Unit)</span>
                 (Office/Department/Unit)
+                <span style="color: white">(Office/Department/Unit)</span>
               </rt>
             </ruby>
             with a compensation rate of
             <strong class="underline">
               {{ formatSalaryWords(data.MRate) || '(Salary in Words)' }}
             </strong>
-            (
+            <span class="underline">(</span>
             <strong class="underline">{{ formatSalaryAmount(data.MRate) || '(Amount)' }}</strong>
-            ) pesos per month.
+            <span class="underline">)</span>
+            pesos per month.
           </p>
 
           <p style="text-indent: 2em">

@@ -153,8 +153,7 @@
                 </template>
               </q-input>
 
-              <!-- ── Email Delivery Notice ── -->
-
+              <!-- OTP Notice Box -->
               <div class="otp-notice-box">
                 <div class="otp-notice-header">
                   <q-icon name="campaign" size="15px" class="otp-notice-icon" />
@@ -165,8 +164,6 @@
                   receive your code, please try again after a few hours or the following day.
                 </p>
               </div>
-              <!-- ── End Email Delivery Notice ── -->
-              <!-- ── End Email Delivery Notice ── -->
             </div>
 
             <q-btn
@@ -226,11 +223,13 @@
   import { useRouter } from 'vue-router';
   import { useQuasar } from 'quasar';
   import { useEmailStore } from 'src/stores/emailStore';
+  import { usePDSStore } from 'src/stores/pdsFormStore';
   import RecaptchaComponent from 'src/pages/user/RecaptchaComponent.vue';
 
   const router = useRouter();
   const $q = useQuasar();
   const emailStore = useEmailStore();
+  const pdsStore = usePDSStore();
   const redirecting = ref(false);
 
   // Form inputs
@@ -315,7 +314,7 @@
       emailInput.value &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value) &&
       emailCaptchaResponse.value &&
-      agreedToTerms.value && // gates the button only, not sent to backend
+      agreedToTerms.value &&
       !emailStore.loading
     );
   });
@@ -377,7 +376,6 @@
     }
 
     try {
-      // agreedToTerms is intentionally NOT passed to sendOtp
       await emailStore.sendOtp(emailInput.value, emailCaptchaResponse.value);
 
       $q.notify({
@@ -434,9 +432,9 @@
     }
 
     try {
+      // 1. Verify OTP first
       await emailStore.verifyOtp(otpInput.value);
 
-      redirecting.value = true;
       $q.notify({
         type: 'positive',
         message: 'Verification successful! Redirecting...',
@@ -445,6 +443,18 @@
         icon: 'check_circle',
       });
 
+      redirecting.value = true;
+
+      // 2. Optionally fetch PDS data (but always redirect to /page)
+      try {
+        const email = emailStore.email;
+        await pdsStore.fetchPDS(email);
+      } catch (pdsError) {
+        // Silently handle PDS fetch error - we still redirect to /page
+        console.warn('PDS fetch failed:', pdsError);
+      }
+
+      // 3. Always redirect to /page regardless of PDS status
       setTimeout(() => {
         router.push('/page');
       }, 2000);
@@ -452,13 +462,12 @@
       redirecting.value = false;
       $q.notify({
         type: 'negative',
-        message: error.message || 'Invalid verification code.',
+        message: error.message || 'Verification failed. Please try again.',
         position: 'top',
         timeout: 4000,
       });
     }
   };
-
   const handleResetForm = () => {
     emailStore.resetState();
     emailInput.value = '';
@@ -613,16 +622,6 @@
     text-align: center;
   }
 
-  .recaptcha-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    min-height: 90px;
-    overflow: visible;
-    padding: 0.5rem 0;
-  }
-
   .submit-btn {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -716,7 +715,6 @@
     text-transform: none;
   }
 
-  /* ── OTP Notice Box ── */
   .otp-notice-box {
     margin-top: 0.5rem;
     padding: 0.875rem 1rem;
@@ -751,19 +749,6 @@
     margin: 0;
   }
 
-  .otp-notice-body strong {
-    color: #bf360c;
-    font-weight: 700;
-  }
-
-  .otp-notice-body em {
-    font-style: normal;
-    font-weight: 600;
-    color: #1565c0;
-  }
-  /* ── End OTP Notice Box ── */
-
-  /* ── Agreement ── */
   .agreement-card {
     background: linear-gradient(135deg, #f0faf4 0%, #e8f5ec 100%);
     border: 1px solid #a5d6b0;
@@ -857,7 +842,6 @@
     opacity: 0;
     transform: translateY(-4px);
   }
-  /* ── End Agreement ── */
 
   .footer-info {
     margin-top: 2rem;
@@ -920,35 +904,6 @@
     }
   }
 
-  @media (max-width: 599px) {
-    .recaptcha-section {
-      min-height: 160px;
-    }
-  }
-
-  /* Tablet (600px - 1023px) */
-  @media (max-width: 1023px) and (min-width: 600px) {
-    .login-section {
-      padding: 1.5rem 1rem;
-    }
-    .login-card {
-      padding: 2.5rem 2rem;
-    }
-    .main-title {
-      font-size: 1.5rem;
-    }
-    .login-title {
-      font-size: 1.15rem;
-    }
-    .login-subtitle {
-      font-size: 0.95rem;
-    }
-    .form-container {
-      gap: 1.5rem;
-    }
-  }
-
-  /* Mobile (<600px) */
   @media (max-width: 599px) {
     .login-section {
       padding: 1rem 0.75rem;
@@ -1046,7 +1001,6 @@
     }
   }
 
-  /* Extra Small (<360px) */
   @media (max-width: 359px) {
     .login-section {
       padding: 0.75rem 0.5rem;
@@ -1130,7 +1084,6 @@
     }
   }
 
-  /* Large Desktop (>1440px) */
   @media (min-width: 1440px) {
     .login-content {
       max-width: 550px;
