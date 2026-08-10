@@ -93,6 +93,23 @@
       </div>
     </div>
 
+    <!-- NEW: Appropriation Information Section -->
+    <div class="section">
+      <div class="section-header">Appropriation Information</div>
+
+      <div class="form-row">
+        <q-input
+          v-model="formData.PresAppro"
+          label="Appropriation Ordinance Reference"
+          outlined
+          dense
+          class="form-field flex-2"
+          hint="e.g., Appropriation Ordinance No. 2024-001, Series of 2024"
+          @update:model-value="emitUpdate"
+        />
+      </div>
+    </div>
+
     <!-- Certification Dates Section -->
     <div class="section">
       <div class="section-header">Important Dates</div>
@@ -252,16 +269,14 @@
       if (newData.effectiveDate && !newData.EffectiveDate) {
         mappedData.EffectiveDate = newData.effectiveDate;
       }
-      // Also handle sepdate for backward compatibility if needed
-      if (newData.sepdate && !mappedData.EffectiveDate) {
-        mappedData.EffectiveDate = newData.sepdate;
-      }
+
       formData.value = {
         TINNo: '',
         NewDesignation: '',
         NewOffice: '',
         Status: '',
         EffectiveDate: '',
+        PresAppro: '',
         ...mappedData,
       };
     },
@@ -272,8 +287,6 @@
     // Send EffectiveDate as the appointment date
     const updateData = {
       ...formData.value,
-      // Keep sepdate for backward compatibility
-      sepdate: formData.value.EffectiveDate,
     };
     emit('update', updateData);
   }

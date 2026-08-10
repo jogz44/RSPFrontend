@@ -146,7 +146,8 @@
             <ruby>
               <strong class="underline">
                 <span style="color: white">*</span>
-                {{ data.Renew || '' }}
+                {{ formattedRenew }}
+
                 <span style="color: white">*</span>
               </strong>
               <rt>
@@ -192,7 +193,7 @@
 
         <div class="signature-block">
           <div class="signature-section">
-            <p class="signature-salutation">Very truly yours,</p>
+            <p class="signature-salutation">{{ signatureSalutation }}</p>
             <br />
             <br />
             <div class="signature-name-container">
@@ -461,6 +462,22 @@
     } else {
       return props.data.mayor || 'REY T. UY';
     }
+  });
+
+  const formattedRenew = computed(() => {
+    const renewValue = props.data.Renew || '';
+    if (renewValue === 'ORIGINAL') {
+      return `${renewValue}*`;
+    }
+    return renewValue;
+  });
+
+  const signatureSalutation = computed(() => {
+    const baseSalutation = 'Very truly yours,';
+    if (props.data.Renew === 'ORIGINAL') {
+      return `${baseSalutation}*`;
+    }
+    return baseSalutation;
   });
 
   const signatoryTitle = computed(() => {

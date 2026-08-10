@@ -43,8 +43,8 @@
         <div class="certification-body">
           <p class="main-text indented" :style="mainTextStyle">
             <slot name="main-text">
-              This is to certify that funds are available pursusant to Appropriation Ordinance No. 6
-              Series of {{ formatYear(data.EffectiveDate) }}
+              This is to certify that funds are available pursusant to
+              {{ data.PresAppro }}
             </slot>
           </p>
 

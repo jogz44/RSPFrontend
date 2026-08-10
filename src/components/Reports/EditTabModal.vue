@@ -231,7 +231,6 @@
 
         sepdate: editedData.value.sepdate || '',
 
-        // ❌ DO NOT change sepcause - this is the separation cause (e.g., "REAPPOINTMENT", "RESIGNATION")
         sepcause: editedData.value.sepcause || 'N/A',
 
         vicename: editedData.value.vicename || '',

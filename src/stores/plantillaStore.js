@@ -405,62 +405,67 @@ export const usePlantillaStore = defineStore('plantilla', {
 
         console.log('Appointment data:', response.data); // Debugging
 
-        if (response.data && response.data.length > 0) {
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
           // Find the main appointment data (first object with ControlNo)
-          const mainAppointment = response.data.find((item) => item.ControlNo === ControlNo);
-          // Find the office head (the object with "CITY GOVERNMENT DEPARTMENT HEAD I" position)
+          const mainAppointment = response.data.find(
+            (item) => item && item.ControlNo === ControlNo,
+          );
+
+          // Find the office head with proper null checking
           const officeHead = response.data.find(
             (item) =>
+              item &&
               item.position === 'CITY GOVERNMENT DEPARTMENT HEAD I' &&
               item.office === mainAppointment?.Office,
           );
 
-          // Access the first element of each array
-          const plantillaInfo = mainAppointment?.active?.[0];
-          const tempRegInfo = mainAppointment?.temp_reg_appointments?.[0];
-          const reorgExtInfo = mainAppointment?.temp_reg_appointment_reorg_ext?.[0];
-          const x_personal = mainAppointment?.x_personal?.[0];
-          const jobpost = mainAppointment?.posting_date?.[0];
-          const plantilla = mainAppointment?.plantilla?.[0];
+          // Access the first element of each array with null checking
+          const plantillaInfo = mainAppointment?.active?.[0] || {};
+          const tempRegInfo = mainAppointment?.temp_reg_appointments?.[0] || {};
+          const reorgExtInfo = mainAppointment?.temp_reg_appointment_reorg_ext?.[0] || {};
+          const x_personal = mainAppointment?.x_personal?.[0] || {};
+          const jobpost = mainAppointment?.posting_date?.[0] || {};
+          const plantilla = mainAppointment?.plantilla?.[0] || {};
 
+          // Ensure all values exist before accessing
           const transformedData = {
             // Basic Info
             SalaryAnnual: mainAppointment?.RateYear || '',
-            TINNo: x_personal?.TINNo || '',
-            Address: x_personal?.Address || '',
-            Sex: plantillaInfo?.Sex,
-            Name4: plantillaInfo?.Name4 || '',
-            Firstname: x_personal?.Firstname || '',
-            MIddlename: x_personal?.MIddlename || '',
-            Surname: x_personal?.Surname || '',
-            BirthDate: x_personal?.BirthDate || '',
+            TINNo: x_personal.TINNo || '',
+            Address: x_personal.Address || '',
+            Sex: plantillaInfo.Sex || '',
+            Name4: plantillaInfo.Name4 || '',
+            Firstname: x_personal.Firstname || '',
+            MIddlename: x_personal.MIddlename || '',
+            Surname: x_personal.Surname || '',
+            BirthDate: x_personal.BirthDate || '',
 
-            post_date: jobpost?.post_date || '',
-            end_date: jobpost?.end_date || '',
+            post_date: jobpost.post_date || '',
+            end_date: jobpost.end_date || '',
 
             // Position Info
-            NewDesignation: tempRegInfo?.NewDesignation || tempRegInfo?.Designation || '',
-            SG: tempRegInfo?.SG || '',
-            Step: tempRegInfo?.Step || '',
-            Status: tempRegInfo?.Status || '',
-            NewOffice: tempRegInfo?.NewOffice || tempRegInfo?.Office || '',
-            MRate: tempRegInfo?.MRate || '',
-            ItemNo: tempRegInfo?.ItemNo || '',
-            Pages: tempRegInfo?.Pages || '',
-            Office2: plantilla?.office2 || '',
-            Group: plantilla?.group || '',
-            Division: plantilla?.division || '',
-            Section: plantilla?.section || '',
-            Unit: plantilla?.unit || '',
+            NewDesignation: tempRegInfo.NewDesignation || tempRegInfo.Designation || '',
+            SG: tempRegInfo.SG || '',
+            Step: tempRegInfo.Step || '',
+            Status: tempRegInfo.Status || '',
+            NewOffice: tempRegInfo.NewOffice || tempRegInfo.Office || '',
+            MRate: tempRegInfo.MRate || '',
+            ItemNo: tempRegInfo.ItemNo || '',
+            Pages: tempRegInfo.Pages || '',
+            Office2: plantilla.office2 || '',
+            Group: plantilla.group || '',
+            Division: plantilla.division || '',
+            Section: plantilla.section || '',
+            Unit: plantilla.unit || '',
 
             // Appointment Details
-            Renew: tempRegInfo?.Renew || '',
-            vicename: tempRegInfo?.vicename || '',
-            vicecause: tempRegInfo?.vicecause || '',
-            sepcause: tempRegInfo?.sepcause || '',
-            sepdate: tempRegInfo?.sepdate || '',
-            deliberation_date: tempRegInfo?.deliberation_date || '',
-            employmenttype: tempRegInfo?.employment_type || '',
+            Renew: tempRegInfo.Renew || '',
+            vicename: tempRegInfo.vicename || '',
+            vicecause: tempRegInfo.vicecause || '',
+            sepcause: tempRegInfo.sepcause || '',
+            sepdate: tempRegInfo.sepdate || '',
+            deliberation_date: tempRegInfo.deliberation_date || '',
+            employmenttype: tempRegInfo.employment_type || '',
 
             // Date Range
             EffectiveDate: mainAppointment?.effectiveDate || '',
@@ -468,75 +473,75 @@ export const usePlantillaStore = defineStore('plantilla', {
             ToDate: mainAppointment?.ToDate || '',
 
             // Extended Info from temp_reg_appointment_reorg_ext
-            tempId: reorgExtInfo?.tempId || '',
-            PresAppro: reorgExtInfo?.PresAppro || '',
-            PrevAppro: reorgExtInfo?.PrevAppro || '',
-            SalAuthorized: reorgExtInfo?.SalAuthorized || '',
-            OtherComp: reorgExtInfo?.OtherComp || '',
-            SupPosition: reorgExtInfo?.SupPosition || '',
-            HSupPosition: reorgExtInfo?.HSupPosition || '',
-            Tool: reorgExtInfo?.Tool || '',
+            tempId: reorgExtInfo.tempId || '',
+            PresAppro: reorgExtInfo.PresAppro || '',
+            PrevAppro: reorgExtInfo.PrevAppro || '',
+            SalAuthorized: reorgExtInfo.SalAuthorized || '',
+            OtherComp: reorgExtInfo.OtherComp || '',
+            SupPosition: reorgExtInfo.SupPosition || '',
+            HSupPosition: reorgExtInfo.HSupPosition || '',
+            Tool: reorgExtInfo.Tool || '',
 
             // Contact Requirements
-            Contact1: reorgExtInfo?.Contact1 || '',
-            Contact2: reorgExtInfo?.Contact2 || '',
-            Contact3: reorgExtInfo?.Contact3 || '',
-            Contact4: reorgExtInfo?.Contact4 || '',
-            Contact5: reorgExtInfo?.Contact5 || '',
-            Contact6: reorgExtInfo?.Contact6 || '',
-            ContactOthers: reorgExtInfo?.ContactOthers || '',
+            Contact1: reorgExtInfo.Contact1 || '',
+            Contact2: reorgExtInfo.Contact2 || '',
+            Contact3: reorgExtInfo.Contact3 || '',
+            Contact4: reorgExtInfo.Contact4 || '',
+            Contact5: reorgExtInfo.Contact5 || '',
+            Contact6: reorgExtInfo.Contact6 || '',
+            ContactOthers: reorgExtInfo.ContactOthers || '',
 
             // Working Conditions
-            Working1: reorgExtInfo?.Working1 || '',
-            Working2: reorgExtInfo?.Working2 || '',
-            WorkingOthers: reorgExtInfo?.WorkingOthers || '',
+            Working1: reorgExtInfo.Working1 || '',
+            Working2: reorgExtInfo.Working2 || '',
+            WorkingOthers: reorgExtInfo.WorkingOthers || '',
 
             // Descriptions
-            DescriptionSection: reorgExtInfo?.DescriptionSection || '',
-            DescriptionFunction: reorgExtInfo?.DescriptionFunction || '',
+            DescriptionSection: reorgExtInfo.DescriptionSection || '',
+            DescriptionFunction: reorgExtInfo.DescriptionFunction || '',
 
             // Standards/Qualifications
-            StandardEduc: reorgExtInfo?.StandardEduc || '',
-            StandardExp: reorgExtInfo?.StandardExp || '',
-            StandardTrain: reorgExtInfo?.StandardTrain || '',
-            StandardElig: reorgExtInfo?.StandardElig || '',
+            StandardEduc: reorgExtInfo.StandardEduc || '',
+            StandardExp: reorgExtInfo.StandardExp || '',
+            StandardTrain: reorgExtInfo.StandardTrain || '',
+            StandardElig: reorgExtInfo.StandardElig || '',
 
             // Supervisor
-            Supervisor: reorgExtInfo?.Supervisor || '',
+            Supervisor: reorgExtInfo.Supervisor || '',
 
             // Competency Levels
-            Core1: reorgExtInfo?.Core1 || '0',
-            Core2: reorgExtInfo?.Core2 || '0',
-            Core3: reorgExtInfo?.Core3 || '0',
-            Corelevel1: reorgExtInfo?.Corelevel1 || '0',
-            Corelevel2: reorgExtInfo?.Corelevel2 || '0',
-            Corelevel3: reorgExtInfo?.Corelevel3 || '0',
-            Corelevel4: reorgExtInfo?.Corelevel4 || '0',
+            Core1: reorgExtInfo.Core1 || '0',
+            Core2: reorgExtInfo.Core2 || '0',
+            Core3: reorgExtInfo.Core3 || '0',
+            Corelevel1: reorgExtInfo.Corelevel1 || '0',
+            Corelevel2: reorgExtInfo.Corelevel2 || '0',
+            Corelevel3: reorgExtInfo.Corelevel3 || '0',
+            Corelevel4: reorgExtInfo.Corelevel4 || '0',
 
             // Leadership Levels
-            Leader1: reorgExtInfo?.Leader1 || '0',
-            Leader2: reorgExtInfo?.Leader2 || '0',
-            Leader3: reorgExtInfo?.Leader3 || '0',
-            Leader4: reorgExtInfo?.Leader4 || '0',
-            leaderlevel1: reorgExtInfo?.leaderlevel1 || '0',
-            leaderlevel2: reorgExtInfo?.leaderlevel2 || '0',
-            leaderlevel3: reorgExtInfo?.leaderlevel3 || '0',
-            leaderlevel4: reorgExtInfo?.leaderlevel4 || '0',
+            Leader1: reorgExtInfo.Leader1 || '0',
+            Leader2: reorgExtInfo.Leader2 || '0',
+            Leader3: reorgExtInfo.Leader3 || '0',
+            Leader4: reorgExtInfo.Leader4 || '0',
+            leaderlevel1: reorgExtInfo.leaderlevel1 || '0',
+            leaderlevel2: reorgExtInfo.leaderlevel2 || '0',
+            leaderlevel3: reorgExtInfo.leaderlevel3 || '0',
+            leaderlevel4: reorgExtInfo.leaderlevel4 || '0',
 
             // Structure ID
-            StructureID: tempRegInfo?.StructureID || reorgExtInfo?.structureid || '',
+            StructureID: tempRegInfo.StructureID || reorgExtInfo.structureid || '',
 
             // Additional Fields
-            DivCode: tempRegInfo?.DivCode || '',
-            SecCode: tempRegInfo?.SecCode || '',
-            OffCode: tempRegInfo?.OffCode || '',
-            DesigCode: tempRegInfo?.DesigCode || '',
-            Official: tempRegInfo?.Official || '0',
-            Groupcode: tempRegInfo?.Groupcode || '',
-            group: tempRegInfo?.group || '',
-            unitcode: tempRegInfo?.unitcode || '',
+            DivCode: tempRegInfo.DivCode || '',
+            SecCode: tempRegInfo.SecCode || '',
+            OffCode: tempRegInfo.OffCode || '',
+            DesigCode: tempRegInfo.DesigCode || '',
+            Official: tempRegInfo.Official || '0',
+            Groupcode: tempRegInfo.Groupcode || '',
+            group: tempRegInfo.group || '',
+            unitcode: tempRegInfo.unitcode || '',
 
-            // Office Head Information
+            // Office Head Information - with null checking
             officeHeadName: officeHead?.Name4 || '',
             officeHeadPosition: officeHead?.position || '',
             officeHeadOffice: officeHead?.office || '',
@@ -551,8 +556,7 @@ export const usePlantillaStore = defineStore('plantilla', {
             resolutionYear: '',
           };
 
-          console.log('Transformed data:', transformedData); // Debug the transformed data
-
+          console.log('Transformed data:', transformedData);
           return transformedData;
         }
 
