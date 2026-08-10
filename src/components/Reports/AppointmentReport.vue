@@ -475,7 +475,7 @@
   const signatureSalutation = computed(() => {
     const baseSalutation = 'Very truly yours,';
     if (props.data.Renew === 'ORIGINAL') {
-      return `${baseSalutation}*`;
+      return `*${baseSalutation}`;
     }
     return baseSalutation;
   });
