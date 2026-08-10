@@ -105,6 +105,7 @@
           label="First Name"
           outlined
           dense
+          readonly
           class="form-field flex-2"
           @update:model-value="emitUpdate"
         />
@@ -113,6 +114,7 @@
           label="Middle Name"
           outlined
           dense
+          readonly
           class="form-field flex-2"
           @update:model-value="emitUpdate"
         />
@@ -121,6 +123,7 @@
           label="Last Name"
           outlined
           dense
+          readonly
           class="form-field flex-2"
           @update:model-value="emitUpdate"
         />

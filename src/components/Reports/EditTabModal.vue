@@ -223,6 +223,15 @@
 
         renew: editedData.value.Renew || '',
 
+        // ✅ CRITICAL: Preserve Name1 from original data
+        Name1: originalData.value.Name1 || props.employee.Name1 || '',
+
+        // ✅ CRITICAL: Preserve Name4
+        Name4: originalData.value.Name4 || props.employee.Name4 || '',
+
+        // ✅ CRITICAL: Preserve plantillaStatus
+        plantillaStatus: originalData.value.plantillaStatus || props.employee.plantillaStatus || '',
+
         // ✅ CORRECT: Use EffectiveDate for the appointment date
         effectiveDate:
           editedData.value.EffectiveDate ||
