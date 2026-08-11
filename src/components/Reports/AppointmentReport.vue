@@ -210,7 +210,7 @@
             <div class="signature-title">{{ signatoryTitle }}</div>
             <br />
             <div class="signing-date-container">
-              <strong class="signing-date">{{ data.signingDate || '' }}</strong>
+              <strong class="signing-date">{{ formatSigningDate || '' }}</strong>
             </div>
             <div class="signing-label">Date of Signing</div>
           </div>
@@ -699,7 +699,64 @@
   };
 
   // Computed Properties
-  // const formattedSigningDate = computed(() => formatDate(props.data.signingDate));
+  // Add this computed property with the other computed properties
+  const formatSigningDate = computed(() => {
+    if (!props.data.signingDate) return '';
+
+    // If the date is already in "May 4, 2026" format, convert it
+    const date = new Date(props.data.signingDate);
+    if (!isNaN(date.getTime())) {
+      // Format as "4 May 2026"
+      const day = date.getDate();
+      const monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    }
+
+    // If it's already a string, try to parse it
+    try {
+      // Try parsing "May 4, 2026" format
+      const parsedDate = new Date(props.data.signingDate);
+      if (!isNaN(parsedDate.getTime())) {
+        const day = parsedDate.getDate();
+        const monthNames = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ];
+        const month = monthNames[parsedDate.getMonth()];
+        const year = parsedDate.getFullYear();
+        return `${day} ${month} ${year}`;
+      }
+    } catch {
+      return props.data.signingDate;
+    }
+
+    return props.data.signingDate;
+  });
 
   console.log('AppointmentReport - received data:', props.data);
 </script>
