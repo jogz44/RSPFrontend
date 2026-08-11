@@ -466,6 +466,7 @@ export const usePlantillaStore = defineStore('plantilla', {
             sepdate: tempRegInfo.sepdate || '',
             deliberation_date: tempRegInfo.deliberation_date || '',
             employmenttype: tempRegInfo.employment_type || '',
+            assessment_date: tempRegInfo.assessment_date || '',
 
             // Date Range
             EffectiveDate: mainAppointment?.effectiveDate || '',

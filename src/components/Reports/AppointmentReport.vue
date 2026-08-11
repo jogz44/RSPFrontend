@@ -547,7 +547,7 @@
   });
 
   const assessmentDate = computed(() => {
-    return isCoterminousOrElective.value ? 'N/A' : formatDate(props.data.end_date);
+    return isCoterminousOrElective.value ? 'N/A' : formatDate(props.data.assessment_date);
   });
 
   // Utility Functions
@@ -992,7 +992,6 @@
   /* Page 2 - Certification Page Styles */
   .certification-page {
     padding: 0.3in;
-    padding-bottom: 10px;
     padding-top: 0.5in;
     position: relative;
   }
@@ -1010,7 +1009,7 @@
     padding: 20px;
     box-sizing: border-box;
     border: 2px solid black;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 
   .certificate-box {
@@ -1019,7 +1018,7 @@
     background-color: white;
     padding: 0.1in;
     box-sizing: border-box;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 
   .certificate-box:last-child {
@@ -1031,12 +1030,12 @@
     background-color: #c0c0c0;
     border: 2px solid black;
     box-sizing: border-box;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     position: relative;
     padding-top: 35px;
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-bottom: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
   }
 
   .notation-title {
@@ -1045,7 +1044,7 @@
     font-weight: bold;
     margin: 0;
     position: absolute;
-    top: 5px;
+    top: 3px;
     left: 0;
     right: 0;
   }
@@ -1091,8 +1090,8 @@
     background-color: #c0c0c0;
     border: 2px solid black;
     box-sizing: border-box;
-    margin-bottom: 20px;
-    padding: 20px;
+
+    padding: 10px;
   }
 
   .acknowledgement-boxes {
@@ -1128,7 +1127,7 @@
     font-size: 14pt;
     font-weight: bold;
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
   }
 
   .acknowledgement-title {

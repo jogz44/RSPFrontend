@@ -239,6 +239,20 @@
           @update:model-value="emitUpdate"
         />
       </div>
+
+      <!-- NEW: Assessment Date Field - Simple date input -->
+      <div class="form-row q-mt-md">
+        <q-input
+          v-model="formData.assessment_date"
+          label="Assessment Date"
+          type="date"
+          outlined
+          dense
+          class="form-field"
+          hint="Date of assessment"
+          @update:model-value="emitUpdate"
+        />
+      </div>
     </div>
 
     <!-- Publication/Posting Dates Section -->
