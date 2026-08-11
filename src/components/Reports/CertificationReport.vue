@@ -448,8 +448,8 @@
 <style scoped>
   .certification-report-container {
     width: 8.5in;
-    min-height: 11in;
-    height: 14in;
+    min-height: 13in;
+    height: 13in;
     position: relative;
     font-family: Arial, sans-serif;
     background-color: white;
@@ -617,7 +617,7 @@
 
   @media print {
     @page {
-      size: letter;
+      size: long;
       margin: 0;
     }
   }

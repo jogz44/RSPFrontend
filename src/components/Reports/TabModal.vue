@@ -117,7 +117,7 @@
 
     const div = document.createElement('div');
     div.style.width = '816px';
-    div.style.minHeight = '1344px';
+    div.style.minHeight = '1248px';
     document.body.appendChild(div);
 
     // Fix: Pass props correctly to the component
@@ -132,7 +132,7 @@
         margin: 0,
         filename: `${tabName}.pdf`,
         html2canvas: { scale: 5 },
-        jsPDF: { unit: 'in', format: 'legal', orientation: 'portrait' },
+        jsPDF: { unit: 'in', format: [8.5, 13], orientation: 'portrait' },
       })
       .from(div)
       .outputPdf('blob');

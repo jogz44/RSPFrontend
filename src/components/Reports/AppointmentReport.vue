@@ -41,9 +41,10 @@
           <p style="text-indent: 2em">
             You are hereby appointed as
             <ruby>
-              <strong class="underline">
+              <strong style="text-decoration: underline">
                 <span style="color: white">*</span>
                 {{ data.NewDesignation || '(Position Title)' }}
+                <span style="color: white">*</span>
               </strong>
               <rt>
                 <span style="color: white">*</span>
@@ -54,61 +55,29 @@
               </rt>
             </ruby>
             (SG/Step
-            <strong>
-              <span
-                style="
-                  color: white;
-                  text-decoration: underline;
-                  text-decoration-color: black;
-                  text-underline-offset: 2px;
-                "
-              >
-                *
-              </span>
-              <span style="text-decoration: underline">{{ data.SG || '(SG)' }}</span>
-              <span
-                style="
-                  color: white;
-                  text-decoration: underline;
-                  text-decoration-color: black;
-                  text-underline-offset: 2px;
-                "
-              >
-                *
-              </span>
-              <span style="text-decoration: underline">/</span>
+            <span style="color: white">*</span>
+            <span style="text-decoration: underline; font-weight: bold">
+              {{ formattedStep }}
+            </span>
+            <span>)</span>
 
-              <span
-                style="
-                  color: white;
-                  text-decoration: underline;
-                  text-decoration-color: black;
-                  text-underline-offset: 2px;
-                "
-              >
-                *
-              </span>
-              <span style="text-decoration: underline">{{ data.Step || '(Step)' }}</span>
-              <span
-                style="
-                  color: white;
-                  text-decoration: underline;
-                  text-decoration-color: black;
-                  text-underline-offset: 2px;
-                "
-              >
-                *
-              </span>
-            </strong>
-            )
             <span style="color: white">*</span>
             under
             <ruby>
-              <strong class="underline">
+              <span
+                style="
+                  display: inline-block;
+                  width: 250px;
+                  font-weight: bold;
+                  border-bottom: 1.5px solid black;
+                  line-height: 0.9;
+                  text-align: center;
+                "
+              >
                 <span style="color: white">*</span>
-                {{ data.employmenttype || '(Permanent, Temporary, etc.)' }}
+                {{ data.employmenttype || 'N/A' }}
                 <span style="color: white">*</span>
-              </strong>
+              </span>
               <rt>
                 <span style="color: white">*</span>
                 (Permanent,
@@ -116,6 +85,7 @@
                 Temporary,
                 <span style="color: white">*</span>
                 etc.)
+                <span style="color: white">*</span>
               </rt>
             </ruby>
             status at the
@@ -126,9 +96,11 @@
                 <span style="color: white">*</span>
               </strong>
               <rt>
-                <span style="color: white">(Office/Department/Unit)</span>
+                <span v-if="isNewOfficeLong" style="color: white">(Office/Department/Unit)</span>
+                <span v-else style="color: white">*</span>
                 (Office/Department/Unit)
-                <span style="color: white">(Office/Department/Unit)</span>
+                <span v-if="isNewOfficeLong" style="color: white">(Office/Department/Unit)</span>
+                <span v-else style="color: white">*</span>
               </rt>
             </ruby>
             with a compensation rate of
@@ -144,30 +116,58 @@
           <p style="text-indent: 2em">
             The nature of this appointment is
             <ruby>
-              <strong class="underline">
-                <span style="color: white">*</span>
+              <span style="color: white">*</span>
+              <span
+                style="
+                  display: inline-block;
+                  width: 330px;
+                  font-weight: bold;
+                  border-bottom: 1.5px solid black;
+                  line-height: 0.9;
+                  text-align: center;
+                "
+              >
                 {{ formattedRenew }}
+              </span>
 
-                <span style="color: white">*</span>
-              </strong>
+              <span style="color: white">*</span>
+
               <rt>
                 <span style="color: white">*</span>
-                (Original,
+                (Original, Promotion, etc.)
                 <span style="color: white">*</span>
-                Promotion,
-                <span style="color: white">*</span>
-                etc.)
               </rt>
             </ruby>
             vice
-            <strong class="underline">{{ data.vicecause || 'N/A' }}</strong>
+            <span
+              style="
+                display: inline-block;
+                width: 250px;
+                font-weight: bold;
+                border-bottom: 1.5px solid black;
+                line-height: 0.9;
+                text-align: center;
+              "
+            >
+              {{ data.vicecause || 'N/A' }}
+            </span>
             , who
             <ruby>
-              <strong class="underline">
-                <span style="color: white">*</span>
+              <span style="color: white">*</span>
+              <span
+                style="
+                  display: inline-block;
+                  width: 250px;
+                  font-weight: bold;
+                  border-bottom: 1.5px solid black;
+                  line-height: 0.9;
+                  text-align: center;
+                "
+              >
                 {{ data.vicecause || 'N/A' }}
-                <span style="color: white">*</span>
-              </strong>
+              </span>
+              <span style="color: white">*</span>
+
               <rt>
                 <span style="color: white">*</span>
                 (Transferred,
@@ -189,6 +189,14 @@
             This appointment shall take effect on the date of signing by the appointing
             officer/authority.
           </p>
+
+          <p v-if="showProbationaryNote" style="text-indent: 2em">
+            *Appointee shall undergo probationary period of six (6) months upon assumption of duty.
+          </p>
+
+          <p v-if="!showProbationaryNote" style="text-indent: 2em; color: white">
+            *Appointee shall undergo probationary period of six (6) months upon assumption of duty.
+          </p>
         </div>
 
         <div class="signature-block">
@@ -202,7 +210,7 @@
             <div class="signature-title">{{ signatoryTitle }}</div>
             <br />
             <div class="signing-date-container">
-              <strong class="signing-date">{{ formattedSigningDate || '' }}</strong>
+              <strong class="signing-date">{{ data.signingDate || '' }}</strong>
             </div>
             <div class="signing-label">Date of Signing</div>
           </div>
@@ -464,19 +472,37 @@
     }
   });
 
+  const isNewOfficeLong = computed(() => {
+    const office = props.data.NewOffice || '';
+    return office.length > 35;
+  });
+
   const formattedRenew = computed(() => {
     const renewValue = props.data.Renew || '';
-    if (renewValue === 'ORIGINAL') {
+    const employmentType = (props.data.employmenttype || '').toUpperCase();
+
+    // Add asterisk ONLY if BOTH conditions are met
+    if (renewValue === 'ORIGINAL' && employmentType === 'PERMANENT') {
       return `${renewValue}*`;
     }
+
     return renewValue;
+  });
+
+  const showProbationaryNote = computed(() => {
+    const renewValue = props.data.Renew || '';
+    const employmentType = (props.data.employmenttype || '').toUpperCase();
+
+    // Show note ONLY if BOTH conditions are met
+    return renewValue === 'ORIGINAL' && employmentType === 'PERMANENT';
+  });
+
+  const formattedStep = computed(() => {
+    return `${props.data.SG || ''}/${props.data.Step || ''}`;
   });
 
   const signatureSalutation = computed(() => {
     const baseSalutation = 'Very truly yours,';
-    if (props.data.Renew === 'ORIGINAL') {
-      return `*${baseSalutation}`;
-    }
     return baseSalutation;
   });
 
@@ -673,7 +699,7 @@
   };
 
   // Computed Properties
-  const formattedSigningDate = computed(() => formatDate(props.data.signingDate));
+  // const formattedSigningDate = computed(() => formatDate(props.data.signingDate));
 
   console.log('AppointmentReport - received data:', props.data);
 </script>
@@ -687,7 +713,7 @@
 
   .page {
     width: 8.5in;
-    min-height: 11in;
+    min-height: 13in;
     font-family: 'Consolas', 'Courier New', Courier, monospace;
     font-size: 12pt;
     color: black;
@@ -704,7 +730,7 @@
   /* Page 1 - Appointment Form Styles */
   .appointment-form {
     padding: 0.3in;
-    padding-top: 0.6in;
+    padding-top: 0.5in;
     line-height: 1.5;
   }
 
@@ -718,7 +744,7 @@
     padding: 0.5in;
     box-sizing: border-box;
     position: relative;
-    min-height: calc(11in - 1in);
+    min-height: calc(13in - 1in);
   }
 
   .form-title {
@@ -796,10 +822,9 @@
   }
 
   .body {
-    margin-top: 2em;
     font-size: 11pt;
     text-align: justify;
-    line-height: 3;
+    line-height: 2.5;
     word-break: break-word;
     overflow-wrap: anywhere;
   }
@@ -808,6 +833,12 @@
     word-break: break-word;
     overflow-wrap: anywhere;
     hyphens: auto;
+    margin-top: 0%;
+  }
+
+  p {
+    margin: 0%;
+    padding: 0%;
   }
 
   .underline {
@@ -819,7 +850,8 @@
   /* Ruby and RT styling */
   ruby {
     ruby-position: under;
-    line-height: 1.8;
+    text-align: center;
+    line-height: 1;
     word-break: break-word;
     overflow-wrap: anywhere;
     display: inline-ruby;
@@ -834,20 +866,17 @@
   }
 
   .signature-block {
-    margin-top: 3em;
     text-align: right;
     font-size: 11pt;
   }
 
   .signature-salutation {
     text-align: left;
-    margin-bottom: 2em;
   }
 
   .signature-section {
     display: inline-block;
     text-align: center;
-    margin-bottom: 2em;
   }
 
   .signature-name-container {
@@ -880,7 +909,6 @@
     min-width: 200px;
     border-bottom: 2px solid black;
     padding-bottom: 3px;
-    margin-bottom: 5px;
   }
 
   .signing-date {
@@ -899,7 +927,7 @@
 
   .footer-note {
     max-width: 300px;
-    margin-top: 3em;
+    margin-top: 2em;
     margin-bottom: 15px;
     font-size: 11pt;
   }
@@ -908,7 +936,7 @@
   .certification-page {
     padding: 0.3in;
     padding-bottom: 10px;
-    padding-top: 0.3in;
+    padding-top: 0.5in;
     position: relative;
   }
 
@@ -932,7 +960,7 @@
     width: 100%;
     border: 2px solid black;
     background-color: white;
-    padding: 0.15in;
+    padding: 0.1in;
     box-sizing: border-box;
     margin-bottom: 20px;
   }
@@ -1084,9 +1112,7 @@
   }
 
   .cert-signature-title {
-    font-size: 11pt;
-    margin-top: 3px;
-    line-height: 1.5;
+    font-size: 9pt;
   }
 
   .notation-table table {
@@ -1098,7 +1124,7 @@
 
   .notation-table td {
     border: 1px solid #000;
-    padding: 5px;
+    padding: 3px;
     height: 25px;
     word-break: break-word;
     overflow-wrap: anywhere;
@@ -1166,25 +1192,16 @@
     width: 100%;
   }
 
-  /* Print Styles */
-  @media print {
+  @media screen {
     .page {
-      page-break-after: always;
-      page-break-inside: avoid;
-    }
-
-    .page:last-child {
-      page-break-after: auto;
+      page-break-after: auto !important;
+      page-break-inside: auto !important;
+      min-height: auto !important;
+      height: auto !important;
     }
 
     .appointment-form-container {
-      gap: 0;
-    }
-
-    * {
-      word-break: break-word !important;
-      overflow-wrap: anywhere !important;
-      white-space: normal !important;
+      gap: 0 !important;
     }
   }
 </style>

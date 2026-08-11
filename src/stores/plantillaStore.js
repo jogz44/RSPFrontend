@@ -481,6 +481,7 @@ export const usePlantillaStore = defineStore('plantilla', {
             SupPosition: reorgExtInfo.SupPosition || '',
             HSupPosition: reorgExtInfo.HSupPosition || '',
             Tool: reorgExtInfo.Tool || '',
+            signingDate: reorgExtInfo.signing_date || '',
 
             // Contact Requirements
             Contact1: reorgExtInfo.Contact1 || '',

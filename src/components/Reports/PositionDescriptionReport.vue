@@ -640,13 +640,13 @@
   .position-description-container {
     width: 8.5in;
     margin: 0 auto;
-    padding: 0.5in;
+    padding: 0.3in; /* Reduced from 0.5in */
     font-family: Arial, sans-serif;
-    font-size: 9pt;
-    line-height: 1.3;
+    font-size: 8pt; /* Reduced from 9pt */
+    line-height: 1.2; /* Reduced from 1.3 */
     box-sizing: border-box;
     overflow: visible;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px; /* Reduced from 0.5px */
   }
 
   .page-break {
