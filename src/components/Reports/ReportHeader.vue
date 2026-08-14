@@ -26,7 +26,8 @@
   .logo-container {
     position: absolute;
     width: 90px;
-    height: 160px;
+    margin-top: 50px;
+    height: 130px;
     margin-right: 10px;
     background-color: white;
   }
@@ -34,7 +35,7 @@
   .logo {
     padding-left: 5px;
     padding-right: 5px;
-    padding-top: 0.65in;
+    padding-top: 0.25in;
     width: 90px;
     height: auto;
   }

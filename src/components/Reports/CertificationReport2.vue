@@ -1,6 +1,7 @@
 <template>
   <div class="certification-report-wrapper">
-    <div class="certification-report-container">
+    <!-- Page 1 - Certification for Appointments and Availability of Funds -->
+    <div class="certification-report-container page">
       <div class="report-content">
         <ReportHeader />
 
@@ -28,13 +29,6 @@
           <div class="stamp" style="padding-top: 35px; padding-bottom: 40px">
             Date: {{ formatDateEnglish(data.EffectiveDate) }}
           </div>
-
-          <!-- <div class="left-signature-container">
-            <div class="stamp">
-              Date:
-              <span class="underlined">{{ formatDateEnglish(data.EffectiveDate) }}</span>
-            </div>
-          </div> -->
         </div>
 
         <div class="certification-title">
@@ -59,19 +53,13 @@
           <div class="stamp" style="padding-top: 35px; padding-bottom: 40px">
             Date: {{ formatDateEnglish(data.EffectiveDate) }}
           </div>
-
-          <!-- <div class="left-signature-container">
-            <div class="stamp">
-              Date:
-              <span class="underlined">{{ formatDateEnglish(data.EffectiveDate) }}</span>
-            </div>
-          </div> -->
         </div>
       </div>
       <ReportFooter :phone="footerPhone" :email="footerEmail" />
     </div>
 
-    <div class="certification-report-container">
+    <!-- Page 2 - Certification of Assumption to Duty -->
+    <div class="certification-report-container page">
       <div class="report-content">
         <ReportHeader />
         <div>
@@ -147,7 +135,8 @@
       </div>
     </div>
 
-    <div class="certification-report-container">
+    <!-- Page 3 - Oath of Office -->
+    <div class="certification-report-container page">
       <div class="report-content">
         <ReportHeader />
         <div class="oathcontainer">
@@ -243,6 +232,7 @@
 <script setup>
   import { computed } from 'vue';
   import ReportHeader from './ReportHeader.vue';
+  import ReportFooter from './ReportFooter.vue';
 
   const props = defineProps({
     data: {
@@ -281,7 +271,6 @@
 
   // Computed properties for dynamic signatory display
   const signatoryName = computed(() => {
-    // Check if 'NewOffice' contains "VICE MAYOR" or "SANGGUNIANG PANLUNGSOD" or "SANGUNIAN"
     if (
       props.data.NewOffice?.includes('VICE MAYOR') ||
       props.data.NewOffice?.includes('SANGGUNIANG PANLUNGSOD') ||
@@ -295,7 +284,6 @@
 
   // Computed property for signatory title
   const signatoryTitle = computed(() => {
-    // Check if 'NewOffice' contains "VICE MAYOR" or "SANGGUNIANG PANLUNGSOD" or "SANGUNIAN"
     if (
       props.data.NewOffice?.includes('VICE MAYOR') ||
       props.data.NewOffice?.includes('SANGGUNIANG PANLUNGSOD') ||
@@ -373,72 +361,72 @@
 
   // Make oathWords a computed property to use dynamic data
   const oathWords = computed(() => [
-    { fil: '<span style="color:white">*</span>Ako', eng: '<span style="color:white">*</span>I' },
-    { fil: '<span style="color:white">*</span>si', eng: '' },
+    { fil: 'Ako', eng: 'I' },
+    { fil: 'si', eng: '' },
     {
-      fil: `<span style="color:white">*</span><span style="font-weight:bold; text-decoration:underline;">${props.data.Name4 || 'Name of Appointee'}</span>`,
-      eng: '<span style="color:white">*</span>(Name <span style="color:white">*</span>of <span style="color:white">*</span>Appointee)',
+      fil: ` <span style="font-weight:bold; text-decoration:underline;">${props.data.Name4 || 'Name of Appointee'}</span>`,
+      eng: '(Name of Appointee)',
     },
-    { fil: '<span style="color:white">*</span>ng', eng: '<span style="color:white">*</span>' },
+    { fil: ' ng', eng: '' },
     {
-      fil: '<span style="color:white">*</span><span style="font-weight:bold; text-decoration:underline;">TAGUM CITY, DAVAO DEL NORTE</span>',
-      eng: '<span style="color:white">*</span>(Address)',
-    },
-    {
-      fil: '<span style="color:white">*</span>na <span style="color:white">*</span>itinalaga <span style="color:white">*</span>bilang',
-      eng: '<span style="color:white">*</span>having <span style="color:white">*</span>been <span style="color:white">*</span>appointed <span style="color:white">*</span>to',
+      fil: ' <span style="font-weight:bold; text-decoration:underline;">TAGUM CITY, DAVAO DEL NORTE</span> ',
+      eng: '(Address)',
     },
     {
-      fil: `<span style="color:white">*</span><span style="font-weight:bold; text-decoration:underline;">${props.data.NewDesignation || 'Position'}</span>`,
-      eng: '<span style="color:white">*</span>(Position)',
+      fil: 'na itinalaga bilang',
+      eng: 'having been appointed to ',
     },
     {
-      fil: '<span style="color:white">*</span>ay <span style="color:white">*</span>taimtim <span style="color:white">*</span>na <span style="color:white">*</span>nanunumpa <span style="color:white">*</span>na',
-      eng: '<span style="color:white">*</span>hereby <span style="color:white">*</span>solemnly <span style="color:white">*</span>swear,',
+      fil: ` <span style="font-weight:bold; text-decoration:underline;">${props.data.NewDesignation || 'Position'}</span> `,
+      eng: '(Position)',
     },
     {
-      fil: '<span style="color:white">*</span>sa <span style="color:white">*</span>abot <span style="color:white">*</span>ng <span style="color:white">*</span>aking <span style="color:white">*</span>kakayahan,',
-      eng: '<span style="color:white">*</span>to <span style="color:white">*</span>the <span style="color:white">*</span>best <span style="color:white">*</span>of <span style="color:white">*</span>my <span style="color:white">*</span>ability,',
+      fil: 'ay taimtim na nanunumpa na',
+      eng: 'hereby solemnly swear,',
     },
     {
-      fil: '<span style="color:white">*</span>ang <span style="color:white">*</span>mga <span style="color:white">*</span>katungkulang <span style="color:white">*</span>pinagtalagahan <span style="color:white">*</span>sa <span style="color:white">*</span>akin',
-      eng: '<span style="color:white">*</span>the <span style="color:white">*</span>duties <span style="color:white">*</span>of <span style="color:white">*</span>my <span style="color:white">*</span>present <span style="color:white">*</span>position',
+      fil: 'sa abot ng aking kakayahan,',
+      eng: 'to the best of my ability,',
     },
     {
-      fil: '<span style="color:white">*</span>at <span style="color:white">*</span>sa <span style="color:white">*</span>dapat <span style="color:white">*</span>gampanan <span style="color:white">*</span>sa <span style="color:white">*</span>iba <span style="color:white">*</span>pang <span style="color:white">*</span>pagkaraan <span style="color:white">*</span>nito\'y <span style="color:white">*</span>gagampanan <span style="color:white">*</span>ko',
-      eng: '<span style="color:white">*</span>and <span style="color:white">*</span>of <span style="color:white">*</span>all <span style="color:white">*</span>others <span style="color:white">*</span>that <span style="color:white">*</span>I <span style="color:white">*</span>may <span style="color:white">*</span>hereafter <span style="color:white">*</span>hold',
+      fil: 'ang mga katungkulang pinagtalagahan sa akin',
+      eng: 'the duties of my present position',
     },
     {
-      fil: '<span style="color:white">*</span>sa <span style="color:white">*</span>ilalim <span style="color:white">*</span>ng <span style="color:white">*</span>Republika <span style="color:white">*</span>ng <span style="color:white">*</span>Pilipinas;',
-      eng: '<span style="color:white">*</span>under <span style="color:white">*</span>the <span style="color:white">*</span>Republic <span style="color:white">*</span>of <span style="color:white">*</span>the <span style="color:white">*</span>Philippines;',
+      fil: "at sa dapat gampanan sa iba pang pagkaraan nito'y gagampanan ko",
+      eng: 'and of all others that I may hereafter hold',
     },
     {
-      fil: '<span style="color:white">*</span>na <span style="color:white">*</span>aking <span style="color:white">*</span>itataguyod <span style="color:white">*</span>at <span style="color:white">*</span>ipagtatangol <span style="color:white">*</span>ang <span style="color:white">*</span>Saligang <span style="color:white">*</span>Batas <span style="color:white">*</span>ng <span style="color:white">*</span>Pilipinas;',
-      eng: '<span style="color:white">*</span>to <span style="color:white">*</span>uphold <span style="color:white">*</span>and <span style="color:white">*</span>defend <span style="color:white">*</span>the <span style="color:white">*</span>Constitution,',
+      fil: 'sa ilalim ng Republika ng Pilipinas;',
+      eng: 'under the Republic of the Philippines;',
     },
     {
-      fil: '<span style="color:white">*</span>na <span style="color:white">*</span>tunay <span style="color:white">*</span>na <span style="color:white">*</span>mananalig <span style="color:white">*</span>at <span style="color:white">*</span>tatalima <span style="color:white">*</span>ako <span style="color:white">*</span>rito;',
-      eng: '<span style="color:white">*</span>that <span style="color:white">*</span>I <span style="color:white">*</span>will <span style="color:white">*</span>bear <span style="color:white">*</span>true <span style="color:white">*</span>faith <span style="color:white">*</span>and <span style="color:white">*</span>allegiance <span style="color:white">*</span>to <span style="color:white">*</span>the <span style="color:white">*</span>same;',
+      fil: 'na aking itataguyod at ipagtatangol ang Saligang Batas ng Pilipinas;',
+      eng: 'to uphold and defend the Constitution,',
     },
     {
-      fil: '<span style="color:white">*</span>na <span style="color:white">*</span>susundin <span style="color:white">*</span>ko <span style="color:white">*</span>ang <span style="color:white">*</span>mga <span style="color:white">*</span>batas <span style="color:white">*</span>at <span style="color:white">*</span>mga <span style="color:white">*</span>kautusang <span style="color:white">*</span>legal,',
-      eng: '<span style="color:white">*</span>that <span style="color:white">*</span>I <span style="color:white">*</span>will <span style="color:white">*</span>obey <span style="color:white">*</span>the <span style="color:white">*</span>laws, <span style="color:white">*</span>legal <span style="color:white">*</span>orders,',
+      fil: 'na tunay na mananalig at tatalima ako rito;',
+      eng: 'that I will bear true faith and allegiance to the same;',
     },
     {
-      fil: '<span style="color:white">*</span>at <span style="color:white">*</span>mga <span style="color:white">*</span>dekretong <span style="color:white">*</span>pinaiiral <span style="color:white">*</span>ng <span style="color:white">*</span>mga <span style="color:white">*</span>sadyang',
-      eng: '<span style="color:white">*</span>and <span style="color:white">*</span>decrees <span style="color:white">*</span>promulgated',
+      fil: 'na susundin ko ang mga batas at mga kautusang legal,',
+      eng: 'that I will obey the laws, legal orders,',
     },
     {
-      fil: '<span style="color:white">*</span>itinakdang <span style="color:white">*</span>maykapangyarihan <span style="color:white">*</span>ng <span style="color:white">*</span>Republika <span style="color:white">*</span>ng <span style="color:white">*</span>Pilipinas;',
-      eng: '<span style="color:white">*</span>by <span style="color:white">*</span>the <span style="color:white">*</span>duly <span style="color:white">*</span>constituted <span style="color:white">*</span>authorities <span style="color:white">*</span>of <span style="color:white">*</span>the <span style="color:white">*</span>Republic <span style="color:white">*</span>of <span style="color:white">*</span>the <span style="color:white">*</span>Philippines;',
+      fil: 'at mga dekretong pinaiiral ng mga sadyang',
+      eng: 'and decrees promulgated',
     },
     {
-      fil: '<span style="color:white">*</span>at <span style="color:white">*</span>kusa <span style="color:white">*</span>kong <span style="color:white">*</span>babalikatin <span style="color:white">*</span>ang <span style="color:white">*</span>pananagutang <span style="color:white">*</span>ito',
-      eng: '<span style="color:white">*</span>and <span style="color:white">*</span>that <span style="color:white">*</span>I <span style="color:white">*</span>impose <span style="color:white">*</span>this <span style="color:white">*</span>obligation <span style="color:white">*</span>upon <span style="color:white">*</span>myself <span style="color:white">*</span>voluntarily,',
+      fil: 'itinakdang maykapangyarihan ng Republika ng Pilipinas;',
+      eng: 'by the duly constituted authorities of the Republic of the Philippines;',
     },
     {
-      fil: '<span style="color:white">*</span>ng <span style="color:white">*</span>walang <span style="color:white">*</span>ano <span style="color:white">*</span>mang <span style="color:white">*</span>pasubali <span style="color:white">*</span>o <span style="color:white">*</span>hangaring <span style="color:white">*</span>umiwas.',
-      eng: '<span style="color:white">*</span>without <span style="color:white">*</span>mental <span style="color:white">*</span>reservation <span style="color:white">*</span>or <span style="color:white">*</span>purpose <span style="color:white">*</span>of <span style="color:white">*</span>evasion.',
+      fil: 'at kusa kong babalikatin ang pananagutang ito',
+      eng: 'and that I impose this obligation upon myself voluntarily,',
+    },
+    {
+      fil: 'ng walang ano mang pasubali o hangaring umiwas.',
+      eng: 'without mental reservation or purpose of evasion.',
     },
     { fil: '', eng: '' },
     { fil: '', eng: '' },
@@ -446,6 +434,15 @@
 </script>
 
 <style scoped>
+  .certification-report-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px 0;
+    gap: 20px;
+  }
+
   .certification-report-container {
     width: 8.5in;
     min-height: 13in;
@@ -459,6 +456,13 @@
     letter-spacing: 0.5px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  .certification-report-container:last-child {
+    page-break-after: auto;
   }
 
   h1 {
@@ -536,6 +540,7 @@
     letter-spacing: 1;
     text-align: center;
     ruby-align: center;
+    word-break: normal;
   }
   .word-only {
     display: inline;
@@ -547,6 +552,7 @@
     font-size: 10px;
     font-style: italic;
     color: #7f8c8d;
+    word-break: normal;
   }
   ruby {
     ruby-position: under;
@@ -583,6 +589,7 @@
     height: 6px;
     border-top: 1px solid black;
     border-bottom: 1px solid black;
+    margin: 20px 0;
   }
   .signature-section {
     width: 4in;
@@ -615,9 +622,20 @@
   }
 
   @media print {
-    @page {
-      size: long;
-      margin: 0;
+    .certification-report-wrapper {
+      padding: 0;
+      gap: 0;
+    }
+
+    .certification-report-container {
+      box-shadow: none;
+      page-break-after: always;
+      page-break-inside: avoid;
+      height: 13in;
+    }
+
+    .certification-report-container:last-child {
+      page-break-after: auto;
     }
   }
 </style>

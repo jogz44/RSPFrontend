@@ -411,13 +411,44 @@ export const usePlantillaStore = defineStore('plantilla', {
             (item) => item && item.ControlNo === ControlNo,
           );
 
-          // Find the office head with proper null checking
+          // ✅ FIXED: Find the office head with proper null checking
+          // Use the Office from the main appointment or from temp_reg_appointments
+          const employeeOffice =
+            mainAppointment?.Office || mainAppointment?.temp_reg_appointments?.[0]?.Office || '';
+
+          // Find office head by matching office and designation
           const officeHead = response.data.find(
             (item) =>
               item &&
-              item.position === 'CITY GOVERNMENT DEPARTMENT HEAD I' &&
-              item.office === mainAppointment?.Office,
+              item.office === employeeOffice &&
+              item.position &&
+              item.position.includes('CITY GOVERNMENT DEPARTMENT HEAD I'),
           );
+
+          // If not found with includes, try exact match
+          let officeHeadFinal = officeHead;
+          if (!officeHeadFinal) {
+            officeHeadFinal = response.data.find(
+              (item) =>
+                item &&
+                item.office === employeeOffice &&
+                item.position === 'CITY GOVERNMENT DEPARTMENT HEAD I',
+            );
+          }
+
+          // If still not found, try to find any office head in the same office
+          if (!officeHeadFinal) {
+            officeHeadFinal = response.data.find(
+              (item) =>
+                item &&
+                item.office === employeeOffice &&
+                item.position &&
+                item.position.startsWith('CITY GOVERNMENT DEPARTMENT HEAD'),
+            );
+          }
+
+          console.log('Employee Office:', employeeOffice);
+          console.log('Office Head found:', officeHeadFinal);
 
           // Access the first element of each array with null checking
           const plantillaInfo = mainAppointment?.active?.[0] || {};
@@ -429,6 +460,8 @@ export const usePlantillaStore = defineStore('plantilla', {
 
           // Ensure all values exist before accessing
           const transformedData = {
+            ControlNo: mainAppointment?.ControlNo || '',
+
             // Basic Info
             SalaryAnnual: mainAppointment?.RateYear || '',
             TINNo: x_personal.TINNo || '',
@@ -543,10 +576,10 @@ export const usePlantillaStore = defineStore('plantilla', {
             group: tempRegInfo.group || '',
             unitcode: tempRegInfo.unitcode || '',
 
-            // Office Head Information - with null checking
-            officeHeadName: officeHead?.Name4 || '',
-            officeHeadPosition: officeHead?.position || '',
-            officeHeadOffice: officeHead?.office || '',
+            // ✅ FIXED: Office Head Information
+            officeHeadName: officeHeadFinal?.Name4 || '',
+            officeHeadPosition: officeHeadFinal?.position || '',
+            officeHeadOffice: officeHeadFinal?.office || '',
 
             // Default/Configurable Values
             vicemayor: 'ATTY. EVA LORRAINE E. ESTABILLO',
@@ -571,6 +604,106 @@ export const usePlantillaStore = defineStore('plantilla', {
       } finally {
         this.loading = false;
       }
+    },
+
+    // async generateAppointmentReport(ControlNo) {
+    //   this.loading = true;
+
+    //   try {
+    //     const response = await adminApi.get(`/report/appointment/${ControlNo}`, {
+    //       responseType: 'blob',
+    //     });
+
+    //     // Create download
+    //     const url = window.URL.createObjectURL(
+    //       new Blob([response.data], { type: 'application/pdf' }),
+    //     );
+    //     const link = document.createElement('a');
+    //     link.href = url;
+    //     link.download = `appointment_report_${ControlNo}.pdf`;
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     link.remove();
+    //     window.URL.revokeObjectURL(url);
+
+    //     toast.success('Report downloaded successfully!');
+    //     return true;
+    //   } catch (error) {
+    //     console.error('Report generation error:', error);
+    //     toast.error('Failed to generate report. Please try again.');
+    //     this.error = error;
+    //     throw error;
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
+
+    // Add to your plantillaStore.js actions
+
+    async generateAppointmentReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(`/report/appointment/${ControlNo}`, {
+          responseType: 'blob',
+        });
+        this.downloadReport(response.data, `appointment_report_${ControlNo}.pdf`);
+        toast.success('Appointment Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Appointment report error:', error);
+        toast.error('Failed to generate appointment report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async generateCertificationReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(`/generate-certification-report/${ControlNo}`, {
+          responseType: 'blob',
+        });
+        this.downloadReport(response.data, `certification_report_${ControlNo}.pdf`);
+        toast.success('Certification Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Certification report error:', error);
+        toast.error('Failed to generate certification report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async generatePositionDescriptionReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(`/generate-position-description-report/${ControlNo}`, {
+          responseType: 'blob',
+        });
+        this.downloadReport(response.data, `position_description_report_${ControlNo}.pdf`);
+        toast.success('Position Description Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Position description report error:', error);
+        toast.error('Failed to generate position description report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Helper method for downloading
+    downloadReport(blobData, filename) {
+      const url = window.URL.createObjectURL(new Blob([blobData], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
     },
   },
 });

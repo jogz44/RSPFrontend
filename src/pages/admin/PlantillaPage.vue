@@ -276,7 +276,7 @@
                       </q-btn>
 
                       <!-- Print Reports button - only if user has report permission -->
-                      <q-btn
+                      <!-- <q-btn
                         v-if="props.row.Name1 && canReportPlantilla"
                         flat
                         dense
@@ -287,6 +287,19 @@
                         @click="printPosition(props.row)"
                       >
                         <q-tooltip>Print Reports</q-tooltip>
+                      </q-btn> -->
+
+                      <q-btn
+                        v-if="props.row.Name1 && canReportPlantilla"
+                        flat
+                        dense
+                        round
+                        color="teal"
+                        class="bg-teal-1"
+                        icon="assignment"
+                        @click="openAppointmentReport(props.row)"
+                      >
+                        <q-tooltip>View Appointment Report (PDF)</q-tooltip>
                       </q-btn>
                     </q-td>
                   </template>
@@ -648,6 +661,15 @@
     <q-dialog v-model="showPDSModal" backdrop-opacity="0.7">
       <PDSModal v-model="showPDSModal" :applicant="selectedApplicant" @close="closePDSModal" />
     </q-dialog>
+
+    <!-- Appointment Report Modal (pdfMake version) -->
+    <q-dialog v-model="showAppointmentReportModal" persistent>
+      <AppointmentReport2
+        v-model="showAppointmentReportModal"
+        :data="appointmentReportData"
+        @close="showAppointmentReportModal = false"
+      />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -660,6 +682,7 @@
   import PDSModal from 'components/PDSModal.vue';
   import Reports from 'src/components/Reports/TabModal.vue';
   import EditReports from 'src/components/Reports/EditTabModal.vue';
+  import AppointmentReport2 from 'src/components/Reports/AppointmentReport2.vue';
   import AddEmployeeModal from 'components/AddEmployee.vue';
   import { useAuthStore } from 'stores/authStore';
   import { useJobPostStore } from 'stores/jobPostStore';
@@ -686,6 +709,8 @@
 
   const showReportModal = ref(false);
   const editReportModal = ref(false);
+  const showAppointmentReportModal = ref(false);
+  const appointmentReportData = ref(null);
   const isSubmitting = ref(false);
   const reportRow = ref(null);
   const showFundedConfirmModal = ref(false);
@@ -995,16 +1020,16 @@
     tableKey.value++;
   };
 
-  const printPosition = async (row) => {
+  const openAppointmentReport = async (row) => {
     try {
       const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
 
       if (appointmentData) {
-        reportRow.value = {
-          ...row,
-          appointmentData: appointmentData,
-        };
-        showReportModal.value = true;
+        // Use the appointmentData directly - it already has all the fields
+        // that AppointmentReport2 expects (Sex, Firstname, Surname, NewDesignation, etc.)
+        appointmentReportData.value = appointmentData;
+
+        showAppointmentReportModal.value = true;
       } else {
         toast.error('No appointment data found for this employee');
       }
@@ -1013,6 +1038,25 @@
       toast.error('Failed to fetch appointment data');
     }
   };
+
+  // const printPosition = async (row) => {
+  //   try {
+  //     const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
+
+  //     if (appointmentData) {
+  //       reportRow.value = {
+  //         ...row,
+  //         appointmentData: appointmentData,
+  //       };
+  //       showReportModal.value = true;
+  //     } else {
+  //       toast.error('No appointment data found for this employee');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching appointment data:', error);
+  //     toast.error('Failed to fetch appointment data');
+  //   }
+  // };
 
   const editPosition = async (row) => {
     try {

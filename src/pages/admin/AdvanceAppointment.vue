@@ -87,7 +87,7 @@
                       </q-btn>
 
                       <!-- Print Reports button - only if user has report permission -->
-                      <q-btn
+                      <!-- <q-btn
                         v-if="canReportAdvanceAppointment"
                         flat
                         dense
@@ -98,6 +98,21 @@
                         @click="printAdvanceAppointment(props.row)"
                       >
                         <q-tooltip>Print Reports</q-tooltip>
+                      </q-btn> -->
+
+                      <!-- View Appointment Report (PDF) button - only if user has report permission -->
+                      <q-btn
+                        v-if="canReportAdvanceAppointment"
+                        flat
+                        dense
+                        round
+                        color="teal"
+                        class="bg-teal-1"
+                        icon="assignment"
+                        :loading="appointmentReportLoadingRow === props.row.ControlNo"
+                        @click="openAppointmentReport(props.row)"
+                      >
+                        <q-tooltip>View Appointment Report (PDF)</q-tooltip>
                       </q-btn>
                     </q-td>
                   </template>
@@ -175,6 +190,15 @@
         @close="editReportModal = false"
       />
     </q-dialog>
+
+    <!-- Appointment Report Modal (pdfMake version) -->
+    <q-dialog v-model="showAppointmentReportModal" persistent>
+      <AppointmentReport2
+        v-model="showAppointmentReportModal"
+        :data="appointmentReportData"
+        @close="showAppointmentReportModal = false"
+      />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -182,6 +206,7 @@
   import { ref, computed, onMounted } from 'vue';
   import Reports from 'src/components/Reports/TabModal.vue';
   import EditReports from 'src/components/Reports/EditTabModal.vue';
+  import AppointmentReport2 from 'src/components/Reports/AppointmentReport2.vue';
   import { useAuthStore } from 'stores/authStore';
   import { usePlantillaStore } from 'stores/plantillaStore';
   import { useAdvanceAppointmentStore } from 'stores/advanceAppointmentStore';
@@ -204,6 +229,11 @@
   const showReportModal = ref(false);
   const editReportModal = ref(false);
   const reportRow = ref(null);
+
+  // Appointment Report (assignment icon / pdfmake) state
+  const showAppointmentReportModal = ref(false);
+  const appointmentReportData = ref(null);
+  const appointmentReportLoadingRow = ref(null);
 
   const advanceAppointmentPagination = ref({
     page: 1,
@@ -319,22 +349,45 @@
     }
   };
 
-  const printAdvanceAppointment = async (row) => {
+  // const printAdvanceAppointment = async (row) => {
+  //   try {
+  //     const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
+
+  //     if (appointmentData) {
+  //       reportRow.value = {
+  //         ...row,
+  //         appointmentData: appointmentData,
+  //       };
+  //       showReportModal.value = true;
+  //     } else {
+  //       toast.error('No appointment data found for this employee');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching appointment data:', error);
+  //     toast.error('Failed to fetch appointment data');
+  //   }
+  // };
+
+  // Opens the pdfmake-based Appointment Report modal (AppointmentReport2)
+  // Mirrors the "assignment" icon button behaviour used on the Plantilla page.
+  const openAppointmentReport = async (row) => {
+    appointmentReportLoadingRow.value = row.ControlNo;
     try {
       const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
 
       if (appointmentData) {
-        reportRow.value = {
-          ...row,
-          appointmentData: appointmentData,
-        };
-        showReportModal.value = true;
+        // appointmentData already has all the fields AppointmentReport2 expects
+        // (Sex, Firstname, Surname, NewDesignation, etc.)
+        appointmentReportData.value = appointmentData;
+        showAppointmentReportModal.value = true;
       } else {
         toast.error('No appointment data found for this employee');
       }
     } catch (error) {
       console.error('Error fetching appointment data:', error);
       toast.error('Failed to fetch appointment data');
+    } finally {
+      appointmentReportLoadingRow.value = null;
     }
   };
 

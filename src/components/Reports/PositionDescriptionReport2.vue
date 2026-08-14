@@ -1,0 +1,937 @@
+<template>
+  <div class="position-description-wrapper">
+    <!-- Page 1 -->
+    <div class="position-description-container page">
+      <table class="main-table">
+        <tbody>
+          <!-- Header and Position Title Row -->
+          <tr>
+            <td colspan="3" rowspan="2" class="header-cell">
+              <div class="header">
+                <div class="logo-container">
+                  <img src="/rsp/image.png" alt="Philippine Seal" class="logo" />
+                </div>
+                <div class="header-text">
+                  <div>Republic of the Philippines</div>
+                  <div>POSITION DESCRIPTION FORM</div>
+                  <div>DBM-CSC Form No. 1</div>
+                  <div>(Revised Version No. 1, s. 2017)</div>
+                </div>
+                <div class="logo-container right-logo">
+                  <img src="/rsp/logo.png" alt="City of Tagum Logo" class="logo" />
+                </div>
+              </div>
+            </td>
+            <td colspan="3" class="section-header">
+              1. POSITION TITLE (as approved by authorized agency) with parenthetical title
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.NewDesignation }}</td>
+          </tr>
+
+          <!-- Item Number and Salary Grade -->
+          <tr>
+            <td colspan="3" class="section-header">2. ITEM NUMBER</td>
+            <td colspan="3" class="section-header">3. SALARY GRADE</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.ItemNo }}</td>
+            <td colspan="3" class="data-cell">{{ data.SG }}</td>
+          </tr>
+
+          <!-- Local Government Classification -->
+          <tr>
+            <td colspan="6" class="section-header">
+              4. FOR LOCAL GOVERNMENT POSITION, ENUMERATE GOVERNMENTAL UNIT AND CLASS
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell">
+              <div class="checkbox-group-container">
+                <!-- First Group: Province, City, Municipality -->
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`province-${componentId}`"
+                      :name="`government-unit-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`province-${componentId}`">Province</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`city-${componentId}`"
+                      :name="`government-unit-${componentId}`"
+                      class="custom-checkbox"
+                      checked
+                    />
+                    <label :for="`city-${componentId}`">City</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`municipality-${componentId}`"
+                      :name="`government-unit-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`municipality-${componentId}`">Municipality</label>
+                  </div>
+                </div>
+
+                <!-- Second Group: 1st Class, 2nd Class, 3rd Class, 4th Class -->
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`1st-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                      checked
+                    />
+                    <label :for="`1st-class-${componentId}`">1st Class</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`2nd-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`2nd-class-${componentId}`">2nd Class</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`3rd-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`3rd-class-${componentId}`">3rd Class</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`4th-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`4th-class-${componentId}`">4th Class</label>
+                  </div>
+                </div>
+
+                <!-- Third Group: 5th Class, 6th Class, Special -->
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`5th-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`5th-class-${componentId}`">5th Class</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`6th-class-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`6th-class-${componentId}`">6th Class</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input
+                      type="checkbox"
+                      :id="`special-${componentId}`"
+                      :name="`government-class-${componentId}`"
+                      class="custom-checkbox"
+                    />
+                    <label :for="`special-${componentId}`">Special</label>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Agency and Office -->
+          <tr>
+            <td colspan="3" class="section-header">5. AGENCY</td>
+            <td colspan="3" class="section-header">6. OFFICE</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">LOCAL GOVERNMENT UNIT OF TAGUM CITY</td>
+            <td colspan="3" class="data-cell">{{ data.NewOffice || data.NewOFfice }}</td>
+          </tr>
+
+          <!-- Division and Workstation -->
+          <tr>
+            <td colspan="3" class="section-header">7. DIVISION</td>
+            <td colspan="3" class="section-header">8. WORKSTATION / PLACE OF WORK</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.Division }}</td>
+            <td colspan="3" class="data-cell">
+              CITY HALL GOVERNMENT CENTER, JV AYALA AVENUE, APOKON, TAGUM CITY
+            </td>
+          </tr>
+
+          <!-- Appropriation Act and Salary -->
+          <tr>
+            <td colspan="3" class="section-header">9. PRESENT APPROP ACT</td>
+            <td colspan="3" class="section-header">10. PREVIOUS APPROP ACT</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.PresAppro }}</td>
+            <td colspan="3" class="data-cell">{{ data.PrevAppro }}</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="section-header">11. SALARY AUTHORIZED</td>
+            <td colspan="3" class="section-header">12. OTHER COMPENSATION</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.SalAuthorized }}</td>
+            <td colspan="3" class="data-cell">{{ data.OtherComp }}</td>
+          </tr>
+
+          <!-- Supervision -->
+          <tr>
+            <td colspan="3" class="section-header">13. POSITION TITLE OF IMMEDIATE SUPERVISOR</td>
+            <td colspan="3" class="section-header">14. POSITION TITLE OF NEXT HIGHER SUPERVISOR</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell">{{ data.SupPosition }}</td>
+            <td colspan="3" class="data-cell">{{ data.HSupPosition }}</td>
+          </tr>
+
+          <!-- Directly Supervised -->
+          <tr>
+            <td colspan="6" class="section-header">
+              15. POSITION TITLE, AND ITEM OF THOSE DIRECTLY SUPERVISED
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell small-text supervised-note">
+              (If more than seven (7) list only by their item numbers and titles)
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" class="sub-header">POSITION TITLE</td>
+            <td colspan="3" class="sub-header">ITEM NUMBER</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="data-cell empty-cell large-empty-cell"></td>
+            <td colspan="3" class="data-cell empty-cell large-empty-cell"></td>
+          </tr>
+
+          <!-- Equipment Used -->
+          <tr>
+            <td colspan="6" class="section-header">
+              16. MACHINE, EQUIPMENT, TOOLS, ETC., USED REGULARLY IN PERFORMANCE OF WORK
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell">
+              {{ data.Tool }}
+            </td>
+          </tr>
+
+          <!-- Contacts/Clients -->
+          <tr>
+            <td colspan="6" class="section-header">17. CONTACTS / CLIENTS / STAKEHOLDERS</td>
+          </tr>
+          <tr>
+            <td class="contact-option">17a. Internal</td>
+            <td class="contact-option">Occasional</td>
+            <td class="contact-option">Frequent</td>
+            <td class="contact-option">17b. External</td>
+            <td class="contact-option">Occasional</td>
+            <td class="contact-option">Frequent</td>
+          </tr>
+          <tr>
+            <td>Executive / Managerial</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb1-${componentId}`"
+                  :name="`contact1-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact1 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb2-${componentId}`"
+                  :name="`contact1-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact1 === '2'"
+                />
+              </div>
+            </td>
+            <td>General Public</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb3-${componentId}`"
+                  :name="`contact5-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact5 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb4-${componentId}`"
+                  :name="`contact5-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact5 === '2'"
+                />
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Supervisors</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb5-${componentId}`"
+                  :name="`contact2-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact2 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb6-${componentId}`"
+                  :name="`contact2-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact2 === '2'"
+                />
+              </div>
+            </td>
+            <td>Other Agencies</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb7-${componentId}`"
+                  :name="`contact6-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact6 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb8-${componentId}`"
+                  :name="`contact6-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact6 === '2'"
+                />
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Non-Supervisors</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb9-${componentId}`"
+                  :name="`contact3-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact3 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb10-${componentId}`"
+                  :name="`contact3-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact3 === '2'"
+                />
+              </div>
+            </td>
+            <td>Others (please Specify):</td>
+            <td colspan="2" class="data-cell">
+              {{ data.ContactOthers }}
+            </td>
+          </tr>
+          <tr>
+            <td>Staff</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb13-${componentId}`"
+                  :name="`contact4-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact4 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb14-${componentId}`"
+                  :name="`contact4-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Contact4 === '2'"
+                />
+              </div>
+            </td>
+            <td colspan="3"></td>
+          </tr>
+
+          <!-- Working Condition Section -->
+          <tr>
+            <td colspan="6" class="section-header">18. WORKING CONDITION</td>
+          </tr>
+          <tr>
+            <td>Office Work</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb15-${componentId}`"
+                  :name="`working1-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Working1 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb16-${componentId}`"
+                  :name="`working1-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Working1 === '2'"
+                />
+              </div>
+            </td>
+            <td>Others (please Specify)</td>
+            <td colspan="2">{{ data.WorkingOthers }}</td>
+          </tr>
+          <tr>
+            <td>Field Work</td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb17-${componentId}`"
+                  :name="`working2-occasional-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Working2 === '1'"
+                />
+              </div>
+            </td>
+            <td class="checkbox-cell">
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  :id="`cb18-${componentId}`"
+                  :name="`working2-frequent-${componentId}`"
+                  class="custom-checkbox"
+                  :checked="data.Working2 === '2'"
+                />
+              </div>
+            </td>
+            <td colspan="3"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Page 2 -->
+    <div class="position-description-container page">
+      <table class="main-table">
+        <tbody>
+          <!-- Brief Description -->
+          <tr>
+            <td colspan="6" class="section-header">
+              19. BRIEF DESCRIPTION OF THE GENERAL FUNCTION OF THE UNIT OR SECTION
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell description-cell">
+              {{
+                data.DescriptionSection ||
+                'Review, evaluation, program customization, development and monitoring of existing and upcoming information technology systems assigned to local government offices, barangay offices and other government offices within the jurisdiction of this city with proper gathering, categorization, assimilation, storage and responsible communication and dissemination of information. Also, oversee the Internal Audit Division and City Information Division operations.'
+              }}
+            </td>
+          </tr>
+          <!-- Job Summary -->
+          <tr>
+            <td colspan="6" class="section-header">
+              20. BRIEF DESCRIPTION OF THE GENERAL FUNCTION OF THE POSITION (Job Summary)
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell description-cell large-cell formatted-content">
+              <div v-html="formattedDescriptionFunction"></div>
+            </td>
+          </tr>
+
+          <!-- Qualification Standards -->
+          <tr>
+            <td colspan="6" class="section-header">21. QUALIFICATION STANDARDS</td>
+          </tr>
+
+          <!-- Create a separate full-width table for qualification standards -->
+          <tr>
+            <td colspan="6" class="no-padding">
+              <table class="qualifications-table">
+                <tbody>
+                  <tr>
+                    <td class="section-header">21A. EDUCATION</td>
+                    <td class="section-header">21B. EXPERIENCE</td>
+                    <td class="section-header">21C. TRAINING</td>
+                    <td class="section-header">21D. ELIGIBILITY</td>
+                  </tr>
+                  <tr>
+                    <td class="data-cell large-empty-cell">{{ data.StandardEduc }}</td>
+                    <td class="data-cell large-empty-cell">{{ data.StandardExp }}</td>
+                    <td class="data-cell large-empty-cell">{{ data.StandardTrain }}</td>
+                    <td class="data-cell large-empty-cell">{{ data.StandardElig }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Core Competencies -->
+          <tr>
+            <td colspan="5" class="section-header">21e. Core Competencies</td>
+            <td colspan="1" class="section-header">Competency Level</td>
+          </tr>
+          <tr>
+            <td colspan="5" class="data-cell">{{ data.Core1 }}</td>
+            <td colspan="1" class="data-cell">{{ data.Corelevel1 }}</td>
+          </tr>
+
+          <!-- Leadership Competencies -->
+          <tr>
+            <td colspan="5" class="section-header">21f. Leadership Competencies</td>
+            <td colspan="1" class="section-header">Competency Level</td>
+          </tr>
+          <tr>
+            <td colspan="5" class="data-cell">{{ data.Leader1 }}</td>
+            <td colspan="1" class="data-cell">{{ data.leaderlevel1 }}</td>
+          </tr>
+
+          <!-- Statement of Duties and Responsibilities -->
+          <tr>
+            <td colspan="5" class="section-header">
+              22. STATEMENT OF DUTIES AND RESPONSIBILITIES (Technical Competencies)
+            </td>
+            <td colspan="1" class="section-header">Competency Level</td>
+          </tr>
+          <tr>
+            <td colspan="2" class="data-cell">Percentage of Working Time</td>
+            <td colspan="3" class="data-cell">(State the duties and responsibilities here.)</td>
+            <td colspan="1" rowspan="2" class="data-cell"></td>
+          </tr>
+          <tr>
+            <td colspan="2" class="data-cell"></td>
+            <td colspan="3" class="data-cell"></td>
+          </tr>
+
+          <!-- Acknowledgement and Acceptance -->
+          <tr>
+            <td colspan="6" class="section-header">23. ACKNOWLEDGEMENT AND ACCEPTANCE:</td>
+          </tr>
+          <tr>
+            <td colspan="6" class="data-cell acceptance-text">
+              I have received a copy of this position description. It has been discussed with me and
+              I have freely chosen to comply with the performance and behavior/conduct expectations
+              contained herein.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" class="signature-cell">
+              <div class="signature-line">
+                <div class="signature">
+                  {{ data.Name4 || 'JOGRAD M. MAHUSAY' }}
+                </div>
+                <div class="signature-label">Employee's Name, Date and Signature</div>
+              </div>
+            </td>
+            <td colspan="3" class="signature-cell">
+              <div class="signature-line">
+                <div class="signature">
+                  {{ data.Supervisor }} &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+                </div>
+                <div class="signature-label">Supervisor's Name, Date and Signature</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script setup>
+  import { computed } from 'vue';
+
+  const props = defineProps({
+    data: {
+      type: Object,
+      default: () => ({}),
+    },
+  });
+
+  // Generate a unique component ID to avoid duplicate IDs
+  const componentId = computed(() => {
+    return `comp-${Math.random().toString(36).substr(2, 9)}`;
+  });
+
+  // Format the description function to handle numbered lists
+  const formattedDescriptionFunction = computed(() => {
+    if (!props.data.DescriptionFunction) return '';
+
+    let text = props.data.DescriptionFunction;
+
+    // Pattern 1: Match numbered items like "1.", "2.", "3." etc.
+    // Replace with line break before the number
+    text = text.replace(/(\d+\.)\s*/g, '<br/>$1 ');
+
+    // Pattern 2: Match numbered items with closing parenthesis like "1)", "2)", "3)" etc.
+    text = text.replace(/(\d+\))\s*/g, '<br/>$1 ');
+
+    // Pattern 4: Match lettered items with closing parenthesis like "a)", "b)", "c)" etc.
+    text = text.replace(/([a-z]\))\s*/g, '<br/>$1 ');
+
+    // Pattern 5: Match roman numerals like "i.", "ii.", "iii." etc.
+    text = text.replace(/((?:i|ii|iii|iv|v|vi|vii|viii|ix|x)\.)\s*/gi, '<br/>$1 ');
+
+    // Remove the first <br/> if text starts with it
+    text = text.replace(/^<br\/>/, '');
+
+    // Replace multiple consecutive <br/> with just one
+    text = text.replace(/(<br\/>){2,}/g, '<br/>');
+
+    return text;
+  });
+</script>
+
+<style scoped>
+  .position-description-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px 0;
+    gap: 20px;
+  }
+
+  .position-description-container {
+    width: 8.5in;
+    min-height: 13in;
+    height: 13in;
+    margin: 0 auto;
+    padding: 0.5in;
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    line-height: 1.2;
+    box-sizing: border-box;
+    overflow: visible;
+    letter-spacing: 0.3px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  .position-description-container:last-child {
+    page-break-after: auto;
+  }
+
+  .main-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #000;
+    table-layout: fixed;
+    height: 100%;
+  }
+
+  .main-table td,
+  .main-table th {
+    border: 1px solid #000;
+    padding: 4px;
+  }
+
+  /* Qualification standards table */
+  .qualifications-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .qualifications-table td {
+    width: 25%;
+    border: 1px solid #000;
+    padding: 4px;
+  }
+
+  .header-cell {
+    padding: 0;
+    border-bottom: 2px solid #000;
+    width: 50%;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    height: 100%;
+  }
+
+  .logo-container {
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    width: 50px;
+    height: auto;
+  }
+
+  .header-text {
+    flex-grow: 1;
+    font-size: 8pt;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .form-title {
+    font-size: 14pt;
+    margin: 5px 0;
+    font-weight: bold;
+  }
+
+  .right-logo {
+    text-align: right;
+  }
+
+  .section-header {
+    background-color: #ccc;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 7pt;
+    padding: 3px 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .sub-header {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    text-align: center;
+    font-size: 7pt;
+  }
+
+  .data-cell {
+    vertical-align: top;
+    padding: 4px;
+    font-weight: normal;
+  }
+
+  .empty-cell {
+    height: 30px;
+  }
+
+  .large-empty-cell {
+    min-height: 80px;
+    height: 80px;
+  }
+
+  .large-cell {
+    min-height: 200px;
+    height: 200px;
+  }
+
+  /* Formatted content for numbered lists */
+  .formatted-content {
+    text-align: justify;
+    line-height: 1.4;
+  }
+
+  .formatted-content br {
+    display: block;
+    content: '';
+    margin: 0.3em 0;
+  }
+
+  .supervised-note {
+    height: auto;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .checkbox-group-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    padding: 3px 0;
+  }
+
+  .checkbox-item {
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    font-size: 8pt;
+  }
+
+  .checkbox-item input[type='checkbox'] {
+    margin-right: 8px;
+  }
+
+  .checkbox-item label {
+    letter-spacing: 0.5px;
+    font-weight: normal;
+  }
+
+  .checkbox-cell {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .checkbox-wrapper {
+    display: inline-block;
+    position: relative;
+    width: 12px;
+    height: 12px;
+  }
+
+  .custom-checkbox {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #000;
+    border-radius: 0;
+    background-color: #fff;
+    margin: 0;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+  }
+
+  input[type='checkbox'].custom-checkbox:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M 3 7 L 6 10 L 11 4' stroke='black' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 10px;
+  }
+
+  .small-text {
+    font-style: italic;
+    font-size: 7pt;
+    font-weight: normal;
+    text-align: center;
+  }
+
+  .contact-option {
+    background-color: #ccc;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 7pt;
+    padding: 3px 4px;
+  }
+
+  .no-padding {
+    padding: 0;
+  }
+
+  .description-cell {
+    text-align: justify;
+    min-height: 80px;
+    font-weight: normal;
+    line-height: 1.3;
+    letter-spacing: 0.5px;
+  }
+
+  .acceptance-text {
+    text-align: justify;
+    padding: 8px;
+    line-height: 1.3;
+  }
+
+  .signature-cell {
+    height: 60px;
+    vertical-align: bottom;
+    padding-bottom: 5px;
+  }
+
+  .signature-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .signature {
+    border-bottom: 1px solid #000;
+    width: 100%;
+    text-align: center;
+    padding-bottom: 3px;
+    margin-bottom: 3px;
+    font-weight: normal;
+    font-size: 7pt;
+  }
+
+  .signature-label {
+    font-size: 7pt;
+    font-weight: bold;
+    text-align: center;
+    font-weight: normal;
+  }
+
+  @media print {
+    .position-description-wrapper {
+      padding: 0;
+      gap: 0;
+    }
+
+    .position-description-container {
+      box-shadow: none;
+      padding: 0;
+      page-break-after: always;
+      page-break-inside: avoid;
+      height: 13in;
+    }
+
+    .position-description-container:last-child {
+      page-break-after: auto;
+    }
+  }
+</style>
