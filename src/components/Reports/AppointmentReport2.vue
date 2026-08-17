@@ -122,9 +122,9 @@
                     <strong class="underline">
                       {{ formatSalaryWords(data.MRate) || '(Salary in Words)' }}
                     </strong>
-                    <span>(</span>
+                    <span>&nbsp;(P&nbsp;</span>
                     <strong class="underline">
-                      {{ formatSalaryAmount(data.MRate) || '(Amount)' }}
+                      {{ data.MRate }}
                     </strong>
                     <span>)</span>
                     pesos per month.
@@ -808,14 +808,14 @@
     return result;
   };
 
-  const formatSalaryAmount = (amount) => {
-    return amount
-      ? new Intl.NumberFormat('en-PH', {
-          style: 'currency',
-          currency: 'PHP',
-        }).format(amount)
-      : '';
-  };
+  // const formatSalaryAmount = (amount) => {
+  //   return amount
+  //     ? new Intl.NumberFormat('en-PH', {
+  //         style: 'currency',
+  //         currency: 'PHP',
+  //       }).format(amount)
+  //     : '';
+  // };
 </script>
 
 <style scoped>

@@ -49,6 +49,34 @@
         @generate="handleGenerate"
       />
 
+      <!-- Date Filter -->
+      <q-input
+        class="q-mb-md q-mx-auto"
+        outlined
+        dense
+        color="green-9"
+        v-model="selectedDate"
+        label="Filter by Date (Optional)"
+        mask="date"
+        clearable
+        style="max-width: 500px"
+      >
+        <template v-slot:prepend>
+          <q-icon name="event" />
+        </template>
+        <template v-slot:append>
+          <q-icon name="event" class="cursor-pointer">
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="selectedDate">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-icon>
+        </template>
+      </q-input>
+
       <!-- Office Select -->
       <q-select
         class="q-mb-lg q-mx-auto"
@@ -519,6 +547,7 @@
   };
 
   const selectedValue = ref(null);
+  const selectedDate = ref(null); // Date filter (format: YYYY/MM/DD)
   const filteredOptions = ref([]);
   const officeData = ref([]);
   const selectedNode = ref(null);
@@ -552,13 +581,14 @@
     return generateTreeStructure(usePlantilla.plantilla, selectedValue.value);
   });
 
+  // NOTE: Fetching is now handled solely by the parent (AdvanceAppointmentPage.vue)
+  // via the 'structure-selected' emit, to avoid duplicate /plantilla API calls.
   const handleSelection = async () => {
     selectedNode.value = null;
     selectedNodeData.value = null;
 
     if (selectedValue.value) {
-      await usePlantilla.fetchPlantilla(selectedValue.value);
-      emit('structure-selected', { office: selectedValue.value });
+      emit('structure-selected', { office: selectedValue.value, date: selectedDate.value });
     } else {
       usePlantilla.plantilla = [];
       emit('structure-selected', null);
@@ -578,7 +608,7 @@
     };
     selectedNodeData.value = findNode(structureTree.value);
     if (selectedNodeData.value?.data) {
-      emit('structure-selected', selectedNodeData.value.data);
+      emit('structure-selected', { ...selectedNodeData.value.data, date: selectedDate.value });
     }
   };
 
@@ -593,6 +623,14 @@
     };
     return iconMap[node.nodeType] || 'label';
   };
+
+  // Re-emit when the date filter changes while an office is already selected,
+  // so the parent can refetch with fetchPlantillaByDate (or fetchPlantilla if cleared).
+  watch(selectedDate, () => {
+    if (selectedValue.value) {
+      emit('structure-selected', { office: selectedValue.value, date: selectedDate.value });
+    }
+  });
 
   watch(
     () => usePlantilla.loading,

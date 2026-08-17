@@ -275,20 +275,6 @@
                         <q-tooltip>View Qualification Standard</q-tooltip>
                       </q-btn>
 
-                      <!-- Print Reports button - only if user has report permission -->
-                      <!-- <q-btn
-                        v-if="props.row.Name1 && canReportPlantilla"
-                        flat
-                        dense
-                        round
-                        color="black"
-                        class="bg-grey-4"
-                        icon="print"
-                        @click="printPosition(props.row)"
-                      >
-                        <q-tooltip>Print Reports</q-tooltip>
-                      </q-btn> -->
-
                       <q-btn
                         v-if="props.row.Name1 && canReportPlantilla"
                         flat
@@ -928,6 +914,10 @@
     });
   });
 
+  // Single source of truth for fetching. The child (PlantillaSelection.vue)
+  // only emits { office, date } - it no longer calls fetchPlantilla itself,
+  // which is what was causing the duplicate network request.
+  // If a date filter is present, fetchPlantillaByDate is used instead.
   const handleStructureSelection = async (selectedData) => {
     clearSearchFilters();
 
@@ -938,11 +928,16 @@
     }
 
     const isNewOffice = currentStructure.value?.office !== selectedData.office;
+    const isNewDate = currentStructure.value?.date !== selectedData.date;
     currentStructure.value = selectedData;
 
-    // Only fetch from API when office changes
-    if (isNewOffice && selectedData.office) {
-      await usePlantilla.fetchPlantilla(selectedData.office);
+    // Only fetch from API when the office or the date filter changes
+    if ((isNewOffice || isNewDate) && selectedData.office) {
+      if (selectedData.date) {
+        await usePlantilla.fetchPlantillaByDate(selectedData.office, selectedData.date);
+      } else {
+        await usePlantilla.fetchPlantilla(selectedData.office);
+      }
       positions.value = usePlantilla.plantilla.map((item) => ({
         ...item,
         Status: item.designationStatus || 'VACANT',
@@ -1009,8 +1004,13 @@
 
   const handleEmployeeAdded = async () => {
     const currentOffice = currentStructure.value?.office;
+    const currentDate = currentStructure.value?.date;
     if (currentOffice) {
-      await usePlantilla.fetchPlantilla(currentOffice);
+      if (currentDate) {
+        await usePlantilla.fetchPlantillaByDate(currentOffice, currentDate);
+      } else {
+        await usePlantilla.fetchPlantilla(currentOffice);
+      }
     }
     positions.value = usePlantilla.plantilla.map((item) => ({
       ...item,
@@ -1038,25 +1038,6 @@
       toast.error('Failed to fetch appointment data');
     }
   };
-
-  // const printPosition = async (row) => {
-  //   try {
-  //     const appointmentData = await usePlantilla.fetchAppointmentData(row.ControlNo);
-
-  //     if (appointmentData) {
-  //       reportRow.value = {
-  //         ...row,
-  //         appointmentData: appointmentData,
-  //       };
-  //       showReportModal.value = true;
-  //     } else {
-  //       toast.error('No appointment data found for this employee');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching appointment data:', error);
-  //     toast.error('Failed to fetch appointment data');
-  //   }
-  // };
 
   const editPosition = async (row) => {
     try {
@@ -1131,8 +1112,13 @@
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       const currentOffice = currentStructure.value?.office;
+      const currentDate = currentStructure.value?.date;
       if (currentOffice) {
-        await usePlantilla.fetchPlantilla(currentOffice);
+        if (currentDate) {
+          await usePlantilla.fetchPlantillaByDate(currentOffice, currentDate);
+        } else {
+          await usePlantilla.fetchPlantilla(currentOffice);
+        }
         positions.value = usePlantilla.plantilla.map((item) => ({
           ...item,
           Status: item.designationStatus || 'VACANT',

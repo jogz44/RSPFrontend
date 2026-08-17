@@ -81,6 +81,25 @@ export const usePlantillaStore = defineStore('plantilla', {
         this.loading = false;
       }
     },
+
+    async fetchPlantillaByDate(office, date) {
+      // ✅ accept office as parameter
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminApi.get('/plantilla', {
+          params: { office, date },
+        });
+        this.plantilla = Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to Load Plantilla');
+        this.error = error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async plantillaOffice() {
       this.loading = true;
       try {

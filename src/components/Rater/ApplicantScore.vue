@@ -2,7 +2,14 @@
   <q-dialog v-model="localShow" persistent>
     <q-card
       class="applicant-score-modal"
-      style="width: 1200px; max-width: 98vw; max-height: 98vh; overflow: auto"
+      style="
+        width: 1200px;
+        max-width: 98vw;
+        max-height: 98vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      "
     >
       <!-- Sticky Applicant Header -->
       <q-card-section class="row items-center header q-px-md q-py-sm">
@@ -26,6 +33,7 @@
 
       <q-separator />
 
+      <!-- Scrollable Content Area -->
       <q-card-section class="main-content-section q-pa-none">
         <!-- Loading State -->
         <div v-if="dataLoading" class="text-center q-pa-xl">
@@ -182,7 +190,7 @@
         </div>
       </q-card-section>
 
-      <!-- Footer Actions -->
+      <!-- Footer Actions - Fixed -->
       <q-separator />
       <q-card-section class="footer-actions bg-grey-2 q-py-sm">
         <div class="row justify-between items-center q-gutter-sm" style="width: 100%">
@@ -1090,13 +1098,22 @@
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
+    overflow: hidden !important; // Important to override Quasar styles
+    max-height: 98vh;
   }
 
   .header {
     background-color: #f5f5f5;
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 2;
+  }
+
+  .main-content-section {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; // Critical for flexbox scrolling
   }
 
   .applicant-name {
@@ -1156,7 +1173,7 @@
   }
 
   .footer-actions {
-    flex: 0 0 auto;
+    flex-shrink: 0;
     border-top: 1px solid #eee;
   }
 
