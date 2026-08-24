@@ -58,7 +58,7 @@ export const usePDSStore = defineStore('pds', {
     applicationsAreLoading: (state) => state.applicationsLoading,
     getApplicationsError: (state) => state.applicationsError,
 
-    // Submission getters - renamed to avoid conflict with state properties
+    // Submission getters
     getIsSubmitting: (state) => state.isSubmitting,
     getSubmissionError: (state) => state.submissionError,
     isSubmissionSuccess: (state) => state.submissionSuccess,
@@ -102,16 +102,67 @@ export const usePDSStore = defineStore('pds', {
           return { success: false, error: 'No PDS found', data: null };
         }
       } catch (error) {
-        // Check if it's a 404 (applicant not found)
         if (error.response?.status === 404) {
           this._clearUserData();
           this.hasExistingPDS = false;
-          // Don't throw error for 404, just return no data
           return { success: false, error: 'Applicant not found', data: null };
         }
 
         const errorMessage =
           error.response?.data?.message || error.message || 'Failed to fetch PDS';
+        this.error = errorMessage;
+        this.hasExistingPDS = false;
+        return { success: false, error: errorMessage, data: null };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Fetch PDS data specific to a job post using personal ID
+     * Endpoint: /applicant/application/data/{jobPostId}/{nPersonalId}
+     * @param {string|number} jobPostId - Job post ID
+     * @param {string|number} nPersonalId - Personal ID from the application
+     * @returns {Promise<Object>} Result with success flag and data
+     */
+    async fetchPDSbyJobPost(jobPostId, nPersonalId) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        // Use the correct endpoint: /applicant/application/data/{jobPostId}/{nPersonalId}
+        const response = await applicantApi.get(
+          `/applicant/application/data/${jobPostId}/${nPersonalId}`,
+        );
+
+        if (response.data?.success && response.data?.data) {
+          const userData = response.data.data;
+          this._saveUserData(userData);
+          this.hasExistingPDS = true;
+
+          // Store the job ID for reference
+          if (jobPostId) {
+            localStorage.setItem('currentJobPDSId', jobPostId);
+          }
+          if (nPersonalId) {
+            localStorage.setItem('currentPersonalId', nPersonalId);
+          }
+
+          return { success: true, data: userData };
+        } else {
+          this._clearUserData();
+          this.hasExistingPDS = false;
+          return { success: false, error: 'No PDS found for this job post', data: null };
+        }
+      } catch (error) {
+        if (error.response?.status === 404) {
+          this._clearUserData();
+          this.hasExistingPDS = false;
+          return { success: false, error: 'No PDS found for this job post', data: null };
+        }
+
+        const errorMessage =
+          error.response?.data?.message || error.message || 'Failed to fetch PDS for job post';
         this.error = errorMessage;
         this.hasExistingPDS = false;
         return { success: false, error: errorMessage, data: null };
@@ -136,7 +187,6 @@ export const usePDSStore = defineStore('pds', {
           const applications = response.data.data;
           this.applications = applications;
 
-          // Reuse the first record to hydrate basic profile info if not already set
           if (applications.length > 0 && !this.user.fullName) {
             this._saveUserFromApplication(applications[0]);
           }
@@ -173,27 +223,20 @@ export const usePDSStore = defineStore('pds', {
       this.submissionSuccess = false;
 
       try {
-        // Create FormData for multipart/form-data request
         const formData = new FormData();
 
-        // Append all text fields
         Object.keys(payload).forEach((key) => {
           if (payload[key] !== undefined && payload[key] !== null) {
-            // Handle nested objects differently - they should already be in dot notation
             if (typeof payload[key] === 'object' && !(payload[key] instanceof File)) {
-              // If it's an object that's not a File, stringify it
               formData.append(key, JSON.stringify(payload[key]));
             } else if (payload[key] instanceof File) {
-              // If it's a File, append it as a file
               formData.append(key, payload[key]);
             } else {
-              // For primitive values, convert to string
               formData.append(key, String(payload[key]));
             }
           }
         });
 
-        // Append photo if provided
         if (photo && photo instanceof File) {
           formData.append('image_path', photo);
         }
@@ -207,20 +250,18 @@ export const usePDSStore = defineStore('pds', {
         if (response.data?.success) {
           this.submissionSuccess = true;
 
-          // Import emailStore dynamically to avoid circular dependency
           const { useEmailStore } = await import('./emailStore');
           const emailStore = useEmailStore();
           if (emailStore) {
             emailStore.clearPDSCache();
           }
 
-          // ✅ Extract message from response
           const message = response.data?.message || 'Application submitted successfully';
 
           return {
             success: true,
             data: response.data,
-            message: message, // ← Add this line
+            message: message,
           };
         } else {
           const errorMessage = response.data?.message || 'Submission failed';
@@ -308,18 +349,14 @@ export const usePDSStore = defineStore('pds', {
      * @param {Object} userData - User data from API
      */
     _saveUserData(userData) {
-      // Extract user info
       const firstName = userData.firstname || '';
       const middleName = userData.middlename || '';
       const lastName = userData.lastname || '';
 
-      // Build full name
       const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
 
-      // Use image_url if available, fallback to image_path
       const image = userData.image_url || userData.image_path || '';
 
-      // Update state
       this.user = {
         fullName: fullName,
         firstName: firstName,
@@ -331,13 +368,11 @@ export const usePDSStore = defineStore('pds', {
       this.hasExistingPDS = true;
       this.isAuthenticated = true;
 
-      // Save to localStorage
       this._saveToStorage();
     },
 
     /**
-     * Hydrate basic profile info (name) from an application list record,
-     * used as a fallback when the dedicated PDS endpoint hasn't been called yet
+     * Hydrate basic profile info from an application list record
      * @param {Object} application - Single record from /applicant/application/list/{email}
      */
     _saveUserFromApplication(application) {
@@ -381,7 +416,6 @@ export const usePDSStore = defineStore('pds', {
           timestamp: Date.now(),
         };
 
-        // Save individual fields for easy access
         localStorage.setItem('userFullName', this.user.fullName);
         localStorage.setItem('userFirstName', this.user.firstName);
         localStorage.setItem('userLastName', this.user.lastName);

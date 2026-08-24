@@ -209,7 +209,7 @@
 
             <div class="text-caption text-grey-6 q-mt-md">
               <q-icon name="info" size="xs" />
-              Reapplying will update your existing application with new information.
+              Reapplying will display your existing application with this job post.
             </div>
           </div>
 
@@ -345,20 +345,22 @@
   // ==================== NAVIGATION FUNCTIONS ====================
 
   function goToPDS() {
-    // Store the job ID and application ID (if reapplying) in localStorage
+    // Store the job ID and position in localStorage
     localStorage.setItem('selectedJobId', id);
     localStorage.setItem('selectedJobPosition', selectedJob.value?.Position || '');
     localStorage.setItem('selectedJobTitle', selectedJob.value?.Position || '');
 
-    // If reapplying, store the application ID
+    // If reapplying, store the application ID and set the reapply flag
     if (hasApplied.value && applicationId.value) {
       localStorage.setItem('reapplyApplicationId', applicationId.value);
       localStorage.setItem('isReapply', 'true');
     } else {
+      // Clear any existing reapply flags when applying fresh
       localStorage.removeItem('reapplyApplicationId');
       localStorage.removeItem('isReapply');
     }
 
+    // Navigate to the PDS form
     router.push({
       name: 'UserPDS',
       query: {
@@ -375,7 +377,6 @@
   }
 
   // ==================== CHECK APPLICATION STATUS ====================
-
   async function checkApplicationStatus() {
     isLoadingApplicationStatus.value = true;
     try {
@@ -385,15 +386,12 @@
         return;
       }
 
-      // Fetch applications from the store
       const result = await pdsStore.fetchApplications(email);
 
       if (result.success && result.data) {
         const applications = result.data;
 
-        // Find if user has applied for this specific job
         const foundApplication = applications.find((app) => {
-          // Try to match by position name or job ID
           const positionMatch = app.applied_position === selectedJob.value?.Position;
           const jobIdMatch = app.job_id === parseInt(id) || app.job_id === id;
           return positionMatch || jobIdMatch;
@@ -403,7 +401,8 @@
           hasApplied.value = true;
           applicationDate.value = foundApplication.application_applied_date || '';
           applicationStatus.value = foundApplication.application_status || 'Pending';
-          applicationId.value = foundApplication.id || foundApplication.personal_id || null;
+          // Store the personal_id for the fetchPDSbyJobPost endpoint
+          applicationId.value = foundApplication.personal_id || foundApplication.id || null;
         } else {
           hasApplied.value = false;
           applicationDate.value = '';
