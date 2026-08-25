@@ -288,12 +288,12 @@
                     <div class="signature-container">
                       <div class="signature">
                         <div class="signature-name-container">
-                          <strong class="signature-name">EDGAR C. DE GUZMAN</strong>
+                          <strong class="signature-name">{{ signatoryRepName }}</strong>
                         </div>
                         <div class="cert-signature-title">
-                          City Administrator
+                          {{ signatoryRepPosition }}
                           <br />
-                          Authorized Representative of the City Mayor
+                          Authorized Representative of the {{ signatoryRepOffice }}
                           <br />
                           Chairperson
                         </div>
@@ -594,6 +594,42 @@
       return 'OFFICE OF THE VICE MAYOR';
     } else {
       return 'OFFICE OF THE CITY MAYOR';
+    }
+  });
+
+  const signatoryRepName = computed(() => {
+    if (
+      props.data.NewOffice?.includes('VICE MAYOR') ||
+      props.data.NewOffice?.includes('SANGGUNIANG PANLUNGSOD') ||
+      props.data.NewOffice?.includes('SANGGUNIAN')
+    ) {
+      return 'DELVIN M. SANTOS';
+    } else {
+      return 'EDGAR C. DE GUZMAN';
+    }
+  });
+
+  const signatoryRepPosition = computed(() => {
+    if (
+      props.data.NewOffice?.includes('VICE MAYOR') ||
+      props.data.NewOffice?.includes('SANGGUNIANG PANLUNGSOD') ||
+      props.data.NewOffice?.includes('SANGGUNIAN')
+    ) {
+      return 'Executive Assistant IV';
+    } else {
+      return 'City Administrator';
+    }
+  });
+
+  const signatoryRepOffice = computed(() => {
+    if (
+      props.data.NewOffice?.includes('VICE MAYOR') ||
+      props.data.NewOffice?.includes('SANGGUNIANG PANLUNGSOD') ||
+      props.data.NewOffice?.includes('SANGGUNIAN')
+    ) {
+      return 'City Vice Mayor';
+    } else {
+      return 'City Mayor';
     }
   });
 
