@@ -248,18 +248,18 @@
                     </p>
                     <p class="certification-text">
                       The position was published at
-                      <span class="underline">{{ publishedAt }}</span>
+                      <span class="underline">{{ publishedAt || 'N/A' }}</span>
                       from
-                      <span class="underline">{{ publishStartDate }}</span>
+                      <span class="underline">{{ publishStartDate || 'N/A' }}</span>
                       to
-                      <span class="underline">{{ publishEndDate }}</span>
+                      <span class="underline">{{ publishEndDate || 'N/A' }}</span>
                       and posted in three (3) conspicuous places from
-                      <span class="underline">{{ postStartDate }}</span>
+                      <span class="underline">{{ postStartDate || 'N/A' }}</span>
                       to
-                      <span class="underline">{{ postEndDate }}</span>
+                      <span class="underline">{{ postEndDate || 'N/A' }}</span>
                       in consonance with Republic Act No. 7041. The assessment by the Human Resource
                       Merit Promotion and Selection Board (HRMPSB) started on
-                      <span class="underline">{{ assessmentDate }}</span>
+                      <span class="underline">{{ assessmentDate || 'N/A' }}</span>
                       .
                     </p>
 
@@ -281,7 +281,7 @@
                       This is to certify that the appointee has been screened and found qualified by
                       at least the majority of the HRMPSB/Placement Committee during the
                       deliberation held on
-                      <span class="underline">{{ deliberationDate }}</span>
+                      <span class="underline">{{ deliberationDate || 'N/A' }}</span>
                       .
                     </p>
 
