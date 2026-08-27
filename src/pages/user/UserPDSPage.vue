@@ -4160,8 +4160,11 @@
     }
   }
 
-  // ── RESET FORM TO EMPTY ────────────────────────────────────────────
   function resetFormToEmpty() {
+    // Preserve email
+    const emailBackup = form.personal.email_address || localStorage.getItem('userEmail') || '';
+
+    // Clear all fields
     Object.keys(form.personal).forEach((key) => {
       form.personal[key] = '';
     });
@@ -4188,6 +4191,7 @@
     form.otherDocuments = [];
     form.pdsFile = null;
 
+    // Reset declarations
     formData.relationThirdDegree = 'No';
     formData.relationFourthDegree = 'No';
     formData.relationDetails = '';
@@ -4213,6 +4217,7 @@
     formData.soloParent = 'No';
     formData.soloParentDetails = '';
 
+    // Reset photo
     if (photoPreview.value?.startsWith('blob:')) {
       try {
         URL.revokeObjectURL(photoPreview.value);
@@ -4224,10 +4229,14 @@
     photoFile.value = null;
     photoChanged.value = false;
 
+    // Reset existing files
     existingPdsFiles.value = [];
     replacePds.value = false;
     existingOtherDocuments.value = [];
     sameAsResidential.value = false;
+
+    // ✅ RESTORE EMAIL
+    form.personal.email_address = emailBackup;
   }
 
   // ── Populate Form with Data ──────────────────────────────────────
