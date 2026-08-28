@@ -407,6 +407,7 @@
   import axios from 'axios';
   import { useJobPostStore } from 'stores/jobPostStore';
   import { useAuthStore } from 'stores/authStore';
+  import { usePlantillaStore } from 'stores/plantillaStore';
   import { toast } from 'src/boot/toast';
 
   export default {
@@ -446,6 +447,7 @@
 
       const jobPostStore = useJobPostStore();
       const authStore = useAuthStore();
+      const plantillaStore = usePlantillaStore();
 
       // --- helpers: dd/mm/yyyy -> yyyy-mm-dd ---
       const toYmd = (ddmmyyyy) => {
@@ -831,24 +833,17 @@
         return isNaN(num) ? '-' : num.toFixed(2);
       };
 
-      // Fetch latest effectivity date from API
+      // Fetch latest effectivity date from plantillaStore
       const fetchLatestEffectivityDate = async () => {
         try {
           loadingEffectivity.value = true;
 
-          // Get the jobpost ID
-          const jobpostId = props.jobDetails?.id;
-          if (!jobpostId) {
-            toast.warning('Job post ID not found');
-            return;
-          }
-
-          // Fetch effectivity dates from the store
-          const response = await jobPostStore.fetchEffectivityDate(jobpostId);
+          // Use the existing fetchEffectivityDate from plantillaStore
+          const response = await plantillaStore.fetchEffectivityDate();
 
           console.log('Effectivity API response:', response);
 
-          // Handle the response structure: { success: true, message: "Successful", data: [{ effectiveDate: "2026-08-15" }] }
+          // Handle the response structure: { success: true, message: "Successful", data: [{ effectiveDate: "2026-08-01 00:00:00" }] }
           if (
             response &&
             response.success === true &&
@@ -860,21 +855,62 @@
             if (effectivityData.length > 0) {
               // Get the latest date - sort by date and take the first one
               const sortedDates = effectivityData
-                .filter((item) => item.effectiveDate) // Filter out items without date
+                .filter((item) => item.effectiveDate)
                 .sort((a, b) => {
-                  return new Date(b.effectiveDate) - new Date(a.effectiveDate);
+                  const dateA = new Date(a.effectiveDate);
+                  const dateB = new Date(b.effectiveDate);
+                  return dateB - dateA;
                 });
 
               if (sortedDates.length > 0) {
                 const latestDate = sortedDates[0];
-                if (latestDate && latestDate.effectiveDate) {
+                const dateString = latestDate.effectiveDate;
+
+                if (dateString) {
+                  // Extract just the date part (YYYY-MM-DD) from the datetime string
+                  const dateOnly = dateString.split(' ')[0];
+
                   // Convert to dd/mm/yyyy format for display
-                  const formattedDate = toDmy(latestDate.effectiveDate);
+                  const formattedDate = toDmy(dateOnly);
                   if (formattedDate) {
                     fromDateDisplay.value = formattedDate;
                     effectivityDateFetched.value = true;
                     validateFromDate();
 
+                    toast.success(
+                      `Latest effectivity date set: ${formatDateDisplay(formattedDate)}`,
+                    );
+                    console.log('Latest effectivity date set:', formattedDate);
+                  }
+                }
+              }
+            } else {
+              toast.info('No effectivity dates found. You can manually set the date.');
+            }
+          } else if (Array.isArray(response)) {
+            // Fallback: if response is directly an array (alternative response format)
+            const effectivityData = response;
+
+            if (effectivityData.length > 0) {
+              const sortedDates = effectivityData
+                .filter((item) => item.effectiveDate || item.effective_date)
+                .sort((a, b) => {
+                  const dateA = new Date(a.effectiveDate || a.effective_date);
+                  const dateB = new Date(b.effectiveDate || b.effective_date);
+                  return dateB - dateA;
+                });
+
+              if (sortedDates.length > 0) {
+                const latestDate = sortedDates[0];
+                const dateString = latestDate.effectiveDate || latestDate.effective_date;
+
+                if (dateString) {
+                  const dateOnly = dateString.split(' ')[0];
+                  const formattedDate = toDmy(dateOnly);
+                  if (formattedDate) {
+                    fromDateDisplay.value = formattedDate;
+                    effectivityDateFetched.value = true;
+                    validateFromDate();
                     toast.success(
                       `Latest effectivity date set: ${formatDateDisplay(formattedDate)}`,
                     );

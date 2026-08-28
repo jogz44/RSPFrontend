@@ -1,3 +1,5 @@
+// src\stores\plantillaStore.js
+
 import { defineStore } from 'pinia';
 import { adminApi } from 'src/boot/axios_admin';
 import { raterApi } from 'boot/axios_rater';
