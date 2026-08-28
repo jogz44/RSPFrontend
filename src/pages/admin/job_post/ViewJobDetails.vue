@@ -401,7 +401,6 @@
                   class="q-pl-md q-pr-md"
                   style="font-size: 8pt"
                   @click="openUnhiredDialog"
-                  :disable="isLoading || unhiredApplicantsList.length === 0"
                 />
 
                 <q-badge class="q-pa-xs" color="primary" text-color="white">
@@ -690,7 +689,7 @@
     </q-dialog>
 
     <!-- ===== Unhired Applicants Dialog ===== -->
-    <q-dialog v-model="unhiredEmailModal" persistent>
+    <q-dialog v-model="unhiredEmailModal" persistent @before-show="loadUnhiredApplicants">
       <q-card style="min-width: 900px; max-width: 1100px; width: 100%">
         <!-- Header -->
         <q-card-section class="bg-blue-9 text-white row items-center q-py-sm">
@@ -1004,6 +1003,7 @@
   const selectedUnhiredApplicant = ref(null);
   const isUnhiredDialogLoading = ref(false);
   const unhiredApplicantsList = ref([]);
+  const unhiredDataLoaded = ref(false); // Track if data has been loaded
 
   // Unhired Applicant Columns
   const unhiredApplicantColumns = ref([
@@ -1229,20 +1229,25 @@
     };
   };
 
-  // Open Unhired Dialog
-  const openUnhiredDialog = async () => {
+  // Load Unhired Applicants - ONLY called when modal opens
+  const loadUnhiredApplicants = async () => {
     if (!selectedJob.value?.id) {
       toast.error('Job ID not found.');
       return;
     }
 
+    // Skip if already loaded and modal is opening
+    if (unhiredDataLoaded.value) {
+      return;
+    }
+
     isUnhiredDialogLoading.value = true;
-    unhiredEmailModal.value = true;
 
     try {
       const response = await jobPostStore.fetchUnhiredApplicants(selectedJob.value.id);
       if (response && response.success === true) {
         unhiredApplicantsList.value = response.data || [];
+        unhiredDataLoaded.value = true;
         if (unhiredApplicantsList.value.length === 0) {
           toast.info('No unhired applicants found.');
         }
@@ -1257,6 +1262,13 @@
     } finally {
       isUnhiredDialogLoading.value = false;
     }
+  };
+
+  // Open Unhired Dialog - just sets the modal to true, data loads via @before-show
+  const openUnhiredDialog = () => {
+    // Reset loaded flag to force reload when dialog opens
+    unhiredDataLoaded.value = false;
+    unhiredEmailModal.value = true;
   };
 
   // Open Unhired Email Modal
@@ -1284,21 +1296,11 @@
   // Handle Unhired Email Close
   const handleUnhiredEmailClose = () => {
     selectedUnhiredApplicant.value = null;
-    // Refresh the unhired applicants list
-    refreshUnhiredApplicants();
-  };
-
-  // Refresh Unhired Applicants
-  const refreshUnhiredApplicants = async () => {
-    if (selectedJob.value?.id) {
-      try {
-        const response = await jobPostStore.fetchUnhiredApplicants(selectedJob.value.id);
-        if (response && response.success === true) {
-          unhiredApplicantsList.value = response.data || [];
-        }
-      } catch (error) {
-        console.error('Error refreshing unhired applicants:', error);
-      }
+    // Reset loaded flag so next open reloads data
+    unhiredDataLoaded.value = false;
+    // Refresh the unhired applicants list only if modal is still open
+    if (unhiredEmailModal.value) {
+      loadUnhiredApplicants();
     }
   };
 
@@ -1320,8 +1322,9 @@
       if (response?.data?.success) {
         toast.success(response.data.message || 'Unhired notifications sent successfully!');
         unhiredEmailModal.value = false;
+        unhiredDataLoaded.value = false;
+        // Refresh applicant data but NOT unhired applicants (will reload on next modal open)
         await refreshApplicantData();
-        await refreshUnhiredApplicants();
       } else {
         toast.error(response?.data?.message || 'Failed to send unhired notifications');
       }
@@ -1386,18 +1389,7 @@
   const handleUnqualifiedEmailClose = () => {
     unqualifiedEmailModal.value = false;
     selectedUnqualifiedApplicant.value = null;
-    refreshUnqualifiedApplicants();
-  };
-
-  // Refresh unqualified applicants list
-  const refreshUnqualifiedApplicants = async () => {
-    if (selectedJob.value?.id) {
-      try {
-        await emailTemplateStore.fetchUnqualifiedApplicants(selectedJob.value.id);
-      } catch (error) {
-        console.error('Error refreshing unqualified applicants:', error);
-      }
-    }
+    // Only refresh if needed
   };
 
   const viewUnqualifiedApplicantDetails = (row) => {
@@ -1698,8 +1690,8 @@
       applicantPagination.value.rowsNumber = totalApplicants.value;
       ratingPagination.value.rowsNumber = jobPostStore.ratingMeta?.total || 0;
 
-      // Load unhired applicants
-      await refreshUnhiredApplicants();
+      // Reset unhired data loaded flag
+      unhiredDataLoaded.value = false;
 
       return details;
     } catch (error) {
@@ -1736,7 +1728,6 @@
         jobPostStore.fetch_applicant(selectedJob.value.id),
         jobPostStore.fetch_applicant_rating(selectedJob.value.id),
       ]);
-      await refreshUnhiredApplicants();
     } catch (error) {
       console.error('Error refreshing applicant data:', error);
       toast.error('Failed to refresh applicant data');
@@ -1863,7 +1854,6 @@
         toast.success('Final evaluation emails sent successfully!');
         sendEvalConfirmDialog.value = false;
 
-        await refreshUnqualifiedApplicants();
         await refreshApplicantData();
       } else {
         toast.error(response?.data?.message || 'Failed to send final evaluation emails');
@@ -2130,7 +2120,8 @@
         search: ratingApplicantSearch.value,
       });
 
-      await refreshUnhiredApplicants();
+      // Reset unhired data loaded flag
+      unhiredDataLoaded.value = false;
 
       toast.success('Data refreshed successfully');
     } catch (error) {
