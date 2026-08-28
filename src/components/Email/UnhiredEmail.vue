@@ -1,3 +1,5 @@
+<!-- src\components\Email\UnhiredEmail.vue -->
+
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">

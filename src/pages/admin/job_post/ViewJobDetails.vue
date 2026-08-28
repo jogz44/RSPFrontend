@@ -390,7 +390,7 @@
                   style="font-size: 9pt"
                   @click="unoccupiedConfirmDialog = true"
                 />
-
+                <!-- For Unhired Applicant Email -->
                 <q-btn
                   v-if="canModifyJobPost && selectedJob?.status?.toLowerCase() == 'occupied'"
                   label="For Unhired Applicant"
