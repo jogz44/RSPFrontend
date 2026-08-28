@@ -8,7 +8,7 @@ export const useJobPostStore = defineStore('jobPost', {
     jobPosts: [],
     applicant: [],
     applicant_rating: [],
-     jobPostListEdit: [],  // ✅ move it here, outside applicantMeta
+    jobPostListEdit: [], // ✅ move it here, outside applicantMeta
     jobPostsrater: [],
     applicantScores: null,
     previousApplicants: [],
@@ -22,18 +22,17 @@ export const useJobPostStore = defineStore('jobPost', {
     confirmationExpiresAt: null,
     // postDate: null,
     // endDate: null
-      ratingMeta: {},
+    ratingMeta: {},
     applicantMeta: {
-    total_applicants: 0,
-    internal_applicants: 0,
-    external_applicants: 0,
-    assessed: '0/0',
-    qualified_applicants: 0,
-    unqualified_applicants: 0,
-    current_page: 1,
-    last_page: 1,
-  },
-
+      total_applicants: 0,
+      internal_applicants: 0,
+      external_applicants: 0,
+      assessed: '0/0',
+      qualified_applicants: 0,
+      unqualified_applicants: 0,
+      current_page: 1,
+      last_page: 1,
+    },
   }),
 
   getters: {
@@ -214,16 +213,16 @@ export const useJobPostStore = defineStore('jobPost', {
     //   }
     // },
 
-      async fetch_applicant(id, { page = 1, perPage = 10, search = '' } = {}) {
-        this.loading = true;
-        try {
-          const { data } = await adminApi.get(`/job-batches-rsp/applicant/view/${id}`, {
-            params: {
-              page: perPage === 'all' ? 1 : page,
-              per_page: perPage,
-              search,
-            },
-          });
+    async fetch_applicant(id, { page = 1, perPage = 10, search = '' } = {}) {
+      this.loading = true;
+      try {
+        const { data } = await adminApi.get(`/job-batches-rsp/applicant/view/${id}`, {
+          params: {
+            page: perPage === 'all' ? 1 : page,
+            per_page: perPage,
+            search,
+          },
+        });
 
         this.applicant = data.applicants?.data ?? [];
         this.applicantMeta = {
@@ -261,30 +260,30 @@ export const useJobPostStore = defineStore('jobPost', {
     //   }
     // },
 
-      async fetch_applicant_rating(id, { page = 1, perPage = 10, search = '' } = {}) {
-        this.loading = true;
-        try {
-          const { data } = await adminApi.get(`/rater/show/${id}`, {
-            params: { page, per_page: perPage, search },
-          });
+    async fetch_applicant_rating(id, { page = 1, perPage = 10, search = '' } = {}) {
+      this.loading = true;
+      try {
+        const { data } = await adminApi.get(`/rater/show/${id}`, {
+          params: { page, per_page: perPage, search },
+        });
 
-          this.applicant_rating = {
-            applicants: data.data || [],          // rows array
-            total_assigned: data.total_assigned,
-            total_completed: data.total_completed,
-          };
-          this.ratingMeta = data.meta || {};      // { current_page, per_page, total, last_page }
+        this.applicant_rating = {
+          applicants: data.data || [], // rows array
+          total_assigned: data.total_assigned,
+          total_completed: data.total_completed,
+        };
+        this.ratingMeta = data.meta || {}; // { current_page, per_page, total, last_page }
 
-          this.error = null;
-          return data;
-        } catch (error) {
-          this.error = error;
-          toast.error('Failed to fetch applicant ratings.');
-          throw error;
-        } finally {
-          this.loading = false;
-        }
-      },
+        this.error = null;
+        return data;
+      } catch (error) {
+        this.error = error;
+        toast.error('Failed to fetch applicant ratings.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
 
     async fetch_applicant_score(id) {
       this.loading = true;
@@ -387,11 +386,10 @@ export const useJobPostStore = defineStore('jobPost', {
       }
     },
 
-
-     async fetchJobPostListEdit(raterId) {
+    async fetchJobPostListEdit(raterId) {
       this.loading = true;
       try {
-          const { data } = await adminApi.get(`rater/job-post-list/${raterId}`);
+        const { data } = await adminApi.get(`rater/job-post-list/${raterId}`);
         this.jobPostListEdit = data.data;
         this.error = null;
       } catch (err) {
@@ -683,6 +681,28 @@ export const useJobPostStore = defineStore('jobPost', {
         return { data: { success: false, message: 'An error occurred' } };
       } finally {
         this.loading = false;
+      }
+    },
+
+    async fetchUnhiredApplicants(jobPostId) {
+      try {
+        const response = await adminApi.get(`/applicant/list/not-chosen/${jobPostId}`);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching unhired applicants:', error);
+        throw error;
+      }
+    },
+
+    async sendUnhiredNotifications(jobPostId) {
+      try {
+        const response = await adminApi.post('/email/send/not-chosen', {
+          job_batches_rsp_id: jobPostId,
+        });
+        return response;
+      } catch (error) {
+        console.error('Error sending unhired notifications:', error);
+        throw error;
       }
     },
 

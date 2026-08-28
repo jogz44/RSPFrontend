@@ -270,6 +270,7 @@
                   @click="openNotifyUnqualifiedDialog"
                   :disable="isLoading"
                 />
+
                 <q-badge class="q-pa-sm" color="blue">Internal: {{ internalCount }}</q-badge>
                 <q-badge class="q-pa-sm" color="orange">External: {{ externalCount }}</q-badge>
 
@@ -388,6 +389,19 @@
                   no-caps
                   style="font-size: 9pt"
                   @click="unoccupiedConfirmDialog = true"
+                />
+
+                <q-btn
+                  v-if="canModifyJobPost && selectedJob?.status?.toLowerCase() == 'occupied'"
+                  label="For Unhired Applicant"
+                  color="blue-9"
+                  icon="email"
+                  rounded
+                  no-caps
+                  class="q-pl-md q-pr-md"
+                  style="font-size: 8pt"
+                  @click="openUnhiredDialog"
+                  :disable="isLoading || unhiredApplicantsList.length === 0"
                 />
 
                 <q-badge class="q-pa-xs" color="primary" text-color="white">
@@ -675,6 +689,145 @@
       </q-card>
     </q-dialog>
 
+    <!-- ===== Unhired Applicants Dialog ===== -->
+    <q-dialog v-model="unhiredEmailModal" persistent>
+      <q-card style="min-width: 900px; max-width: 1100px; width: 100%">
+        <!-- Header -->
+        <q-card-section class="bg-blue-9 text-white row items-center q-py-sm">
+          <q-icon name="email" size="1.4em" class="q-mr-sm" />
+          <div class="text-h6 text-bold">Unhired Applicants</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup color="white" :disable="isLoading" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md q-pb-xs">
+          <!-- Loading state inside dialog -->
+          <div v-if="isUnhiredDialogLoading" class="text-center q-pa-lg">
+            <q-spinner size="40px" color="primary" />
+            <div class="q-mt-sm">Loading applicants...</div>
+          </div>
+
+          <template v-else>
+            <!-- Summary Banner -->
+            <q-banner class="bg-grey-2 rounded-borders q-pa-sm q-mb-md" dense>
+              <template v-slot:avatar>
+                <q-icon name="work" color="primary" />
+              </template>
+              <div class="text-caption text-grey-8 text-bold q-mb-xs">
+                {{ selectedJob?.Position || 'N/A' }}
+              </div>
+              <div class="text-caption text-grey-7 row q-gutter-md">
+                <span>
+                  <b>Total Unhired:</b>
+                  <span class="text-blue-8 text-bold">{{ unhiredApplicantsList.length }}</span>
+                </span>
+              </div>
+            </q-banner>
+
+            <!-- List Header -->
+            <div class="row items-center justify-between q-mb-md">
+              <div class="text-subtitle2 text-grey-8 text-bold">
+                <q-icon name="person_off" class="q-mr-xs text-blue-7" />
+                Applicants Not Chosen
+              </div>
+              <q-badge color="blue" rounded class="q-px-sm">
+                {{ unhiredApplicantsList.length }}
+              </q-badge>
+            </div>
+
+            <!-- Empty State -->
+            <div
+              v-if="unhiredApplicantsList.length === 0"
+              class="text-center q-pa-lg bg-grey-1 rounded-borders"
+            >
+              <q-icon name="check_circle" color="green-6" size="2em" />
+              <div class="text-caption text-grey-6 q-mt-xs">No unhired applicants found.</div>
+            </div>
+
+            <!-- Table of Unhired Applicants -->
+            <div v-else>
+              <q-table
+                :rows="unhiredApplicantsList"
+                :columns="unhiredApplicantColumns"
+                row-key="submissionId"
+                flat
+                bordered
+                class="unhired-table"
+                dense
+                separator="cell"
+                color="primary"
+              >
+                <template #body-cell-sequence="props">
+                  <q-td :props="props">
+                    {{ props.rowIndex + 1 }}
+                  </q-td>
+                </template>
+
+                <template #body-cell-name="props">
+                  <q-td :props="props">{{ props.row.firstname }} {{ props.row.lastname }}</q-td>
+                </template>
+
+                <template #body-cell-applicant_status="props">
+                  <q-td :props="props">
+                    <q-badge
+                      :color="props.row.applicant_status === 'INTERNAL' ? 'blue' : 'orange'"
+                      rounded
+                      class="text-caption"
+                    >
+                      {{ props.row.applicant_status }}
+                    </q-badge>
+                  </q-td>
+                </template>
+
+                <template #body-cell-status="props">
+                  <q-td :props="props">
+                    <q-badge color="blue" rounded class="text-caption q-px-sm">
+                      {{ props.row.status }}
+                    </q-badge>
+                  </q-td>
+                </template>
+
+                <template #body-cell-action="props">
+                  <q-td :props="props">
+                    <q-btn
+                      size="sm"
+                      flat
+                      icon="email"
+                      color="primary"
+                      @click="openUnhiredEmailModal(props.row)"
+                    >
+                      <q-tooltip>Preview Email</q-tooltip>
+                    </q-btn>
+                  </q-td>
+                </template>
+              </q-table>
+            </div>
+
+            <div class="text-caption text-grey-5 q-mt-md">
+              <q-icon name="info" class="q-mr-xs" />
+              An email notification will be sent to each applicant listed above informing them they
+              were not chosen for the position.
+            </div>
+          </template>
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-px-md q-pb-md">
+          <q-btn flat label="Cancel" color="grey" v-close-popup :disable="isLoading" rounded />
+          <q-btn
+            unelevated
+            :label="`Send Notifications (${unhiredApplicantsList.length})`"
+            color="blue-9"
+            icon-right="send"
+            @click="confirmSendUnhiredNotifications"
+            :loading="isLoading"
+            :disable="isLoading || unhiredApplicantsList.length === 0"
+            rounded
+            no-caps
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- PDF Dialog -->
     <q-dialog v-model="pdfModalVisible" maximized>
       <q-card style="width: 85vw; max-width: 1000px; height: 90vh">
@@ -791,6 +944,17 @@
       @close="handleUnqualifiedEmailClose"
     />
 
+    <!-- Unhired Email Modal -->
+    <UnhiredEmail
+      v-if="selectedUnhiredApplicant"
+      :show="!!selectedUnhiredApplicant"
+      :applicant="selectedUnhiredApplicant"
+      :position="selectedJob?.Position || ''"
+      :office="selectedJob?.Office || ''"
+      @update:show="handleUnhiredEmailClose"
+      @close="handleUnhiredEmailClose"
+    />
+
     <!-- Application Received Email Modal -->
     <ApplicationReceivedEmail
       :show="applicationReceivedModal"
@@ -821,6 +985,7 @@
   import ScoreModal from 'src/components/Rater/ApplicantScore.vue';
   import ImportApplicantsModal from 'src/components/ImportApplicant.vue';
   import UnqualifiedEmail from 'src/components/Email/UnqualifiedEmail.vue';
+  import UnhiredEmail from 'src/components/Email/UnhiredEmail.vue';
   import ApplicationReceivedEmail from 'src/components/Email/ApplicationReceivedEmail.vue';
 
   const router = useRouter();
@@ -833,6 +998,27 @@
   const isLoading = ref(false);
   const sendEvalConfirmDialog = ref(false);
   const isDialogLoading = ref(false);
+
+  // Unhired Applicant State
+  const unhiredEmailModal = ref(false);
+  const selectedUnhiredApplicant = ref(null);
+  const isUnhiredDialogLoading = ref(false);
+  const unhiredApplicantsList = ref([]);
+
+  // Unhired Applicant Columns
+  const unhiredApplicantColumns = ref([
+    { name: 'sequence', label: 'No', field: 'sequence', align: 'center', sortable: false },
+    { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
+    {
+      name: 'applicant_status',
+      label: 'Source',
+      field: 'applicant_status',
+      align: 'center',
+      sortable: true,
+    },
+    { name: 'status', label: 'Status', field: 'status', align: 'center' },
+    { name: 'action', label: 'Action', field: 'action', align: 'center', sortable: false },
+  ]);
 
   // Application Received Email Modal
   const applicationReceivedModal = ref(false);
@@ -931,10 +1117,8 @@
     return parseInt(raw.split('/')[0]) || 0;
   });
 
-  // FIXED: Get unqualified applicants from email template store with safety check
   const emailTemplateStoreData = computed(() => {
     const data = emailTemplateStore.unqualifiedApplicants;
-    // Ensure we always return an array
     return Array.isArray(data) ? data : [];
   });
 
@@ -1045,6 +1229,112 @@
     };
   };
 
+  // Open Unhired Dialog
+  const openUnhiredDialog = async () => {
+    if (!selectedJob.value?.id) {
+      toast.error('Job ID not found.');
+      return;
+    }
+
+    isUnhiredDialogLoading.value = true;
+    unhiredEmailModal.value = true;
+
+    try {
+      const response = await jobPostStore.fetchUnhiredApplicants(selectedJob.value.id);
+      if (response && response.success === true) {
+        unhiredApplicantsList.value = response.data || [];
+        if (unhiredApplicantsList.value.length === 0) {
+          toast.info('No unhired applicants found.');
+        }
+      } else {
+        unhiredApplicantsList.value = [];
+        toast.info('No unhired applicants found.');
+      }
+    } catch (error) {
+      console.error('Error fetching unhired applicants:', error);
+      toast.error('Failed to load unhired applicants');
+      unhiredApplicantsList.value = [];
+    } finally {
+      isUnhiredDialogLoading.value = false;
+    }
+  };
+
+  // Open Unhired Email Modal
+  const openUnhiredEmailModal = (row) => {
+    selectedUnhiredApplicant.value = {
+      jobPostId: row.jobPostId || selectedJob.value.id,
+      submissionId: row.submissionId,
+      firstname: row.firstname,
+      lastname: row.lastname,
+      name_extension: row.name_extension || '',
+      status: row.status,
+      applicant_status: row.applicant_status,
+      controlno: row.controlno,
+      email: row.email,
+      purok: row.purok || null,
+      street: row.street || '',
+      barangay: row.barangay || '',
+      city: row.city || '',
+      province: row.province || '',
+    };
+    // Close the dialog - the UnhiredEmail component will open via v-if
+    unhiredEmailModal.value = false;
+  };
+
+  // Handle Unhired Email Close
+  const handleUnhiredEmailClose = () => {
+    selectedUnhiredApplicant.value = null;
+    // Refresh the unhired applicants list
+    refreshUnhiredApplicants();
+  };
+
+  // Refresh Unhired Applicants
+  const refreshUnhiredApplicants = async () => {
+    if (selectedJob.value?.id) {
+      try {
+        const response = await jobPostStore.fetchUnhiredApplicants(selectedJob.value.id);
+        if (response && response.success === true) {
+          unhiredApplicantsList.value = response.data || [];
+        }
+      } catch (error) {
+        console.error('Error refreshing unhired applicants:', error);
+      }
+    }
+  };
+
+  const confirmSendUnhiredNotifications = async () => {
+    if (!selectedJob.value?.id) {
+      toast.error('Job ID not found. Cannot send unhired notifications.');
+      return;
+    }
+
+    if (unhiredApplicantsList.value.length === 0) {
+      toast.warning('No unhired applicants to notify.');
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      const response = await jobPostStore.sendUnhiredNotifications(selectedJob.value.id);
+
+      if (response?.data?.success) {
+        toast.success(response.data.message || 'Unhired notifications sent successfully!');
+        unhiredEmailModal.value = false;
+        await refreshApplicantData();
+        await refreshUnhiredApplicants();
+      } else {
+        toast.error(response?.data?.message || 'Failed to send unhired notifications');
+      }
+    } catch (error) {
+      console.error('Error sending unhired notifications:', error);
+      toast.error(
+        error.response?.data?.message || 'An error occurred while sending unhired notifications.',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   // FIXED: openNotifyUnqualifiedDialog with dialog loading state
   const openNotifyUnqualifiedDialog = async () => {
     isDialogLoading.value = true;
@@ -1063,18 +1353,14 @@
 
   // FIXED: Improved openUnqualifiedEmailModal with pre-fetching
   const openUnqualifiedEmailModal = async (row) => {
-    // Show loading state
     isLoading.value = true;
 
     try {
-      // Pre-fetch qualification remarks before opening modal
       await emailTemplateStore.fetchQualificationRemarks(row.jobPostId, row.submissionId);
 
-      // Small delay to ensure store has processed the data
       await nextTick();
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Set the selected applicant with complete data
       selectedUnqualifiedApplicant.value = {
         jobPostId: row.jobPostId,
         submissionId: row.submissionId,
@@ -1084,10 +1370,9 @@
         status: row.status,
         applicant_status: row.applicant_status,
         controlno: row.controlno,
-        email: row.email, // Include email if available
+        email: row.email,
       };
 
-      // Open the modal after data is ready
       unqualifiedEmailModal.value = true;
     } catch (error) {
       console.error('Error pre-fetching applicant data:', error);
@@ -1101,7 +1386,6 @@
   const handleUnqualifiedEmailClose = () => {
     unqualifiedEmailModal.value = false;
     selectedUnqualifiedApplicant.value = null;
-    // Refresh the unqualified applicants list after modal closes
     refreshUnqualifiedApplicants();
   };
 
@@ -1414,6 +1698,9 @@
       applicantPagination.value.rowsNumber = totalApplicants.value;
       ratingPagination.value.rowsNumber = jobPostStore.ratingMeta?.total || 0;
 
+      // Load unhired applicants
+      await refreshUnhiredApplicants();
+
       return details;
     } catch (error) {
       console.error('Error loading data:', error);
@@ -1449,6 +1736,7 @@
         jobPostStore.fetch_applicant(selectedJob.value.id),
         jobPostStore.fetch_applicant_rating(selectedJob.value.id),
       ]);
+      await refreshUnhiredApplicants();
     } catch (error) {
       console.error('Error refreshing applicant data:', error);
       toast.error('Failed to refresh applicant data');
@@ -1575,7 +1863,6 @@
         toast.success('Final evaluation emails sent successfully!');
         sendEvalConfirmDialog.value = false;
 
-        // Refresh the unqualified applicants list after sending
         await refreshUnqualifiedApplicants();
         await refreshApplicantData();
       } else {
@@ -1843,6 +2130,8 @@
         search: ratingApplicantSearch.value,
       });
 
+      await refreshUnhiredApplicants();
+
       toast.success('Data refreshed successfully');
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -1993,7 +2282,8 @@
     border-radius: 4px;
   }
 
-  .unqualified-table {
+  .unqualified-table,
+  .unhired-table {
     width: 100%;
   }
 </style>
