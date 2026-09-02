@@ -726,6 +726,16 @@
               </div>
             </q-banner>
 
+            <!-- No Hired Applicant Notice -->
+            <q-banner v-if="hasNoHiredApplicant" class="bg-red-1 text-red-9 q-mb-md" rounded dense>
+              <template v-slot:avatar>
+                <q-icon name="warning" color="red" />
+              </template>
+              This job post currently has
+              <strong>no hired applicant</strong>
+              yet.
+            </q-banner>
+
             <!-- List Header -->
             <div class="row items-center justify-between q-mb-md">
               <div class="text-subtitle2 text-grey-8 text-bold">
@@ -820,11 +830,44 @@
             :label="`Send Notifications (${unhiredApplicantsList.length})`"
             color="blue-9"
             icon-right="send"
-            @click="confirmSendUnhiredNotifications"
+            @click="handleSendUnhiredClick"
             :loading="isLoading"
             :disable="isLoading || unhiredApplicantsList.length === 0"
             rounded
             no-caps
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- No Hired Applicant Confirmation Dialog -->
+    <q-dialog v-model="noHiredConfirmDialog" persistent>
+      <q-card style="min-width: 380px">
+        <q-card-section>
+          <div class="text-h6 text-primary">
+            <q-icon name="warning" class="q-mr-sm" color="red-9" />
+            Confirm Send Notifications
+          </div>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          <p class="text-body1">
+            This job post has
+            <strong>no hired applicant yet</strong>
+            . Are you sure you want to send unhired notifications to
+            <strong>{{ unhiredApplicantsList.length }}</strong>
+            applicant(s)?
+          </p>
+        </q-card-section>
+        <q-card-actions align="right" class="text-primary">
+          <q-btn flat label="Cancel" color="grey" v-close-popup :disable="isLoading" />
+          <q-btn
+            unelevated
+            label="Yes, Send Notifications"
+            color="negative"
+            icon-right="send"
+            @click="proceedSendUnhiredNotifications"
+            :loading="isLoading"
+            :disable="isLoading"
           />
         </q-card-actions>
       </q-card>
@@ -1007,6 +1050,9 @@
   const isUnhiredDialogLoading = ref(false);
   const unhiredApplicantsList = ref([]);
   const unhiredDataLoaded = ref(false); // Track if data has been loaded
+
+  // No Hired Applicant Confirmation
+  const noHiredConfirmDialog = ref(false);
 
   // Unhired Applicant Columns
   const unhiredApplicantColumns = ref([
@@ -1272,6 +1318,31 @@
     // Reset loaded flag to force reload when dialog opens
     unhiredDataLoaded.value = false;
     unhiredEmailModal.value = true;
+  };
+
+  // Whether the job post currently has no hired applicant yet.
+  // Only 'rated' means no hire has been made; 'occupied' means a hire exists.
+  const hasNoHiredApplicant = computed(() => {
+    return selectedJob.value?.status?.toLowerCase() === 'rated';
+  });
+
+  // Send button click handler - shows confirmation only when there's no hired applicant
+  const handleSendUnhiredClick = () => {
+    if (unhiredApplicantsList.value.length === 0) {
+      toast.warning('No unhired applicants to notify.');
+      return;
+    }
+    if (hasNoHiredApplicant.value) {
+      noHiredConfirmDialog.value = true;
+    } else {
+      confirmSendUnhiredNotifications();
+    }
+  };
+
+  // Called from the confirmation dialog's "Yes" button
+  const proceedSendUnhiredNotifications = async () => {
+    await confirmSendUnhiredNotifications();
+    noHiredConfirmDialog.value = false;
   };
 
   // Open Unhired Email Modal
