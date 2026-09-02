@@ -392,7 +392,10 @@
                 />
                 <!-- For Unhired Applicant Email -->
                 <q-btn
-                  v-if="canModifyJobPost && selectedJob?.status?.toLowerCase() == 'occupied'"
+                  v-if="
+                    (canModifyJobPost && selectedJob?.status?.toLowerCase() == 'occupied') ||
+                    selectedJob?.status?.toLowerCase() == 'rated'
+                  "
                   label="For Unhired Applicant"
                   color="blue-9"
                   icon="email"
