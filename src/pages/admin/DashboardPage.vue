@@ -10,11 +10,25 @@
         <!-- Positions Card -->
         <q-card class="stat-card ct-light-blue bg-white">
           <q-card-section class="card-content">
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.positions" class="card-loading-overlay">
+              <q-spinner color="primary" size="30px" />
+            </div>
+
             <!-- Total Positions -->
             <div class="stat-row q-mb-md">
               <span class="card-label text-bold text-grey-8">TOTAL PLANTILLA POSITIONS</span>
-              <span class="card-number text-blue-4 text-center" style="flex: 1; text-align: left">
-                {{ Number(dashboardStore.total_positions).toLocaleString() }}
+              <span
+                class="card-number text-blue-4 text-center"
+                style="flex: 1; text-align: left"
+                :class="{ 'skeleton-loading': dashboardStore.loadingCards.positions }"
+              >
+                <template v-if="dashboardStore.loadingCards.positions">
+                  <span class="skeleton-text">---</span>
+                </template>
+                <template v-else>
+                  {{ Number(dashboardStore.total_positions).toLocaleString() }}
+                </template>
               </span>
             </div>
 
@@ -27,15 +41,31 @@
                 <div class="stat-row q-mb-sm">
                   <span class="card-label text-bold text-grey-8">Funded Positions</span>
                   <span class="colon text-grey-8">:</span>
-                  <span class="card-number text-blue-6">
-                    {{ Number(dashboardStore.funded).toLocaleString() }}
+                  <span
+                    class="card-number text-blue-6"
+                    :class="{ 'skeleton-loading': dashboardStore.loadingCards.positions }"
+                  >
+                    <template v-if="dashboardStore.loadingCards.positions">
+                      <span class="skeleton-text">---</span>
+                    </template>
+                    <template v-else>
+                      {{ Number(dashboardStore.funded).toLocaleString() }}
+                    </template>
                   </span>
                 </div>
                 <div class="stat-row">
                   <span class="card-label text-bold text-grey-8">Unfunded Positions</span>
                   <span class="colon text-grey-8">:</span>
-                  <span class="card-number text-amber-6">
-                    {{ Number(dashboardStore.unfunded).toLocaleString() }}
+                  <span
+                    class="card-number text-amber-6"
+                    :class="{ 'skeleton-loading': dashboardStore.loadingCards.positions }"
+                  >
+                    <template v-if="dashboardStore.loadingCards.positions">
+                      <span class="skeleton-text">---</span>
+                    </template>
+                    <template v-else>
+                      {{ Number(dashboardStore.unfunded).toLocaleString() }}
+                    </template>
                   </span>
                 </div>
               </div>
@@ -55,15 +85,31 @@
                 <div class="stat-row q-mb-sm">
                   <span class="card-label text-bold text-grey-7">Filled-up Positions</span>
                   <span class="colon text-grey-7">:</span>
-                  <span class="card-number text-teal-6">
-                    {{ Number(dashboardStore.filled).toLocaleString() }}
+                  <span
+                    class="card-number text-teal-6"
+                    :class="{ 'skeleton-loading': dashboardStore.loadingCards.positions }"
+                  >
+                    <template v-if="dashboardStore.loadingCards.positions">
+                      <span class="skeleton-text">---</span>
+                    </template>
+                    <template v-else>
+                      {{ Number(dashboardStore.filled).toLocaleString() }}
+                    </template>
                   </span>
                 </div>
                 <div class="stat-row">
                   <span class="card-label text-bold text-grey-7">Vacant Funded Positions</span>
                   <span class="colon text-grey-7">:</span>
-                  <span class="card-number text-deep-purple-4">
-                    {{ Number(dashboardStore.vacant).toLocaleString() }}
+                  <span
+                    class="card-number text-deep-purple-4"
+                    :class="{ 'skeleton-loading': dashboardStore.loadingCards.positions }"
+                  >
+                    <template v-if="dashboardStore.loadingCards.positions">
+                      <span class="skeleton-text">---</span>
+                    </template>
+                    <template v-else>
+                      {{ Number(dashboardStore.vacant).toLocaleString() }}
+                    </template>
                   </span>
                 </div>
               </div>
@@ -74,59 +120,105 @@
         <!-- Publication Date -->
         <q-card class="stat-card ct-purple bg-white">
           <q-card-section class="card-content-publication">
-            <div class="card-label q-mb-xs text-grey-8 text-bold">Publication Date</div>
-            <div class="card-number text-deep-purple text-wrap q-mb-md">
-              {{ dashboardStore.publication_date }}
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.publication" class="card-loading-overlay">
+              <q-spinner color="deep-purple" size="30px" />
             </div>
+
+            <div class="card-label q-mb-xs text-grey-8 text-bold">Publication Date</div>
+
+            <q-select
+              v-model="dashboardStore.selectedPublication"
+              :options="publicationOptions"
+              option-label="label"
+              option-value="value"
+              color="deep-purple"
+              outlined
+              dense
+              emit-value
+              map-options
+              :loading="publicationLoading || dashboardStore.loadingCards.publication"
+              @update:model-value="onPublicationChange"
+              class="q-mb-sm"
+              :disable="dashboardStore.loadingCards.publication"
+            >
+              <template v-slot:no-option>
+                <q-item>
+                  <q-item-section class="text-grey-6">
+                    No publication dates available
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
 
             <q-separator class="q-my-sm" />
 
             <div class="card-label q-mb-xs text-grey-8 text-bold">Published Positions</div>
-            <div class="card-number text-deep-purple">
-              {{ Number(dashboardStore.published_position).toLocaleString() }}
+            <div
+              class="card-number text-deep-purple"
+              :class="{ 'skeleton-loading': dashboardStore.loadingCards.publication }"
+            >
+              <template v-if="dashboardStore.loadingCards.publication">
+                <span class="skeleton-text">---</span>
+              </template>
+              <template v-else>
+                {{ Number(dashboardStore.published_position).toLocaleString() }}
+              </template>
             </div>
           </q-card-section>
         </q-card>
       </div>
 
-      <!-- BADGES ROW -->
-      <!-- <div class="badges-row q-mx-md q-mb-sm">
-        <div class="badges-group">
-          <q-badge outline color="green" class="badge-large">
-            <q-icon name="people" size="sm" class="q-mr-xs" />
-            Total Applicant: {{ Number(dashboardStore.total_applicant).toLocaleString() }}
-          </q-badge>
-          <q-badge outline color="green" class="badge-large">
-            <q-icon name="people" size="sm" class="q-mr-xs" />
-            Internal: {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
-          </q-badge>
-          <q-badge outline color="primary" class="badge-large">
-            <q-icon name="people" size="sm" class="q-mr-xs" />
-            External: {{ Number(dashboardStore.external_applicant).toLocaleString() }}
-          </q-badge>
-        </div>
-      </div> -->
-
       <!-- STAT CARDS: responsive grid - equal width for bottom row -->
       <div class="stat-grid-bottom q-mx-md q-mb-sm">
+        <!-- Total Applicants -->
         <q-card class="stat-card ct-total-applicants bg-white">
           <q-card-section class="card-content">
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.applicants" class="card-loading-overlay">
+              <q-spinner color="primary" size="30px" />
+            </div>
+
             <div class="card-label q-mb-xs text-grey-8 text-bold">Total Applicants</div>
-            <div class="card-number text-green-9">
-              {{ Number(dashboardStore.total_applicant).toLocaleString() }}
+            <div
+              class="card-number text-green-9"
+              :class="{ 'skeleton-loading': dashboardStore.loadingCards.applicants }"
+            >
+              <template v-if="dashboardStore.loadingCards.applicants">
+                <span class="skeleton-text">---</span>
+              </template>
+              <template v-else>
+                {{ Number(dashboardStore.total_applicant).toLocaleString() }}
+              </template>
             </div>
             <q-separator class="q-my-sm" />
             <div class="row">
               <div class="col-6 pair-left">
                 <div class="card-label text-grey-7 text-bold">Internal</div>
-                <div class="card-number text-green-9">
-                  {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
+                <div
+                  class="card-number text-green-9"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.applicants }"
+                >
+                  <template v-if="dashboardStore.loadingCards.applicants">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.internal_applicant).toLocaleString() }}
+                  </template>
                 </div>
               </div>
               <div class="col-6 pair-right">
                 <div class="card-label text-grey-7 text-bold">External</div>
-                <div class="card-number text-negative">
-                  {{ Number(dashboardStore.external_applicant).toLocaleString() }}
+                <div
+                  class="card-number text-negative"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.applicants }"
+                >
+                  <template v-if="dashboardStore.loadingCards.applicants">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.external_applicant).toLocaleString() }}
+                  </template>
                 </div>
               </div>
             </div>
@@ -136,22 +228,51 @@
         <!-- Total Applications -->
         <q-card class="stat-card ct-green bg-white">
           <q-card-section class="card-content">
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.applications" class="card-loading-overlay">
+              <q-spinner color="primary" size="30px" />
+            </div>
+
             <div class="card-label q-mb-xs text-grey-8 text-bold">Total Applications</div>
-            <div class="card-number text-green-9">
-              {{ Number(dashboardStore.total_application).toLocaleString() }}
+            <div
+              class="card-number text-green-9"
+              :class="{ 'skeleton-loading': dashboardStore.loadingCards.applications }"
+            >
+              <template v-if="dashboardStore.loadingCards.applications">
+                <span class="skeleton-text">---</span>
+              </template>
+              <template v-else>
+                {{ Number(dashboardStore.total_application).toLocaleString() }}
+              </template>
             </div>
             <q-separator class="q-my-sm" />
             <div class="row">
               <div class="col-6 pair-left">
                 <div class="card-label text-grey-7 text-bold">Internal</div>
-                <div class="card-number text-green-9">
-                  {{ Number(dashboardStore.internal_application).toLocaleString() }}
+                <div
+                  class="card-number text-green-9"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.applications }"
+                >
+                  <template v-if="dashboardStore.loadingCards.applications">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.internal_application).toLocaleString() }}
+                  </template>
                 </div>
               </div>
               <div class="col-6 pair-right">
                 <div class="card-label text-grey-7 text-bold">External</div>
-                <div class="card-number text-negative">
-                  {{ Number(dashboardStore.external_application).toLocaleString() }}
+                <div
+                  class="card-number text-negative"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.applications }"
+                >
+                  <template v-if="dashboardStore.loadingCards.applications">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.external_application).toLocaleString() }}
+                  </template>
                 </div>
               </div>
             </div>
@@ -161,22 +282,51 @@
         <!-- Pre-Assessment -->
         <q-card class="stat-card ct-blue bg-white">
           <q-card-section class="card-content">
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.preAssessment" class="card-loading-overlay">
+              <q-spinner color="primary" size="30px" />
+            </div>
+
             <div class="card-label q-mb-xs text-grey-8 text-bold">Pre-assessment</div>
-            <div class="card-number text-blue-9">
-              {{ Number(dashboardStore.qualified + dashboardStore.unqualified).toLocaleString() }}
+            <div
+              class="card-number text-blue-9"
+              :class="{ 'skeleton-loading': dashboardStore.loadingCards.preAssessment }"
+            >
+              <template v-if="dashboardStore.loadingCards.preAssessment">
+                <span class="skeleton-text">---</span>
+              </template>
+              <template v-else>
+                {{ Number(dashboardStore.qualified + dashboardStore.unqualified).toLocaleString() }}
+              </template>
             </div>
             <q-separator class="q-my-sm" />
             <div class="row">
               <div class="col-6 pair-left">
                 <div class="card-label text-grey-7 text-bold">Qualified</div>
-                <div class="card-number text-green-9">
-                  {{ Number(dashboardStore.qualified).toLocaleString() }}
+                <div
+                  class="card-number text-green-9"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.preAssessment }"
+                >
+                  <template v-if="dashboardStore.loadingCards.preAssessment">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.qualified).toLocaleString() }}
+                  </template>
                 </div>
               </div>
               <div class="col-6 pair-right">
                 <div class="card-label text-grey-7 text-bold">For QS Validation</div>
-                <div class="card-number text-red-9">
-                  {{ Number(dashboardStore.unqualified).toLocaleString() }}
+                <div
+                  class="card-number text-red-9"
+                  :class="{ 'skeleton-loading': dashboardStore.loadingCards.preAssessment }"
+                >
+                  <template v-if="dashboardStore.loadingCards.preAssessment">
+                    <span class="skeleton-text">---</span>
+                  </template>
+                  <template v-else>
+                    {{ Number(dashboardStore.unqualified).toLocaleString() }}
+                  </template>
                 </div>
               </div>
             </div>
@@ -186,9 +336,22 @@
         <!-- For Assessment -->
         <q-card class="stat-card ct-amber bg-white">
           <q-card-section class="card-content">
+            <!-- Loading Overlay -->
+            <div v-if="dashboardStore.loadingCards.forAssessment" class="card-loading-overlay">
+              <q-spinner color="primary" size="30px" />
+            </div>
+
             <div class="card-label q-mb-xs text-grey-8 text-bold">For Assessment</div>
-            <div class="card-number text-orange-9">
-              {{ Number(dashboardStore.for_assessment).toLocaleString() }}
+            <div
+              class="card-number text-orange-9"
+              :class="{ 'skeleton-loading': dashboardStore.loadingCards.forAssessment }"
+            >
+              <template v-if="dashboardStore.loadingCards.forAssessment">
+                <span class="skeleton-text">---</span>
+              </template>
+              <template v-else>
+                {{ Number(dashboardStore.for_assessment).toLocaleString() }}
+              </template>
             </div>
           </q-card-section>
         </q-card>
@@ -361,7 +524,7 @@
               <q-chip dense class="q-pl-md q-pr-md">
                 Total Active Job Posts:
                 <q-badge dense rounded color="green" class="text-bold q-ml-xs">
-                  {{ jobs.length }}
+                  {{ dashboardJobPosts.length }}
                 </q-badge>
               </q-chip>
             </div>
@@ -388,10 +551,10 @@
             <q-card style="width: 100%" class="overflow-auto">
               <q-table
                 class="applicants-table"
-                :rows="filteredJobs"
-                :columns="columns"
+                :rows="filteredJobPosts"
+                :columns="jobColumns"
                 row-key="id"
-                :loading="useJobPost.loading"
+                :loading="dashboardStore.loadingJobPosts"
                 :pagination="jobsPagination"
                 dense
                 wrap-cells
@@ -493,15 +656,15 @@
 
           <!-- Mobile card list with search -->
           <div class="mobile-cards">
-            <div v-if="useJobPost.loading" class="flex flex-center q-pa-lg">
+            <div v-if="dashboardStore.loadingJobPosts" class="flex flex-center q-pa-lg">
               <q-spinner color="primary" size="40px" />
             </div>
             <template v-else>
-              <div v-if="filteredJobs.length === 0" class="text-center q-pa-md text-grey-6">
+              <div v-if="filteredJobPosts.length === 0" class="text-center q-pa-md text-grey-6">
                 No matching jobs found
               </div>
               <q-card
-                v-for="job in filteredJobs"
+                v-for="job in filteredJobPosts"
                 :key="job.id"
                 class="mobile-row-card q-mb-sm"
                 flat
@@ -642,12 +805,10 @@
   import { useAuthStore } from 'src/stores/authStore';
   import { useRouter, useRoute } from 'vue-router';
   import { DashboardStore } from 'src/stores/dashboardStore';
-  import { useJobPostStore } from 'src/stores/jobPostStore';
 
   const router = useRouter();
   const route = useRoute();
 
-  const useJobPost = useJobPostStore();
   const dashboardStore = DashboardStore();
   const authStore = useAuthStore();
 
@@ -657,15 +818,25 @@
   const officeSearch = ref('');
   const jobsSearch = ref('');
 
+  // Publication loading state
+  const publicationLoading = ref(false);
+
   const hasViewDashboardAccess = computed(
     () => authStore.user?.permissions?.viewDashboardstat === '1',
   );
 
-  const jobs = computed(() =>
-    useJobPost.jobPosts.filter((job) => job.status?.toLowerCase() !== 'republished'),
-  );
-
   const officeRows = computed(() => dashboardStore.summaryByOffice || []);
+
+  // Dashboard job posts from store
+  const dashboardJobPosts = computed(() => dashboardStore.dashboardJobPosts || []);
+
+  // Publication options computed from store
+  const publicationOptions = computed(() => {
+    return dashboardStore.publicationDates.map((item) => ({
+      label: `${item.post_date} - ${item.end_date}`,
+      value: item,
+    }));
+  });
 
   // Filtered office rows based on search
   const filteredOfficeRows = computed(() => {
@@ -674,14 +845,14 @@
     return officeRows.value.filter((row) => row.Office.toLowerCase().includes(searchTerm));
   });
 
-  // Filtered jobs based on search
-  const filteredJobs = computed(() => {
-    if (!jobsSearch.value) return jobs.value;
+  // Filtered job posts based on search
+  const filteredJobPosts = computed(() => {
+    if (!jobsSearch.value) return dashboardJobPosts.value;
     const searchTerm = jobsSearch.value.toLowerCase();
-    return jobs.value.filter(
+    return dashboardJobPosts.value.filter(
       (job) =>
-        job.Office.toLowerCase().includes(searchTerm) ||
-        job.Position.toLowerCase().includes(searchTerm),
+        job.Office?.toLowerCase().includes(searchTerm) ||
+        job.Position?.toLowerCase().includes(searchTerm),
     );
   });
 
@@ -709,7 +880,7 @@
     { name: 'Pending', label: 'For Assessment', align: 'center', field: 'Pending', sortable: true },
   ];
 
-  const columns = [
+  const jobColumns = [
     { name: 'office', label: 'Office', align: 'left', field: 'Office', sortable: true },
     { name: 'jobs', label: 'Position', align: 'left', field: 'Position', sortable: true },
     {
@@ -769,6 +940,21 @@
 
   const viewJob = (row) => router.push({ name: 'JobPost View', params: { id: row.id } });
 
+  // Handle publication date change
+  const onPublicationChange = async (publication) => {
+    if (publicationLoading.value) return;
+
+    publicationLoading.value = true;
+    try {
+      // Refresh dashboard with selected publication
+      await dashboardStore.refreshDashboard(publication);
+    } catch (error) {
+      console.error('Error refreshing dashboard with new publication:', error);
+    } finally {
+      publicationLoading.value = false;
+    }
+  };
+
   const checkUnauthorizedAccess = () => {
     if (route.query.unauthorized === 'true') router.replace({ query: {} });
   };
@@ -782,9 +968,24 @@
   onMounted(async () => {
     checkUnauthorizedAccess();
     if (hasViewDashboardAccess.value) {
-      await dashboardStore.status();
-      await dashboardStore.fetchSummaryByOffice();
-      await useJobPost.job_post();
+      try {
+        // Fetch publication dates first
+        await dashboardStore.fetchPublicationDates();
+
+        // Get initial data with default selection (latest)
+        if (dashboardStore.selectedPublication) {
+          const { post_date, end_date } = dashboardStore.selectedPublication;
+          await dashboardStore.status(post_date, end_date);
+          await dashboardStore.fetchSummaryByOffice(post_date);
+          await dashboardStore.fetchDashboardJobPosts(post_date);
+        } else {
+          await dashboardStore.status();
+          await dashboardStore.fetchSummaryByOffice();
+          await dashboardStore.fetchDashboardJobPosts();
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
     }
   });
 </script>
@@ -805,6 +1006,48 @@
     font-weight: 800;
     line-height: 1.2;
     word-break: break-word;
+    transition: all 0.3s ease;
+  }
+
+  /* ─── LOADING STATES ─────────────────────────────────────── */
+  .card-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    z-index: 10;
+    backdrop-filter: blur(2px);
+  }
+
+  .skeleton-loading {
+    color: #e0e0e0 !important;
+    position: relative;
+  }
+
+  .skeleton-text {
+    display: inline-block;
+    min-width: 50px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+    color: transparent !important;
+    padding: 0 8px;
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 
   /* ─── STAT ROW WITH PERFECT COLON ALIGNMENT ─────────────────────────── */
@@ -937,6 +1180,8 @@
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
   }
 
   .stat-card:hover {
@@ -974,11 +1219,13 @@
 
   .card-content {
     padding: 14px 16px;
+    position: relative;
   }
 
   /* Expanded publication card content with more vertical padding */
   .card-content-publication {
     padding: 20px 20px;
+    position: relative;
   }
 
   .pair-left {
