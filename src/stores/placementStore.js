@@ -4,19 +4,29 @@ import { toast } from 'src/boot/toast';
 
 export const usePlacementStore = defineStore('placement', {
   state: () => ({
+    // ============= PLACEMENTS =============
     placements: [],
     officeStructure: null,
     officeEmployees: [],
     reassignments: [],
+
+    // ============= ACTING HEADS =============
+    actingHeads: [], // acting heads of an office (for the table)
+    actingEmployees: [], // employees eligible to become acting heads (for the modal)
+
+    // ============= SHARED =============
     loading: false,
 
     // ============= REASSIGNMENT HISTORY =============
-    employeeHistory: null, // holds the full response payload: { control_no, Surname, Firstname, designation, re_assignment_history }
+    employeeHistory: null,
     historyLoading: false,
   }),
 
   actions: {
-    // List employees by office (JO, CASUAL, HONORARIUM)
+    /* ---------------------------------------------------------------------- */
+    /* PLACEMENTS (JO, CASUAL, HONORARIUM)                                    */
+    /* ---------------------------------------------------------------------- */
+
     async fetchPlacements(office) {
       this.loading = true;
       try {
@@ -30,7 +40,6 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Store/assign employees (JO, CASUAL, HONORARIUM)
     async storePlacement(data) {
       this.loading = true;
       try {
@@ -47,7 +56,6 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Update employee assignment (for reassign)
     async updatePlacement(controlNo, data) {
       this.loading = true;
       try {
@@ -84,9 +92,10 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // ============= REASSIGNMENT ACTIONS =============
+    /* ---------------------------------------------------------------------- */
+    /* REASSIGNMENTS                                                          */
+    /* ---------------------------------------------------------------------- */
 
-    // Fetch reassignments by office
     async fetchReassignments(office) {
       this.loading = true;
       try {
@@ -103,7 +112,6 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Store new reassignment
     async storeReassignment(data) {
       this.loading = true;
       try {
@@ -122,7 +130,6 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Update reassignment - updates structure fields only
     async updateReassignment(employeeReAssignId, data) {
       this.loading = true;
       try {
@@ -141,7 +148,6 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Return reassignment - updates active status only
     async returnReassignment(employeeReAssignId) {
       this.loading = true;
       try {
@@ -159,10 +165,80 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // ============= REASSIGNMENT HISTORY =============
+    /* ---------------------------------------------------------------------- */
+    /* ACTING HEADS                                                           */
+    /* ---------------------------------------------------------------------- */
 
-    // Fetch full reassignment history for a single employee (by control no)
-    // GET /assign/history/{controlNo}
+    // Fetch acting heads belonging to an office (for the table)
+    async fetchActingHeads(office) {
+      this.loading = true;
+      try {
+        const res = await adminApi.get(`/acting/head/list/${office}`);
+        this.actingHeads = res.data?.data || [];
+        return res.data;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Failed to load acting heads';
+        toast.error(errorMessage);
+        this.actingHeads = [];
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Fetch employees eligible to become acting head (for the Add modal)
+    async fetchActingEmployees(office) {
+      this.loading = true;
+      try {
+        const res = await adminApi.get(`/acting/list/office/employee/${office}`);
+        this.actingEmployees = res.data?.data || [];
+        return res.data;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Failed to load employees';
+        toast.error(errorMessage);
+        this.actingEmployees = [];
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Store a new acting head
+    async storeActingHead(data) {
+      this.loading = true;
+      try {
+        const res = await adminApi.post('/acting/employee/store', data);
+        toast.success('Acting head assigned successfully');
+        return res.data;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Failed to assign acting head';
+        toast.error(errorMessage);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Delete an acting head by its ID
+    async deleteActingHead(employeeId) {
+      this.loading = true;
+      try {
+        await adminApi.delete(`/acting/delete/${employeeId}`);
+        toast.success('Acting head removed successfully');
+        return true;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Failed to remove acting head';
+        toast.error(errorMessage);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /* ---------------------------------------------------------------------- */
+    /* REASSIGNMENT HISTORY                                                   */
+    /* ---------------------------------------------------------------------- */
+
     async fetchHistory(controlNo) {
       this.historyLoading = true;
       try {
@@ -179,25 +255,30 @@ export const usePlacementStore = defineStore('placement', {
       }
     },
 
-    // Clear history state (call when closing the history modal)
+    /* ---------------------------------------------------------------------- */
+    /* RESET HELPERS                                                          */
+    /* ---------------------------------------------------------------------- */
+
     resetHistory() {
       this.employeeHistory = null;
       this.historyLoading = false;
     },
 
-    // Reset office-specific data
     resetOfficeData() {
       this.officeStructure = null;
       this.officeEmployees = [];
       this.reassignments = [];
+      this.actingHeads = [];
+      this.actingEmployees = [];
     },
 
-    // Reset all state
     resetAll() {
       this.placements = [];
       this.officeStructure = null;
       this.officeEmployees = [];
       this.reassignments = [];
+      this.actingHeads = [];
+      this.actingEmployees = [];
       this.employeeHistory = null;
       this.historyLoading = false;
       this.loading = false;

@@ -133,15 +133,32 @@
                 :options="viewModeOptions"
                 class="q-mr-sm"
               />
-              <!-- Add / Reassign Employee - only for users with placement modify permission -->
+
+              <!-- Add / Reassign Employee (not shown in acting mode) -->
               <q-btn
-                v-if="currentStructure && showStructurePanel && canModifyPlacement"
+                v-if="
+                  currentStructure &&
+                  showStructurePanel &&
+                  canModifyPlacement &&
+                  employeeViewMode !== 'acting'
+                "
                 unelevated
                 no-caps
                 :color="employeeViewMode === 'actual' ? 'primary' : 'orange'"
                 :icon="employeeViewMode === 'actual' ? 'person_add' : 'swap_horiz'"
                 :label="employeeViewMode === 'actual' ? 'Add Employee' : 'Reassign Employee'"
                 @click="openAddEmployeeModal"
+              />
+
+              <!-- Add Acting Head (only in acting mode, requires selected structure) -->
+              <q-btn
+                v-if="canModifyPlacement && employeeViewMode === 'acting' && currentStructure"
+                unelevated
+                no-caps
+                color="teal"
+                icon="person_add"
+                label="Add Acting Head"
+                @click="openAddActingHeadModal"
               />
             </div>
           </div>
@@ -172,7 +189,11 @@
                 :rows="filteredPersonnelRows"
                 :columns="personnelColumns"
                 row-key="ControlNo"
-                :loading="useOffice.employeesLoading || useOffice.reassignedEmployeesLoading"
+                :loading="
+                  useOffice.employeesLoading ||
+                  useOffice.reassignedEmployeesLoading ||
+                  (employeeViewMode === 'acting' && usePlacement.loading)
+                "
               >
                 <!-- Single body slot: handles row styling AND the actions column -->
                 <template v-slot:body="props">
@@ -182,6 +203,7 @@
                         <div class="row items-center justify-center no-wrap">
                           <!-- View History - always available for actual employees -->
                           <q-btn
+                            v-if="employeeViewMode !== 'acting'"
                             flat
                             dense
                             round
@@ -221,7 +243,7 @@
                             </q-btn>
                           </template>
 
-                          <!-- Reassigned employees (green-text rows): edit only -->
+                          <!-- Reassigned employees: edit only -->
                           <template v-else-if="canEditReassignedRow(props.row)">
                             <q-btn
                               flat
@@ -234,6 +256,22 @@
                               class="action-btn"
                             >
                               <q-tooltip>Edit Reassignment</q-tooltip>
+                            </q-btn>
+                          </template>
+
+                          <!-- Acting heads: delete only -->
+                          <template v-else-if="employeeViewMode === 'acting'">
+                            <q-btn
+                              flat
+                              dense
+                              round
+                              size="sm"
+                              color="negative"
+                              icon="delete"
+                              @click="openDeleteActingHeadModal(props.row)"
+                              class="action-btn"
+                            >
+                              <q-tooltip>Remove Acting Head</q-tooltip>
                             </q-btn>
                           </template>
                         </div>
@@ -258,7 +296,9 @@
       </div>
     </div>
 
-    <!-- Add Employee / Reassign Employee Modal -->
+    <!-- ===================================================================== -->
+    <!-- Add Employee / Reassign Employee Modal                                -->
+    <!-- ===================================================================== -->
     <q-dialog v-model="showAddEmployeeModal" persistent>
       <q-card style="width: 850px; max-width: 95vw">
         <q-card-section class="row items-center justify-between q-pb-none">
@@ -439,7 +479,182 @@
       </q-card>
     </q-dialog>
 
-    <!-- Edit Employee Modal (for actual employees) -->
+    <!-- ===================================================================== -->
+    <!-- Add Acting Head Modal                                                 -->
+    <!-- ===================================================================== -->
+    <q-dialog v-model="showAddActingHeadModal" persistent>
+      <q-card style="width: 850px; max-width: 95vw">
+        <q-card-section class="row items-center justify-between q-pb-none">
+          <div>
+            <div class="text-h6 text-bold">Add Acting Head</div>
+            <div class="text-caption text-grey-7">
+              Assign an employee as acting head to the selected structure
+            </div>
+          </div>
+          <q-btn icon="close" flat round dense v-close-popup @click="closeAddActingHeadModal" />
+        </q-card-section>
+
+        <!-- Source Office Selection (pre-filled from main selection) -->
+        <q-card-section class="q-pt-md">
+          <q-select
+            outlined
+            dense
+            v-model="actingHeadOfficeFilter"
+            :options="officeOptions"
+            label="Select Office to Fetch Employees From *"
+            class="q-mb-sm"
+            @update:model-value="onActingHeadOfficeChange"
+          />
+        </q-card-section>
+
+        <q-stepper v-model="actingModalStep" color="teal" flat animated class="q-mt-sm">
+          <!-- Step 1: Select employee -->
+          <q-step :name="1" title="Select Employee" icon="checklist" :done="actingModalStep > 1">
+            <q-input
+              outlined
+              dense
+              clearable
+              v-model="actingModalSearch"
+              placeholder="Search name or position"
+              class="q-mb-sm"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+
+            <q-table
+              flat
+              bordered
+              class="wrap-table"
+              :rows="actingModalFilteredRows"
+              :columns="modalColumns"
+              row-key="ControlNo"
+              selection="multiple"
+              v-model:selected="actingModalSelected"
+              :loading="usePlacement.loading"
+              style="max-height: 42vh"
+              virtual-scroll
+            >
+              <template v-slot:no-data>
+                <div class="full-width row flex-center text-grey-7 q-pa-lg">
+                  <q-icon name="info" size="2em" class="q-mr-sm" />
+                  {{
+                    actingHeadOfficeFilter
+                      ? 'No employees found for this office'
+                      : 'Please select an office first'
+                  }}
+                </div>
+              </template>
+            </q-table>
+
+            <div class="text-caption text-grey-7 q-mt-sm">
+              {{ actingModalSelected.length }} employee(s) selected
+            </div>
+
+            <q-stepper-navigation class="row justify-end">
+              <q-btn
+                unelevated
+                no-caps
+                color="teal"
+                label="Continue to Review"
+                icon-right="arrow_forward"
+                :disable="!actingModalSelected.length"
+                @click="actingModalStep = 2"
+              />
+            </q-stepper-navigation>
+          </q-step>
+
+          <!-- Step 2: Review & confirm -->
+          <q-step :name="2" title="Review & Confirm" icon="fact_check">
+            <q-banner dense rounded class="bg-teal-1 text-teal-10 q-mb-md">
+              <template v-slot:avatar>
+                <q-icon name="account_tree" color="teal" />
+              </template>
+              <div class="text-caption text-teal-8 q-mb-xs">Assigning acting head to:</div>
+              <div class="row items-center breadcrumb-row">
+                <template v-for="(level, idx) in structureBreadcrumb" :key="level.type">
+                  <q-icon
+                    v-if="idx > 0"
+                    name="chevron_right"
+                    size="16px"
+                    color="teal-6"
+                    class="q-mx-xs"
+                  />
+                  <q-chip
+                    dense
+                    :icon="getNodeIcon({ nodeType: level.type })"
+                    :color="idx === structureBreadcrumb.length - 1 ? 'teal' : 'teal-2'"
+                    :text-color="idx === structureBreadcrumb.length - 1 ? 'white' : 'teal-10'"
+                  >
+                    {{ level.label }}
+                  </q-chip>
+                </template>
+              </div>
+            </q-banner>
+
+            <q-table
+              flat
+              bordered
+              class="wrap-table"
+              :rows="actingModalSelected"
+              :columns="actingReviewColumns"
+              row-key="ControlNo"
+              style="max-height: 42vh"
+              virtual-scroll
+              hide-bottom
+            >
+              <template v-slot:body-cell-remove="props">
+                <q-td :props="props" class="text-center">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    icon="close"
+                    color="negative"
+                    @click="removeFromActingSelection(props.row)"
+                  >
+                    <q-tooltip>Remove from selection</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+              <template v-slot:no-data>
+                <div class="full-width row flex-center text-grey-7 q-pa-lg">
+                  <q-icon name="info" size="2em" class="q-mr-sm" />
+                  No employee selected. Go back and pick at least one.
+                </div>
+              </template>
+            </q-table>
+
+            <q-stepper-navigation class="row justify-between">
+              <q-btn
+                flat
+                no-caps
+                color="grey-8"
+                label="Back"
+                icon="arrow_back"
+                @click="actingModalStep = 1"
+              />
+              <q-btn
+                unelevated
+                no-caps
+                color="teal"
+                label="Confirm Acting Head"
+                icon-right="check"
+                :disable="!actingModalSelected.length"
+                :loading="isAssigningActingHead"
+                @click="assignSelectedActingHeads"
+              />
+            </q-stepper-navigation>
+          </q-step>
+        </q-stepper>
+      </q-card>
+    </q-dialog>
+
+    <!-- ===================================================================== -->
+    <!-- Edit Employee Modal (Actual)                                          -->
+    <!-- ===================================================================== -->
     <q-dialog v-model="showEditModal" persistent>
       <q-card style="width: 800px; max-width: 95vw">
         <q-card-section class="row items-center justify-between q-pb-none">
@@ -515,7 +730,6 @@
 
             <!-- Dynamic Structure Fields -->
             <div v-if="editForm.new_office">
-              <!-- Sub-Office -->
               <q-select
                 v-if="office2Options.length > 0"
                 outlined
@@ -527,7 +741,6 @@
                 @update:model-value="onOffice2Change"
               />
 
-              <!-- Group -->
               <q-select
                 v-if="groupOptions.length > 0"
                 outlined
@@ -539,7 +752,6 @@
                 @update:model-value="onGroupChange"
               />
 
-              <!-- Division -->
               <q-select
                 v-if="divisionOptions.length > 0"
                 outlined
@@ -551,7 +763,6 @@
                 @update:model-value="onDivisionChange"
               />
 
-              <!-- Section -->
               <q-select
                 v-if="sectionOptions.length > 0"
                 outlined
@@ -563,7 +774,6 @@
                 @update:model-value="onSectionChange"
               />
 
-              <!-- Unit -->
               <q-select
                 v-if="unitOptions.length > 0"
                 outlined
@@ -574,7 +784,6 @@
                 class="q-mb-sm"
               />
 
-              <!-- No Structure Message -->
               <div v-if="!hasStructureData" class="text-caption text-warning q-mt-sm">
                 <q-icon name="warning" size="sm" />
                 No organizational structure available for this office
@@ -626,7 +835,9 @@
       </q-card>
     </q-dialog>
 
-    <!-- Edit Reassignment Modal -->
+    <!-- ===================================================================== -->
+    <!-- Edit Reassignment Modal                                               -->
+    <!-- ===================================================================== -->
     <q-dialog v-model="showReassignEditModal" persistent>
       <q-card style="width: 800px; max-width: 95vw">
         <q-card-section class="row items-center justify-between q-pb-none">
@@ -713,7 +924,6 @@
           <div>
             <div class="text-subtitle2 text-bold q-mb-sm">Update Reassignment</div>
 
-            <!-- Office Selection -->
             <q-select
               outlined
               dense
@@ -724,9 +934,7 @@
               @update:model-value="onReassignEditOfficeChange"
             />
 
-            <!-- Dynamic Structure Fields -->
             <div v-if="reassignEditForm.new_office">
-              <!-- Sub-Office -->
               <q-select
                 v-if="reassignEditOffice2Options.length > 0"
                 outlined
@@ -738,7 +946,6 @@
                 @update:model-value="onReassignEditOffice2Change"
               />
 
-              <!-- Group -->
               <q-select
                 v-if="reassignEditGroupOptions.length > 0"
                 outlined
@@ -750,7 +957,6 @@
                 @update:model-value="onReassignEditGroupChange"
               />
 
-              <!-- Division -->
               <q-select
                 v-if="reassignEditDivisionOptions.length > 0"
                 outlined
@@ -762,7 +968,6 @@
                 @update:model-value="onReassignEditDivisionChange"
               />
 
-              <!-- Section -->
               <q-select
                 v-if="reassignEditSectionOptions.length > 0"
                 outlined
@@ -774,7 +979,6 @@
                 @update:model-value="onReassignEditSectionChange"
               />
 
-              <!-- Unit -->
               <q-select
                 v-if="reassignEditUnitOptions.length > 0"
                 outlined
@@ -785,7 +989,6 @@
                 class="q-mb-sm"
               />
 
-              <!-- No Structure Message -->
               <div v-if="!reassignEditHasStructureData" class="text-caption text-warning q-mt-sm">
                 <q-icon name="warning" size="sm" />
                 No organizational structure available for this office
@@ -836,7 +1039,9 @@
       </q-card>
     </q-dialog>
 
-    <!-- Reassignment History Modal -->
+    <!-- ===================================================================== -->
+    <!-- Reassignment History Modal                                            -->
+    <!-- ===================================================================== -->
     <q-dialog v-model="showHistoryModal">
       <q-card style="width: 1000px; max-width: 95vw">
         <q-card-section class="row items-center justify-between q-pb-none">
@@ -929,7 +1134,9 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- ===================================================================== -->
+    <!-- Delete Employee Confirmation Modal                                    -->
+    <!-- ===================================================================== -->
     <q-dialog v-model="showDeleteModal" persistent>
       <q-card style="width: 400px; max-width: 90vw">
         <q-card-section>
@@ -969,6 +1176,48 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- ===================================================================== -->
+    <!-- Delete Acting Head Confirmation Modal                                 -->
+    <!-- ===================================================================== -->
+    <q-dialog v-model="showDeleteActingHeadModal" persistent>
+      <q-card style="width: 400px; max-width: 90vw">
+        <q-card-section>
+          <div class="row items-center">
+            <q-icon name="warning" color="negative" size="2.5rem" class="q-mr-md" />
+            <div>
+              <div class="text-h6 text-bold">Confirm Delete</div>
+              <div class="text-subtitle2 text-grey-7">
+                Are you sure you want to remove this acting head?
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-section v-if="deleteActingHeadData">
+          <div class="text-caption text-grey-7 q-mb-xs">Acting Head Details:</div>
+          <div class="text-subtitle1">{{ deleteActingHeadData.name }}</div>
+          <div class="text-caption text-grey-7">
+            Control No: {{ deleteActingHeadData.control_no }}
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat no-caps color="grey-8" label="Cancel" @click="closeDeleteActingHeadModal" />
+          <q-btn
+            unelevated
+            no-caps
+            color="negative"
+            label="Delete"
+            icon-right="delete"
+            :loading="deleteActingHeadLoading"
+            @click="confirmDeleteActingHead"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -988,7 +1237,7 @@
   const EDITABLE_STATUSES = ['CASUAL', 'CONTRACTUAL'];
 
   /* -------------------------------------------------------------------------- */
-  /* Permissions - mirrors the Plantilla page's canModifyPlantilla pattern      */
+  /* PERMISSIONS                                                                */
   /* -------------------------------------------------------------------------- */
 
   const canModifyPlacement = computed(
@@ -996,21 +1245,23 @@
   );
 
   /* -------------------------------------------------------------------------- */
-  /* Panel / view state                                                        */
+  /* PANEL / VIEW STATE                                                         */
   /* -------------------------------------------------------------------------- */
 
   const showStructurePanel = ref(true);
 
   // 'actual'     -> only currently-placed employees
-  // 'reassigned' -> currently-placed employees + anyone reassigned out, merged
+  // 'reassigned' -> actual + reassigned employees merged
+  // 'acting'     -> only acting heads
   const employeeViewMode = ref('actual');
   const viewModeOptions = [
     { label: 'Actual Employees', value: 'actual' },
     { label: 'With Reassigned', value: 'reassigned' },
+    { label: 'Acting Head', value: 'acting' },
   ];
 
   /* -------------------------------------------------------------------------- */
-  /* Office / structure selection state                                        */
+  /* OFFICE / STRUCTURE SELECTION                                               */
   /* -------------------------------------------------------------------------- */
 
   const selectedValue = ref(null);
@@ -1020,7 +1271,7 @@
   const currentStructure = ref(null);
 
   /* -------------------------------------------------------------------------- */
-  /* Personnel table search                                                    */
+  /* PERSONNEL TABLE SEARCH                                                     */
   /* -------------------------------------------------------------------------- */
 
   const personnelSearch = ref('');
@@ -1048,13 +1299,112 @@
     if (personnelSearch.value && personnelRows.value.length) {
       return `No personnel matching "${personnelSearch.value}"`;
     }
+    if (employeeViewMode.value === 'acting') {
+      return showStructurePanel.value
+        ? 'No acting heads in this structure node'
+        : 'No acting heads found for this office';
+    }
     return showStructurePanel.value
       ? 'Click a structure node to view its personnel'
       : 'Select an office to view personnel';
   });
 
   /* -------------------------------------------------------------------------- */
-  /* Edit modal state (for actual employees)                                  */
+  /* OFFICE OPTIONS                                                             */
+  /* -------------------------------------------------------------------------- */
+
+  const officeOptions = computed(() =>
+    (useOffice.offices || []).map((office) => office.office_name).filter(Boolean),
+  );
+
+  const getOptions = () => filteredOptions.value || [];
+
+  const getUniqueValues = () => {
+    const values = new Set();
+    (useOffice.offices || []).forEach((office) => {
+      if (office.office_name) values.add(office.office_name);
+    });
+    return Array.from(values).sort();
+  };
+
+  const filterOptions = (val, update) => {
+    update(() => {
+      if (useOffice.loading) return;
+      const needle = val.toLowerCase();
+      filteredOptions.value = needle
+        ? getUniqueValues().filter((v) => v.toLowerCase().includes(needle))
+        : getUniqueValues();
+    });
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* BREADCRUMB HELPERS                                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const buildBreadcrumbLevels = (source, keys) => {
+    if (!source) return [];
+    return keys
+      .map(({ type, field }) => ({ type, label: source[field] }))
+      .filter((level) => Boolean(level.label));
+  };
+
+  const STRUCTURE_LEVEL_KEYS = [
+    { type: 'office', field: 'office' },
+    { type: 'office2', field: 'office2' },
+    { type: 'group', field: 'group' },
+    { type: 'division', field: 'division' },
+    { type: 'section', field: 'section' },
+    { type: 'unit', field: 'unit' },
+  ];
+
+  const CURRENT_ASSIGNMENT_LEVEL_KEYS = [
+    { type: 'office', field: 'current_office' },
+    { type: 'office2', field: 'current_office2' },
+    { type: 'group', field: 'current_group' },
+    { type: 'division', field: 'current_division' },
+    { type: 'section', field: 'current_section' },
+    { type: 'unit', field: 'current_unit' },
+  ];
+
+  const NEW_ASSIGNMENT_LEVEL_KEYS = [
+    { type: 'office', field: 'new_office' },
+    { type: 'office2', field: 'new_office2' },
+    { type: 'group', field: 'new_group' },
+    { type: 'division', field: 'new_division' },
+    { type: 'section', field: 'new_section' },
+    { type: 'unit', field: 'new_unit' },
+  ];
+
+  const structureBreadcrumb = computed(() =>
+    buildBreadcrumbLevels(currentStructure.value, STRUCTURE_LEVEL_KEYS),
+  );
+
+  /* -------------------------------------------------------------------------- */
+  /* CASCADING STRUCTURE LOOKUPS (shared by Edit modals)                        */
+  /* -------------------------------------------------------------------------- */
+
+  const findOffice2Node = (rawStructure, office2Value) => {
+    if (!rawStructure) return null;
+    return (
+      (rawStructure.office2 || []).find((o) => (o.office2 || null) === (office2Value || null)) ||
+      null
+    );
+  };
+
+  const findGroupNode = (office2Node, groupValue) => {
+    if (!office2Node) return null;
+    return (
+      (office2Node.group || []).find((g) => (g.group || null) === (groupValue || null)) || null
+    );
+  };
+
+  const findDivisionNode = (groupNode, divisionValue) => {
+    if (!groupNode || !divisionValue) return null;
+    return (groupNode.divisions || []).find((d) => d.division === divisionValue) || null;
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* EDIT EMPLOYEE MODAL (Actual)                                               */
   /* -------------------------------------------------------------------------- */
 
   const showEditModal = ref(false);
@@ -1082,32 +1432,6 @@
   }
 
   const editForm = ref(createEmptyEditForm());
-
-  const officeOptions = computed(() =>
-    (useOffice.offices || []).map((office) => office.office_name).filter(Boolean),
-  );
-
-  /* -- Cascading structure lookups for the Edit modal's New Assignment fields -- */
-
-  const findOffice2Node = (rawStructure, office2Value) => {
-    if (!rawStructure) return null;
-    return (
-      (rawStructure.office2 || []).find((o) => (o.office2 || null) === (office2Value || null)) ||
-      null
-    );
-  };
-
-  const findGroupNode = (office2Node, groupValue) => {
-    if (!office2Node) return null;
-    return (
-      (office2Node.group || []).find((g) => (g.group || null) === (groupValue || null)) || null
-    );
-  };
-
-  const findDivisionNode = (groupNode, divisionValue) => {
-    if (!groupNode || !divisionValue) return null;
-    return (groupNode.divisions || []).find((d) => d.division === divisionValue) || null;
-  };
 
   const selectedOffice2Node = computed(() =>
     findOffice2Node(editForm.value.rawStructure, editForm.value.new_office2),
@@ -1164,48 +1488,6 @@
       unitOptions.value.length > 0,
   );
 
-  /* -------------------------------------------------------------------------- */
-  /* Breadcrumbs                                                               */
-  /* -------------------------------------------------------------------------- */
-
-  const buildBreadcrumbLevels = (source, keys) => {
-    if (!source) return [];
-    return keys
-      .map(({ type, field }) => ({ type, label: source[field] }))
-      .filter((level) => Boolean(level.label));
-  };
-
-  const STRUCTURE_LEVEL_KEYS = [
-    { type: 'office', field: 'office' },
-    { type: 'office2', field: 'office2' },
-    { type: 'group', field: 'group' },
-    { type: 'division', field: 'division' },
-    { type: 'section', field: 'section' },
-    { type: 'unit', field: 'unit' },
-  ];
-
-  const CURRENT_ASSIGNMENT_LEVEL_KEYS = [
-    { type: 'office', field: 'current_office' },
-    { type: 'office2', field: 'current_office2' },
-    { type: 'group', field: 'current_group' },
-    { type: 'division', field: 'current_division' },
-    { type: 'section', field: 'current_section' },
-    { type: 'unit', field: 'current_unit' },
-  ];
-
-  const NEW_ASSIGNMENT_LEVEL_KEYS = [
-    { type: 'office', field: 'new_office' },
-    { type: 'office2', field: 'new_office2' },
-    { type: 'group', field: 'new_group' },
-    { type: 'division', field: 'new_division' },
-    { type: 'section', field: 'new_section' },
-    { type: 'unit', field: 'new_unit' },
-  ];
-
-  const structureBreadcrumb = computed(() =>
-    buildBreadcrumbLevels(currentStructure.value, STRUCTURE_LEVEL_KEYS),
-  );
-
   const currentAssignmentBreadcrumb = computed(() =>
     buildBreadcrumbLevels(editForm.value, CURRENT_ASSIGNMENT_LEVEL_KEYS),
   );
@@ -1213,601 +1495,6 @@
   const newAssignmentBreadcrumb = computed(() =>
     buildBreadcrumbLevels(editForm.value, NEW_ASSIGNMENT_LEVEL_KEYS),
   );
-
-  /* -------------------------------------------------------------------------- */
-  /* Edit Reassignment modal state                                            */
-  /* -------------------------------------------------------------------------- */
-
-  const showReassignEditModal = ref(false);
-  const reassignEditLoading = ref(false);
-  const reassignEditId = ref(null);
-
-  function createEmptyReassignEditForm() {
-    return {
-      control_no: '',
-      name: '',
-      position: '',
-      returned: false,
-      current_office: '',
-      current_office2: '',
-      current_group: '',
-      current_division: '',
-      current_section: '',
-      current_unit: '',
-      new_office: null,
-      new_office2: null,
-      new_group: null,
-      new_division: null,
-      new_section: null,
-      new_unit: null,
-      rawStructure: null,
-    };
-  }
-
-  const reassignEditForm = ref(createEmptyReassignEditForm());
-
-  // Computed for reassign edit cascading selects
-  const reassignEditOffice2Options = computed(() =>
-    (reassignEditForm.value.rawStructure?.office2 || []).map((o) => o.office2).filter(Boolean),
-  );
-
-  const reassignEditSelectedOffice2Node = computed(() =>
-    findOffice2Node(reassignEditForm.value.rawStructure, reassignEditForm.value.new_office2),
-  );
-
-  const reassignEditGroupOptions = computed(() =>
-    (reassignEditSelectedOffice2Node.value?.group || []).map((g) => g.group).filter(Boolean),
-  );
-
-  const reassignEditSelectedGroupNode = computed(() =>
-    findGroupNode(reassignEditSelectedOffice2Node.value, reassignEditForm.value.new_group),
-  );
-
-  const reassignEditDivisionOptions = computed(() =>
-    (reassignEditSelectedGroupNode.value?.divisions || []).map((d) => d.division),
-  );
-
-  const reassignEditSelectedDivisionNode = computed(() =>
-    findDivisionNode(reassignEditSelectedGroupNode.value, reassignEditForm.value.new_division),
-  );
-
-  const reassignEditSectionOptions = computed(() => {
-    if (reassignEditForm.value.new_division) {
-      return (reassignEditSelectedDivisionNode.value?.sections || []).map((s) => s.section);
-    }
-    return (reassignEditSelectedGroupNode.value?.sections_without_division || []).map(
-      (s) => s.section,
-    );
-  });
-
-  const reassignEditUnitOptions = computed(() => {
-    if (reassignEditForm.value.new_section) {
-      const sectionPool = reassignEditForm.value.new_division
-        ? reassignEditSelectedDivisionNode.value?.sections || []
-        : reassignEditSelectedGroupNode.value?.sections_without_division || [];
-      const sectionNode = sectionPool.find((s) => s.section === reassignEditForm.value.new_section);
-      return sectionNode?.units || [];
-    }
-    if (reassignEditForm.value.new_division) {
-      return reassignEditSelectedDivisionNode.value?.units_without_section || [];
-    }
-    if (reassignEditForm.value.new_group) {
-      return reassignEditSelectedGroupNode.value?.units_without_division || [];
-    }
-    return [];
-  });
-
-  const reassignEditHasStructureData = computed(
-    () =>
-      reassignEditOffice2Options.value.length > 0 ||
-      reassignEditGroupOptions.value.length > 0 ||
-      reassignEditDivisionOptions.value.length > 0 ||
-      reassignEditSectionOptions.value.length > 0 ||
-      reassignEditUnitOptions.value.length > 0,
-  );
-
-  const reassignCurrentBreadcrumb = computed(() => {
-    const keys = [
-      { type: 'office', field: 'current_office' },
-      { type: 'office2', field: 'current_office2' },
-      { type: 'group', field: 'current_group' },
-      { type: 'division', field: 'current_division' },
-      { type: 'section', field: 'current_section' },
-      { type: 'unit', field: 'current_unit' },
-    ];
-    return buildBreadcrumbLevels(reassignEditForm.value, keys);
-  });
-
-  const reassignEditNewBreadcrumb = computed(() => {
-    const keys = [
-      { type: 'office', field: 'new_office' },
-      { type: 'office2', field: 'new_office2' },
-      { type: 'group', field: 'new_group' },
-      { type: 'division', field: 'new_division' },
-      { type: 'section', field: 'new_section' },
-      { type: 'unit', field: 'new_unit' },
-    ];
-    return buildBreadcrumbLevels(reassignEditForm.value, keys);
-  });
-
-  /* -------------------------------------------------------------------------- */
-  /* Delete modal state                                                        */
-  /* -------------------------------------------------------------------------- */
-
-  const showDeleteModal = ref(false);
-  const deleteLoading = ref(false);
-  const deleteEmployeeData = ref(null);
-
-  /* -------------------------------------------------------------------------- */
-  /* Reassignment History modal state                                          */
-  /* -------------------------------------------------------------------------- */
-
-  const showHistoryModal = ref(false);
-
-  // Raw response payload from GET /assign/history/{controlNo}
-  const historyData = computed(() => usePlacement.employeeHistory);
-
-  const historyEmployeeName = computed(() => {
-    if (!historyData.value) return '';
-    const { Firstname, Surname } = historyData.value;
-    return [Firstname, Surname].filter(Boolean).join(' ') || 'N/A';
-  });
-
-  const historyColumns = [
-    {
-      name: 'path',
-      label: 'Reassignment Path',
-      field: 'path',
-      align: 'left',
-      style: 'width: auto;',
-      headerStyle: 'width: auto;',
-    },
-    {
-      name: 'status',
-      label: 'Status',
-      field: 'status',
-      align: 'center',
-      style: 'width: 100px;',
-      headerStyle: 'width: 100px;',
-    },
-    {
-      name: 'date',
-      label: 'Date',
-      field: 'date',
-      align: 'left',
-      style: 'width: 190px; white-space: nowrap;',
-      headerStyle: 'width: 120px; white-space: nowrap;',
-    },
-  ];
-
-  // Maps each raw history entry into a display-ready row:
-  // - breadcrumb: chip trail built the same way as the other breadcrumbs on this page
-  // - isActive: derived from the "active" flag ('1' / 1 / true = active)
-  // - formattedDate: human-readable created_at
-  const historyRows = computed(() => {
-    const entries = historyData.value?.re_assignment_history || [];
-    return (
-      [...entries]
-        // Latest to oldest - entries without a created_at date are pushed to the bottom
-        .sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at).getTime() : -Infinity;
-          const dateB = b.created_at ? new Date(b.created_at).getTime() : -Infinity;
-          return dateB - dateA;
-        })
-        .map((entry) => ({
-          ...entry,
-          breadcrumb: buildBreadcrumbLevels(entry, STRUCTURE_LEVEL_KEYS),
-          isActive: entry.active === '1' || entry.active === 1 || entry.active === true,
-          formattedDate: entry.created_at
-            ? new Date(entry.created_at).toLocaleString('en-PH', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '—',
-        }))
-    );
-  });
-
-  const openHistoryModal = async (row) => {
-    showHistoryModal.value = true;
-    try {
-      await usePlacement.fetchHistory(row.ControlNo);
-    } catch (error) {
-      console.error('Error loading reassignment history:', error);
-    }
-  };
-
-  const closeHistoryModal = () => {
-    showHistoryModal.value = false;
-    usePlacement.resetHistory();
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Add / Reassign Employee Modal                                             */
-  /* -------------------------------------------------------------------------- */
-
-  const showAddEmployeeModal = ref(false);
-  const modalStep = ref(1);
-  const modalSelected = ref([]);
-  const modalSearch = ref('');
-  const isAssigning = ref(false);
-  const reassignOfficeFilter = ref(null);
-  const reassignOfficeOptions = ref([]);
-
-  // Modal columns - handles both Designation (actual) and position (reassigned)
-  const modalColumns = [
-    {
-      name: 'ControlNo',
-      label: 'Control No',
-      field: (row) => row.ControlNo || row.control_no || '',
-      align: 'left',
-      style: 'width: 110px; white-space: normal;',
-      headerStyle: 'width: 110px;',
-    },
-    {
-      name: 'Name',
-      label: 'Name',
-      field: (row) => row.Name4 || row.Name || row.name || '',
-      align: 'left',
-      style: 'width: 240px; white-space: normal;',
-      headerStyle: 'width: 240px;',
-    },
-    {
-      name: 'Position',
-      label: 'Position',
-      field: (row) => row.Designation || row.position || row.Position || '',
-      align: 'left',
-      style: 'white-space: normal;',
-    },
-    {
-      name: 'Status',
-      label: 'Status',
-      field: (row) => row.Status || row.status || '',
-      align: 'left',
-      style: 'width: 110px; white-space: normal;',
-      headerStyle: 'width: 110px;',
-    },
-  ];
-
-  const reviewColumns = [
-    ...modalColumns,
-    { name: 'remove', label: '', field: 'remove', align: 'center', style: 'width: 60px;' },
-  ];
-
-  const modalFilteredRows = computed(() => {
-    let source = [];
-    if (employeeViewMode.value === 'actual') {
-      source = usePlacement.placements || [];
-    } else {
-      source = usePlacement.reassignments || [];
-    }
-    if (!modalSearch.value) return source;
-    const needle = modalSearch.value.toLowerCase();
-    return source.filter(
-      (row) =>
-        (row.Name4 || row.Name || row.name || '').toLowerCase().includes(needle) ||
-        (row.Designation || row.position || row.Position || '').toLowerCase().includes(needle),
-    );
-  });
-
-  const removeFromSelection = (row) => {
-    modalSelected.value = modalSelected.value.filter((r) => r.ControlNo !== row.ControlNo);
-  };
-
-  const openAddEmployeeModal = async () => {
-    if (!currentStructure.value) return;
-    if (!canModifyPlacement.value) {
-      toast.warning('You do not have permission to modify placements.');
-      return;
-    }
-
-    modalStep.value = 1;
-    modalSelected.value = [];
-    modalSearch.value = '';
-    showAddEmployeeModal.value = true;
-
-    if (employeeViewMode.value === 'actual') {
-      await usePlacement.fetchPlacements(currentStructure.value.office);
-    } else {
-      await useOffice.fetchOffices();
-      reassignOfficeOptions.value = (useOffice.offices || [])
-        .map((o) => o.office_name)
-        .filter(Boolean);
-      reassignOfficeFilter.value = null;
-      usePlacement.reassignments = [];
-    }
-  };
-
-  const onReassignOfficeChange = async (office) => {
-    if (office) {
-      await usePlacement.fetchReassignments(office);
-    } else {
-      usePlacement.reassignments = [];
-    }
-  };
-
-  const assignSelectedPersonnel = async () => {
-    if (!modalSelected.value.length) return;
-
-    isAssigning.value = true;
-    try {
-      if (employeeViewMode.value === 'actual') {
-        for (const person of modalSelected.value) {
-          const payload = {
-            control_no: person.ControlNo,
-            name: person.Name4 || person.Name,
-            position: person.Designation || person.Position,
-            status: person.Status || null,
-            office: currentStructure.value.office || null,
-            office2: currentStructure.value.office2 || null,
-            group: currentStructure.value.group || null,
-            division: currentStructure.value.division || null,
-            section: currentStructure.value.section || null,
-            unit: currentStructure.value.unit || null,
-          };
-          await usePlacement.storePlacement(payload);
-        }
-        toast.success('Employees assigned successfully');
-      } else {
-        if (!reassignOfficeFilter.value) {
-          toast.warning('Please select an office');
-          return;
-        }
-        for (const person of modalSelected.value) {
-          const payload = {
-            control_no: person.ControlNo || person.control_no,
-            name: person.Name || person.name,
-            position: person.position || person.Position || person.Designation,
-            office: currentStructure.value.office || null,
-            office2: currentStructure.value.office2 || null,
-            group: currentStructure.value.group || null,
-            division: currentStructure.value.division || null,
-            section: currentStructure.value.section || null,
-            unit: currentStructure.value.unit || null,
-          };
-          await usePlacement.storeReassignment(payload);
-        }
-        toast.success('Employees reassigned successfully');
-      }
-      showAddEmployeeModal.value = false;
-      modalSelected.value = [];
-      await refreshData();
-    } catch (error) {
-      console.error('Error assigning personnel:', error);
-      toast.error('Failed to assign one or more employees. Please try again.');
-    } finally {
-      isAssigning.value = false;
-    }
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Structure matching helpers                                                */
-  /* -------------------------------------------------------------------------- */
-
-  const valuesMatch = (val1, val2) => {
-    const normalize = (val) => (val === null || val === undefined || val === '' ? '' : val);
-    return normalize(val1) === normalize(val2);
-  };
-
-  const matchesStructureNode = (row, s) => {
-    if (!row.office || row.office !== s.office) return false;
-
-    if (s.unit) {
-      return (
-        valuesMatch(row.office2, s.office2) &&
-        valuesMatch(row.group, s.group) &&
-        valuesMatch(row.division, s.division) &&
-        valuesMatch(row.section, s.section) &&
-        valuesMatch(row.unit, s.unit)
-      );
-    }
-    if (s.section) {
-      return (
-        valuesMatch(row.office2, s.office2) &&
-        valuesMatch(row.group, s.group) &&
-        valuesMatch(row.division, s.division) &&
-        valuesMatch(row.section, s.section) &&
-        (!row.unit || row.unit === '')
-      );
-    }
-    if (s.division) {
-      return (
-        valuesMatch(row.office2, s.office2) &&
-        valuesMatch(row.group, s.group) &&
-        valuesMatch(row.division, s.division) &&
-        (!row.section || row.section === '') &&
-        (!row.unit || row.unit === '')
-      );
-    }
-    if (s.group) {
-      return (
-        valuesMatch(row.office2, s.office2) &&
-        valuesMatch(row.group, s.group) &&
-        (!row.division || row.division === '') &&
-        (!row.section || row.section === '') &&
-        (!row.unit || row.unit === '')
-      );
-    }
-    if (s.office2) {
-      return (
-        valuesMatch(row.office2, s.office2) &&
-        (!row.group || row.group === '') &&
-        (!row.division || row.division === '') &&
-        (!row.section || row.section === '') &&
-        (!row.unit || row.unit === '')
-      );
-    }
-    return (
-      (!row.office2 || row.office2 === '') &&
-      (!row.group || row.group === '') &&
-      (!row.division || row.division === '') &&
-      (!row.section || row.section === '') &&
-      (!row.unit || row.unit === '')
-    );
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Employee row mapping                                                      */
-  /* -------------------------------------------------------------------------- */
-
-  const mappedEmployees = computed(() => {
-    // 1. Get actual employees (only those with re_assign: false)
-    const actualEmployees = (useOffice.employees || [])
-      .filter((row) => row.re_assign === false || row.re_assign === null)
-      .map((row) => ({
-        ControlNo: row.ControlNo ?? '',
-        Name: row.Name ?? '',
-        Position: row.Designation ?? '',
-        Status: row.Status ?? '',
-        office: row.Office ?? null,
-        office2: row.Office2 ?? null,
-        group: row.Group ?? null,
-        division: row.Division ?? null,
-        section: row.Section ?? null,
-        unit: row.Unit ?? null,
-        re_assign: row.re_assign ?? false,
-        isActualEmployee: true,
-        isReassigned: false,
-        ReAssignId: null,
-        returned: false,
-      }));
-
-    // If in actual mode, return ONLY actual employees
-    if (employeeViewMode.value === 'actual') {
-      return actualEmployees;
-    }
-
-    // 2. For "With Reassigned" mode, show:
-    // - All actual employees (re_assign: false)
-    // - PLUS reassigned employees (re_assign: true) with their reassignment data
-    const employeeMap = new Map();
-
-    // Add all actual employees first
-    actualEmployees.forEach((emp) => {
-      employeeMap.set(emp.ControlNo, { ...emp });
-    });
-
-    // Add reassigned employees (re_assign: true) - these OVERRIDE actual if they exist
-    (useOffice.employees || [])
-      .filter((row) => row.re_assign === true)
-      .forEach((row) => {
-        // Check if this employee also exists in reassignedEmployees with a position
-        const reassignedData = useOffice.reassignedEmployees?.find(
-          (r) => r.control_no === row.ControlNo,
-        );
-
-        const reassignedEmployee = {
-          ControlNo: row.ControlNo ?? '',
-          Name: row.Name ?? '',
-          Position: reassignedData?.position || row.Designation || '',
-          Status: row.Status ?? 'REGULAR',
-          office: row.Office ?? null,
-          office2: row.Office2 ?? null,
-          group: row.Group ?? null,
-          division: row.Division ?? null,
-          section: row.Section ?? null,
-          unit: row.Unit ?? null,
-          re_assign: true,
-          isActualEmployee: true, // They still exist in the system
-          isReassigned: true, // But they've been reassigned
-          ReAssignId: reassignedData?.id ?? null,
-          returned: reassignedData?.active === '0' || reassignedData?.active === 0 || false,
-        };
-
-        employeeMap.set(row.ControlNo, reassignedEmployee);
-      });
-
-    return Array.from(employeeMap.values());
-  });
-
-  const personnelRows = computed(() => {
-    if (!selectedValue.value) return [];
-
-    if (!showStructurePanel.value) {
-      return mappedEmployees.value.filter((row) => row.office === selectedValue.value);
-    }
-
-    if (!currentStructure.value) return [];
-    return mappedEmployees.value.filter((row) => matchesStructureNode(row, currentStructure.value));
-  });
-
-  const canEditRow = (row) => {
-    if (!canModifyPlacement.value) return false;
-    if (employeeViewMode.value !== 'actual') return false;
-    if (row.isReassigned) return false;
-    return EDITABLE_STATUSES.includes(row.Status?.toUpperCase());
-  };
-
-  // Reassigned employees (green-text rows, sourced from fetchReassignedEmployees) -
-  // shown only in the "With Reassigned" view, gated by the same modify permission.
-  const canEditReassignedRow = (row) => {
-    if (!canModifyPlacement.value) return false;
-    if (employeeViewMode.value !== 'reassigned') return false;
-    return Boolean(row.isReassigned && row.ReAssignId);
-  };
-
-  const getRowClass = (row) => {
-    if (employeeViewMode.value === 'actual' && row.re_assign === true) {
-      return 'reassign-true-row';
-    }
-    if (employeeViewMode.value === 'reassigned' && row.isReassigned) {
-      return 'reassigned-row';
-    }
-    return '';
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Personnel table columns                                                   */
-  /* -------------------------------------------------------------------------- */
-
-  const personnelColumns = [
-    {
-      name: 'ControlNo',
-      label: 'Control No',
-      field: (row) => row.ControlNo || '',
-      align: 'left',
-      style: 'width: 110px; white-space: normal;',
-      headerStyle: 'width: 110px;',
-    },
-    {
-      name: 'Name',
-      label: 'Name',
-      field: (row) => row.Name || '',
-      align: 'left',
-      style: 'width: 200px; white-space: normal;',
-      headerStyle: 'width: 200px;',
-    },
-    {
-      name: 'Position',
-      label: 'Position',
-      field: (row) => row.Position || row.position || '',
-      align: 'left',
-      style: 'white-space: normal;',
-    },
-    {
-      name: 'Status',
-      label: 'Status',
-      field: (row) => row.Status || '',
-      align: 'left',
-      style: 'width: 130px; white-space: normal;',
-      headerStyle: 'width: 130px;',
-    },
-    {
-      name: 'actions',
-      label: 'Actions',
-      field: 'actions',
-      align: 'center',
-      style: 'width: 190px;',
-      headerStyle: 'width: 190px;',
-    },
-  ];
-
-  /* -------------------------------------------------------------------------- */
-  /* Edit Employee (Actual)                                                   */
-  /* -------------------------------------------------------------------------- */
 
   const openEditModal = async (row) => {
     if (!canModifyPlacement.value) {
@@ -1928,8 +1615,119 @@
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Edit Reassignment                                                         */
+  /* EDIT REASSIGNMENT MODAL                                                    */
   /* -------------------------------------------------------------------------- */
+
+  const showReassignEditModal = ref(false);
+  const reassignEditLoading = ref(false);
+  const reassignEditId = ref(null);
+
+  function createEmptyReassignEditForm() {
+    return {
+      control_no: '',
+      name: '',
+      position: '',
+      returned: false,
+      current_office: '',
+      current_office2: '',
+      current_group: '',
+      current_division: '',
+      current_section: '',
+      current_unit: '',
+      new_office: null,
+      new_office2: null,
+      new_group: null,
+      new_division: null,
+      new_section: null,
+      new_unit: null,
+      rawStructure: null,
+    };
+  }
+
+  const reassignEditForm = ref(createEmptyReassignEditForm());
+
+  const reassignEditOffice2Options = computed(() =>
+    (reassignEditForm.value.rawStructure?.office2 || []).map((o) => o.office2).filter(Boolean),
+  );
+
+  const reassignEditSelectedOffice2Node = computed(() =>
+    findOffice2Node(reassignEditForm.value.rawStructure, reassignEditForm.value.new_office2),
+  );
+
+  const reassignEditGroupOptions = computed(() =>
+    (reassignEditSelectedOffice2Node.value?.group || []).map((g) => g.group).filter(Boolean),
+  );
+
+  const reassignEditSelectedGroupNode = computed(() =>
+    findGroupNode(reassignEditSelectedOffice2Node.value, reassignEditForm.value.new_group),
+  );
+
+  const reassignEditDivisionOptions = computed(() =>
+    (reassignEditSelectedGroupNode.value?.divisions || []).map((d) => d.division),
+  );
+
+  const reassignEditSelectedDivisionNode = computed(() =>
+    findDivisionNode(reassignEditSelectedGroupNode.value, reassignEditForm.value.new_division),
+  );
+
+  const reassignEditSectionOptions = computed(() => {
+    if (reassignEditForm.value.new_division) {
+      return (reassignEditSelectedDivisionNode.value?.sections || []).map((s) => s.section);
+    }
+    return (reassignEditSelectedGroupNode.value?.sections_without_division || []).map(
+      (s) => s.section,
+    );
+  });
+
+  const reassignEditUnitOptions = computed(() => {
+    if (reassignEditForm.value.new_section) {
+      const sectionPool = reassignEditForm.value.new_division
+        ? reassignEditSelectedDivisionNode.value?.sections || []
+        : reassignEditSelectedGroupNode.value?.sections_without_division || [];
+      const sectionNode = sectionPool.find((s) => s.section === reassignEditForm.value.new_section);
+      return sectionNode?.units || [];
+    }
+    if (reassignEditForm.value.new_division) {
+      return reassignEditSelectedDivisionNode.value?.units_without_section || [];
+    }
+    if (reassignEditForm.value.new_group) {
+      return reassignEditSelectedGroupNode.value?.units_without_division || [];
+    }
+    return [];
+  });
+
+  const reassignEditHasStructureData = computed(
+    () =>
+      reassignEditOffice2Options.value.length > 0 ||
+      reassignEditGroupOptions.value.length > 0 ||
+      reassignEditDivisionOptions.value.length > 0 ||
+      reassignEditSectionOptions.value.length > 0 ||
+      reassignEditUnitOptions.value.length > 0,
+  );
+
+  const reassignCurrentBreadcrumb = computed(() => {
+    const keys = [
+      { type: 'office', field: 'current_office' },
+      { type: 'office2', field: 'current_office2' },
+      { type: 'group', field: 'current_group' },
+      { type: 'division', field: 'current_division' },
+      { type: 'section', field: 'current_section' },
+      { type: 'unit', field: 'current_unit' },
+    ];
+    return buildBreadcrumbLevels(reassignEditForm.value, keys);
+  });
+
+  const reassignEditNewBreadcrumb = computed(() => {
+    const keys = [
+      { type: 'office', field: 'new_office' },
+      { type: 'office2', field: 'new_office2' },
+      { type: 'group', field: 'new_group' },
+      { type: 'division', field: 'new_division' },
+      { type: 'section', field: 'new_section' },
+      { type: 'unit', field: 'new_unit' },
+    ];
+    return buildBreadcrumbLevels(reassignEditForm.value, keys);
+  });
 
   const openReassignEditModal = async (row) => {
     if (!canModifyPlacement.value) {
@@ -1943,7 +1741,6 @@
       return;
     }
 
-    // Determine if the employee is returned (active = '0' or 0 or false)
     const isReturned =
       row.active === '0' || row.active === 0 || row.active === false || row.returned === true;
 
@@ -1959,7 +1756,6 @@
       current_division: row.division || '',
       current_section: row.section || '',
       current_unit: row.unit || '',
-      // Use the current path from the row data
       new_office: row.office || null,
       new_office2: row.office2 || null,
       new_group: row.group || null,
@@ -2028,7 +1824,6 @@
     }
   };
 
-  // This function updates structure fields ONLY when there are changes
   const updateReassignment = async () => {
     if (!canModifyPlacement.value) {
       toast.warning('You do not have permission to modify placements.');
@@ -2040,7 +1835,6 @@
       return;
     }
 
-    // Check if there are any actual structure changes
     const hasStructureChanges =
       reassignEditForm.value.new_office !== reassignEditForm.value.current_office ||
       reassignEditForm.value.new_office2 !== reassignEditForm.value.current_office2 ||
@@ -2049,7 +1843,6 @@
       reassignEditForm.value.new_section !== reassignEditForm.value.current_section ||
       reassignEditForm.value.new_unit !== reassignEditForm.value.current_unit;
 
-    // If no structure changes, just close the modal
     if (!hasStructureChanges) {
       toast.info('No changes to update');
       closeReassignEditModal();
@@ -2058,7 +1851,6 @@
 
     reassignEditLoading.value = true;
     try {
-      // Only update structure fields
       const structurePayload = {
         office: reassignEditForm.value.new_office,
         office2: reassignEditForm.value.new_office2 || null,
@@ -2080,25 +1872,26 @@
     }
   };
 
-  // This function handles the returned toggle - updates active status
   const handleReturnToggle = async () => {
     if (!reassignEditId.value) return;
 
     try {
       await usePlacement.returnReassignment(reassignEditId.value);
-
       await refreshData();
     } catch (error) {
       console.error('Error toggling return status:', error);
-      // Revert the toggle if there was an error
       reassignEditForm.value.returned = !reassignEditForm.value.returned;
       toast.error('Failed to update return status');
     }
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Delete Employee                                                           */
+  /* DELETE EMPLOYEE MODAL                                                      */
   /* -------------------------------------------------------------------------- */
+
+  const showDeleteModal = ref(false);
+  const deleteLoading = ref(false);
+  const deleteEmployeeData = ref(null);
 
   const openDeleteModal = (row) => {
     if (!canModifyPlacement.value) {
@@ -2141,7 +1934,678 @@
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Shared data refresh                                                       */
+  /* DELETE ACTING HEAD MODAL                                                   */
+  /* -------------------------------------------------------------------------- */
+
+  const showDeleteActingHeadModal = ref(false);
+  const deleteActingHeadLoading = ref(false);
+  const deleteActingHeadData = ref(null);
+
+  const openDeleteActingHeadModal = (row) => {
+    if (!canModifyPlacement.value) {
+      toast.warning('You do not have permission to modify placements.');
+      return;
+    }
+
+    const actingHeadId = row.ActingHeadId || row.id || null;
+    if (!actingHeadId) {
+      toast.error('No acting head ID found');
+      return;
+    }
+
+    deleteActingHeadData.value = {
+      id: actingHeadId,
+      control_no: row.ControlNo || '',
+      name: row.Name || '',
+    };
+    showDeleteActingHeadModal.value = true;
+  };
+
+  const closeDeleteActingHeadModal = () => {
+    showDeleteActingHeadModal.value = false;
+    deleteActingHeadData.value = null;
+  };
+
+  const confirmDeleteActingHead = async () => {
+    if (!canModifyPlacement.value) {
+      toast.warning('You do not have permission to modify placements.');
+      return;
+    }
+    if (!deleteActingHeadData.value) return;
+
+    deleteActingHeadLoading.value = true;
+    try {
+      await usePlacement.deleteActingHead(deleteActingHeadData.value.id);
+
+      if (selectedValue.value) {
+        await usePlacement.fetchActingHeads(selectedValue.value);
+      }
+
+      closeDeleteActingHeadModal();
+    } catch (error) {
+      console.error('Error deleting acting head:', error);
+      toast.error('Failed to remove acting head');
+    } finally {
+      deleteActingHeadLoading.value = false;
+    }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* REASSIGNMENT HISTORY MODAL                                                 */
+  /* -------------------------------------------------------------------------- */
+
+  const showHistoryModal = ref(false);
+
+  const historyData = computed(() => usePlacement.employeeHistory);
+
+  const historyEmployeeName = computed(() => {
+    if (!historyData.value) return '';
+    const { Firstname, Surname } = historyData.value;
+    return [Firstname, Surname].filter(Boolean).join(' ') || 'N/A';
+  });
+
+  const historyColumns = [
+    {
+      name: 'path',
+      label: 'Reassignment Path',
+      field: 'path',
+      align: 'left',
+      style: 'width: auto;',
+      headerStyle: 'width: auto;',
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      field: 'status',
+      align: 'center',
+      style: 'width: 100px;',
+      headerStyle: 'width: 100px;',
+    },
+    {
+      name: 'date',
+      label: 'Date',
+      field: 'date',
+      align: 'left',
+      style: 'width: 190px; white-space: nowrap;',
+      headerStyle: 'width: 120px; white-space: nowrap;',
+    },
+  ];
+
+  const historyRows = computed(() => {
+    const entries = historyData.value?.re_assignment_history || [];
+    return [...entries]
+      .sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : -Infinity;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : -Infinity;
+        return dateB - dateA;
+      })
+      .map((entry) => ({
+        ...entry,
+        breadcrumb: buildBreadcrumbLevels(entry, STRUCTURE_LEVEL_KEYS),
+        isActive: entry.active === '1' || entry.active === 1 || entry.active === true,
+        formattedDate: entry.created_at
+          ? new Date(entry.created_at).toLocaleString('en-PH', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '—',
+      }));
+  });
+
+  const openHistoryModal = async (row) => {
+    showHistoryModal.value = true;
+    try {
+      await usePlacement.fetchHistory(row.ControlNo);
+    } catch (error) {
+      console.error('Error loading reassignment history:', error);
+    }
+  };
+
+  const closeHistoryModal = () => {
+    showHistoryModal.value = false;
+    usePlacement.resetHistory();
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* MODAL COLUMNS (shared across Add / Acting Head modals)                     */
+  /* -------------------------------------------------------------------------- */
+
+  const modalColumns = [
+    {
+      name: 'ControlNo',
+      label: 'Control No',
+      field: (row) => row.ControlNo || row.control_no || '',
+      align: 'left',
+      style: 'width: 110px; white-space: normal;',
+      headerStyle: 'width: 110px;',
+    },
+    {
+      name: 'Name',
+      label: 'Name',
+      field: (row) => row.Name4 || row.Name || row.name || '',
+      align: 'left',
+      style: 'width: 240px; white-space: normal;',
+      headerStyle: 'width: 240px;',
+    },
+    {
+      name: 'Position',
+      label: 'Position',
+      field: (row) => row.Designation || row.position || row.Position || '',
+      align: 'left',
+      style: 'white-space: normal;',
+    },
+    {
+      name: 'Status',
+      label: 'Status',
+      field: (row) => row.Status || row.status || '',
+      align: 'left',
+      style: 'width: 110px; white-space: normal;',
+      headerStyle: 'width: 110px;',
+    },
+  ];
+
+  const reviewColumns = [
+    ...modalColumns,
+    { name: 'remove', label: '', field: 'remove', align: 'center', style: 'width: 60px;' },
+  ];
+
+  const actingReviewColumns = [
+    modalColumns[0], // ControlNo
+    modalColumns[1], // Name
+    modalColumns[2], // Position
+    { name: 'remove', label: '', field: 'remove', align: 'center', style: 'width: 60px;' },
+  ];
+
+  /* -------------------------------------------------------------------------- */
+  /* ADD / REASSIGN EMPLOYEE MODAL                                              */
+  /* -------------------------------------------------------------------------- */
+
+  const showAddEmployeeModal = ref(false);
+  const modalStep = ref(1);
+  const modalSelected = ref([]);
+  const modalSearch = ref('');
+  const isAssigning = ref(false);
+  const reassignOfficeFilter = ref(null);
+  const reassignOfficeOptions = ref([]);
+
+  const modalFilteredRows = computed(() => {
+    let source = [];
+    if (employeeViewMode.value === 'actual') {
+      source = usePlacement.placements || [];
+    } else {
+      source = usePlacement.reassignments || [];
+    }
+    if (!modalSearch.value) return source;
+    const needle = modalSearch.value.toLowerCase();
+    return source.filter(
+      (row) =>
+        (row.Name4 || row.Name || row.name || '').toLowerCase().includes(needle) ||
+        (row.Designation || row.position || row.Position || '').toLowerCase().includes(needle),
+    );
+  });
+
+  const removeFromSelection = (row) => {
+    modalSelected.value = modalSelected.value.filter((r) => r.ControlNo !== row.ControlNo);
+  };
+
+  const openAddEmployeeModal = async () => {
+    if (!currentStructure.value) return;
+    if (!canModifyPlacement.value) {
+      toast.warning('You do not have permission to modify placements.');
+      return;
+    }
+
+    modalStep.value = 1;
+    modalSelected.value = [];
+    modalSearch.value = '';
+    showAddEmployeeModal.value = true;
+
+    if (employeeViewMode.value === 'actual') {
+      await usePlacement.fetchPlacements(currentStructure.value.office);
+    } else {
+      await useOffice.fetchOffices();
+      reassignOfficeOptions.value = (useOffice.offices || [])
+        .map((o) => o.office_name)
+        .filter(Boolean);
+      reassignOfficeFilter.value = null;
+      usePlacement.reassignments = [];
+    }
+  };
+
+  const onReassignOfficeChange = async (office) => {
+    if (office) {
+      await usePlacement.fetchReassignments(office);
+    } else {
+      usePlacement.reassignments = [];
+    }
+  };
+
+  const assignSelectedPersonnel = async () => {
+    if (!modalSelected.value.length) return;
+
+    isAssigning.value = true;
+    try {
+      if (employeeViewMode.value === 'actual') {
+        for (const person of modalSelected.value) {
+          const payload = {
+            control_no: person.ControlNo,
+            name: person.Name4 || person.Name,
+            position: person.Designation || person.Position,
+            status: person.Status || null,
+            office: currentStructure.value.office || null,
+            office2: currentStructure.value.office2 || null,
+            group: currentStructure.value.group || null,
+            division: currentStructure.value.division || null,
+            section: currentStructure.value.section || null,
+            unit: currentStructure.value.unit || null,
+          };
+          await usePlacement.storePlacement(payload);
+        }
+        toast.success('Employees assigned successfully');
+      } else {
+        if (!reassignOfficeFilter.value) {
+          toast.warning('Please select an office');
+          return;
+        }
+        for (const person of modalSelected.value) {
+          const payload = {
+            control_no: person.ControlNo || person.control_no,
+            name: person.Name || person.name,
+            position: person.position || person.Position || person.Designation,
+            office: currentStructure.value.office || null,
+            office2: currentStructure.value.office2 || null,
+            group: currentStructure.value.group || null,
+            division: currentStructure.value.division || null,
+            section: currentStructure.value.section || null,
+            unit: currentStructure.value.unit || null,
+          };
+          await usePlacement.storeReassignment(payload);
+        }
+        toast.success('Employees reassigned successfully');
+      }
+      showAddEmployeeModal.value = false;
+      modalSelected.value = [];
+      await refreshData();
+    } catch (error) {
+      console.error('Error assigning personnel:', error);
+      toast.error('Failed to assign one or more employees. Please try again.');
+    } finally {
+      isAssigning.value = false;
+    }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* ADD ACTING HEAD MODAL                                                      */
+  /* -------------------------------------------------------------------------- */
+
+  const showAddActingHeadModal = ref(false);
+  const actingModalStep = ref(1);
+  const actingModalSelected = ref([]);
+  const actingModalSearch = ref('');
+  const isAssigningActingHead = ref(false);
+  const actingHeadOfficeFilter = ref(null);
+
+  const actingModalFilteredRows = computed(() => {
+    const source = usePlacement.actingEmployees || [];
+    if (!actingModalSearch.value) return source;
+    const needle = actingModalSearch.value.toLowerCase();
+    return source.filter(
+      (row) =>
+        (row.Name4 || row.Name || row.name || '').toLowerCase().includes(needle) ||
+        (row.Designation || row.position || row.Position || '').toLowerCase().includes(needle),
+    );
+  });
+
+  const removeFromActingSelection = (row) => {
+    actingModalSelected.value = actingModalSelected.value.filter(
+      (r) => (r.ControlNo || r.control_no) !== (row.ControlNo || row.control_no),
+    );
+  };
+
+  const openAddActingHeadModal = async () => {
+    if (!canModifyPlacement.value) {
+      toast.warning('You do not have permission to modify placements.');
+      return;
+    }
+    if (!currentStructure.value) {
+      toast.warning('Please select a structure node first.');
+      return;
+    }
+
+    // Reset modal state
+    actingModalStep.value = 1;
+    actingModalSelected.value = [];
+    actingModalSearch.value = '';
+    usePlacement.actingEmployees = [];
+
+    // Ensure office options are loaded
+    if (!officeOptions.value.length) {
+      await useOffice.fetchOffices();
+    }
+
+    // Pre-fill source office from the main selection and immediately fetch its employees
+    actingHeadOfficeFilter.value = selectedValue.value || null;
+    if (actingHeadOfficeFilter.value) {
+      await usePlacement.fetchActingEmployees(actingHeadOfficeFilter.value);
+    }
+
+    showAddActingHeadModal.value = true;
+  };
+
+  const closeAddActingHeadModal = () => {
+    showAddActingHeadModal.value = false;
+    actingModalSelected.value = [];
+    actingModalSearch.value = '';
+    actingModalStep.value = 1;
+    usePlacement.actingEmployees = [];
+  };
+
+  const onActingHeadOfficeChange = async (office) => {
+    if (office) {
+      await usePlacement.fetchActingEmployees(office);
+    } else {
+      usePlacement.actingEmployees = [];
+    }
+  };
+
+  const assignSelectedActingHeads = async () => {
+    if (!actingModalSelected.value.length) return;
+    if (!currentStructure.value) {
+      toast.warning('No structure selected.');
+      return;
+    }
+
+    isAssigningActingHead.value = true;
+    try {
+      for (const person of actingModalSelected.value) {
+        const payload = {
+          ControlNo: person.ControlNo || person.control_no,
+          name: person.Name4 || person.Name || person.name,
+          office: currentStructure.value.office || null,
+          office2: currentStructure.value.office2 || null,
+          group: currentStructure.value.group || null,
+          division: currentStructure.value.division || null,
+          section: currentStructure.value.section || null,
+          unit: currentStructure.value.unit || null,
+        };
+        await usePlacement.storeActingHead(payload);
+      }
+
+      if (selectedValue.value) {
+        await usePlacement.fetchActingHeads(selectedValue.value);
+      }
+
+      closeAddActingHeadModal();
+    } catch (error) {
+      console.error('Error assigning acting head:', error);
+      toast.error('Failed to assign one or more acting heads. Please try again.');
+    } finally {
+      isAssigningActingHead.value = false;
+    }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* STRUCTURE MATCHING                                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const valuesMatch = (val1, val2) => {
+    const normalize = (val) => (val === null || val === undefined || val === '' ? '' : val);
+    return normalize(val1) === normalize(val2);
+  };
+
+  const matchesStructureNode = (row, s) => {
+    if (!row.office || row.office !== s.office) return false;
+
+    if (s.unit) {
+      return (
+        valuesMatch(row.office2, s.office2) &&
+        valuesMatch(row.group, s.group) &&
+        valuesMatch(row.division, s.division) &&
+        valuesMatch(row.section, s.section) &&
+        valuesMatch(row.unit, s.unit)
+      );
+    }
+    if (s.section) {
+      return (
+        valuesMatch(row.office2, s.office2) &&
+        valuesMatch(row.group, s.group) &&
+        valuesMatch(row.division, s.division) &&
+        valuesMatch(row.section, s.section) &&
+        (!row.unit || row.unit === '')
+      );
+    }
+    if (s.division) {
+      return (
+        valuesMatch(row.office2, s.office2) &&
+        valuesMatch(row.group, s.group) &&
+        valuesMatch(row.division, s.division) &&
+        (!row.section || row.section === '') &&
+        (!row.unit || row.unit === '')
+      );
+    }
+    if (s.group) {
+      return (
+        valuesMatch(row.office2, s.office2) &&
+        valuesMatch(row.group, s.group) &&
+        (!row.division || row.division === '') &&
+        (!row.section || row.section === '') &&
+        (!row.unit || row.unit === '')
+      );
+    }
+    if (s.office2) {
+      return (
+        valuesMatch(row.office2, s.office2) &&
+        (!row.group || row.group === '') &&
+        (!row.division || row.division === '') &&
+        (!row.section || row.section === '') &&
+        (!row.unit || row.unit === '')
+      );
+    }
+    return (
+      (!row.office2 || row.office2 === '') &&
+      (!row.group || row.group === '') &&
+      (!row.division || row.division === '') &&
+      (!row.section || row.section === '') &&
+      (!row.unit || row.unit === '')
+    );
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* EMPLOYEE / ACTING HEAD ROW MAPPING                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const mappedEmployees = computed(() => {
+    const actualEmployees = (useOffice.employees || [])
+      .filter((row) => row.re_assign === false || row.re_assign === null)
+      .map((row) => ({
+        ControlNo: row.ControlNo ?? '',
+        Name: row.Name ?? '',
+        Position: row.Designation ?? '',
+        Status: row.Status ?? '',
+        office: row.Office ?? null,
+        office2: row.Office2 ?? null,
+        group: row.Group ?? null,
+        division: row.Division ?? null,
+        section: row.Section ?? null,
+        unit: row.Unit ?? null,
+        re_assign: row.re_assign ?? false,
+        isActualEmployee: true,
+        isReassigned: false,
+        ReAssignId: null,
+        returned: false,
+      }));
+
+    if (employeeViewMode.value === 'actual') {
+      return actualEmployees;
+    }
+
+    const employeeMap = new Map();
+    actualEmployees.forEach((emp) => employeeMap.set(emp.ControlNo, { ...emp }));
+
+    (useOffice.employees || [])
+      .filter((row) => row.re_assign === true)
+      .forEach((row) => {
+        const reassignedData = useOffice.reassignedEmployees?.find(
+          (r) => r.control_no === row.ControlNo,
+        );
+
+        employeeMap.set(row.ControlNo, {
+          ControlNo: row.ControlNo ?? '',
+          Name: row.Name ?? '',
+          Position: reassignedData?.position || row.Designation || '',
+          Status: row.Status ?? 'REGULAR',
+          office: row.Office ?? null,
+          office2: row.Office2 ?? null,
+          group: row.Group ?? null,
+          division: row.Division ?? null,
+          section: row.Section ?? null,
+          unit: row.Unit ?? null,
+          re_assign: true,
+          isActualEmployee: true,
+          isReassigned: true,
+          ReAssignId: reassignedData?.id ?? null,
+          returned: reassignedData?.active === '0' || reassignedData?.active === 0 || false,
+        });
+      });
+
+    return Array.from(employeeMap.values());
+  });
+
+  const mappedActingHeads = computed(() =>
+    (usePlacement.actingHeads || []).map((row) => ({
+      // Table identity
+      ControlNo: row.ControlNo ?? '',
+      Name: row.name ?? '',
+      Position: row.position ?? '',
+      Status: row.status ?? '',
+
+      // Structure
+      office: row.office ?? null,
+      office2: row.office2 ?? null,
+      group: row.group ?? null,
+      division: row.division ?? null,
+      section: row.section ?? null,
+      unit: row.unit ?? null,
+
+      // Flags
+      re_assign: false,
+      isActualEmployee: true,
+      isReassigned: false,
+      isActingHead: true,
+      ReAssignId: null,
+      returned: false,
+
+      // Acting head specific
+      ActingHeadId: row.id ?? null,
+    })),
+  );
+
+  const personnelRows = computed(() => {
+    if (!selectedValue.value) return [];
+
+    if (employeeViewMode.value === 'acting') {
+      if (!showStructurePanel.value || !currentStructure.value) {
+        return mappedActingHeads.value.filter((row) => row.office === selectedValue.value);
+      }
+      return mappedActingHeads.value.filter((row) =>
+        matchesStructureNode(row, currentStructure.value),
+      );
+    }
+
+    if (!showStructurePanel.value) {
+      return mappedEmployees.value.filter((row) => row.office === selectedValue.value);
+    }
+    if (!currentStructure.value) return [];
+    return mappedEmployees.value.filter((row) => matchesStructureNode(row, currentStructure.value));
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* ROW PERMISSIONS / STYLING                                                  */
+  /* -------------------------------------------------------------------------- */
+
+  const canEditRow = (row) => {
+    if (!canModifyPlacement.value) return false;
+    if (employeeViewMode.value !== 'actual') return false;
+    if (row.isReassigned) return false;
+    return EDITABLE_STATUSES.includes(row.Status?.toUpperCase());
+  };
+
+  const canEditReassignedRow = (row) => {
+    if (!canModifyPlacement.value) return false;
+    if (employeeViewMode.value !== 'reassigned') return false;
+    return Boolean(row.isReassigned && row.ReAssignId);
+  };
+
+  const getRowClass = (row) => {
+    if (employeeViewMode.value === 'actual' && row.re_assign === true) {
+      return 'reassign-true-row';
+    }
+    if (employeeViewMode.value === 'reassigned' && row.isReassigned) {
+      return 'reassigned-row';
+    }
+    return '';
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* PERSONNEL TABLE COLUMNS                                                    */
+  /* -------------------------------------------------------------------------- */
+
+  const personnelColumns = computed(() => {
+    const isActing = employeeViewMode.value === 'acting';
+
+    return [
+      {
+        name: 'ControlNo',
+        label: 'Control No',
+        field: (row) => row.ControlNo || '',
+        align: 'left',
+        style: 'width: 110px; white-space: normal;',
+        headerStyle: 'width: 110px;',
+      },
+      {
+        name: 'Name',
+        label: 'Name',
+        field: (row) => row.Name || '',
+        align: 'left',
+        style: 'width: 200px; white-space: normal;',
+        headerStyle: 'width: 200px;',
+      },
+      ...(isActing
+        ? []
+        : [
+            {
+              name: 'Position',
+              label: 'Position',
+              field: (row) => row.Position || row.position || '',
+              align: 'left',
+              style: 'white-space: normal;',
+            },
+            {
+              name: 'Status',
+              label: 'Status',
+              field: (row) => row.Status || '',
+              align: 'left',
+              style: 'width: 130px; white-space: normal;',
+              headerStyle: 'width: 130px;',
+            },
+          ]),
+      // Always show Actions
+      {
+        name: 'actions',
+        label: 'Actions',
+        field: 'actions',
+        align: 'center',
+        style: 'width: 190px;',
+        headerStyle: 'width: 190px;',
+      },
+    ];
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* DATA REFRESH                                                               */
   /* -------------------------------------------------------------------------- */
 
   const refreshData = async () => {
@@ -2149,32 +2613,13 @@
     await Promise.all([
       useOffice.fetchOfficeEmployees(selectedValue.value),
       useOffice.fetchReassignedEmployees(selectedValue.value),
+      usePlacement.fetchActingHeads(selectedValue.value),
     ]);
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Office dropdown                                                           */
+  /* OFFICE SELECTION HANDLER                                                   */
   /* -------------------------------------------------------------------------- */
-
-  const getOptions = () => filteredOptions.value || [];
-
-  const getUniqueValues = () => {
-    const values = new Set();
-    (useOffice.offices || []).forEach((office) => {
-      if (office.office_name) values.add(office.office_name);
-    });
-    return Array.from(values).sort();
-  };
-
-  const filterOptions = (val, update) => {
-    update(() => {
-      if (useOffice.loading) return;
-      const needle = val.toLowerCase();
-      filteredOptions.value = needle
-        ? getUniqueValues().filter((v) => v.toLowerCase().includes(needle))
-        : getUniqueValues();
-    });
-  };
 
   const handleSelection = async () => {
     selectedNode.value = null;
@@ -2186,6 +2631,7 @@
       useOffice.structure = [];
       useOffice.employees = [];
       useOffice.reassignedEmployees = [];
+      usePlacement.actingHeads = [];
       return;
     }
 
@@ -2193,11 +2639,12 @@
       useOffice.fetchOfficeStructure(selectedValue.value),
       useOffice.fetchOfficeEmployees(selectedValue.value),
       useOffice.fetchReassignedEmployees(selectedValue.value),
+      usePlacement.fetchActingHeads(selectedValue.value),
     ]);
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Structure tree generation                                                 */
+  /* STRUCTURE TREE GENERATION                                                  */
   /* -------------------------------------------------------------------------- */
 
   const buildUnitNode = (unitName, parentData) => ({
@@ -2335,22 +2782,24 @@
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Watch for returned toggle changes                                         */
+  /* WATCHERS                                                                   */
   /* -------------------------------------------------------------------------- */
 
   watch(
     () => reassignEditForm.value.returned,
     (newValue, oldValue) => {
-      // Only trigger if the value actually changed and we have an ID
       if (newValue !== oldValue && reassignEditId.value) {
         handleReturnToggle();
       }
     },
   );
 
-  /* -------------------------------------------------------------------------- */
-  /* Lifecycle                                                                 */
-  /* -------------------------------------------------------------------------- */
+  watch(employeeViewMode, async (mode) => {
+    if (!selectedValue.value) return;
+    if (mode === 'acting') {
+      await usePlacement.fetchActingHeads(selectedValue.value);
+    }
+  });
 
   watch(
     () => useOffice.loading,
@@ -2361,8 +2810,12 @@
     },
   );
 
+  /* -------------------------------------------------------------------------- */
+  /* LIFECYCLE                                                                  */
+  /* -------------------------------------------------------------------------- */
+
   onMounted(async () => {
-    await useOffice.fetchOffices();
+    (await useOffice.fetchOfficeOffices?.()) || (await useOffice.fetchOffices());
     filteredOptions.value = getUniqueValues();
   });
 </script>
