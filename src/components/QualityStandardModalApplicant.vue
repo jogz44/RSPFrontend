@@ -4,7 +4,7 @@
       <!-- ── Header ── -->
       <q-card-section class="row justify-between items-center header text-black q-px-md q-py-sm">
         <div>
-          <div class="text-h5 text-bold">Qualification Standard (QS)</div>
+          <div class="text-h5 text-bold">Qualification Standard (QS)1</div>
           <div class="text-subtitle1">Application Information</div>
         </div>
         <q-btn icon="close" flat round dense @click="onClose" />
@@ -1446,65 +1446,69 @@
 
   // ── Date / Duration helpers ───────────────────────────────────────────────────
 
+  // const parseDate = (dateString) => {
+  //   if (!dateString) return null;
+  //   const parts = dateString.split('/');
+  //   if (parts.length === 3) {
+  //     const [day, month, year] = parts.map(Number);
+  //     const dt = new Date(year, month - 1, day);
+  //     if (!isNaN(dt.getTime()) && dt.getDate() === day && dt.getMonth() === month - 1) {
+  //       return dt;
+  //     }
+  //   }
+  //   const dt = new Date(dateString);
+  //   return isNaN(dt.getTime()) ? null : dt;
+  // };
   const parseDate = (dateString) => {
     if (!dateString) return null;
-    const parts = dateString.split('/');
-    if (parts.length === 3) {
-      const [day, month, year] = parts.map(Number);
+    const str = String(dateString).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      const month = Number(m[1]);
+      const day = Number(m[2]);
+      const year = Number(m[3]);
       const dt = new Date(year, month - 1, day);
-      if (!isNaN(dt.getTime()) && dt.getDate() === day && dt.getMonth() === month - 1) {
-        return dt;
-      }
+      const valid =
+        dt.getFullYear() === year && dt.getMonth() === month - 1 && dt.getDate() === day;
+      return valid ? dt : null;
     }
-    const dt = new Date(dateString);
+    const dt = new Date(str);
     return isNaN(dt.getTime()) ? null : dt;
   };
+  // Set to true if the end date should count as a worked day
+  // (e.g. 01/01/2020 - 12/31/2020 = exactly 1 year)
+  const INCLUSIVE_END_DATE = false;
 
   const calculateExactDuration = (startDate, endDate, applicationDate = null) => {
-    if (!startDate) return { years: 0, months: 0, days: 0 };
-
+    const empty = { years: 0, months: 0, days: 0, totalMonths: 0 };
     const start = parseDate(startDate);
-    if (!start) return { years: 0, months: 0, days: 0 };
+    if (!start) return empty;
 
     let end;
-
-    if (endDate && typeof endDate === 'string' && endDate.toLowerCase() === 'present') {
-      end = applicationDate ? parseDate(applicationDate) : new Date();
+    if (typeof endDate === 'string' && endDate.trim().toLowerCase() === 'present') {
+      end = (applicationDate && parseDate(applicationDate)) || new Date();
+      end = new Date(end.getFullYear(), end.getMonth(), end.getDate()); // strip time
     } else {
       end = parseDate(endDate);
     }
+    if (!end || start > end) return empty;
 
-    if (!end || start > end) return { years: 0, months: 0, days: 0 };
+    if (INCLUSIVE_END_DATE) end = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
 
     let years = end.getFullYear() - start.getFullYear();
     let months = end.getMonth() - start.getMonth();
     let days = end.getDate() - start.getDate();
 
-    const endMonthLastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-    const isEndOfMonth = end.getDate() === endMonthLastDay;
-
     if (days < 0) {
-      months -= 1;
-      const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
-      days += prevMonth.getDate();
+      months--;
+      days += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
     }
-
     if (months < 0) {
-      years -= 1;
+      years--;
       months += 12;
     }
 
-    if (start.getDate() === 1 && isEndOfMonth) {
-      months += 1;
-      days = 0;
-    }
-
-    if (months >= 12) {
-      years += Math.floor(months / 12);
-      months = months % 12;
-    }
-
-    return { years, months, days };
+    return { years, months, days, totalMonths: years * 12 + months };
   };
 
   const formatDuration = (duration) => {
@@ -1531,10 +1535,9 @@
     if (!end) return `From ${start.toLocaleDateString()}`;
     return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
   };
-
-  const formatTotalExperience = (totalMonths) => {
-    if (totalMonths === 0) return 'No Experience';
-    return `Total: ${formatDuration(totalMonths)}`;
+  const formatTotalExperience = (t) => {
+    if (!t || (!t.years && !t.months && !t.days)) return 'No Experience';
+    return `Total: ${formatDuration(t)}`;
   };
 
   const experienceWithDuration = computed(() => {
@@ -1562,25 +1565,21 @@
   });
 
   const totalSelectedExperienceMonths = computed(() => {
-    let totalDays = 0;
+    let years = 0,
+      months = 0,
+      days = 0;
 
     experienceWithDuration.value.forEach((exp) => {
       if (!selectedExperienceIds.value.includes(exp.uniqueId)) return;
-
-      const start = parseDate(exp.work_date_from);
-      const end =
-        exp.work_date_to?.toLowerCase() === 'present' ? new Date() : parseDate(exp.work_date_to);
-
-      if (!start || !end) return;
-
-      const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-      totalDays += diff;
+      years += exp.durationYears || 0;
+      months += exp.durationMonthsOnly || 0;
+      days += exp.durationDays || 0;
     });
 
-    const years = Math.floor(totalDays / 365);
-    totalDays %= 365;
-    const months = Math.floor(totalDays / 30);
-    const days = totalDays % 30;
+    months += Math.floor(days / 30);
+    days = days % 30;
+    years += Math.floor(months / 12);
+    months = months % 12;
 
     return { years, months, days };
   });
