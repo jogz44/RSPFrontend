@@ -491,25 +491,92 @@
           </span>
         </div>
 
-        <div class="row justify-end q-gutter-sm">
-          <q-btn
-            color="red"
-            icon-right="assignment"
-            @click="showModal"
-            dense
-            v-if="isRaterEnabled"
-          />
-          <q-btn color="primary" label="Save as Draft" icon-right="save" @click="saveDraft" dense />
-          <q-btn
-            v-if="allApplicantsRated"
-            color="green"
-            label="Submit Ratings"
-            icon-right="check"
-            @click="submitRatings"
-            dense
-          />
+        <div class="row items-center justify-between">
+          <!-- Auto-save status indicator -->
+          <div class="save-status text-caption" :class="saveStatusClass">
+            <q-spinner v-if="isSaving" size="14px" class="q-mr-xs" />
+            <q-icon v-else-if="saveError" name="error_outline" size="14px" class="q-mr-xs" />
+            <q-icon
+              v-else-if="lastSavedAt && !isDirty"
+              name="check_circle"
+              size="14px"
+              class="q-mr-xs"
+            />
+            <span>{{ saveStatusText }}</span>
+          </div>
+
+          <div class="row q-gutter-sm">
+            <q-btn
+              color="red"
+              icon-right="assignment"
+              @click="showModal"
+              dense
+              v-if="isRaterEnabled"
+            />
+            <q-btn
+              color="primary"
+              label="Save as Draft"
+              icon-right="save"
+              @click="saveDraft"
+              :disable="isSubmitting || exitSaving"
+              dense
+            />
+            <q-btn
+              v-if="allApplicantsRated"
+              color="green"
+              label="Submit Ratings"
+              icon-right="check"
+              @click="submitRatings"
+              :loading="isSubmitting"
+              :disable="exitSaving"
+              dense
+            />
+          </div>
         </div>
       </q-card-section>
+    </q-card>
+  </q-dialog>
+
+  <!-- Exit Confirmation Dialog -->
+  <q-dialog v-model="showExitConfirm" persistent>
+    <q-card style="min-width: 380px; max-width: 95vw">
+      <q-card-section class="row items-center q-pb-none">
+        <q-icon name="warning" color="warning" size="28px" class="q-mr-sm" />
+        <div class="text-h6 text-weight-bold">Unsaved changes</div>
+      </q-card-section>
+
+      <q-card-section>
+        <span v-if="isSaving">A save is currently in progress.</span>
+        <span v-else>You have changes that have not been saved yet.</span>
+        What would you like to do?
+      </q-card-section>
+
+      <q-card-actions align="right" class="q-pa-md q-gutter-sm">
+        <q-btn
+          flat
+          no-caps
+          label="Keep Editing"
+          color="grey-8"
+          :disable="exitSaving"
+          @click="showExitConfirm = false"
+        />
+        <q-btn
+          flat
+          no-caps
+          label="Discard & Exit"
+          color="negative"
+          :disable="exitSaving"
+          @click="discardAndExit"
+        />
+        <q-btn
+          unelevated
+          no-caps
+          label="Save & Exit"
+          color="primary"
+          :loading="exitSaving"
+          @click="saveAndExit"
+        />
+      </q-card-actions>
     </q-card>
   </q-dialog>
 
@@ -573,7 +640,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
   import { useQuasar } from 'quasar';
   import QualificationStandardModal from 'src/components/QSModal.vue';
   import { use_rating_form_store } from 'stores/ratingFormStore';
@@ -587,6 +654,10 @@
     yellow: '#f9a825',
     green: '#2e7d32',
   };
+
+  // Auto-save configuration
+  const AUTO_SAVE_DELAY = 5000; // 5 seconds of inactivity
+  const SAVE_TIMEOUT = 20000; // fail a save if the parent never responds
 
   // Props
   const props = defineProps({
@@ -832,6 +903,60 @@
   const showQSModal = ref(false);
   const selectedApplicantForQS = ref(null);
 
+  // ─── Auto-save state ──────────────────────────────────────────────────────
+  const isSaving = ref(false);
+  const isSubmitting = ref(false);
+  const saveError = ref(false);
+  const lastSavedAt = ref(null);
+  const savedSignature = ref(null); // signature of the last successfully saved state
+  const showExitConfirm = ref(false);
+  const exitSaving = ref(false);
+
+  let autoSaveTimer = null;
+  let savePromise = null; // tail of the save queue (saves run strictly one at a time)
+
+  // A signature of ONLY the editable fields. Derived values (ranking, totals)
+  // are excluded so recalculating rankings never marks the form dirty.
+  const draftSignature = computed(() =>
+    JSON.stringify(
+      applicantsData.value.map((a) => [
+        a.id,
+        a.educationScore,
+        a.experienceScore,
+        a.trainingScore,
+        a.performanceScore,
+        a.behavioralScore,
+      ]),
+    ),
+  );
+
+  const isDirty = computed(
+    () => savedSignature.value !== null && draftSignature.value !== savedSignature.value,
+  );
+
+  // Auto-save is disabled for "Returned" ratings (their data comes from the
+  // submitted rating_score, not the draft). Manual Save/Submit still work.
+  const autoSaveEnabled = computed(() => !isReturnedStatus.value);
+
+  const saveStatusText = computed(() => {
+    if (isSaving.value) return 'Saving...';
+    if (saveError.value) return 'Unable to save. Changes are still unsaved.';
+    if (isDirty.value) return 'Unsaved changes';
+    if (lastSavedAt.value) {
+      return `Last saved: ${lastSavedAt.value.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      })} ✓`;
+    }
+    return '';
+  });
+
+  const saveStatusClass = computed(() => {
+    if (saveError.value) return 'text-negative';
+    if (isSaving.value || isDirty.value) return 'text-grey-7';
+    return 'text-positive';
+  });
+
   const sortOptions = [
     { label: 'Name', value: 'name' },
     { label: 'Education Score', value: 'educationScore' },
@@ -948,6 +1073,8 @@
     } else {
       applicantsData.value = [];
     }
+
+    resetSaveState();
   };
 
   const handleInput = (applicant, field) => {
@@ -1168,7 +1295,8 @@
     }
   };
 
-  const saveDraft = () => {
+  // ─── Payload builders (unchanged logic, extracted so they can be reused) ──
+  const buildDraftPayload = () => {
     const formattedData = applicantsData.value.map((applicant) => {
       const qsScore = calculateQS(applicant);
       const totalScore = calculateTotal(applicant);
@@ -1200,27 +1328,13 @@
       };
     });
 
-    emit('save-draft', {
+    return {
       positionId: props.position.id,
       applicants: formattedData,
-    });
-
-    closeForm();
+    };
   };
 
-  const submitRatings = () => {
-    if (!allApplicantsRated.value) {
-      $q.notify({
-        color: 'warning',
-        message:
-          'Please rate all required fields (Education, Experience, Training, Performance) before submitting. BEI can be left empty.',
-        icon: 'warning',
-        position: 'top',
-        timeout: 3000,
-      });
-      return;
-    }
-
+  const buildSubmitPayload = () => {
     const formattedData = applicantsData.value.map((applicant) => {
       const qsScore = parseFloat(calculateQS(applicant));
       const totalScore = parseFloat(calculateTotal(applicant));
@@ -1248,16 +1362,208 @@
       };
     });
 
-    emit('submit-ratings', {
+    return {
       positionId: props.position.id,
       applicants: formattedData,
-    });
-
-    closeForm();
+    };
   };
 
-  const closeForm = () => {
+  // ─── Auto-save engine ─────────────────────────────────────────────────────
+  const clearAutoSaveTimer = () => {
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = null;
+    }
+  };
+
+  const resetSaveState = () => {
+    clearAutoSaveTimer();
+    isSaving.value = false;
+    saveError.value = false;
+    lastSavedAt.value = null;
+    // Baseline = whatever was just loaded from the server. Not dirty.
+    savedSignature.value = draftSignature.value;
+  };
+
+  // Emits 'save-draft' and resolves ONLY when the parent calls resolve()
+  // (i.e. after the Laravel API succeeded). Rejects on parent reject() or timeout.
+  const sendDraft = (payload, silent) =>
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Save timed out')), SAVE_TIMEOUT);
+      emit('save-draft', {
+        ...payload,
+        silent,
+        resolve: () => {
+          clearTimeout(timeout);
+          resolve();
+        },
+        reject: (err) => {
+          clearTimeout(timeout);
+          reject(err || new Error('Save failed'));
+        },
+      });
+    });
+
+  // Saves are queued so only ONE request is ever in flight, and each queued
+  // save always sends the LATEST data (never an older snapshot).
+  // silent = true  -> skipped if nothing changed since the last successful save.
+  // Returns a promise that always resolves to true (saved) / false (failed).
+  const persistDraft = (silent) => {
+    const run = async () => {
+      const signature = draftSignature.value;
+      if (silent && signature === savedSignature.value) return true; // nothing to save
+
+      isSaving.value = true;
+      saveError.value = false;
+      try {
+        await sendDraft(buildDraftPayload(), silent);
+        // Only mark saved up to the state that was actually sent. If the user
+        // typed meanwhile, the signature differs and the form stays dirty.
+        savedSignature.value = signature;
+        lastSavedAt.value = new Date();
+        return true;
+      } catch {
+        saveError.value = true; // stays dirty, never shows "Saved"
+        return false;
+      } finally {
+        isSaving.value = false;
+      }
+    };
+
+    const current = (savePromise || Promise.resolve()).then(run);
+    savePromise = current;
+    current.finally(() => {
+      if (savePromise === current) savePromise = null;
+    });
+    return current;
+  };
+
+  const autoSaveDraft = async () => {
+    autoSaveTimer = null;
+    if (!isOpen.value || isSubmitting.value || exitSaving.value) return;
+    if (!autoSaveEnabled.value || !isDirty.value) return;
+
+    const ok = await persistDraft(true);
+
+    // User kept editing during the request -> save the newer data after
+    // another quiet period. No retry loop on failure: the next edit retries.
+    if (ok && isDirty.value && !isSubmitting.value) scheduleAutoSave();
+  };
+
+  const scheduleAutoSave = () => {
+    clearAutoSaveTimer();
+    autoSaveTimer = setTimeout(autoSaveDraft, AUTO_SAVE_DELAY);
+  };
+
+  // Debounce: every real change restarts the 5s timer.
+  watch(draftSignature, () => {
+    if (!isOpen.value || isSubmitting.value || !autoSaveEnabled.value) return;
+    if (savedSignature.value === null) return;
+
+    if (isDirty.value) {
+      scheduleAutoSave();
+    } else {
+      clearAutoSaveTimer(); // user reverted to the saved state
+    }
+  });
+
+  // ─── Actions ──────────────────────────────────────────────────────────────
+  const closeDialog = () => {
+    clearAutoSaveTimer();
+    showExitConfirm.value = false;
     isOpen.value = false;
+  };
+
+  // Manual "Save as Draft": saves immediately, then closes (existing behaviour).
+  const saveDraft = async () => {
+    if (isSubmitting.value) return;
+    clearAutoSaveTimer();
+    const ok = await persistDraft(false);
+    if (ok) {
+      closeDialog();
+    } else {
+      $q.notify({
+        color: 'negative',
+        message: 'Unable to save draft. Please try again.',
+        icon: 'error',
+        position: 'top',
+        timeout: 3000,
+      });
+    }
+  };
+
+  const submitRatings = async () => {
+    if (isSubmitting.value) return;
+
+    if (!allApplicantsRated.value) {
+      $q.notify({
+        color: 'warning',
+        message:
+          'Please rate all required fields (Education, Experience, Training, Performance) before submitting. BEI can be left empty.',
+        icon: 'warning',
+        position: 'top',
+        timeout: 3000,
+      });
+      return;
+    }
+
+    // Block any further auto-save and cancel the pending timer
+    isSubmitting.value = true;
+    clearAutoSaveTimer();
+
+    // Flush pending changes first (waits for any in-flight save). Skipped for
+    // "Returned" ratings because their data is not a draft.
+    if (!isReturnedStatus.value) {
+      const ok = await persistDraft(true);
+      if (!ok) {
+        isSubmitting.value = false;
+        $q.notify({
+          color: 'negative',
+          message: 'Unable to save your latest changes. Submission cancelled.',
+          icon: 'error',
+          position: 'top',
+          timeout: 3000,
+        });
+        return;
+      }
+    }
+
+    emit('submit-ratings', buildSubmitPayload());
+    closeDialog();
+  };
+
+  // X button
+  const closeForm = () => {
+    if (isSubmitting.value) return;
+    if (!isDirty.value && !isSaving.value) {
+      closeDialog(); // nothing unsaved -> close immediately
+      return;
+    }
+    clearAutoSaveTimer();
+    showExitConfirm.value = true;
+  };
+
+  const saveAndExit = async () => {
+    exitSaving.value = true;
+    clearAutoSaveTimer();
+    const ok = await persistDraft(true);
+    exitSaving.value = false;
+
+    if (ok) {
+      closeDialog();
+    } else {
+      $q.notify({
+        color: 'negative',
+        message: 'Unable to save your changes. Please try again or discard them.',
+        icon: 'error',
+        position: 'top',
+        timeout: 3000,
+      });
+    }
+  };
+
+  const discardAndExit = () => {
+    closeDialog();
   };
 
   // Watchers
@@ -1272,7 +1578,12 @@
     (newValue) => {
       if (newValue) {
         expandedApplicant.value = null;
+        isSubmitting.value = false;
+        exitSaving.value = false;
+        showExitConfirm.value = false;
         initializeApplicants();
+      } else {
+        clearAutoSaveTimer();
       }
     },
   );
@@ -1387,6 +1698,10 @@
     }
     await useRatingStore.raterListWithJob(jobPostId);
   });
+
+  onBeforeUnmount(() => {
+    clearAutoSaveTimer();
+  });
 </script>
 
 <style lang="scss" scoped>
@@ -1423,6 +1738,12 @@
     overflow-y: auto;
     padding: 8px;
     max-height: calc(90vh - 200px);
+  }
+
+  .save-status {
+    display: flex;
+    align-items: center;
+    min-height: 20px;
   }
 
   .rating-table {

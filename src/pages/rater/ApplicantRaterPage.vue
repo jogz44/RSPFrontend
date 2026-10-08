@@ -350,9 +350,16 @@
     };
   };
 
-  const onSaveDraft = async (payload) => {
-    await raterStore.saveDraft(payload.applicants, payload.positionId);
-    ratingOpen.value = false;
+  const onSaveDraft = async ({ applicants, positionId, resolve, reject }) => {
+    try {
+      const result = await raterStore.saveDraft(applicants, positionId);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to save draft ratings');
+      }
+      resolve?.();
+    } catch (error) {
+      reject?.(error); // the form shows "Unable to save" itself
+    }
   };
 
   // ============================================================================

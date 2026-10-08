@@ -136,7 +136,7 @@
 </template>
 
 <script>
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import { use_rater_store } from 'stores/rater_store';
   import { storeToRefs } from 'pinia';
   import { useQuasar } from 'quasar';
@@ -350,12 +350,30 @@
       };
 
       const saveDraft = async (data) => {
+        const { applicants, positionId, silent, resolve, reject } = data;
+
+        // 1. The actual save. Only this decides success or failure.
         try {
           if (typeof raterStore.saveDraft !== 'function') {
             throw new Error('Draft ratings functionality is not available');
           }
-          const result = await raterStore.saveDraft(data.applicants, data.positionId);
-          if (result && result.success) {
+          const result = await raterStore.saveDraft(applicants, positionId);
+          if (!result || !result.success) {
+            throw new Error((result && result.error) || 'Failed to save draft ratings');
+          }
+        } catch (error) {
+          reject?.(error); // the form shows "Unable to save" itself
+          return;
+        }
+
+        // 2. Saved. Tell the form immediately.
+        resolve?.();
+
+        // 3. Follow-up work can no longer turn a successful save into an error.
+        try {
+          if (silent) {
+            needsListRefresh = true; // refresh once when the dialog closes
+          } else {
             $q.notify({
               color: 'info',
               message: 'Draft ratings saved successfully!',
@@ -364,16 +382,9 @@
               timeout: 2000,
             });
             await raterStore.fetch_assigned_jobs();
-          } else {
-            throw new Error((result && result.error) || 'Failed to save draft ratings');
           }
-        } catch (error) {
-          $q.notify({
-            color: 'negative',
-            message: error.message || 'An error occurred while saving draft ratings',
-            icon: 'error',
-            position: 'top',
-          });
+        } catch (e) {
+          console.warn('Post-save step failed', e);
         }
       };
 
@@ -414,6 +425,15 @@
       const handlePrintModalClose = () => {
         showPrintModal.value = false;
       };
+
+      let needsListRefresh = false;
+
+      watch(showRatingModal, async (open) => {
+        if (!open && needsListRefresh) {
+          needsListRefresh = false;
+          await raterStore.fetch_assigned_jobs();
+        }
+      });
 
       onMounted(() => {
         raterStore.fetch_assigned_jobs();
