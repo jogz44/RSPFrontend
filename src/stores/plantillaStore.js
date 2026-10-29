@@ -418,6 +418,25 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
+    async editTempEmployee(ControlNo, payload) {
+      try {
+        this.loading = true;
+        const response = await adminApi.post(
+          `/temporary/update/tempregreorg/${ControlNo}`,
+          payload,
+          {
+            validateStatus: (status) => status < 500,
+          },
+        );
+        return response;
+      } catch (err) {
+        console.error('Error hiring applicant:', err.message || err);
+        return { data: { success: false, message: 'An error occurred' } };
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchAppointmentData(ControlNo) {
       this.loading = true;
       this.error = null;
@@ -627,6 +646,178 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
+    async fetchTempAppointmentData(ControlNo) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await adminApi.get(`temporary/appointment/controlNo/${ControlNo}`);
+        const raw = response.data;
+
+        if (!raw) return null;
+
+        // The temporary-appointment endpoint returns a single object with named
+        // sub-objects. Fall back to the legacy array shape if we ever get it.
+        let x_personal, serviceInfo, jobpost, tempRegInfo, reorgExtInfo, officeHeadFinal;
+
+        if (Array.isArray(raw)) {
+          if (raw.length === 0) return null;
+          const main = raw.find((r) => r && r.ControlNo === ControlNo) || raw[0];
+          x_personal = main?.x_personal?.[0] || {};
+          serviceInfo = main || {};
+          jobpost = main?.posting_date?.[0] || {};
+          tempRegInfo = main?.temp_reg_appointments?.[0] || {};
+          reorgExtInfo = main?.temp_reg_appointment_reorg_ext?.[0] || {};
+          const empOffice = main?.Office || tempRegInfo.Office || '';
+          officeHeadFinal = raw.find((r) => r && r.office === empOffice && r.position) || null;
+        } else {
+          // New shape (your actual response)
+          x_personal = raw.personal || {};
+          serviceInfo = raw.service || {};
+          jobpost = raw.posting_date || {};
+          tempRegInfo = raw.temp_reg_appointments || {};
+          reorgExtInfo = raw.temp_reg_appointment_reorg_ext || {};
+          officeHeadFinal = raw.office_head || null;
+        }
+
+        const transformedData = {
+          ControlNo:
+            x_personal.ControlNo || serviceInfo.ControlNo || tempRegInfo.ControlNo || ControlNo,
+
+          // Basic Info
+          SalaryAnnual: serviceInfo.RateYear || '',
+          TINNo: x_personal.TINNo || '',
+          Address: x_personal.Address || '',
+          Sex: x_personal.Sex || '',
+          // Combined full name (used by some report templates)
+          Name4: [x_personal.Firstname, x_personal.Middlename, x_personal.Surname]
+            .filter(Boolean)
+            .join(' '),
+          Firstname: x_personal.Firstname || '',
+          Middlename: x_personal.Middlename || '',
+          // Backward-compat alias for report components that still use the typo
+          MIddlename: x_personal.Middlename || '',
+          Surname: x_personal.Surname || '',
+          BirthDate: x_personal.BirthDate || '',
+
+          post_date: jobpost.post_date || '',
+          end_date: jobpost.end_date || '',
+
+          // Position Info
+          NewDesignation: tempRegInfo.NewDesignation || tempRegInfo.Designation || '',
+          SG: tempRegInfo.SG || '',
+          Step: tempRegInfo.Step || '',
+          Status: tempRegInfo.Status || '',
+          NewOffice: tempRegInfo.NewOffice || tempRegInfo.Office || '',
+          MRate: tempRegInfo.MRate || '',
+          ItemNo: tempRegInfo.ItemNo || '',
+          Pages: tempRegInfo.Pages || '',
+
+          // Appointment Details
+          Renew: tempRegInfo.Renew || '',
+          vicename: tempRegInfo.vicename || '',
+          vicecause: tempRegInfo.vicecause || '',
+          sepcause: tempRegInfo.sepcause || '',
+          sepdate: tempRegInfo.sepdate || '',
+          deliberation_date: tempRegInfo.deliberation_date || '',
+          employmenttype: tempRegInfo.employment_type || '',
+          assessment_date: tempRegInfo.assessment_date || '',
+
+          // Date Range (all live under `service` in the new shape)
+          EffectiveDate: serviceInfo.effectiveDate || '',
+          FromDate: serviceInfo.FromDate || '',
+          ToDate: serviceInfo.ToDate || '',
+
+          // Extended Info
+          tempId: reorgExtInfo.tempId || '',
+          PresAppro: reorgExtInfo.PresAppro || '',
+          PrevAppro: reorgExtInfo.PrevAppro || '',
+          SalAuthorized: reorgExtInfo.SalAuthorized || '',
+          OtherComp: reorgExtInfo.OtherComp || '',
+          SupPosition: reorgExtInfo.SupPosition || '',
+          HSupPosition: reorgExtInfo.HSupPosition || '',
+          Tool: reorgExtInfo.Tool || '',
+          signingDate: reorgExtInfo.signing_date || '',
+
+          Contact1: reorgExtInfo.Contact1 || '',
+          Contact2: reorgExtInfo.Contact2 || '',
+          Contact3: reorgExtInfo.Contact3 || '',
+          Contact4: reorgExtInfo.Contact4 || '',
+          Contact5: reorgExtInfo.Contact5 || '',
+          Contact6: reorgExtInfo.Contact6 || '',
+          ContactOthers: reorgExtInfo.ContactOthers || '',
+
+          Working1: reorgExtInfo.Working1 || '',
+          Working2: reorgExtInfo.Working2 || '',
+          WorkingOthers: reorgExtInfo.WorkingOthers || '',
+
+          DescriptionSection: reorgExtInfo.DescriptionSection || '',
+          DescriptionFunction: reorgExtInfo.DescriptionFunction || '',
+
+          StandardEduc: reorgExtInfo.StandardEduc || '',
+          StandardExp: reorgExtInfo.StandardExp || '',
+          StandardTrain: reorgExtInfo.StandardTrain || '',
+          StandardElig: reorgExtInfo.StandardElig || '',
+
+          Supervisor: reorgExtInfo.Supervisor || '',
+
+          // Competency Levels
+          Core1: reorgExtInfo.Core1 || '0',
+          Core2: reorgExtInfo.Core2 || '0',
+          Core3: reorgExtInfo.Core3 || '0',
+          Corelevel1: reorgExtInfo.Corelevel1 || '0',
+          Corelevel2: reorgExtInfo.Corelevel2 || '0',
+          Corelevel3: reorgExtInfo.Corelevel3 || '0',
+          Corelevel4: reorgExtInfo.Corelevel4 || '0',
+
+          // Leadership Levels
+          Leader1: reorgExtInfo.Leader1 || '0',
+          Leader2: reorgExtInfo.Leader2 || '0',
+          Leader3: reorgExtInfo.Leader3 || '0',
+          Leader4: reorgExtInfo.Leader4 || '0',
+          leaderlevel1: reorgExtInfo.leaderlevel1 || '0',
+          leaderlevel2: reorgExtInfo.leaderlevel2 || '0',
+          leaderlevel3: reorgExtInfo.leaderlevel3 || '0',
+          leaderlevel4: reorgExtInfo.leaderlevel4 || '0',
+
+          StructureID: tempRegInfo.StructureID || reorgExtInfo.structureid || '',
+
+          // Additional Fields
+          DivCode: tempRegInfo.DivCode || '',
+          SecCode: tempRegInfo.SecCode || '',
+          OffCode: tempRegInfo.OffCode || '',
+          DesigCode: tempRegInfo.DesigCode || '',
+          Official: tempRegInfo.Official || '0',
+          Groupcode: tempRegInfo.Groupcode || '',
+          group: tempRegInfo.group || '',
+          unitcode: tempRegInfo.unitcode || '',
+
+          // Office head (now supplied directly by the response)
+          officeHeadName: officeHeadFinal?.Name4 || '',
+          officeHeadPosition: officeHeadFinal?.position || '',
+          officeHeadOffice: officeHeadFinal?.office || '',
+
+          // Static configurable values
+          vicemayor: 'ATTY. EVA LORRAINE E. ESTABILLO',
+          cityaccountant: 'RAMIL Y. TIU, CPA',
+          HR: 'JANYLENE A. PALERMO, MM',
+          admin: 'EDGAR C. DE GUZMAN',
+          mayor: 'REY T. UY',
+          resolution: '',
+          resolutionYear: '',
+        };
+
+        console.log('Transformed data:', transformedData);
+        return transformedData;
+      } catch (error) {
+        console.error('Fetch appointment error:', error);
+        toast.error('Failed to load appointment data');
+        this.error = error;
+        return null;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     // async generateAppointmentReport(ControlNo) {
     //   this.loading = true;
 
@@ -679,10 +870,46 @@ export const usePlantillaStore = defineStore('plantilla', {
       }
     },
 
+    async generateTempAppointmentReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(`/temp/report/appointment/${ControlNo}`, {
+          responseType: 'blob',
+        });
+        this.downloadReport(response.data, `appointment_report_${ControlNo}.pdf`);
+        toast.success('Appointment Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Appointment report error:', error);
+        toast.error('Failed to generate appointment report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async generateCertificationReport(ControlNo) {
       this.loading = true;
       try {
         const response = await adminApi.get(`/generate-certification-report/${ControlNo}`, {
+          responseType: 'blob',
+        });
+        this.downloadReport(response.data, `certification_report_${ControlNo}.pdf`);
+        toast.success('Certification Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Certification report error:', error);
+        toast.error('Failed to generate certification report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async generateTempCertificationReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(`/temp/generate-certification-report/${ControlNo}`, {
           responseType: 'blob',
         });
         this.downloadReport(response.data, `certification_report_${ControlNo}.pdf`);
@@ -703,6 +930,27 @@ export const usePlantillaStore = defineStore('plantilla', {
         const response = await adminApi.get(`/generate-position-description-report/${ControlNo}`, {
           responseType: 'blob',
         });
+        this.downloadReport(response.data, `position_description_report_${ControlNo}.pdf`);
+        toast.success('Position Description Report downloaded successfully!');
+        return true;
+      } catch (error) {
+        console.error('Position description report error:', error);
+        toast.error('Failed to generate position description report.');
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async generateTempPositionDescriptionReport(ControlNo) {
+      this.loading = true;
+      try {
+        const response = await adminApi.get(
+          `/temp/generate-position-description-report/${ControlNo}`,
+          {
+            responseType: 'blob',
+          },
+        );
         this.downloadReport(response.data, `position_description_report_${ControlNo}.pdf`);
         toast.success('Position Description Report downloaded successfully!');
         return true;

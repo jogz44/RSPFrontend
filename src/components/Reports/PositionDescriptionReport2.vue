@@ -9,7 +9,7 @@
             <td colspan="3" rowspan="2" class="header-cell">
               <div class="header">
                 <div class="logo-container">
-                  <img src="/rsp/image.png" alt="Philippine Seal" class="logo" />
+                  <img src="/rsp/logo.png" alt="Philippine Seal" class="logo" />
                 </div>
                 <div class="header-text">
                   <div>Republic of the Philippines</div>
@@ -18,7 +18,7 @@
                   <div>(Revised Version No. 1, s. 2017)</div>
                 </div>
                 <div class="logo-container right-logo">
-                  <img src="/rsp/logo.png" alt="City of Tagum Logo" class="logo" />
+                  <img src="/rsp/image.png" alt="City of Tagum Logo" class="logo" />
                 </div>
               </div>
             </td>
@@ -459,14 +459,6 @@
             </td>
             <td colspan="3"></td>
           </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Page 2 -->
-    <div class="position-description-container page">
-      <table class="main-table">
-        <tbody>
           <!-- Brief Description -->
           <tr>
             <td colspan="6" class="section-header">
@@ -475,12 +467,17 @@
           </tr>
           <tr>
             <td colspan="6" class="data-cell description-cell">
-              {{
-                data.DescriptionSection ||
-                'Review, evaluation, program customization, development and monitoring of existing and upcoming information technology systems assigned to local government offices, barangay offices and other government offices within the jurisdiction of this city with proper gathering, categorization, assimilation, storage and responsible communication and dissemination of information. Also, oversee the Internal Audit Division and City Information Division operations.'
-              }}
+              {{ data.DescriptionSection || '' }}
             </td>
           </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Page 2 -->
+    <div class="position-description-container page">
+      <table class="main-table">
+        <tbody>
           <!-- Job Summary -->
           <tr>
             <td colspan="6" class="section-header">
@@ -488,7 +485,7 @@
             </td>
           </tr>
           <tr>
-            <td colspan="6" class="data-cell description-cell large-cell formatted-content">
+            <td colspan="6" class="data-cell bd-description-cell large-cell formatted-content">
               <div v-html="formattedDescriptionFunction"></div>
             </td>
           </tr>
@@ -510,10 +507,10 @@
                     <td class="section-header">21D. ELIGIBILITY</td>
                   </tr>
                   <tr>
-                    <td class="data-cell large-empty-cell">{{ data.StandardEduc }}</td>
-                    <td class="data-cell large-empty-cell">{{ data.StandardExp }}</td>
-                    <td class="data-cell large-empty-cell">{{ data.StandardTrain }}</td>
-                    <td class="data-cell large-empty-cell">{{ data.StandardElig }}</td>
+                    <td class="data-cell qs-large-empty-cell">{{ data.StandardEduc }}</td>
+                    <td class="data-cell qs-large-empty-cell">{{ data.StandardExp }}</td>
+                    <td class="data-cell qs-large-empty-cell">{{ data.StandardTrain }}</td>
+                    <td class="data-cell qs-large-empty-cell">{{ data.StandardElig }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -553,8 +550,8 @@
             <td colspan="1" rowspan="2" class="data-cell"></td>
           </tr>
           <tr>
-            <td colspan="2" class="data-cell"></td>
-            <td colspan="3" class="data-cell"></td>
+            <td colspan="2" class="dr-data-cell"></td>
+            <td colspan="3" class="dr-data-cell"></td>
           </tr>
 
           <!-- Acknowledgement and Acceptance -->
@@ -679,12 +676,12 @@
   .main-table td,
   .main-table th {
     border: 1px solid #000;
-    padding: 4px;
   }
 
   /* Qualification standards table */
   .qualifications-table {
     width: 100%;
+    height: auto;
     border-collapse: collapse;
     table-layout: fixed;
   }
@@ -757,6 +754,14 @@
     font-weight: normal;
   }
 
+  .dr-data-cell {
+    vertical-align: top;
+    min-height: 50px;
+    height: 50px;
+    padding: 4px;
+    font-weight: normal;
+  }
+
   .empty-cell {
     height: 30px;
   }
@@ -764,6 +769,11 @@
   .large-empty-cell {
     min-height: 80px;
     height: 80px;
+  }
+
+  .qs-large-empty-cell {
+    min-height: 80px;
+    height: 260px;
   }
 
   .large-cell {
@@ -868,13 +878,22 @@
     padding: 3px 4px;
   }
 
-  .no-padding {
+  .main-table td.no-padding {
     padding: 0;
   }
 
   .description-cell {
     text-align: justify;
     min-height: 80px;
+    font-weight: normal;
+    line-height: 1.3;
+    letter-spacing: 0.5px;
+  }
+
+  .bd-description-cell {
+    text-align: justify;
+    min-height: 80px;
+    height: 550px;
     font-weight: normal;
     line-height: 1.3;
     letter-spacing: 0.5px;

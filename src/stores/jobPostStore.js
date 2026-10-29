@@ -669,16 +669,111 @@ export const useJobPostStore = defineStore('jobPost', {
       }
     },
 
-    async hiredApplicant(id, payload) {
+    // async hiredApplicant(id, payload) {
+    //   try {
+    //     this.loading = true;
+    //     // const response = await adminApi.post(`/hire/${id}`, payload, {
+    //     //   validateStatus: (status) => status < 500,
+    //     // });
+
+    //     const response = await adminApi.post(`/hire/applicant/${id}`, payload, {
+    //       validateStatus: (status) => status < 500,
+    //     });
+    //     return response;
+    //   } catch (err) {
+    //     console.error('Error hiring applicant:', err.message || err);
+    //     return { data: { success: false, message: 'An error occurred' } };
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
+
+    /**
+     * ✅ HIRE APPLICANTS (single or multiple)
+     * POST /hire/applicant  { hires: [{ submission_id }, ...] }
+     * Always resolves with { success, message, data } (never throws).
+     */
+    async hireApplicant(submissionIds) {
+      const ids = (Array.isArray(submissionIds) ? submissionIds : [submissionIds]).filter(
+        (id) => id !== null && id !== undefined && id !== '',
+      );
+
+      if (ids.length === 0) {
+        return { success: false, message: 'No applicants to hire', data: null };
+      }
+
+      this.loading = true;
+      try {
+        const payload = {
+          hires: ids.map((id) => ({ submission_id: id })),
+        };
+
+        const response = await adminApi.post('/hire/applicant', payload, {
+          validateStatus: (status) => status < 500,
+        });
+
+        const success = response.data?.success ?? (response.status >= 200 && response.status < 300);
+
+        return {
+          success,
+          message:
+            response.data?.message ||
+            (success ? 'Applicant(s) hired successfully' : 'Failed to hire applicant(s)'),
+          data: response.data ?? null,
+        };
+      } catch (err) {
+        console.error('Error hiring applicants:', err.message || err);
+        return {
+          success: false,
+          message: err.response?.data?.message || 'An error occurred',
+          data: null,
+        };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async hiredTemporaryApplicant(id, payload) {
       try {
         this.loading = true;
-        const response = await adminApi.post(`/hire/${id}`, payload, {
+        const response = await adminApi.post(`/hire/temporary/${id}`, payload, {
           validateStatus: (status) => status < 500,
         });
         return response;
       } catch (err) {
         console.error('Error hiring applicant:', err.message || err);
         return { data: { success: false, message: 'An error occurred' } };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * ✅ REVERT TEMPORARY HIRE
+     * POST /hire/temporary/revert/{submissionId}
+     * Always resolves with { success, message } (never throws).
+     */
+    async revertTemporaryApplicant(submissionId, payload = {}) {
+      this.loading = true;
+      try {
+        const response = await adminApi.post(`/hire/temporary/revert/${submissionId}`, payload, {
+          validateStatus: (status) => status < 500,
+        });
+
+        const success = response.data?.success ?? (response.status >= 200 && response.status < 300);
+
+        return {
+          success,
+          message:
+            response.data?.message ||
+            (success ? 'Temporary hire reverted' : 'Failed to revert temporary hire'),
+        };
+      } catch (err) {
+        console.error('Error reverting temporary hire:', err.message || err);
+        return {
+          success: false,
+          message: err.response?.data?.message || 'An error occurred',
+        };
       } finally {
         this.loading = false;
       }

@@ -974,11 +974,11 @@
             fromDate,
           };
 
-          const response = await jobPostStore.hiredApplicant(submissionId, payload);
+          const response = await jobPostStore.hiredTemporaryApplicant(submissionId, payload);
 
           if (response && response.data) {
             if (response.data.success === true) {
-              toast.success(response.data.message || 'Applicant hired successfully');
+              toast.success(response.data.message || 'Temporary Hiring Successful');
 
               emit('on-hired');
 
